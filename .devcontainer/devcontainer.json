@@ -1,0 +1,20 @@
+{
+  "name": "IRIS Dev Container",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "workspaceFolder": "/workspace",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint"
+      ]
+    }
+  },
+  "postCreateCommand": "python3 -m pip install --upgrade pip && python3 -m pip install -r requirements.txt && python3 -m pip install -r requirements-dev.txt && python3 -m pre_commit install && cd frontend && npm ci && cd .. && python3 -m pre_commit run --all-files",
+  "postStartCommand": "bash /workspace/scripts/start_dev_servers.sh",
+  "forwardPorts": [8000, 5432],
+  "remoteUser": "vscode"
+}

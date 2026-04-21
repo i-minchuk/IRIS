@@ -1,0 +1,35 @@
+name: Documentation Check
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  check-docs:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Run documentation validation
+        run: |
+          python docs/check_docs.py
+
+      - name: Run ServiceLocator validation
+        run: |
+          python docs/check_service_locator.py
+        continue-on-error: true
+        # Note: This may fail if Redis is not available, but main check is docs/check_docs.py

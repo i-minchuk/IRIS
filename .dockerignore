@@ -1,0 +1,54 @@
+.git
+.gitignore
+.dockerignore
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+.eggs/
+*.egg
+build/
+dist/
+
+# Virtual envs
+.venv/
+venv/
+env/
+
+# Test / coverage
+.pytest_cache/
+htmlcov/
+.coverage
+.coverage.*
+
+# Node
+node_modules/
+**/node_modules/
+frontend/dist/
+
+# Local config / secrets
+.env
+.env.*
+*.pem
+*.key
+
+# Local data / storage
+data/
+storage/
+*.db
+*.sqlite3
+
+# Logs
+logs/
+*.log
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db

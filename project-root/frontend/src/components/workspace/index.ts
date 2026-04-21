@@ -1,0 +1,13 @@
+export { default as WorkspaceLayout } from './WorkspaceLayout';
+export { default as ActivityBar } from './ActivityBar';
+export { default as Breadcrumbs } from './Breadcrumbs';
+export { default as EditorTabs } from './EditorTabs';
+export { default as EditorArea } from './EditorArea';
+export { default as ExplorerSidebar } from './ExplorerSidebar';
+export { default as InspectorPanel } from './InspectorPanel';
+export { default as ScaleControl } from './ScaleControl';
+export { default as BottomPanel } from './BottomPanel';
+export { default as DocumentWorkspace } from './DocumentWorkspace';
+export { useWorkspaceStore } from './store/workspaceStore';
+export type { Tab, WorkspaceState, ExplorerNode } from './types/workspace.types';
+export type { ContentScale, SelectedDocument } from './store/workspaceStore';

@@ -1,0 +1,17 @@
+export const COLUMN_LABELS: Record<string, string> = {
+  document_code:  "Код документа",
+  title:          "Наименование",
+  doc_type:       "Тип документа",
+  discipline:     "Дисциплина",
+  engineer:       "Исполнитель",
+  reviewer:       "Проверяющий",
+  planned_start:  "Дата начала (план)",
+  planned_finish: "Дата окончания (план)",
+  planned_hours:  "Плановые часы",
+  ifr_date:       "Дата IFR",
+  ifa_date:       "Дата IFA",
+  ifc_date:       "Дата IFC",
+  status:         "Статус",
+  revision:       "Ревизия",
+  notes:          "Примечания",
+};

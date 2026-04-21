@@ -1,0 +1,386 @@
+/* Viewer Module CSS */
+
+.viewer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border-default);
+  background: var(--bg-surface);
+  flex-shrink: 0;
+}
+
+.toolbar-title {
+  font-weight: 500;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.toolbar-type {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: #fff;
+}
+
+.content {
+  flex: 1;
+  overflow: auto;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.footer {
+  padding: 6px 16px;
+  border-top: 1px solid var(--border-default);
+  background: var(--bg-surface);
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+/* Loading state */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-secondary);
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--border-default);
+  border-top-color: var(--accent-engineering);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* PDF specific */
+.pdf-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.pdf-page {
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Image specific */
+.image-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.image-container img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+/* Excel specific */
+.excel-container {
+  width: 100%;
+  overflow: auto;
+}
+
+.excel-sheet-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.excel-sheet-tab {
+  padding: 6px 12px;
+  font-size: 12px;
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface-2);
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.excel-sheet-tab:hover {
+  background: var(--bg-hover);
+}
+
+.excel-sheet-tab.active {
+  background: var(--accent-engineering);
+  color: var(--text-inverse);
+  border-color: var(--accent-engineering);
+}
+
+.excel-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.excel-table th,
+.excel-table td {
+  border: 1px solid var(--border-default);
+  padding: 6px 10px;
+  text-align: left;
+}
+
+.excel-table th {
+  background: var(--bg-surface);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.excel-table tr:nth-child(even) {
+  background: var(--bg-hover);
+}
+
+/* Word specific */
+.word-container {
+  width: 100%;
+  max-width: 800px;
+  padding: 32px;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.word-content {
+  font-family: Georgia, serif;
+  line-height: 1.6;
+  color: #333;
+}
+
+.word-content h1 {
+  font-size: 24px;
+  margin-bottom: 16px;
+}
+
+.word-content h2 {
+  font-size: 18px;
+  margin: 24px 0 12px;
+}
+
+.word-content p {
+  margin-bottom: 12px;
+}
+
+.word-content ul,
+.word-content ol {
+  margin: 12px 0;
+  padding-left: 24px;
+}
+
+.word-content li {
+  margin-bottom: 6px;
+}
+
+/* DWG specific */
+.dwg-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+}
+
+.dwg-placeholder {
+  width: 100%;
+  max-width: 400px;
+  height: 250px;
+  border: 2px dashed var(--warning);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.dwg-message {
+  color: var(--text-secondary);
+  font-size: 14px;
+  text-align: center;
+}
+
+.dwg-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.dwg-btn {
+  padding: 8px 16px;
+  font-size: 13px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dwg-btn-primary {
+  background: var(--accent-engineering);
+  color: var(--text-inverse);
+  border: none;
+}
+
+.dwg-btn-secondary {
+  background: var(--bg-surface-2);
+  color: var(--text-primary);
+  border: 1px solid var(--border-default);
+}
+
+/* Unsupported specific */
+.unsupportedContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+}
+
+.unsupportedIcon {
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(107, 114, 128, 0.1);
+  border-radius: 16px;
+  margin-bottom: 8px;
+}
+
+.unsupportedMessage {
+  color: var(--text-secondary);
+  font-size: 14px;
+  text-align: center;
+  max-width: 300px;
+}
+
+.unsupported-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.unsupportedBtnPrimary {
+  padding: 8px 16px;
+  font-size: 13px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--accent-engineering);
+  color: var(--text-inverse);
+  border: none;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.unsupportedBtnPrimary:hover {
+  background: #155e75;
+}
+
+.unsupportedInfo {
+  margin-top: 16px;
+  padding: 12px;
+  background: var(--bg-surface-2);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  max-width: 250px;
+  text-align: left;
+}
+
+.unsupportedInfo strong {
+  color: var(--text-primary);
+  display: block;
+  margin-bottom: 8px;
+}
+
+.unsupportedInfo ul {
+  padding-left: 16px;
+  margin: 0;
+  list-style-type: disc;
+}
+
+.unsupportedInfo li {
+  margin-bottom: 4px;
+}
+
+/* CSV specific */
+.csv-container {
+  width: 100%;
+  overflow: auto;
+}
+
+.csv-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.csv-table th,
+.csv-table td {
+  border: 1px solid var(--border-default);
+  padding: 6px 10px;
+  text-align: left;
+}
+
+.csv-table th {
+  background: var(--bg-surface);
+  font-weight: 600;
+}
+
+.csv-table tr:nth-child(even) {
+  background: var(--bg-hover);
+}
+
+/* Empty state */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.empty-icon {
+  width: 56px;
+  height: 56px;
+  margin-bottom: 16px;
+  color: var(--text-tertiary);
+}
+
+.empty-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.empty-description {
+  font-size: 14px;
+  color: var(--text-secondary);
+}

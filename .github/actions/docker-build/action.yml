@@ -1,0 +1,9 @@
+name: Docker Build
+
+description: Build the STDO Docker image.
+
+runs:
+  using: composite
+  steps:
+    - name: Build Docker image
+      run: docker build . --tag stdo-iris:latest
