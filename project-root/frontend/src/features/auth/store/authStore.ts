@@ -13,8 +13,10 @@ interface AuthState {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
+  isLoading: boolean;
   setAuth: (user: User, token: string) => void;
   logout: () => void;
+  setLoading: (loading: boolean) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -23,19 +25,14 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       token: null,
       isAuthenticated: false,
-      setAuth: (user, token) => {
-        localStorage.setItem('access_token', token);
-        set({ user, token, isAuthenticated: true });
-      },
-      logout: () => {
-        localStorage.removeItem('access_token');
-        set({ user: null, token: null, isAuthenticated: false });
-      },
+      isLoading: true,
+      setAuth: (user, token) => set({ user, token, isAuthenticated: true, isLoading: false }),
+      logout: () => set({ user: null, token: null, isAuthenticated: false, isLoading: false }),
+      setLoading: (isLoading) => set({ isLoading }),
     }),
     {
       name: 'auth-storage',
-      // Не сохраняем token в localStorage через persist, используем отдельный ключ
-      partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated }),
+      partialize: (state) => ({ user: state.user, token: state.token, isAuthenticated: state.isAuthenticated }),
     }
   )
 );

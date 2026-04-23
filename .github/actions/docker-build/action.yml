@@ -1,9 +1,12 @@
 name: Docker Build
-
-description: Build the STDO Docker image.
-
+description: Build ДокПоток IRIS Docker images
 runs:
   using: composite
   steps:
-    - name: Build Docker image
-      run: docker build . --tag stdo-iris:latest
+    - name: Build backend image
+      shell: bash
+      run: docker build -f Dockerfile.backend -t dokpotok-iris-backend:latest .
+
+    - name: Build frontend image
+      shell: bash
+      run: docker build -f Dockerfile.frontend -t dokpotok-iris-frontend:latest .

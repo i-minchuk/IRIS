@@ -1,73 +1,107 @@
 import client from './client';
-import type { Document, DocumentDetail, Revision } from '../types';
-import type { Remark } from '../components/RemarksPanel';
 
-export const getDocuments = async (params?: { project_id?: number; status?: string; search?: string }): Promise<Document[]> => {
-  const { data } = await client.get('/api/documents/', { params });
+export interface DocumentItem {
+  id: number;
+  number: string;
+  name: string;
+  code?: string;
+  title?: string;
+  doc_type: string;
+  status: string;
+  crs_code?: string;
+  author_id: number;
+  project_id: number;
+  section_id?: number;
+  created_at: string;
+}
+
+export interface LockedByUser {
+  id: number;
+  full_name: string;
+}
+
+export interface DocumentDetail extends DocumentItem {
+  crs_approved_date?: string;
+  content: Record<string, unknown>;
+  variables_snapshot: Record<string, unknown>;
+  current_revision_id?: number;
+  code?: string;
+  title?: string;
+  discipline?: string;
+  locked_by_user?: LockedByUser | null;
+  revisions: Revision[];
+  remarks: Remark[];
+}
+
+export interface Revision {
+  id: number;
+  number: string;
+  status: string;
+  trigger_type?: string;
+  file_path?: string;
+  created_at: string;
+}
+
+export interface Remark {
+  id: number;
+  title: string;
+  description?: string;
+  severity: string;
+  status: string;
+  remark_type: string;
+  category?: string;
+  deadline?: string;
+  document_id?: number;
+  document_number?: string;
+  document_name?: string;
+  project_id?: number;
+  created_at: string;
+}
+
+export const getDocuments = async (params?: { project_id?: number; section_id?: number }): Promise<DocumentItem[]> => {
+  const { data } = await client.get('/api/v1/documents', { params });
   return data;
 };
 
 export const getDocument = async (id: number): Promise<DocumentDetail> => {
-  const { data } = await client.get(`/api/documents/${id}`);
+  const { data } = await client.get(`/api/v1/documents/${id}`);
   return data;
 };
 
-export const createDocument = async (data: {
-  project_id: number;
-  code: string;
-  title: string;
-  doc_type: string;
-  discipline: string;
-}): Promise<Document> => {
-  const { data: document } = await client.post('/api/documents/', data);
-  return document;
-};
-
-export const createRevision = async (
-  documentId: number,
-  data: {
-    revision_index: string;
-    revision_letter: string;
-    revision_number: number;
-    version_number: number;
-    change_log: string;
-    file?: File;
-  }
-): Promise<Revision> => {
-  // For now, just send the metadata without file
-  const { data: revision } = await client.post(`/api/documents/${documentId}/revisions`, {
-    revision_index: data.revision_index,
-    revision_letter: data.revision_letter,
-    revision_number: data.revision_number,
-    version_number: data.version_number,
-    change_log: data.change_log,
-  });
-  return revision;
-};
-
-export const approveRevision = async (
-  documentId: number,
-  revisionId: number
-): Promise<Revision> => {
-  const { data: revision } = await client.post(
-    `/api/documents/${documentId}/revisions/${revisionId}/approve`
-  );
-  return revision;
-};
-
-export const getRevisions = async (documentId: number): Promise<Revision[]> => {
-  const { data } = await client.get(`/api/documents/${documentId}/revisions`);
+export const createDocument = async (body: Partial<DocumentItem>): Promise<DocumentItem> => {
+  const { data } = await client.post('/api/v1/documents', body);
   return data;
 };
 
-// API для замечаний по документу
-export const getRemarksByDocument = async (documentId: number): Promise<Remark[]> => {
-  const { data } = await client.get(`/api/remarks/document/${documentId}`);
+export const updateDocument = async (id: number, body: Partial<DocumentItem> & { content?: Record<string, unknown> }): Promise<DocumentItem> => {
+  const { data } = await client.patch(`/api/v1/documents/${id}`, body);
   return data;
 };
 
-// API для замечаний по проекту (для backward compatibility)
-export const getRemarksByProject = async (projectId: number): Promise<Remark[]> => {
-  const { data } = await client.get(`/api/remarks/project/${projectId}`);
+export const createRevision = async (documentId: number, body: Partial<Revision>): Promise<Revision> => {
+  const { data } = await client.post(`/api/v1/documents/${documentId}/revisions`, body);
+  return data;
+};
+
+export const createRemark = async (documentId: number, body: Partial<Remark>): Promise<Remark> => {
+  const { data } = await client.post(`/api/v1/documents/${documentId}/remarks`, body);
+  return data;
+};
+
+export const updateRemarkStatus = async (remarkId: number, body: { status: string; response?: string; resolution_action?: string }): Promise<Remark> => {
+  const { data } = await client.patch(`/api/v1/documents/remarks/${remarkId}/status`, body);
+  return data;
+};
+
+export interface RemarkFilter {
+  project_id?: number;
+  severity?: string;
+  status?: string;
+  remark_type?: string;
+  category?: string;
+}
+
+export const getAllRemarks = async (filters?: RemarkFilter): Promise<Remark[]> => {
+  const { data } = await client.get('/api/v1/documents/remarks/all', { params: filters });
   return data;
 };

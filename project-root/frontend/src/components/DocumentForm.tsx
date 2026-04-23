@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Button, Input, Modal, Select } from './ui';
 import { getProjects } from '../api/projects';
-import type { Project } from '../types';
+import type { Project } from '../api/projects';
 
 interface DocumentFormProps {
   isOpen: boolean;
@@ -179,3 +179,4 @@ export default function DocumentForm({
     </Modal>
   );
 }
+

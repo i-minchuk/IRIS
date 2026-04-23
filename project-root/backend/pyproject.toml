@@ -1,7 +1,7 @@
 [project]
-name = "ДокПоток IRIS"
+name = "dokpotok-iris-backend"
 version = "0.1.0"
-description = "Technical Documentation Management System with CPM Planning"
+description = "Engineering Document Management System"
 requires-python = ">=3.12"
 
 [tool.pytest.ini_options]
@@ -11,14 +11,14 @@ markers = [
     "integration: marks tests as integration tests (deselect with '-m \"not integration\"')",
     "e2e: marks tests as end-to-end tests",
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "architecture: marks tests as architecture checks",
 ]
 
 [tool.coverage.run]
-source = ["services", "repositories", "core", "api"]
+source = ["app"]
 omit = [
     "tests/*",
-    "legacy/*",
-    "frontend/*",
+    "alembic/*",
     "__pycache__/*",
 ]
 
@@ -39,8 +39,6 @@ exclude = '''
  | \.venv
  | build
  | dist
- | frontend
- | storage
  | __pycache__
 )/
 '''
@@ -52,7 +50,5 @@ exclude = [
   ".venv",
   "build",
   "dist",
-  "frontend",
-  "storage",
   "__pycache__",
 ]

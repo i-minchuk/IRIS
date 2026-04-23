@@ -2,6 +2,44 @@
 @tailwind components;
 @tailwind utilities;
 
+:root[data-theme="light"] {
+  --bg-app: #f8fafc;
+  --bg-topbar: #1e3a5f;
+  --bg-surface: #ffffff;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-tertiary: #64748b;
+  --text-inverse: #ffffff;
+  --primary: #2563eb;
+  --border-default: #e2e8f0;
+  --error: #dc2626;
+  --notification-badge: #ef4444;
+  --notification-icon: #94a3b8;
+  --topbar-hover: rgba(255, 255, 255, 0.08);
+  --topbar-icon: #94a3b8;
+  --logo-iris-top: #3b82f6;
+  --logo-iris: #2563eb;
+}
+
+:root[data-theme="dark"] {
+  --bg-app: #0f172a;
+  --bg-topbar: #0b1220;
+  --bg-surface: #1e293b;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-tertiary: #64748b;
+  --text-inverse: #0f172a;
+  --primary: #3b82f6;
+  --border-default: #334155;
+  --error: #ef4444;
+  --notification-badge: #f87171;
+  --notification-icon: #cbd5e1;
+  --topbar-hover: rgba(255, 255, 255, 0.05);
+  --topbar-icon: #cbd5e1;
+  --logo-iris-top: #60a5fa;
+  --logo-iris: #3b82f6;
+}
+
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }

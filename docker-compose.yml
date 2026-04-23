@@ -1,27 +1,74 @@
 version: '3.8'
 
 services:
+  db:
+    image: postgres:15-alpine
+    container_name: iris_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-iris}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-iris_secret_change_me}
+      POSTGRES_DB: ${POSTGRES_DB:-iris}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-iris} -d ${POSTGRES_DB:-iris}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_storage:/qdrant/storage
+    environment:
+      - QDRANT__SERVICE__HTTP_PORT=6333
+
   backend:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.backend
+    image: iris-backend:latest
     container_name: iris_backend
+    restart: unless-stopped
     environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://iris:iris_secret_change_me@db:5432/iris}
+      SECRET_KEY: ${SECRET_KEY:-change-me-in-production-min-32-chars-long}
       IRIS_STORAGE_ROOT: /app/storage
-      IRIS_LOG_LEVEL: ${IRIS_LOG_LEVEL:-DEBUG}
+      IRIS_LOG_LEVEL: ${IRIS_LOG_LEVEL:-INFO}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      QDRANT_HOST: qdrant
+    volumes:
+      - storage_data:/app/storage
+      - ./project-root/backend/app:/app/app
+      - ./project-root/backend/alembic:/app/alembic
+      - ./project-root/backend/alembic.ini:/app/alembic.ini
     ports:
       - "8000:8000"
-    volumes:
-      - ./storage:/app/storage
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    command: >
-      bash -c "
-        echo 'Waiting for database...' &&
-        sleep 10 &&
-        echo 'Running migrations...' &&
-        python -m db.migrations_runner &&
-        echo 'Starting server...' &&
-        uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-      "
+    depends_on:
+      db:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+    command: ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"]
 
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    image: iris-frontend:latest
+    container_name: iris_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  storage_data:
+  qdrant_storage:

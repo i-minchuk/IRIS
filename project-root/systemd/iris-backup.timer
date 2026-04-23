@@ -1,0 +1,12 @@
+[Unit]
+Description=DokPotok IRIS Daily Backup Timer
+Requires=iris-backup.service
+
+[Timer]
+OnCalendar=daily
+OnCalendar=*-*-* 02:00:00
+Persistent=true
+Unit=iris-backup.service
+
+[Install]
+WantedBy=timers.target

@@ -1,7 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getDocuments } from '../api/documents';
-import type { Document } from '../types';
+import { getDocuments, type DocumentItem } from '../api/documents';
 import { Search, Plus, ChevronUp, ChevronDown, Info } from 'lucide-react';
 import { Badge, Button, Input, Select } from '../components/ui';
 
@@ -179,7 +178,7 @@ const ITEMS_PER_PAGE_OPTIONS = [
 type SortKey = 'code' | 'title' | 'doc_type' | 'status';
 
 export default function Documents() {
-  const [allDocs, setAllDocs] = useState<Document[]>(MOCK_DOCS);
+  const [allDocs, setAllDocs] = useState<DocumentItem[]>(MOCK_DOCS as DocumentItem[]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
@@ -197,7 +196,7 @@ export default function Documents() {
   const fetchDocuments = async () => {
     setLoading(true)
     try {
-      const docs = await getDocuments({ search: searchQuery || undefined })
+      const docs = await getDocuments()
       setAllDocs(docs)
     } finally {
       setLoading(false)

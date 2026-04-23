@@ -1,7 +1,7 @@
 import { User, MessageSquare, Pencil, Send, X, Save, ChevronLeft, Plus, Clock } from 'lucide-react';
 import { useState } from 'react';
 
-interface Remark {
+export interface Remark {
   id: number;
   number: string;
   type: 'internal' | 'customer' | 'reviewer' | 'construction';

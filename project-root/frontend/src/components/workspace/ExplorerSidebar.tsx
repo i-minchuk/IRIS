@@ -1,6 +1,7 @@
 import { useWorkspaceStore } from './store/workspaceStore';
 import { Folder, FileText, CheckSquare, MessageSquare } from 'lucide-react';
 import { useEffect } from 'react';
+import type { ExplorerNode } from './types/workspace.types';
 
 interface ExplorerSidebarProps {
   projectId?: number;
@@ -202,7 +203,7 @@ export default function ExplorerSidebar({
     }
   };
 
-  const handleNodeClick = (node: Record<string, unknown>, hasChildren: boolean) => {
+  const handleNodeClick = (node: ExplorerNode, hasChildren: boolean) => {
     // Использовать внешний callback если передан
     if (onNodeClick) {
       onNodeClick(node.id, node.type, node.documentId);
@@ -213,7 +214,7 @@ export default function ExplorerSidebar({
       if (node.type === 'document') {
         const mockFile = node.fileName
           ? new File(['mock file content'], node.fileName, {
-              type: getFileMimeType(node.fileType),
+              type: getFileMimeType(node.fileType || ''),
             })
           : undefined;
 
@@ -250,9 +251,9 @@ export default function ExplorerSidebar({
     }
   }
 
-  const renderTree = (nodes: Array<Record<string, unknown>>, level: number = 0) => {
+  const renderTree = (nodes: ExplorerNode[], level: number = 0) => {
     return nodes.map((node) => {
-      const hasChildren = node.children && node.children.length > 0;
+      const hasChildren = (node.children?.length ?? 0) > 0;
       // Использовать внешний activeNodeId если передан
       const isActive = (activeNodeId !== undefined ? activeNodeId === node.id : node.id === activeExplorerNode);
       const isExpanded = node.expanded ?? true;
@@ -345,7 +346,7 @@ export default function ExplorerSidebar({
           {/* Render children if expanded */}
           {hasChildren && isExpanded && (
             <div role="group">
-              {renderTree(node.children, level + 1)}
+              {renderTree(node.children || [], level + 1)}
             </div>
           )}
         </div>

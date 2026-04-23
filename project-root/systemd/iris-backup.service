@@ -1,0 +1,19 @@
+[Unit]
+Description=DokPotok IRIS Daily Database Backup
+After=network.target
+
+[Service]
+Type=oneshot
+User=iris
+Group=iris
+WorkingDirectory=/opt/dokpotok-iris
+Environment="DB_USER=iris"
+Environment="DB_PASSWORD=iris_secret_change_me"
+Environment="DB_NAME=iris"
+Environment="BACKUP_DIR=/opt/dokpotok-iris/backups"
+ExecStart=/opt/dokpotok-iris/venv/bin/python backend/scripts/backup_db.py backup
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -114,8 +114,16 @@ export default function BottomPanel({}: BottomPanelProps) {
   );
 }
 
+interface HistoryItem {
+  id: number;
+  action: string;
+  user: string;
+  date: string;
+  details: string;
+}
+
 interface HistoryContentProps {
-  history: Array<Record<string, unknown>>;
+  history: HistoryItem[];
 }
 
 function HistoryContent({ history }: HistoryContentProps) {

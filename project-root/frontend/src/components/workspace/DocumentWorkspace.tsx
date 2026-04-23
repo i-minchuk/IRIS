@@ -60,8 +60,8 @@ export default function DocumentWorkspace() {
 
         setSelectedDocument({
           id: doc.id,
-          code: doc.code,
-          title: doc.title,
+          code: doc.code || '',
+          title: doc.title || '',
           fileUrl,
           fileName: `${doc.code}${currentRevision?.file_path?.includes('.pdf') ? '.pdf' : ''}`,
           project_id: doc.project_id,
@@ -103,7 +103,6 @@ export default function DocumentWorkspace() {
 
   return (
     <div data-test="document-workspace">
-      {/* TEST_MARKER_2026_IRINA - проверь этот текст в DOM через DevTools */}
       <WorkspaceLayout
         explorer={
         <ExplorerSidebar 
@@ -423,3 +422,4 @@ function DocumentBottomPanel({ document }: DocumentBottomPanelProps) {
     </div>
   );
 }
+

@@ -8,8 +8,11 @@ export const authApi = {
     formData.append('username', data.email); // OAuth2 требует 'username'
     formData.append('password', data.password);
     
+    // Используем cookies по умолчанию (HttpOnly)
+    // Для JSON response добавьте: { params: { response_type: 'json' } }
     const response = await apiClient.post<TokenResponse>('/auth/login', formData, {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      withCredentials: true, // Важно для cookies
     });
     return response.data;
   },
@@ -20,7 +23,13 @@ export const authApi = {
   },
 
   async getCurrentUser(): Promise<UserResponse> {
-    const response = await apiClient.get<UserResponse>('/auth/me');
+    const response = await apiClient.get<UserResponse>('/auth/me', {
+      withCredentials: true,
+    });
     return response.data;
+  },
+
+  async logout(): Promise<void> {
+    await apiClient.post('/auth/logout', {}, { withCredentials: true });
   },
 };

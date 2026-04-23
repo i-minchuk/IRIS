@@ -1,0 +1,168 @@
+{
+  "name": "ДокПоток IRIS",
+  "version": "1.0",
+  "themes": {
+    "light": {
+      "main": {
+        "primary": {
+          "name": "IRIS Blue",
+          "hex": "#3B4FA8",
+          "usage": "Логотип, primary-кнопки, ключевые акценты интерфейса"
+        },
+        "dark": {
+          "name": "Deep IRIS",
+          "hex": "#222B5C",
+          "usage": "Шапка, сайдбар, заголовки, тёмные фоны"
+        },
+        "accent": {
+          "name": "Siberian Lilac",
+          "hex": "#8D79C7",
+          "usage": "Hover-состояния, второстепенные кнопки, акцентные элементы и иконки"
+        },
+        "success": {
+          "name": "Sunflower Yellow",
+          "hex": "#D4A62A",
+          "usage": "Статусы «Согласовано», элементы успеха/готовности, акцентные линии"
+        },
+        "error": {
+          "name": "IRIS Red",
+          "hex": "#C0392B",
+          "usage": "Ошибки валидации, критические уведомления, статусы «Отклонено», удаление"
+        },
+        "warning": {
+          "name": "Amber",
+          "hex": "#E67E22",
+          "usage": "Предупреждения, статусы «На согласовании», низкий приоритет, ожидание действия"
+        },
+        "info": {
+          "name": "Sky Blue",
+          "hex": "#3498DB",
+          "usage": "Информационные уведомления, подсказки, хинты"
+        },
+        "disabled": {
+          "name": "Muted Grey",
+          "hex": "#A0A8B8",
+          "usage": "Неактивные кнопки, заблокированные поля ввода, недоступные элементы"
+        }
+      },
+      "neutral": {
+        "background": {
+          "name": "Light BG",
+          "hex": "#F5F6FA",
+          "usage": "Основной фон приложения, фон секций на лендинге"
+        },
+        "border": {
+          "name": "Neutral Grey",
+          "hex": "#CED2DD",
+          "usage": "Бордюры, разделители, неактивные элементы"
+        },
+        "text": {
+          "name": "Text Main",
+          "hex": "#1E2230",
+          "usage": "Основной цвет текстов"
+        }
+      },
+      "subtleBackgrounds": {
+        "error": "#FDEDEC",
+        "warning": "#FEF5E7",
+        "info": "#EBF5FB",
+        "success": "#FCF3CF",
+        "disabled": "#F0F1F5"
+      }
+    },
+    "dark": {
+      "main": {
+        "primary": {
+          "name": "IRIS Blue Light",
+          "hex": "#5C75E0",
+          "usage": "Логотип, primary-кнопки, ключевые акценты интерфейса"
+        },
+        "dark": {
+          "name": "Deep IRIS Night",
+          "hex": "#151B38",
+          "usage": "Шапка, сайдбар, заголовки, тёмные фоны"
+        },
+        "accent": {
+          "name": "Siberian Lilac Light",
+          "hex": "#A898D9",
+          "usage": "Hover-состояния, второстепенные кнопки, акцентные элементы и иконки"
+        },
+        "success": {
+          "name": "Sunflower Yellow Light",
+          "hex": "#E8C44A",
+          "usage": "Статусы «Согласовано», элементы успеха/готовности, акцентные линии"
+        },
+        "error": {
+          "name": "IRIS Red Light",
+          "hex": "#E74C3C",
+          "usage": "Ошибки валидации, критические уведомления, статусы «Отклонено», удаление"
+        },
+        "warning": {
+          "name": "Amber Light",
+          "hex": "#F39C12",
+          "usage": "Предупреждения, статусы «На согласовании», низкий приоритет, ожидание действия"
+        },
+        "info": {
+          "name": "Sky Blue Light",
+          "hex": "#5DADE2",
+          "usage": "Информационные уведомления, подсказки, хинты"
+        },
+        "disabled": {
+          "name": "Muted Grey Dark",
+          "hex": "#5A6270",
+          "usage": "Неактивные кнопки, заблокированные поля ввода, недоступные элементы"
+        }
+      },
+      "neutral": {
+        "background": {
+          "name": "Dark BG",
+          "hex": "#0D1117",
+          "usage": "Основной фон приложения, фон секций"
+        },
+        "border": {
+          "name": "Neutral Grey Dark",
+          "hex": "#3D4554",
+          "usage": "Бордюры, разделители, неактивные элементы"
+        },
+        "text": {
+          "name": "Text Main Dark",
+          "hex": "#E2E5EC",
+          "usage": "Основной цвет текстов"
+        },
+        "textSecondary": {
+          "name": "Text Secondary",
+          "hex": "#8B92A8",
+          "usage": "Второстепенный текст, подписи, метки"
+        }
+      },
+      "subtleBackgrounds": {
+        "error": "#3E1C18",
+        "warning": "#3D2A10",
+        "info": "#1A2F3D",
+        "success": "#3D3518",
+        "disabled": "#1A1F2A"
+      }
+    }
+  },
+  "tokens": {
+    "borderRadius": {
+      "small": "4px",
+      "medium": "8px",
+      "large": "12px",
+      "pill": "999px"
+    },
+    "shadow": {
+      "small": "0 1px 3px rgba(0,0,0,0.12)",
+      "medium": "0 4px 12px rgba(0,0,0,0.15)",
+      "large": "0 8px 24px rgba(0,0,0,0.18)"
+    },
+    "spacing": {
+      "xs": "4px",
+      "sm": "8px",
+      "md": "16px",
+      "lg": "24px",
+      "xl": "32px",
+      "xxl": "48px"
+    }
+  }
+}

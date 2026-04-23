@@ -109,14 +109,14 @@ export default function Dashboard() {
     let mounted = true;
 
     getPortfolio()
-      .then((d) => {
+      .then((d: { summary: PortfolioSummary; projects: Project[] }) => {
         if (!mounted) return;
 
         setSummary(normalizeSummary(d?.summary));
         setProjects(normalizeProjects(d?.projects));
         setLoadError(null);
       })
-      .catch((err) => {
+      .catch((err: Error) => {
         if (!mounted) return;
 
         setSummary(MOCK_SUMMARY);

@@ -2,6 +2,13 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { LoginPage } from '@/features/auth/pages/LoginPage';
 import { ProjectsPage } from '@/features/projects/pages/ProjectsPage';
+import { DocumentsPage } from '@/features/documents/pages/DocumentsPage';
+import { DependencyGraphPage } from '@/features/documents/pages/DependencyGraphPage';
+import { RemarksPage } from '@/features/remarks/pages/RemarksPage';
+import { AnalyticsPage } from '@/features/analytics/pages/AnalyticsPage';
+import { ResourcesPage } from '@/pages/ResourcesPage';
+import { TendersPage } from '@/pages/TendersPage';
+import { AdminPage } from '@/pages/AdminPage';
 import { Layout } from './Layout';
 import { ProtectedRoute } from './ProtectedRoute';
 
@@ -25,7 +32,34 @@ export const router = createBrowserRouter([
             path: 'projects',
             element: <ProjectsPage />,
           },
-          // Здесь добавятся другие защищённые маршруты
+          {
+            path: 'documents',
+            element: <DocumentsPage />,
+          },
+          {
+            path: 'remarks',
+            element: <RemarksPage />,
+          },
+          {
+            path: 'analytics',
+            element: <AnalyticsPage />,
+          },
+          {
+            path: 'resources',
+            element: <ResourcesPage />,
+          },
+          {
+            path: 'dependencies',
+            element: <DependencyGraphPage />,
+          },
+          {
+            path: 'tenders',
+            element: <TendersPage />,
+          },
+          {
+            path: 'admin',
+            element: <AdminPage />,
+          },
         ],
       },
     ],

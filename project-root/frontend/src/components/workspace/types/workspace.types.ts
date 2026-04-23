@@ -54,7 +54,10 @@ export interface ExplorerNode {
   count?: number;
   children?: ExplorerNode[];
   expanded?: boolean;
-  active?: boolean; // Явное active state для документа
+  active?: boolean;
   icon?: React.ReactNode;
-  documentId?: number; // Ссылка на документ (для узлов типа document)
+  documentId?: number;
+  fileName?: string;
+  fileType?: string;
+  fileSize?: number;
 }

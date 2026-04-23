@@ -16,6 +16,10 @@
   "dependencies": {
     "@react-pdf/renderer": "^4.5.1",
     "@sentry/react": "^10.49.0",
+    "@tiptap/extension-placeholder": "^3.22.4",
+    "@tiptap/extension-underline": "^3.22.4",
+    "@tiptap/react": "^3.22.4",
+    "@tiptap/starter-kit": "^3.22.4",
     "axios": "^1.13.6",
     "lucide-react": "^1.6.0",
     "mammoth": "^1.12.0",

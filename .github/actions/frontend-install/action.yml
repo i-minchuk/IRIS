@@ -1,5 +1,5 @@
 name: Install frontend dependencies
-description: Install frontend packages for the STDO project.
+description: Install frontend packages for ДокПоток IRIS
 runs:
   using: composite
   steps:
@@ -7,18 +7,19 @@ runs:
       uses: actions/cache@v4
       with:
         path: ~/.npm
-        key: ${{ runner.os }}-npm-${{ hashFiles('frontend/package-lock.json') }}
+        key: ${{ runner.os }}-npm-${{ hashFiles('project-root/frontend/package-lock.json') }}
         restore-keys: |
           ${{ runner.os }}-npm-
 
     - name: Cache frontend node_modules
       uses: actions/cache@v4
       with:
-        path: frontend/node_modules
-        key: ${{ runner.os }}-frontend-node-modules-${{ hashFiles('frontend/package-lock.json') }}
+        path: project-root/frontend/node_modules
+        key: ${{ runner.os }}-frontend-node-modules-${{ hashFiles('project-root/frontend/package-lock.json') }}
         restore-keys: |
           ${{ runner.os }}-frontend-node-modules-
 
     - name: Install frontend dependencies
+      shell: bash
       run: npm ci
-      working-directory: frontend
+      working-directory: project-root/frontend
