@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 import warnings
-import secrets
+import secrets 
+from typing import Optional
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -15,11 +16,9 @@ def is_secure_secret_key(secret_key: str) -> bool:
     if not secret_key:
         return False
     
-    # Минимальная длина 32 символа
     if len(secret_key) < 32:
         return False
     
-    # Не должен быть дефолтным
     default_keys = [
         "your-super-secret-key-change-in-production-please",
         "change-me-in-production-min-32-chars-long",
@@ -31,7 +30,6 @@ def is_secure_secret_key(secret_key: str) -> bool:
     if secret_key in default_keys:
         return False
     
-    # Должен содержать хотя бы буквы и цифры
     has_letters = any(c.isalpha() for c in secret_key)
     has_digits = any(c.isdigit() for c in secret_key)
     
@@ -73,35 +71,29 @@ class Settings(BaseSettings):
     IRIS_LOG_LEVEL: str = "INFO"
     IRIS_STORAGE_ROOT: str = "/app/storage"
 
-    # Debug mode
     DEBUG: bool = False
 
-    # Redis (для кэширования)
     REDIS_URL: str = "redis://localhost:6379"
 
-    # Database connection pool
     DB_POOL_SIZE: int = 10
     DB_MAX_OVERFLOW: int = 20
     DB_POOL_RECYCLE: int = 3600
 
-    # AI настройки
-    OPENAI_API_KEY: str
+    # AI настройки — ВСЕ с default, чтобы CI не падал
+    OPENAI_API_KEY: Optional[str] = Field(default=None)
     OPENAI_BASE_URL: str = "https://api.openai.com/v1"
     LLM_MODEL: str = "gpt-4o"
     EMBEDDING_MODEL: str = "text-embedding-3-large"
     
-    # Qdrant
     QDRANT_HOST: str = "localhost"
     QDRANT_PORT: int = 6333
     QDRANT_COLLECTION: str = "docpotok_mvp"
     
-    # Chunking
     CHUNK_SIZE: int = 1000
     CHUNK_OVERLAP: int = 200
     MAX_CONTEXT_TOKENS: int = 8000
 
     def model_post_init(self, __context) -> None:
-        # Проверка SECRET_KEY на безопасность
         if not is_secure_secret_key(self.SECRET_KEY):
             warnings.warn(
                 "CRITICAL: SECRET_KEY is not secure for production! "
@@ -111,7 +103,6 @@ class Settings(BaseSettings):
                 stacklevel=2,
             )
 
-        # Проверка CORS origins для production
         if not self.BACKEND_CORS_ORIGINS:
             warnings.warn(
                 "WARNING: BACKEND_CORS_ORIGINS is empty. "
@@ -122,6 +113,10 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+
+def load_config() -> Settings:
+    return Settings()
 
 
 def load_config() -> Settings:
