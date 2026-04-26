@@ -1,6 +1,7 @@
 // frontend/src/app/router.tsx
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { LoginPage } from '@/features/auth/pages/LoginPage';
+import Dashboard from '@/pages/Dashboard';
 import { ProjectsPage } from '@/features/projects/pages/ProjectsPage';
 import { DocumentsPage } from '@/features/documents/pages/DocumentsPage';
 import { DependencyGraphPage } from '@/features/documents/pages/DependencyGraphPage';
@@ -26,7 +27,11 @@ export const router = createBrowserRouter([
         children: [
           {
             index: true,
-            element: <Navigate to="/projects" replace />,
+            element: <Navigate to="/dashboard" replace />,
+          },
+          {
+            path: 'dashboard',
+            element: <Dashboard />,
           },
           {
             path: 'projects',
@@ -49,7 +54,7 @@ export const router = createBrowserRouter([
             element: <ResourcesPage />,
           },
           {
-            path: 'dependencies',
+            path: 'approval',
             element: <DependencyGraphPage />,
           },
           {
@@ -59,6 +64,11 @@ export const router = createBrowserRouter([
           {
             path: 'admin',
             element: <AdminPage />,
+          },
+          /* Обратная совместимость: старый путь перенаправляет на новый */
+          {
+            path: 'dependencies',
+            element: <Navigate to="/approval" replace />,
           },
         ],
       },

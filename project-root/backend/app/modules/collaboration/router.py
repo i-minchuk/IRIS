@@ -6,6 +6,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect, status
 from jose import jwt, JWTError
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import ValidationError
 
@@ -97,6 +98,7 @@ async def collaboration_websocket(
                 "document_id": None,
             },
         },
+        exclude_user_id=user.id,
     )
 
     try:

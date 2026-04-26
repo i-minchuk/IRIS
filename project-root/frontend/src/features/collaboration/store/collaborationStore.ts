@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { WSMessage } from '@/shared/hooks/useWebSocket';
 
 export interface UserPresence {
   user_id: number;
@@ -15,10 +16,7 @@ export interface LockInfo {
   locked_at?: string;
 }
 
-export interface WSMessage {
-  type: string;
-  payload?: Record<string, unknown>;
-}
+export type { WSMessage };
 
 interface CollaborationState {
   onlineUsers: Map<number, UserPresence>;

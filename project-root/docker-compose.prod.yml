@@ -33,7 +33,7 @@ services:
       SECRET_KEY: ${SECRET_KEY:-CHANGE_THIS_IN_PRODUCTION_MIN_32_CHARS}
       ACCESS_TOKEN_EXPIRE_MINUTES: 1440
       REFRESH_TOKEN_EXPIRE_DAYS: 7
-      BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-["https://yourdomain.com"]}
+      BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-["http://localhost:5173","http://localhost:3000","http://127.0.0.1:5173"]}
       IRIS_LOG_LEVEL: INFO
       DB_USER: ${DB_USER:-iris}
       DB_PASSWORD: ${DB_PASSWORD:-change_me_in_production}
@@ -59,7 +59,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - VITE_API_URL=${VITE_API_URL:-https://yourdomain.com/api}
+        - VITE_API_URL=${VITE_API_URL:-"http://localhost:5173/api","http://localhost:3000/api","http://127.0.0.1:5173/api"}
     container_name: iris_frontend
     restart: always
     depends_on:

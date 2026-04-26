@@ -2,8 +2,9 @@ import logging
 import time
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request, WebSocket
+from fastapi import FastAPI, Request, WebSocket, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
@@ -12,6 +13,8 @@ from app.core.config import settings
 from app.core.exceptions import register_exception_handlers
 from app.core.logging_config import setup_logging
 from app.core.middleware import PerformanceMiddleware
+from app.db.session import get_db
+from app.modules.collaboration import collaboration_websocket
 
 
 setup_logging()
@@ -89,14 +92,27 @@ app = FastAPI(
 
 add_middlewares(app)
 register_exception_handlers(app)
+
+# Подключаем основные роуты
 app.include_router(api_router)
 
+# Подключаем AI роутеры
+from app.api.routes import ai
+app.include_router(ai.router)
 
 @app.websocket("/ws/ai/inline/{client_id}")
 async def ai_inline_ws(websocket: WebSocket, client_id: str):
     from app.websocket.ai_ws import inline_ai_endpoint
-
     await inline_ai_endpoint(websocket, client_id)
+
+
+@app.websocket("/ws")
+async def collaboration_ws_endpoint(
+    websocket: WebSocket,
+    token: str = Query(...),
+    db: AsyncSession = Depends(get_db),
+):
+    await collaboration_websocket(websocket, token, db)
 
 
 @app.get("/")

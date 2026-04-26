@@ -1,11 +1,37 @@
 <!doctype html>
-<html lang="en">
+<html lang="ru">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- ✅ Favicon: светлая тема -->
+    <link rel="icon" type="image/svg+xml" href="/icons/logo-light.svg" media="(prefers-color-scheme: light)" />
+    <!-- ✅ Favicon: тёмная тема -->
+    <link rel="icon" type="image/svg+xml" href="/icons/logo-dark.svg" media="(prefers-color-scheme: dark)" />
+    
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
+    <title>ДокПоток IRIS — Система управления инженерной документацией</title>
+    
+    <!-- ✅ Мгновенное применение темы (без белой вспышки) -->
+    <script>
+      (function() {
+        const saved = localStorage.getItem('theme')
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (saved === 'dark' || (!saved && prefersDark)) {
+          document.documentElement.classList.add('dark')
+        }
+      })()
+    </script>
+    
+    <!-- ✅ Стили до загрузки React -->
+    <style>
+      html { background-color: #F5F7FA; }
+      html.dark { background-color: #0F172A; }
+      body { margin: 0; background-color: #F5F7FA; color: #1E2230; }
+      html.dark body { background-color: #0F172A; color: #F1F5F9; }
+    </style>
   </head>
+  
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>

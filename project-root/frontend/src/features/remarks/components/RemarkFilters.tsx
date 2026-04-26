@@ -20,7 +20,7 @@ const TAGS: { key: FilterKey; value: string; label: string; color: string }[] = 
   { key: 'severity', value: 'critical', label: 'Критичное', color: 'bg-red-100 text-red-700 border-red-200' },
   { key: 'severity', value: 'major', label: 'Значительное', color: 'bg-orange-100 text-orange-700 border-orange-200' },
   { key: 'severity', value: 'minor', label: 'Незначительное', color: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
-  { key: 'severity', value: 'note', label: 'Примечание', color: 'bg-gray-100 text-gray-600 border-gray-200' },
+  { key: 'severity', value: 'note', label: 'Примечание', color: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700' },
   // Status
   { key: 'status', value: 'new', label: 'Новое', color: 'bg-blue-100 text-blue-700 border-blue-200' },
   { key: 'status', value: 'in_progress', label: 'В работе', color: 'bg-purple-100 text-purple-700 border-purple-200' },
@@ -51,7 +51,7 @@ export const RemarkFilters: React.FC<Props> = ({ activeFilters, onToggle, onClea
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-gray-700">Фильтры</h3>
+        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Фильтры</h3>
         {activeFilters.length > 0 && (
           <button onClick={onClear} className="text-xs text-red-600 hover:text-red-800">
             ❌ Очистить все
@@ -75,7 +75,7 @@ export const RemarkFilters: React.FC<Props> = ({ activeFilters, onToggle, onClea
 
       {groups.map((group) => (
         <div key={group.title}>
-          <div className="text-[10px] text-gray-400 uppercase font-semibold mb-1">{group.title}</div>
+          <div className="text-[10px] text-gray-400 dark:text-gray-500 uppercase font-semibold mb-1">{group.title}</div>
           <div className="flex flex-wrap gap-1">
             {group.items.map((tag) => (
               <button
@@ -89,7 +89,7 @@ export const RemarkFilters: React.FC<Props> = ({ activeFilters, onToggle, onClea
                   })
                 }
                 className={`text-xs px-2 py-0.5 rounded-full border transition-opacity ${
-                  isActive(tag) ? tag.color + ' ring-1 ring-offset-1 ring-gray-300' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'
+                  isActive(tag) ? tag.color + ' ring-1 ring-offset-1 ring-gray-300' : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
                 }`}
               >
                 {tag.label}

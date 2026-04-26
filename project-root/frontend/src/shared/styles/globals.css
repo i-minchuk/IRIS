@@ -2,6 +2,90 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  :root {
+    /* Брендовые цвета — Светлая тема */
+    --color-brand-primary: #1E2230;
+    --color-brand-secondary: #8B9DAF;
+    --color-brand-accent: #4F7A4C;
+    --color-brand-bg: #F5F7FA;
+    --color-brand-surface: #FFFFFF;
+    --color-brand-border: #E2E8F0;
+
+    /* Шрифты */
+    --font-heading: 'Montserrat', 'Segoe UI', sans-serif;
+    --font-body: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  }
+
+  html {
+    background-color: var(--color-brand-bg);
+  }
+
+  html.dark {
+    background-color: #0F172A;
+  }
+
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background-color: var(--color-brand-bg);
+    color: var(--color-brand-primary);
+  }
+}
+
+/* Тёмная тема через класс .dark на html */
+.dark {
+  --color-brand-primary: #F1F5F9;
+  --color-brand-secondary: #94A3B8;
+  --color-brand-accent: #4F7A4C;
+  --color-brand-bg: #0F172A;
+  --color-brand-surface: #1E293B;
+  --color-brand-border: #334155;
+}
+
+@layer components {
+  /* Карточки */
+  .card {
+    background-color: var(--color-brand-surface);
+    border: 1px solid var(--color-brand-border);
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  }
+
+  .dark .card {
+    background-color: #1e293b;
+    border-color: #334155;
+  }
+
+  /* Ссылки навигации */
+  .nav-link {
+    color: #4b5563;
+    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+  }
+
+  .dark .nav-link {
+    color: #9ca3af;
+  }
+
+  .nav-link:hover {
+    color: var(--color-brand-accent);
+  }
+
+  .dark .nav-link:hover {
+    color: var(--color-brand-accent);
+  }
+
+  .nav-link-active {
+    color: var(--color-brand-accent);
+    border-bottom: 2px solid var(--color-brand-accent);
+  }
+
+  .dark .nav-link-active {
+    color: var(--color-brand-accent);
+  }
+}
+
 :root[data-theme="light"] {
   --bg-app: #f8fafc;
   --bg-topbar: #1e3a5f;
@@ -38,8 +122,4 @@
   --topbar-icon: #cbd5e1;
   --logo-iris-top: #60a5fa;
   --logo-iris: #3b82f6;
-}
-
-body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }

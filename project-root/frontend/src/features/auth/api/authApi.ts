@@ -4,15 +4,8 @@ import type { LoginRequest, RegisterRequest, TokenResponse, UserResponse } from 
 
 export const authApi = {
   async login(data: LoginRequest): Promise<TokenResponse> {
-    const formData = new FormData();
-    formData.append('username', data.email); // OAuth2 требует 'username'
-    formData.append('password', data.password);
-    
-    // Используем cookies по умолчанию (HttpOnly)
-    // Для JSON response добавьте: { params: { response_type: 'json' } }
-    const response = await apiClient.post<TokenResponse>('/auth/login', formData, {
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      withCredentials: true, // Важно для cookies
+    const response = await apiClient.post<TokenResponse>('/auth/login', data, {
+      withCredentials: true,
     });
     return response.data;
   },

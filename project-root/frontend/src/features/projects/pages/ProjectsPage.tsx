@@ -67,29 +67,29 @@ export const ProjectsPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-800">Проекты</h2>
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">Проекты</h2>
         <Button onClick={() => setShowCreate(true)}>+ Новый проект</Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1 space-y-3">
-          {loading && <p className="text-gray-500">Загрузка...</p>}
+          {loading && <p className="text-gray-500 dark:text-gray-400">Загрузка...</p>}
           {projects.map((project) => (
             <Card
               key={project.id}
-              className={`cursor-pointer transition-colors ${selectedProject?.id === project.id ? 'border-blue-500 bg-blue-50' : 'hover:bg-gray-50'}`}
+              className={`cursor-pointer transition-colors ${selectedProject?.id === project.id ? 'border-blue-500 bg-blue-50' : 'hover:bg-gray-50 dark:hover:bg-gray-800'}`}
               onClick={() => handleSelectProject(project)}
             >
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="font-semibold text-gray-800">{project.name}</h3>
-                  <p className="text-sm text-gray-500">{project.code}</p>
+                  <h3 className="font-semibold text-gray-800 dark:text-gray-200">{project.name}</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{project.code}</p>
                 </div>
-                <span className={`text-xs px-2 py-1 rounded-full ${project.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                <span className={`text-xs px-2 py-1 rounded-full ${project.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'}`}>
                   {project.status}
                 </span>
               </div>
-              {project.customer_name && <p className="text-xs text-gray-400 mt-1">{project.customer_name}</p>}
+              {project.customer_name && <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{project.customer_name}</p>}
             </Card>
           ))}
         </div>
@@ -97,24 +97,24 @@ export const ProjectsPage: React.FC = () => {
         <div className="lg:col-span-2">
           {projectDetail ? (
             <div className="space-y-4">
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h3 className="text-xl font-bold text-gray-800">{projectDetail.name}</h3>
-                    <p className="text-gray-500">{projectDetail.code} • {projectDetail.stage}</p>
+                    <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200">{projectDetail.name}</h3>
+                    <p className="text-gray-500 dark:text-gray-400">{projectDetail.code} • {projectDetail.stage}</p>
                   </div>
                   <Button variant="outline" onClick={handleAddStage}>+ Добавить стадию</Button>
                 </div>
 
                 <div className="space-y-2">
                   {projectDetail.stages?.map((stage) => (
-                    <div key={stage.id} className="border border-gray-200 rounded-lg overflow-hidden">
+                    <div key={stage.id} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
                       <button
-                        className="w-full px-4 py-3 bg-gray-50 flex justify-between items-center text-left hover:bg-gray-100"
+                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 flex justify-between items-center text-left hover:bg-gray-100 dark:hover:bg-gray-800"
                         onClick={() => setExpandedStage(expandedStage === stage.id ? null : stage.id)}
                       >
-                        <span className="font-medium text-gray-700">{stage.name}</span>
-                        <span className="text-gray-400">{expandedStage === stage.id ? '▼' : '▶'}</span>
+                        <span className="font-medium text-gray-700 dark:text-gray-300">{stage.name}</span>
+                        <span className="text-gray-400 dark:text-gray-500">{expandedStage === stage.id ? '▼' : '▶'}</span>
                       </button>
                       {expandedStage === stage.id && (
                         <div className="p-4 space-y-2">
@@ -122,13 +122,13 @@ export const ProjectsPage: React.FC = () => {
                             <Button size="sm" variant="outline" onClick={() => handleAddKit(stage.id)}>+ Комплект</Button>
                           </div>
                           {stage.kits?.map((kit) => (
-                            <div key={kit.id} className="border border-gray-100 rounded">
+                            <div key={kit.id} className="border border-gray-100 dark:border-gray-800 rounded">
                               <button
-                                className="w-full px-3 py-2 flex justify-between items-center text-left hover:bg-gray-50"
+                                className="w-full px-3 py-2 flex justify-between items-center text-left hover:bg-gray-50 dark:hover:bg-gray-800"
                                 onClick={() => setExpandedKit(expandedKit === kit.id ? null : kit.id)}
                               >
-                                <span className="text-sm font-medium text-gray-600">{kit.name}</span>
-                                <span className="text-gray-400 text-xs">{expandedKit === kit.id ? '▼' : '▶'}</span>
+                                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">{kit.name}</span>
+                                <span className="text-gray-400 dark:text-gray-500 text-xs">{expandedKit === kit.id ? '▼' : '▶'}</span>
                               </button>
                               {expandedKit === kit.id && (
                                 <div className="px-3 pb-3 space-y-1">
@@ -136,26 +136,26 @@ export const ProjectsPage: React.FC = () => {
                                     <Button size="sm" variant="ghost" onClick={() => handleAddSection(kit.id)}>+ Раздел</Button>
                                   </div>
                                   {kit.sections?.map((section: Section) => (
-                                    <div key={section.id} className="text-sm text-gray-500 pl-2 py-1 hover:bg-gray-50 rounded">
+                                    <div key={section.id} className="text-sm text-gray-500 dark:text-gray-400 pl-2 py-1 hover:bg-gray-50 dark:hover:bg-gray-800 rounded">
                                       {section.name}
                                     </div>
                                   ))}
-                                  {!kit.sections?.length && <p className="text-xs text-gray-400 pl-2">Нет разделов</p>}
+                                  {!kit.sections?.length && <p className="text-xs text-gray-400 dark:text-gray-500 pl-2">Нет разделов</p>}
                                 </div>
                               )}
                             </div>
                           ))}
-                          {!stage.kits?.length && <p className="text-sm text-gray-400">Нет комплектов</p>}
+                          {!stage.kits?.length && <p className="text-sm text-gray-400 dark:text-gray-500">Нет комплектов</p>}
                         </div>
                       )}
                     </div>
                   ))}
-                  {!projectDetail.stages?.length && <p className="text-gray-400">Нет стадий</p>}
+                  {!projectDetail.stages?.length && <p className="text-gray-400 dark:text-gray-500">Нет стадий</p>}
                 </div>
               </div>
             </div>
           ) : (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center text-gray-400">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center text-gray-400 dark:text-gray-500">
               Выберите проект для просмотра структуры
             </div>
           )}
@@ -169,7 +169,7 @@ export const ProjectsPage: React.FC = () => {
             <Input placeholder="Код проекта" value={newProject.code} onChange={(e) => setNewProject({ ...newProject, code: e.target.value })} />
             <Input placeholder="Заказчик" value={newProject.customer_name} onChange={(e) => setNewProject({ ...newProject, customer_name: e.target.value })} />
             <select
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm"
               value={newProject.stage}
               onChange={(e) => setNewProject({ ...newProject, stage: e.target.value })}
             >

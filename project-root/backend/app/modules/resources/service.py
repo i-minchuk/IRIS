@@ -23,6 +23,33 @@ class WorkloadService:
             return False
         age = (datetime.utcnow() - self._cache_timestamp[key]).total_seconds()
         return age < self._CACHE_TTL
+
+    @staticmethod
+    def _generate_week_ranges(weeks_count: int = 4) -> List[Dict[str, str]]:
+        """Generate ISO week ranges ending with the current week."""
+        weeks = []
+        today = datetime.utcnow().date()
+        # Align to Monday of current week
+        monday = today - timedelta(days=today.weekday())
+        for i in range(weeks_count - 1, -1, -1):
+            week_monday = monday - timedelta(weeks=i)
+            week_sunday = week_monday + timedelta(days=6)
+            label = week_monday.strftime("%Y-W%W")
+            weeks.append({
+                "label": label,
+                "start": week_monday.isoformat(),
+                "end": week_sunday.isoformat(),
+            })
+        return weeks
+
+    @staticmethod
+    def _calculate_utilization_status(utilization: float) -> str:
+        """Return status based on utilization percentage."""
+        if utilization < 50:
+            return "free"
+        if utilization < 100:
+            return "busy"
+        return "overload"
     
     async def get_team_workload(self) -> Dict[str, Any]:
         """Get comprehensive team workload analytics with caching."""

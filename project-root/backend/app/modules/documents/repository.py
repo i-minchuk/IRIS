@@ -50,7 +50,7 @@ class DocumentRepository:
         doc = Document(**data)
         self.db.add(doc)
         await self.db.commit()
-        await db.refresh(doc)
+        await self.db.refresh(doc)
         return doc
     
     async def update(self, doc: Document, data: Dict[str, Any]) -> Document:
@@ -64,7 +64,7 @@ class DocumentRepository:
                 setattr(doc, key, value)
         
         await self.db.commit()
-        await db.refresh(doc)
+        await self.db.refresh(doc)
         return doc
     
     async def delete(self, doc: Document) -> bool:
@@ -78,7 +78,7 @@ class DocumentRepository:
         doc.locked_by_id = user_id
         doc.locked_at = datetime.now(timezone.utc)
         await self.db.commit()
-        await db.refresh(doc)
+        await self.db.refresh(doc)
         return doc
     
     async def unlock(self, doc: Document) -> Document:
@@ -86,7 +86,7 @@ class DocumentRepository:
         doc.locked_by_id = None
         doc.locked_at = None
         await self.db.commit()
-        await db.refresh(doc)
+        await self.db.refresh(doc)
         return doc
     
     async def get_all_remarks(
@@ -127,7 +127,7 @@ class RevisionRepository:
         revision = Revision(**data)
         self.db.add(revision)
         await self.db.commit()
-        await db.refresh(revision)
+        await self.db.refresh(revision)
         return revision
     
     async def update_document_revision(
@@ -156,7 +156,7 @@ class RemarkRepository:
         remark = Remark(**data)
         self.db.add(remark)
         await self.db.commit()
-        await db.refresh(remark)
+        await self.db.refresh(remark)
         return remark
     
     async def get_by_id(self, id: int) -> Optional[Remark]:
@@ -183,7 +183,7 @@ class RemarkRepository:
             remark.confirmed_at = datetime.utcnow()
         
         await self.db.commit()
-        await db.refresh(remark)
+        await self.db.refresh(remark)
         return remark
 
 
@@ -223,5 +223,5 @@ class ApprovalWorkflowRepository:
             self.db.add(stage)
         
         await self.db.commit()
-        await db.refresh(workflow)
+        await self.db.refresh(workflow)
         return workflow

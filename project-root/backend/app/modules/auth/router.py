@@ -48,11 +48,17 @@ async def login_json(
     Для JSON response используйте query параметр ?response_type=json
     """
     repo = UserRepository(db)
-    user = await repo.get_by_email(email=login_data.email)
+    
+    # Проверяем вход по email или username
+    if login_data.email:
+        user = await repo.get_by_email(email=login_data.email)
+    else:
+        user = await repo.get_by_username(username=login_data.username)
+    
     if not user or not security.verify_password(login_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
+            detail="Incorrect email/username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
@@ -124,7 +130,7 @@ async def refresh_token(
     request: Request,
     db: AsyncSession = Depends(get_db),
     response: Response = None,
-    token_data: RefreshTokenRequest = Depends(),
+    token_data: RefreshTokenRequest,
 ):
     """Обновление access token по refresh token.
     
@@ -169,7 +175,7 @@ async def refresh_token(
     else:
         from app.modules.auth.cookies import set_auth_cookies
         set_auth_cookies(response, access_token, new_refresh_token)
-        
+
         return {
             "access_token": access_token,
             "refresh_token": new_refresh_token,

@@ -173,9 +173,9 @@ export const DocumentsPage: React.FC = () => {
       {/* Toolbar */}
       <div className="flex justify-between items-center shrink-0">
         <div className="flex items-center gap-3">
-          <h2 className="text-xl font-bold text-gray-800">Документы</h2>
+          <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200">Документы</h2>
           <select
-            className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm"
+            className="rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-1.5 text-sm"
             value={selectedProjectId || ''}
             onChange={(e) => setSelectedProjectId(Number(e.target.value))}
           >
@@ -190,8 +190,8 @@ export const DocumentsPage: React.FC = () => {
       {/* Main content: Tree + Details */}
       <div className="flex-1 grid grid-cols-12 gap-4 min-h-0">
         {/* Left: Project Tree */}
-        <div className="col-span-3 bg-white rounded-lg border border-gray-200 overflow-auto p-3">
-          {loading && <p className="text-gray-500 text-sm">Загрузка…</p>}
+        <div className="col-span-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-auto p-3">
+          {loading && <p className="text-gray-500 dark:text-gray-400 text-sm">Загрузка…</p>}
           {tree && (
             <ProjectTreeView
               tree={tree}
@@ -200,20 +200,20 @@ export const DocumentsPage: React.FC = () => {
             />
           )}
           {!loading && !tree && (
-            <p className="text-gray-400 text-sm">Выберите проект</p>
+            <p className="text-gray-400 dark:text-gray-500 text-sm">Выберите проект</p>
           )}
         </div>
 
         {/* Right: Document details */}
-        <div className="col-span-9 bg-white rounded-lg border border-gray-200 overflow-auto flex flex-col">
+        <div className="col-span-9 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-auto flex flex-col">
           {selectedDoc ? (
             <>
               {/* Header */}
-              <div className="border-b border-gray-200 px-4 py-3 shrink-0">
+              <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-3 shrink-0">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="text-lg font-bold text-gray-800">{selectedDoc.number}</h3>
-                    <p className="text-sm text-gray-500">{selectedDoc.name}</p>
+                    <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">{selectedDoc.number}</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{selectedDoc.name}</p>
                   </div>
                   <Badge className={statusColors[selectedDoc.status] || ''}>{selectedDoc.status}</Badge>
                 </div>
@@ -236,7 +236,7 @@ export const DocumentsPage: React.FC = () => {
                           setEditorContent(body);
                         }
                       }}
-                      className={`text-sm font-medium pb-1 border-b-2 transition-colors ${activeTab === tab ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                      className={`text-sm font-medium pb-1 border-b-2 transition-colors ${activeTab === tab ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
                     >
                       {tab === 'info' && 'Информация'}
                       {tab === 'editor' && 'Редактор'}
@@ -259,7 +259,7 @@ export const DocumentsPage: React.FC = () => {
                       </div>
                     )}
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
                         {saveStatus === 'saved' && '💾 Сохранено'}
                         {saveStatus === 'saving' && '⏳ Сохранение...'}
                         {saveStatus === 'unsaved' && '● Не сохранено'}
@@ -294,13 +294,13 @@ export const DocumentsPage: React.FC = () => {
                 {activeTab === 'info' && (
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div><span className="text-gray-500">Тип:</span> <span className="ml-2 font-medium">{selectedDoc.doc_type}</span></div>
-                      <div><span className="text-gray-500">Автор ID:</span> <span className="ml-2 font-medium">{selectedDoc.author_id}</span></div>
-                      <div><span className="text-gray-500">CRS код:</span> <span className="ml-2 font-medium">{selectedDoc.crs_code || '—'}</span></div>
-                      <div><span className="text-gray-500">CRS утверждён:</span> <span className="ml-2 font-medium">{selectedDoc.crs_approved_date || '—'}</span></div>
+                      <div><span className="text-gray-500 dark:text-gray-400">Тип:</span> <span className="ml-2 font-medium">{selectedDoc.doc_type}</span></div>
+                      <div><span className="text-gray-500 dark:text-gray-400">Автор ID:</span> <span className="ml-2 font-medium">{selectedDoc.author_id}</span></div>
+                      <div><span className="text-gray-500 dark:text-gray-400">CRS код:</span> <span className="ml-2 font-medium">{selectedDoc.crs_code || '—'}</span></div>
+                      <div><span className="text-gray-500 dark:text-gray-400">CRS утверждён:</span> <span className="ml-2 font-medium">{selectedDoc.crs_approved_date || '—'}</span></div>
                       {selectedDoc.locked_by_user && (
                         <div className="col-span-2">
-                          <span className="text-gray-500">Блокировка:</span>{' '}
+                          <span className="text-gray-500 dark:text-gray-400">Блокировка:</span>{' '}
                           <span className="ml-2 font-medium text-amber-600">
                             🔒 {selectedDoc.locked_by_user.full_name}
                           </span>
@@ -308,8 +308,8 @@ export const DocumentsPage: React.FC = () => {
                       )}
                     </div>
                     <div className="mt-4">
-                      <h4 className="text-sm font-semibold text-gray-700 mb-2">Переменные документа</h4>
-                      <pre className="bg-gray-50 rounded p-3 text-xs overflow-auto">{JSON.stringify(selectedDoc.variables_snapshot, null, 2)}</pre>
+                      <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Переменные документа</h4>
+                      <pre className="bg-gray-50 dark:bg-gray-900 rounded p-3 text-xs overflow-auto">{JSON.stringify(selectedDoc.variables_snapshot, null, 2)}</pre>
                     </div>
                   </div>
                 )}
@@ -317,15 +317,15 @@ export const DocumentsPage: React.FC = () => {
                 {activeTab === 'revisions' && (
                   <div className="space-y-3">
                     {selectedDoc.revisions?.map((rev) => (
-                      <div key={rev.id} className="border border-gray-100 rounded-lg p-3">
+                      <div key={rev.id} className="border border-gray-100 dark:border-gray-800 rounded-lg p-3">
                         <div className="flex justify-between items-center">
                           <span className="font-semibold text-sm">Ревизия {rev.number}</span>
                           <Badge className={rev.status === 'approved' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}>{rev.status}</Badge>
                         </div>
-                        {rev.trigger_type && <p className="text-xs text-gray-400 mt-1">Причина: {rev.trigger_type}</p>}
+                        {rev.trigger_type && <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Причина: {rev.trigger_type}</p>}
                       </div>
                     ))}
-                    {!selectedDoc.revisions?.length && <p className="text-gray-400">Нет ревизий</p>}
+                    {!selectedDoc.revisions?.length && <p className="text-gray-400 dark:text-gray-500">Нет ревизий</p>}
                     <Button size="sm" onClick={async () => {
                       const num = prompt('Номер ревизии (A, B, C...):');
                       if (num) {
@@ -346,7 +346,7 @@ export const DocumentsPage: React.FC = () => {
                         <div className="flex justify-between items-start">
                           <div>
                             <h4 className="font-semibold text-sm">{remark.title}</h4>
-                            <p className="text-xs text-gray-600 mt-1">{(remark as any).description || ''}</p>
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{(remark as any).description || ''}</p>
                           </div>
                           <div className="flex items-center space-x-2">
                             <Badge className={severityColors[remark.severity] || ''}>{remark.severity}</Badge>
@@ -355,13 +355,13 @@ export const DocumentsPage: React.FC = () => {
                             )}
                           </div>
                         </div>
-                        <div className="mt-2 text-xs text-gray-400 flex justify-between">
+                        <div className="mt-2 text-xs text-gray-400 dark:text-gray-500 flex justify-between">
                           <span>{remark.remark_type}</span>
                           <span>{remark.status}</span>
                         </div>
                       </div>
                     ))}
-                    {!selectedDoc.remarks?.length && <p className="text-gray-400">Нет замечаний</p>}
+                    {!selectedDoc.remarks?.length && <p className="text-gray-400 dark:text-gray-500">Нет замечаний</p>}
                   </div>
                 )}
 
@@ -379,9 +379,9 @@ export const DocumentsPage: React.FC = () => {
 
                 {activeTab === 'preview' && (
                   <div className="space-y-4">
-                    <div className="rounded-md border border-gray-200 bg-gray-50 p-4">
-                      <h4 className="text-sm font-semibold text-gray-700 mb-2">Рендеринг документа</h4>
-                      <div className="whitespace-pre-wrap text-sm text-gray-800 bg-white rounded p-3 border border-gray-100 min-h-[120px]">
+                    <div className="rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-4">
+                      <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Рендеринг документа</h4>
+                      <div className="whitespace-pre-wrap text-sm text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-800 rounded p-3 border border-gray-100 dark:border-gray-800 min-h-[120px]">
                         {renderedContent || 'Нет содержимого'}
                       </div>
                     </div>
@@ -390,12 +390,12 @@ export const DocumentsPage: React.FC = () => {
               </div>
 
               {/* Detail Panels (P6-стиль) */}
-              <div className="shrink-0 border-t border-gray-200 p-3 bg-white">
+              <div className="shrink-0 border-t border-gray-200 dark:border-gray-700 p-3 bg-white dark:bg-gray-800">
                 <DocumentDetailPanels doc={selectedDoc} />
               </div>
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center text-gray-400">
+            <div className="flex-1 flex items-center justify-center text-gray-400 dark:text-gray-500">
               Выберите документ из дерева проекта
             </div>
           )}
@@ -408,7 +408,7 @@ export const DocumentsPage: React.FC = () => {
           <div className="space-y-4">
             <Input placeholder="Номер документа" value={newDoc.number} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewDoc({ ...newDoc, number: e.target.value })} />
             <Input placeholder="Название" value={newDoc.name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewDoc({ ...newDoc, name: e.target.value })} />
-            <select className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" value={newDoc.doc_type} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setNewDoc({ ...newDoc, doc_type: e.target.value })}>
+            <select className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm" value={newDoc.doc_type} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setNewDoc({ ...newDoc, doc_type: e.target.value })}>
               <option value="KM">КМ (конструкторские)</option>
               <option value="PD">ПД (проектная документация)</option>
               <option value="AK">АК (арматурные конструкции)</option>
@@ -429,8 +429,8 @@ export const DocumentsPage: React.FC = () => {
         <Modal title="Новое замечание" isOpen={showRemarkForm} onClose={() => setShowRemarkForm(false)}>
           <div className="space-y-4">
             <Input placeholder="Заголовок" value={newRemark.title} onChange={(e) => setNewRemark({ ...newRemark, title: e.target.value })} />
-            <textarea className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" rows={3} placeholder="Описание" value={newRemark.description} onChange={(e) => setNewRemark({ ...newRemark, description: e.target.value })} />
-            <select className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" value={newRemark.severity} onChange={(e) => setNewRemark({ ...newRemark, severity: e.target.value })}>
+            <textarea className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm" rows={3} placeholder="Описание" value={newRemark.description} onChange={(e) => setNewRemark({ ...newRemark, description: e.target.value })} />
+            <select className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm" value={newRemark.severity} onChange={(e) => setNewRemark({ ...newRemark, severity: e.target.value })}>
               <option value="minor">Незначительное</option>
               <option value="major">Значительное</option>
               <option value="critical">Критичное</option>

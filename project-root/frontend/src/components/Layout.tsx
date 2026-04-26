@@ -7,12 +7,12 @@ interface LayoutProps {
 }
 
 const navItems = [
-  { to: '/dashboard', label: 'Руководители', cls: 'iris-tab--leaders' },
-  { to: '/projects', label: 'Инженерные группы', cls: 'iris-tab--groups' },
-  { to: '/production', label: 'Производство', cls: 'iris-tab--production' },
-  { to: '/documents', label: 'Документооборот', cls: 'iris-tab--documents' },
-  { to: '/approvals', label: 'Согласования', cls: 'iris-tab--approvals' },
-  { to: '/audit', label: 'Аудит и контроль', cls: 'iris-tab--audit' },
+  { to: '/dashboard', label: 'Руководители' },
+  { to: '/projects', label: 'Инженерные группы' },
+  { to: '/production', label: 'Производство' },
+  { to: '/documents', label: 'Документооборот' },
+  { to: '/approvals', label: 'Согласования' },
+  { to: '/audit', label: 'Аудит и контроль' },
 ];
 
 export default function Layout({ children }: LayoutProps) {
@@ -23,19 +23,22 @@ export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const userMenuRef = useRef<HTMLDivElement | null>(null);
 
+  // Инициализация темы
   useEffect(() => {
     try {
       const savedTheme = localStorage.getItem('iris-theme');
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       const isDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
-
+      setIsDarkMode(isDark);
       document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
     } catch {
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setIsDarkMode(prefersDark);
       document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
     }
   }, []);
 
+  // Закрытие меню по клику вне и Escape
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -65,13 +68,11 @@ export default function Layout({ children }: LayoutProps) {
   const toggleTheme = () => {
     const newMode = !isDarkMode;
     setIsDarkMode(newMode);
-
     try {
       localStorage.setItem('iris-theme', newMode ? 'dark' : 'light');
     } catch {
       // ignore
     }
-
     document.documentElement.setAttribute('data-theme', newMode ? 'dark' : 'light');
   };
 
@@ -87,100 +88,144 @@ export default function Layout({ children }: LayoutProps) {
     <div
       className="min-h-screen"
       style={{
-        backgroundColor: 'var(--bg-app)',
-        color: 'var(--text-primary)',
+        backgroundColor: 'var(--iris-bg)',
+        color: 'var(--iris-text)',
+        fontFamily: 'var(--font-body)',
       }}
     >
+      {/* ===== ШАПКА ===== */}
       <header
         className="sticky top-0 z-50 border-b"
         style={{
-          background:
-            'linear-gradient(90deg, color-mix(in srgb, var(--bg-topbar) 92%, black 8%), var(--bg-topbar))',
-          borderColor: 'var(--border-default)',
+          backgroundColor: 'var(--iris-dark)',
+          borderColor: 'var(--iris-border)',
         }}
       >
         <div className="flex min-h-14 items-center justify-between gap-4 px-4 md:px-6">
+          {/* Логотип + Навигация */}
           <div className="flex min-w-0 items-center gap-6">
             <Link to="/dashboard" className="flex items-center gap-3 no-underline">
-              <div
-                className="flex h-9 w-9 items-center justify-center rounded-xl text-sm font-bold shadow-sm"
-                style={{
-                  background:
-                    'linear-gradient(180deg, var(--logo-iris-top), var(--logo-iris))',
-                  color: 'var(--text-inverse)',
-                }}
-              >
-                IRIS
-              </div>
-
-              <div
-                className="text-lg font-semibold tracking-tight"
-                style={{ color: 'var(--text-inverse)' }}
-              >
-                ДокПоток IRIS
+              {/* Иконка приложения */}
+              <img
+                src="/Иконка ДокПоток IRIS.png"
+                alt="ДокПоток IRIS"
+                className="h-9 w-9 rounded-lg object-contain"
+              />
+              {/* Текстовый логотип */}
+              <div className="flex items-baseline gap-2">
+                <span
+                  className="text-lg font-bold tracking-tight"
+                  style={{
+                    fontFamily: 'var(--font-heading)',
+                    color: 'white',
+                    letterSpacing: '2px',
+                  }}
+                >
+                  ДокПоток
+                </span>
+                <span
+                  className="text-xs font-bold px-2 py-0.5 rounded"
+                  style={{
+                    fontFamily: 'var(--font-heading)',
+                    backgroundColor: 'var(--iris-primary)',
+                    color: 'white',
+                    letterSpacing: '1px',
+                  }}
+                >
+                  IRIS
+                </span>
               </div>
             </Link>
 
+            {/* Навигация */}
             <nav
-              className="hidden items-end gap-2 overflow-x-auto pt-2 lg:flex"
+              className="hidden items-end gap-1 overflow-x-auto pt-2 lg:flex"
               aria-label="Главная навигация"
             >
               {navItems.map((item) => {
                 const active = isActive(item.to);
-
                 return (
                   <Link
                     key={item.to}
                     to={item.to}
-                    className={`iris-tab ${item.cls} ${active ? 'is-active' : ''}`}
+                    className="relative px-3 py-2 text-sm font-medium rounded-lg transition-all duration-150 whitespace-nowrap"
+                    style={{
+                      color: active ? 'white' : 'rgba(255,255,255,0.7)',
+                      backgroundColor: active ? 'var(--iris-primary)' : 'transparent',
+                      fontFamily: 'var(--font-body)',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!active) {
+                        e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)';
+                        e.currentTarget.style.color = 'white';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!active) {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                        e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
+                      }
+                    }}
                     aria-current={active ? 'page' : undefined}
                   >
                     {item.label}
+                    {active && (
+                      <span
+                        className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-4/5 rounded-full"
+                        style={{ backgroundColor: 'var(--iris-accent)' }}
+                      />
+                    )}
                   </Link>
                 );
               })}
             </nav>
           </div>
 
+          {/* Правая панель: тема, уведомления, пользователь */}
           <div className="flex shrink-0 items-center gap-2">
+            {/* Переключатель темы */}
             <button
               type="button"
               onClick={toggleTheme}
-              className="flex h-10 w-10 items-center justify-center rounded-md transition-colors duration-150"
-              style={{ color: 'var(--topbar-icon)' }}
+              className="flex h-10 w-10 items-center justify-center rounded-lg transition-all duration-150"
+              style={{ color: 'rgba(255,255,255,0.7)' }}
               aria-label="Переключить тему"
               title={isDarkMode ? 'Светлая тема' : 'Тёмная тема'}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--topbar-hover)';
+                e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)';
+                e.currentTarget.style.color = 'white';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
               }}
             >
               {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
             </button>
 
+            {/* Уведомления */}
             <button
               type="button"
-              className="relative flex h-10 w-10 items-center justify-center rounded-md transition-colors duration-150"
-              style={{ color: 'var(--notification-icon)' }}
+              className="relative flex h-10 w-10 items-center justify-center rounded-lg transition-all duration-150"
+              style={{ color: 'rgba(255,255,255,0.7)' }}
               aria-label="Уведомления"
               title="Уведомления"
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--topbar-hover)';
+                e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)';
+                e.currentTarget.style.color = 'white';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
               }}
             >
               <Bell size={18} />
               {unreadCount > 0 ? (
                 <span
-                  className="absolute right-1.5 top-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-semibold leading-none"
+                  className="absolute right-1 top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-bold leading-none"
                   style={{
-                    backgroundColor: 'var(--notification-badge)',
-                    color: 'var(--text-inverse)',
-                    border: '1px solid var(--bg-topbar)',
+                    backgroundColor: 'var(--iris-error)',
+                    color: 'white',
                   }}
                 >
                   {unreadCount > 9 ? '9+' : unreadCount}
@@ -188,16 +233,17 @@ export default function Layout({ children }: LayoutProps) {
               ) : null}
             </button>
 
+            {/* Меню пользователя */}
             <div className="relative" ref={userMenuRef}>
               <button
                 type="button"
                 onClick={() => setShowUserMenu((prev) => !prev)}
-                className="flex items-center gap-2 rounded-md px-2 py-2 text-sm font-medium transition-colors duration-150"
-                style={{ color: 'var(--text-inverse)' }}
+                className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm font-medium transition-all duration-150"
+                style={{ color: 'white' }}
                 aria-haspopup="menu"
                 aria-expanded={showUserMenu}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'var(--topbar-hover)';
+                  e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)';
                 }}
                 onMouseLeave={(e) => {
                   if (!showUserMenu) {
@@ -207,62 +253,71 @@ export default function Layout({ children }: LayoutProps) {
               >
                 <div
                   className="flex h-8 w-8 items-center justify-center rounded-full"
-                  style={{ backgroundColor: 'rgba(255,255,255,0.08)' }}
+                  style={{ backgroundColor: 'var(--iris-primary)' }}
                 >
-                  <User size={16} />
+                  <User size={16} color="white" />
                 </div>
                 <span className="hidden md:inline">Администратор</span>
                 <ChevronDown size={16} />
               </button>
 
+              {/* Выпадающее меню */}
               {showUserMenu ? (
                 <div
-                  className="absolute right-0 mt-2 w-64 rounded-lg border shadow-lg"
+                  className="absolute right-0 mt-2 w-64 rounded-xl border shadow-lg"
                   style={{
-                    backgroundColor: 'var(--bg-surface)',
-                    borderColor: 'var(--border-default)',
-                    color: 'var(--text-primary)',
+                    backgroundColor: 'var(--iris-surface)',
+                    borderColor: 'var(--iris-border)',
+                    color: 'var(--iris-text)',
+                    boxShadow: 'var(--shadow-lg)',
                   }}
                   role="menu"
                 >
+                  {/* Заголовок меню */}
                   <div
                     className="border-b px-4 py-3"
-                    style={{ borderColor: 'var(--border-default)' }}
+                    style={{ borderColor: 'var(--iris-border)' }}
                   >
-                    <div className="font-semibold">Администратор</div>
+                    <div
+                      className="font-semibold"
+                      style={{ fontFamily: 'var(--font-heading)' }}
+                    >
+                      Администратор
+                    </div>
                     <div
                       className="text-sm"
-                      style={{ color: 'var(--text-secondary)' }}
+                      style={{ color: 'var(--iris-text-muted)' }}
                     >
                       admin@iris-demo.com
                     </div>
                   </div>
 
+                  {/* Пункты меню */}
                   <div className="p-2">
                     <button
                       type="button"
-                      className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors duration-150"
-                      style={{ color: 'var(--text-primary)' }}
+                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-all duration-150"
+                      style={{ color: 'var(--iris-text)' }}
                       role="menuitem"
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = 'var(--topbar-hover)';
+                        e.currentTarget.style.backgroundColor = 'var(--iris-bg)';
                       }}
                       onMouseLeave={(e) => {
                         e.currentTarget.style.backgroundColor = 'transparent';
                       }}
                     >
-                      <User size={16} />
+                      <User size={16} style={{ color: 'var(--iris-primary)' }} />
                       Профиль
                     </button>
 
                     <button
                       type="button"
-                      className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors duration-150"
-                      style={{ color: 'var(--error)' }}
+                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-all duration-150"
+                      style={{ color: 'var(--iris-error)' }}
                       role="menuitem"
                       onClick={handleLogout}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = 'var(--topbar-hover)';
+                        e.currentTarget.style.backgroundColor = '#FDEDEC';
                       }}
                       onMouseLeave={(e) => {
                         e.currentTarget.style.backgroundColor = 'transparent';
@@ -279,11 +334,13 @@ export default function Layout({ children }: LayoutProps) {
         </div>
       </header>
 
+      {/* ===== ОСНОВНОЙ КОНТЕНТ ===== */}
       <main
         className="px-4 py-6 md:px-6"
         style={{
-          backgroundColor: 'var(--bg-app)',
-          color: 'var(--text-primary)',
+          backgroundColor: 'var(--iris-bg)',
+          color: 'var(--iris-text)',
+          minHeight: 'calc(100vh - 56px)',
         }}
       >
         {children ?? <Outlet />}

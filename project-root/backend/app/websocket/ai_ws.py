@@ -1,7 +1,6 @@
 from fastapi import WebSocket, WebSocketDisconnect
 from typing import Dict, Set
 import json
-from app.ai.service import AIService
 from app.ai.prompts import INLINE_SUGGESTION_PROMPT
 
 class ConnectionManager:
@@ -20,7 +19,6 @@ class ConnectionManager:
             await self.active_connections[client_id].send_json(data)
 
 manager = ConnectionManager()
-ai_service = AIService()
 
 async def inline_ai_endpoint(websocket: WebSocket, client_id: str):
     """WebSocket для inline-подсказок при редактировании"""
@@ -44,7 +42,7 @@ async def inline_ai_endpoint(websocket: WebSocket, client_id: str):
                     suggestions.append({
                         "type": "reference",
                         "text": "ГОСТ 3262-75",
-                        "display": "📖 ГОСТ 3262-75 (трубы водогазопроводные)",
+                        "display": "📖 ГОСТ 3262-75",
                         "confidence": 0.85,
                         "description": "Стандартный ГОСТ для трубопроводов"
                     })

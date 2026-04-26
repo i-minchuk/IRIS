@@ -3,19 +3,21 @@
 import time
 import logging
 
-from fastapi import Request, Response
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import Response
 
 logger = logging.getLogger(__name__)
 
 
-class PerformanceMiddleware:
+class PerformanceMiddleware(BaseHTTPMiddleware):
     """Middleware to monitor and log slow requests."""
     
     def __init__(self, app, threshold: float = 1.0):
-        self.app = app
+        super().__init__(app)
         self.threshold = threshold
     
-    async def __call__(self, request: Request, call_next):
+    async def dispatch(self, request: Request, call_next) -> Response:
         start_time = time.time()
         
         response = await call_next(request)

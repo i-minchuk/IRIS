@@ -84,7 +84,7 @@ export const GanttChart: React.FC<Props> = ({ nodes, edges, onNodeClick }) => {
   };
 
   return (
-    <svg width={layout.width} height={layout.height} className="bg-white rounded-lg border border-gray-200">
+    <svg width={layout.width} height={layout.height} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
       {/* Header background */}
       <rect x={0} y={0} width={layout.width} height={HEADER_HEIGHT} fill="#f9fafb" />
       <line x1={0} y1={HEADER_HEIGHT} x2={layout.width} y2={HEADER_HEIGHT} stroke="#e5e7eb" />

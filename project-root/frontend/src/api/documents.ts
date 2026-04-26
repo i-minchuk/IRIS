@@ -9,10 +9,11 @@ export interface DocumentItem {
   doc_type: string;
   status: string;
   crs_code?: string;
-  author_id: number;
+  author_id?: number;
   project_id: number;
   section_id?: number;
-  created_at: string;
+  current_revision_id?: number | null;
+  created_at?: string;
 }
 
 export interface LockedByUser {

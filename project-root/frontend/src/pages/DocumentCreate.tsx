@@ -94,7 +94,7 @@ export default function DocumentCreate() {
         <button
           type="button"
           onClick={() => navigate(projectId ? `/projects/${projectId}` : '/documents')}
-          className="p-2 rounded hover:bg-gray-100 transition-colors"
+          className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
         >
           <ArrowLeft size={18} style={{ color: 'var(--text-secondary)' }} />
         </button>
@@ -203,10 +203,10 @@ export default function DocumentCreate() {
                       {tmpl.description}
                     </div>
                     <div className="flex gap-2 mt-2">
-                      <span className="text-xs px-2 py-0.5 rounded bg-gray-100" style={{ color: 'var(--text-tertiary)' }}>
+                      <span className="text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800" style={{ color: 'var(--text-tertiary)' }}>
                         {tmpl.docType}
                       </span>
-                      <span className="text-xs px-2 py-0.5 rounded bg-gray-100" style={{ color: 'var(--text-tertiary)' }}>
+                      <span className="text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800" style={{ color: 'var(--text-tertiary)' }}>
                         {tmpl.discipline}
                       </span>
                     </div>

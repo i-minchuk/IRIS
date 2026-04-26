@@ -11,6 +11,15 @@ const apiClient = axios.create({
   withCredentials: true, // Отправляем cookies автоматически
 });
 
+// Attach access token to every request
+apiClient.interceptors.request.use((config) => {
+  const token = localStorage.getItem('access_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 // Перехватчик для обработки ошибок (например, 401)
 apiClient.interceptors.response.use(
   (response) => response,

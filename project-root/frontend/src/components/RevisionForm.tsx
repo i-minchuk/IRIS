@@ -162,11 +162,11 @@ export default function RevisionForm({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Описание изменений
           </label>
           <textarea
-            className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 min-h-[100px]"
+            className="block w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 min-h-[100px]"
             placeholder="Опишите изменения в этой ревизии..."
             value={formData.change_log}
             onChange={(e) => setFormData({ ...formData, change_log: e.target.value })}
@@ -175,7 +175,7 @@ export default function RevisionForm({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Файл ревизии (опционально)
           </label>
           <div
@@ -184,7 +184,7 @@ export default function RevisionForm({
                 ? 'border-primary-500 bg-primary-50'
                 : formData.file
                 ? 'border-green-500 bg-green-50'
-                : 'border-gray-300 hover:border-gray-400'
+                : 'border-gray-300 dark:border-gray-600 hover:border-gray-400'
             }`}
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
@@ -205,11 +205,11 @@ export default function RevisionForm({
               </div>
             ) : (
               <>
-                <Upload size={32} className="mx-auto text-gray-400 mb-2" />
-                <p className="text-sm text-gray-600 mb-1">
+                <Upload size={32} className="mx-auto text-gray-400 dark:text-gray-500 mb-2" />
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
                   Перетащите файл сюда или нажмите для выбора
                 </p>
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-gray-400 dark:text-gray-500">
                   Поддерживаются: PDF, DWG, DOCX (до 50MB)
                 </p>
                 <input
@@ -230,7 +230,7 @@ export default function RevisionForm({
           </div>
         </div>
 
-        <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-500">
+        <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 text-xs text-gray-500 dark:text-gray-400">
           <p className="font-medium mb-1">Примечание:</p>
           <ul className="list-disc list-inside space-y-1">
             <li>Ревизия будет создана в статусе "Черновик"</li>

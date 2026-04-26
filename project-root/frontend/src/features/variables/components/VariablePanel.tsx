@@ -51,19 +51,19 @@ export const VariablePanel: React.FC<Props> = ({ projectId, documentId, onChange
         <input
           type="text"
           placeholder="Ключ"
-          className="rounded-md border border-gray-300 px-2 py-1 text-sm"
+          className="rounded-md border border-gray-300 dark:border-gray-600 px-2 py-1 text-sm"
           value={newVar.key}
           onChange={(e) => setNewVar((p) => ({ ...p, key: e.target.value }))}
         />
         <input
           type="text"
           placeholder="Значение"
-          className="rounded-md border border-gray-300 px-2 py-1 text-sm"
+          className="rounded-md border border-gray-300 dark:border-gray-600 px-2 py-1 text-sm"
           value={newVar.value}
           onChange={(e) => setNewVar((p) => ({ ...p, value: e.target.value }))}
         />
         <select
-          className="rounded-md border border-gray-300 px-2 py-1 text-sm"
+          className="rounded-md border border-gray-300 dark:border-gray-600 px-2 py-1 text-sm"
           value={newVar.scope}
           onChange={(e) => setNewVar((p) => ({ ...p, scope: e.target.value as 'project' | 'document' }))}
         >
@@ -78,11 +78,11 @@ export const VariablePanel: React.FC<Props> = ({ projectId, documentId, onChange
         </button>
       </div>
 
-      {loading && <div className="text-sm text-gray-500">Загрузка…</div>}
+      {loading && <div className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Загрузка…</div>}
 
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b text-left text-gray-500">
+          <tr className="border-b text-left text-gray-500 dark:text-gray-400 dark:text-gray-500">
             <th className="pb-1 pr-4">Ключ</th>
             <th className="pb-1 pr-4">Значение</th>
             <th className="pb-1 pr-4">Область</th>
@@ -90,12 +90,12 @@ export const VariablePanel: React.FC<Props> = ({ projectId, documentId, onChange
         </thead>
         <tbody>
           {variables.map((v) => (
-            <tr key={v.id} className="border-b border-gray-100">
-              <td className="py-1 pr-4 font-mono text-xs text-gray-700">{'{{' + v.key + '}}'}</td>
+            <tr key={v.id} className="border-b border-gray-100 dark:border-gray-800">
+              <td className="py-1 pr-4 font-mono text-xs text-gray-700 dark:text-gray-300">{'{{' + v.key + '}}'}</td>
               <td className="py-1 pr-4">
                 <input
                   type="text"
-                  className="w-full rounded border border-gray-200 px-1 py-0.5 text-sm"
+                  className="w-full rounded border border-gray-200 dark:border-gray-700 px-1 py-0.5 text-sm"
                   value={v.value || ''}
                   onBlur={(e) => handleUpdate(v.id, e.target.value)}
                   onChange={(e) =>
@@ -103,7 +103,7 @@ export const VariablePanel: React.FC<Props> = ({ projectId, documentId, onChange
                   }
                 />
               </td>
-              <td className="py-1 pr-4 text-gray-500">{v.scope}</td>
+              <td className="py-1 pr-4 text-gray-500 dark:text-gray-400 dark:text-gray-500">{v.scope}</td>
             </tr>
           ))}
         </tbody>

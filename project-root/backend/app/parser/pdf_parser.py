@@ -107,8 +107,8 @@ class PDFParser(BaseParser):
                 "position": match.span()
             })
         
-        # Материалы (ст.20, ст.09Г2С и т.д.)
-        for match in re.finditer(r'ст\.?\s*[А-Я\d]+(?:Г2С|ХМ|НМ)?', text, re.I):
+        # Материалы (ст.20, ст.09Г2С и т.д.) — требуем цифру после "ст." и границу слова
+        for match in re.finditer(r'(?<!\w)ст\.?\s*\d+[А-Я\d]*(?:Г2С|ХМ|НМ)?', text, re.I):
             entities.append({
                 "type": "material",
                 "value": match.group(),

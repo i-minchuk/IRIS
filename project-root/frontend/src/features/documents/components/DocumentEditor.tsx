@@ -20,7 +20,7 @@ const ToolbarButton: React.FC<{
     onClick={onClick}
     title={title}
     className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-      active ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100 text-gray-600'
+      active ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
     }`}
   >
     {children}
@@ -51,9 +51,9 @@ export const DocumentEditor: React.FC<Props> = ({ content = '', onChange, readOn
   };
 
   return (
-    <div className="border border-gray-200 rounded-lg overflow-hidden bg-white flex flex-col h-full">
+    <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-white dark:bg-gray-800 flex flex-col h-full">
       {!readOnly && (
-        <div className="border-b border-gray-200 px-2 py-1.5 flex flex-wrap gap-1 bg-gray-50 shrink-0">
+        <div className="border-b border-gray-200 dark:border-gray-700 px-2 py-1.5 flex flex-wrap gap-1 bg-gray-50 dark:bg-gray-900 shrink-0">
           <ToolbarButton onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive('bold')} title="Жирный">
             <strong>B</strong>
           </ToolbarButton>

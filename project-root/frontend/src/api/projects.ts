@@ -9,6 +9,7 @@ export interface Project {
   contract_number?: string;
   stage?: string;
   status: string;
+  risk_level?: 'low' | 'medium' | 'high';
   created_at: string;
 }
 

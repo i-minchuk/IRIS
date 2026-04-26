@@ -147,7 +147,7 @@ export default function Achievements() {
   if (initialLoading) {
     return (
       <div className="max-w-6xl">
-        <Card className="p-8 text-center text-gray-500">
+        <Card className="p-8 text-center text-gray-500 dark:text-gray-400">
           Загрузка достижений...
         </Card>
       </div>
@@ -157,8 +157,8 @@ export default function Achievements() {
   if (!profile) {
     return (
       <div className="max-w-6xl">
-        <Card className="p-8 text-center text-gray-500 space-y-3">
-          <Info className="mx-auto text-gray-400" size={32} />
+        <Card className="p-8 text-center text-gray-500 dark:text-gray-400 space-y-3">
+          <Info className="mx-auto text-gray-400 dark:text-gray-500" size={32} />
           <p>Не удалось загрузить профиль геймификации.</p>
           <Button size="sm" variant="outline" onClick={loadData}>
             Повторить попытку
@@ -180,15 +180,15 @@ export default function Achievements() {
     <div className="max-w-6xl space-y-8">
       {/* Заголовок и статус */}
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+        <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
           Достижения
         </h1>
-        <p className="text-gray-600">
+        <p className="text-gray-600 dark:text-gray-400">
           Личный прогресс, бейджи и ежедневные задания. Механика пока
           упрощена и будет постепенно дорабатываться.
         </p>
         {user && (
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             Пользователь:{' '}
             <span className="font-medium">{user.full_name}</span>{' '}
             (<span className="font-mono">{user.username}</span>)
@@ -242,7 +242,7 @@ export default function Achievements() {
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Trophy className="text-yellow-600" size={24} />
-            <h2 className="text-xl font-semibold text-gray-900">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
               Ежедневные задания
             </h2>
           </div>
@@ -252,8 +252,8 @@ export default function Achievements() {
         </div>
 
         {dailyQuests.length === 0 ? (
-          <Card className="p-6 text-sm text-gray-500 flex items-center gap-2">
-            <Info size={18} className="text-gray-400" />
+          <Card className="p-6 text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2">
+            <Info size={18} className="text-gray-400 dark:text-gray-500" />
             На сегодня нет активных заданий.
           </Card>
         ) : (
@@ -272,10 +272,10 @@ export default function Achievements() {
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900">
+                      <h3 className="font-semibold text-gray-900 dark:text-white">
                         {quest.title}
                       </h3>
-                      <p className="mt-1 text-sm text-gray-600">
+                      <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
                         {quest.description}
                       </p>
                     </div>
@@ -293,8 +293,8 @@ export default function Achievements() {
 
                   <div className="space-y-3">
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Прогресс</span>
-                      <span className="font-medium text-gray-800">
+                      <span className="text-gray-600 dark:text-gray-400">Прогресс</span>
+                      <span className="font-medium text-gray-800 dark:text-gray-200">
                         {quest.current_count}/{quest.target_count}
                       </span>
                     </div>
@@ -305,14 +305,14 @@ export default function Achievements() {
                       />
                     </div>
                     <div className="flex items-center justify-between text-xs">
-                      <span className="flex items-center gap-1 text-gray-700">
+                      <span className="flex items-center gap-1 text-gray-700 dark:text-gray-300">
                         <Star
                           className="text-yellow-500"
                           size={14}
                         />
                         {quest.reward_points} pts
                       </span>
-                      <span className="flex items-center gap-1 text-gray-700">
+                      <span className="flex items-center gap-1 text-gray-700 dark:text-gray-300">
                         <Zap
                           className="text-purple-500"
                           size={14}
@@ -344,12 +344,12 @@ export default function Achievements() {
       <section className="space-y-4">
         <div className="flex items-center gap-2">
           <CheckCircle className="text-green-600" size={24} />
-          <h2 className="text-xl font-semibold text-gray-900">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
             Полученные бейджи ({completedBadges.length})
           </h2>
         </div>
         {completedBadges.length === 0 ? (
-          <Card className="p-6 text-sm text-gray-500">
+          <Card className="p-6 text-sm text-gray-500 dark:text-gray-400">
             Пока нет полученных бейджей — выполняйте задачи и ежедневные
             задания, чтобы начать их открывать.
           </Card>
@@ -364,10 +364,10 @@ export default function Achievements() {
                   <Award className="text-green-600" size={32} />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900">
+                  <h3 className="font-semibold text-gray-900 dark:text-white">
                     {badge.name}
                   </h3>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
                     {badge.desc}
                   </p>
                   <Badge className="mt-2 bg-green-100 text-green-700 border-none">
@@ -384,12 +384,12 @@ export default function Achievements() {
       <section className="space-y-4">
         <div className="flex items-center gap-2">
           <Clock className="text-blue-600" size={24} />
-          <h2 className="text-xl font-semibold text-gray-900">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
             В процессе ({inProgressBadges.length})
           </h2>
         </div>
         {inProgressBadges.length === 0 ? (
-          <Card className="p-6 text-sm text-gray-500">
+          <Card className="p-6 text-sm text-gray-500 dark:text-gray-400">
             Сейчас нет бейджей с частичным прогрессом.
           </Card>
         ) : (
@@ -402,18 +402,18 @@ export default function Achievements() {
                       <Award className="text-blue-600" size={32} />
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900">
+                      <h3 className="font-semibold text-gray-900 dark:text-white">
                         {badge.name}
                       </h3>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
                         {badge.desc}
                       </p>
                     </div>
                   </div>
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Прогресс</span>
-                      <span className="font-medium text-gray-800">
+                      <span className="text-gray-600 dark:text-gray-400">Прогресс</span>
+                      <span className="font-medium text-gray-800 dark:text-gray-200">
                         {current}/{target}
                       </span>
                     </div>
@@ -434,13 +434,13 @@ export default function Achievements() {
       {/* Locked badges */}
       <section className="space-y-4">
         <div className="flex items-center gap-2">
-          <Award className="text-gray-400" size={24} />
-          <h2 className="text-xl font-semibold text-gray-900">
+          <Award className="text-gray-400 dark:text-gray-500" size={24} />
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
             Заблокированные ({lockedBadges.length})
           </h2>
         </div>
         {lockedBadges.length === 0 ? (
-          <Card className="p-6 text-sm text-gray-500">
+          <Card className="p-6 text-sm text-gray-500 dark:text-gray-400">
             Все текущие бейджи либо получены, либо уже в прогрессе.
           </Card>
         ) : (
@@ -448,19 +448,19 @@ export default function Achievements() {
             {lockedBadges.map(({ badge }) => (
               <Card
                 key={badge.id}
-                className="p-6 bg-gray-50 text-gray-600 flex items-center gap-4 opacity-80"
+                className="p-6 bg-gray-50 dark:bg-gray-900 text-gray-600 dark:text-gray-400 flex items-center gap-4 opacity-80"
               >
                 <div className="p-3 bg-gray-200 rounded-lg">
-                  <Award className="text-gray-400" size={32} />
+                  <Award className="text-gray-400 dark:text-gray-500" size={32} />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-gray-700">
+                  <h3 className="font-semibold text-gray-700 dark:text-gray-300">
                     {badge.name}
                   </h3>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
                     {badge.desc}
                   </p>
-                  <Badge className="mt-2 bg-gray-200 text-gray-600 border-none">
+                  <Badge className="mt-2 bg-gray-200 text-gray-600 dark:text-gray-400 border-none">
                     Заблокирован
                   </Badge>
                 </div>
@@ -520,7 +520,7 @@ function StatCard({
             </p>
           )}
         </div>
-        <div className="p-2 rounded-lg bg-white/60 shadow-inner">
+        <div className="p-2 rounded-lg bg-white dark:bg-gray-800/60 shadow-inner">
           <Icon size={24} />
         </div>
       </div>

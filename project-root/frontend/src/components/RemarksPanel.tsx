@@ -16,7 +16,7 @@ export interface Remark {
 const STATUS_UI: Record<RemarkStatus, { label: string; cls: string }> = {
   open:       { label: "Открыто",           cls: "bg-red-100 text-red-700 border-red-200" },
   resolved:   { label: "✅ Решено",          cls: "bg-green-100 text-green-700 border-green-200" },
-  rejected:   { label: "❌ Ошибочно",        cls: "bg-gray-100 text-gray-600 border-gray-200" },
+  rejected:   { label: "❌ Ошибочно",        cls: "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700" },
   superseded: { label: "🔄 Снято (изм. ТЗ)", cls: "bg-yellow-100 text-yellow-700 border-yellow-200" },
 };
 

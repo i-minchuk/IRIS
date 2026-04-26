@@ -201,13 +201,13 @@ export default function ImportExcel() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Импорт Excel</h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Импорт Excel</h1>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           Загрузка MDR / реестров документов, сопоставление колонок и предпросмотр перед импортом.
         </p>
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5 shadow-sm">
         <div className="flex flex-wrap items-center gap-3">
           {[
             { key: 'upload', label: 'Загрузка' },
@@ -241,14 +241,14 @@ export default function ImportExcel() {
       </div>
 
       {step === 'upload' && (
-        <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 shadow-sm">
+        <div className="rounded-xl border border-dashed border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 p-8 shadow-sm">
           <div className="flex flex-col items-center text-center">
             <div className="mb-4 rounded-full bg-primary-50 p-4 text-primary-600">
               <Upload size={28} />
             </div>
 
-            <h2 className="text-lg font-semibold text-gray-900">Загрузите Excel-файл</h2>
-            <p className="mt-2 max-w-2xl text-sm text-gray-500">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Загрузите Excel-файл</h2>
+            <p className="mt-2 max-w-2xl text-sm text-gray-500 dark:text-gray-400">
               Поддерживаются MDR, реестры и ведомости. После загрузки можно выбрать лист, сопоставить колонки
               и проверить данные перед импортом.
             </p>
@@ -278,9 +278,9 @@ export default function ImportExcel() {
       {(step === 'mapping' || step === 'preview' || step === 'done') && (
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-[300px_minmax(0,1fr)]">
           <div className="space-y-6">
-            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Файл</h3>
-              <p className="mt-2 break-all text-sm font-medium text-gray-900">{filename || '—'}</p>
+            <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5 shadow-sm">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Файл</h3>
+              <p className="mt-2 break-all text-sm font-medium text-gray-900 dark:text-white">{filename || '—'}</p>
 
               <button
                 type="button"
@@ -291,8 +291,8 @@ export default function ImportExcel() {
               </button>
             </div>
 
-            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Листы</h3>
+            <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5 shadow-sm">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Листы</h3>
               <div className="mt-4 space-y-2">
                 {sheets.map((sheet) => {
                   const isActive = selectedSheet?.name === sheet.name;
@@ -305,7 +305,7 @@ export default function ImportExcel() {
                       className={`flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left text-sm ${
                         isActive
                           ? 'border-primary-300 bg-primary-50 text-primary-700'
-                          : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                          : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
                       }`}
                     >
                       <span className="font-medium">{sheet.name}</span>
@@ -316,8 +316,8 @@ export default function ImportExcel() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+            <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5 shadow-sm">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
                 Пользовательские поля
               </h3>
 
@@ -326,12 +326,12 @@ export default function ImportExcel() {
                   value={newCustomColName}
                   onChange={(e) => setNewCustomColName(e.target.value)}
                   placeholder="Например: Зона, Блок, Подрядчик"
-                  className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-primary-500"
+                  className="flex-1 rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm outline-none focus:border-primary-500"
                 />
                 <button
                   type="button"
                   onClick={handleAddCustomCol}
-                  className="inline-flex items-center gap-1 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  className="inline-flex items-center gap-1 rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
                   <Plus size={16} />
                   Добавить
@@ -343,7 +343,7 @@ export default function ImportExcel() {
                   {customCols.map((col) => (
                     <span
                       key={col.id}
-                      className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700"
+                      className="inline-flex items-center gap-2 rounded-full bg-gray-100 dark:bg-gray-800 px-3 py-1 text-xs font-medium text-gray-700 dark:text-gray-300"
                     >
                       {col.name}
                       <button type="button" onClick={() => handleRemoveCustomCol(col.id)}>
@@ -353,19 +353,19 @@ export default function ImportExcel() {
                   ))}
                 </div>
               ) : (
-                <p className="mt-4 text-sm text-gray-400">Дополнительные поля пока не добавлены.</p>
+                <p className="mt-4 text-sm text-gray-400 dark:text-gray-500">Дополнительные поля пока не добавлены.</p>
               )}
             </div>
           </div>
 
           <div className="space-y-6">
             {step === 'mapping' && selectedSheet && (
-              <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+              <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5 shadow-sm">
                 <div className="mb-5 flex items-center justify-between">
                   <div>
-                    <h2 className="text-lg font-semibold text-gray-900">Сопоставление колонок</h2>
-                    <p className="mt-1 text-sm text-gray-500">
-                      Лист: <span className="font-medium text-gray-700">{selectedSheet.name}</span>
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Сопоставление колонок</h2>
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                      Лист: <span className="font-medium text-gray-700 dark:text-gray-300">{selectedSheet.name}</span>
                     </p>
                   </div>
                   <button
@@ -382,22 +382,22 @@ export default function ImportExcel() {
                   </button>
                 </div>
 
-                <div className="overflow-hidden rounded-xl border border-gray-200">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
+                <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-900">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                           Поле системы
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                           Колонка Excel
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                           Пример
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-200 bg-white">
+                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
                       {TARGET_FIELDS.map((field) => {
                         const mappedKey = mappings[field.key];
                         const mappedColumn = selectedColumns.find((col) => col.key === mappedKey);
@@ -405,7 +405,7 @@ export default function ImportExcel() {
                         return (
                           <tr key={field.key}>
                             <td className="px-4 py-3">
-                              <div className="font-medium text-gray-900">
+                              <div className="font-medium text-gray-900 dark:text-white">
                                 {field.label}
                                 {field.required ? <span className="ml-1 text-red-500">*</span> : null}
                               </div>
@@ -414,7 +414,7 @@ export default function ImportExcel() {
                               <select
                                 value={mappings[field.key] || ''}
                                 onChange={(e) => handleMapChange(field.key, e.target.value)}
-                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-primary-500"
+                                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm outline-none focus:border-primary-500"
                               >
                                 <option value="">Не выбрано</option>
                                 {selectedColumns.map((col) => (
@@ -424,7 +424,7 @@ export default function ImportExcel() {
                                 ))}
                               </select>
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-500">
+                            <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
                               {mappedColumn?.sample || '—'}
                             </td>
                           </tr>
@@ -443,11 +443,11 @@ export default function ImportExcel() {
             )}
 
             {(step === 'preview' || step === 'done') && selectedSheet && (
-              <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+              <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5 shadow-sm">
                 <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <h2 className="text-lg font-semibold text-gray-900">Предпросмотр импорта</h2>
-                    <p className="mt-1 text-sm text-gray-500">
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Предпросмотр импорта</h2>
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                       Проверка первых строк перед загрузкой в систему.
                     </p>
                   </div>
@@ -457,7 +457,7 @@ export default function ImportExcel() {
                       <button
                         type="button"
                         onClick={() => setStep('mapping')}
-                        className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                        className="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
                       >
                         <ArrowLeft size={16} />
                         Назад
@@ -478,25 +478,25 @@ export default function ImportExcel() {
                   </div>
                 </div>
 
-                <div className="overflow-hidden rounded-xl border border-gray-200">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
+                <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-900">
                       <tr>
                         {Object.keys(mappedPreview[0] || {}).map((key) => (
                           <th
                             key={key}
-                            className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500"
+                            className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400"
                           >
                             {key}
                           </th>
                         ))}
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-200 bg-white">
+                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
                       {mappedPreview.map((row, rowIndex) => (
                         <tr key={rowIndex}>
                           {Object.entries(row).map(([key, value]) => (
-                            <td key={key} className="px-4 py-3 text-sm text-gray-700">
+                            <td key={key} className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
                               {value === null ? '—' : String(value)}
                             </td>
                           ))}
@@ -522,7 +522,7 @@ export default function ImportExcel() {
                           <button
                             type="button"
                             onClick={resetAll}
-                            className="rounded-lg border border-green-300 bg-white px-4 py-2 text-sm font-medium text-green-800 hover:bg-green-100"
+                            className="rounded-lg border border-green-300 bg-white dark:bg-gray-800 px-4 py-2 text-sm font-medium text-green-800 hover:bg-green-100"
                           >
                             Новый импорт
                           </button>

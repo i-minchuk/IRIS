@@ -20,7 +20,20 @@ async def list_projects(
     current_user: User = Depends(get_current_active_user),
 ):
     result = await db.execute(select(Project).order_by(Project.created_at.desc()))
-    return result.scalars().all()
+    projects = result.scalars().all()
+    return [
+        {
+            "id": p.id,
+            "name": p.name,
+            "code": p.code,
+            "customer_name": p.customer_name,
+            "contract_number": p.contract_number,
+            "stage": p.stage,
+            "status": p.status,
+            "created_at": p.created_at.isoformat() if p.created_at else None,
+        }
+        for p in projects
+    ]
 
 
 @router.post("", response_model=dict)

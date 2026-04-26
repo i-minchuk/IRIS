@@ -14,6 +14,10 @@ class UserRepository:
         result = await self.db.execute(select(User).where(User.email == email))
         return result.scalar_one_or_none()
 
+    async def get_by_username(self, username: str) -> User | None:
+        result = await self.db.execute(select(User).where(User.username == username))
+        return result.scalar_one_or_none()
+
     async def get_by_id(self, user_id: int) -> User | None:
         result = await self.db.execute(select(User).where(User.id == user_id))
         return result.scalar_one_or_none()
@@ -25,6 +29,7 @@ class UserRepository:
     async def create(self, user_in: UserCreate) -> User:
         db_user = User(
             email=user_in.email,
+            username=user_in.username,
             hashed_password=get_password_hash(user_in.password),
             full_name=user_in.full_name,
             is_active=True,

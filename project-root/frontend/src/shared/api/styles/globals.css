@@ -2,7 +2,125 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Ваши дополнительные глобальные стили могут быть здесь */
+/* === БРЕНДБУК ДОКПОТОК IRIS === */
+
+:root {
+  /* Основные цвета — Светлая тема */
+  --iris-primary: #3B4FA8;
+  --iris-primary-hover: #4A5EC0;
+  --iris-primary-active: #2E3F85;
+  --iris-dark: #222B5C;
+  --iris-dark-hover: #2A3568;
+  --iris-accent: #8D79C7;
+  --iris-accent-hover: #9A8AD0;
+  --iris-success: #D4A62A;
+  --iris-success-hover: #E0B43A;
+  --iris-error: #C0392B;
+  --iris-error-hover: #D04A3C;
+  --iris-warning: #E67E22;
+  --iris-warning-hover: #F08F33;
+  --iris-info: #3498DB;
+  --iris-info-hover: #4AA8E8;
+  --iris-disabled: #A0A8B8;
+  
+  /* Нейтральные — Светлая тема */
+  --iris-bg: #F5F6FA;
+  --iris-surface: #FFFFFF;
+  --iris-border: #CED2DD;
+  --iris-text: #1E2230;
+  --iris-text-muted: #6B7280;
+  
+  /* Шрифты */
+  --font-heading: 'Montserrat', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  --font-body: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+  
+  /* Тени */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.15);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.18);
+  
+  /* Отступы */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-xxl: 48px;
+}
+
+/* Тёмная тема */
+:root[data-theme="dark"] {
+  --iris-primary: #5C75E0;
+  --iris-primary-hover: #6B82E8;
+  --iris-primary-active: #4A5EC0;
+  --iris-dark: #151B38;
+  --iris-dark-hover: #1A2248;
+  --iris-accent: #A898D9;
+  --iris-accent-hover: #B5A8E0;
+  --iris-success: #E8C44A;
+  --iris-success-hover: #F0D060;
+  --iris-error: #E74C3C;
+  --iris-error-hover: #F05A4A;
+  --iris-warning: #F39C12;
+  --iris-warning-hover: #F5A623;
+  --iris-info: #5DADE2;
+  --iris-info-hover: #6BB8E8;
+  --iris-disabled: #5A6270;
+  
+  --iris-bg: #0D1117;
+  --iris-surface: #151B38;
+  --iris-border: #3D4554;
+  --iris-text: #E2E5EC;
+  --iris-text-muted: #8B92A8;
+  
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.35);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.45);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.55);
+}
+
+/* Глобальные стили */
 body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: var(--font-body);
+  background-color: var(--iris-bg);
+  color: var(--iris-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  color: var(--iris-dark);
+  font-weight: 600;
+}
+
+/* Утилиты для компонентов */
+@layer components {
+  .iris-btn-primary {
+    @apply px-4 py-2 rounded-lg font-medium transition-all duration-150;
+    background-color: var(--iris-primary);
+    color: white;
+  }
+  .iris-btn-primary:hover {
+    background-color: var(--iris-primary-hover);
+    transform: scale(0.97);
+  }
+  
+  .iris-card {
+    @apply rounded-lg p-6;
+    background-color: var(--iris-surface);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--iris-border);
+  }
+  
+  .iris-input {
+    @apply px-4 py-2 rounded-lg outline-none transition-all;
+    background-color: var(--iris-surface);
+    border: 1px solid var(--iris-border);
+    color: var(--iris-text);
+  }
+  .iris-input:focus {
+    border-color: var(--iris-primary);
+    box-shadow: 0 0 0 3px rgba(59, 79, 168, 0.15);
+  }
 }

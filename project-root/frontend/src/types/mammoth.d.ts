@@ -1,6 +1,5 @@
 // TypeScript declarations для mammoth.js
 declare module 'mammoth' {
-  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   export interface ConvertImageOptions {}
   
   export interface ConvertToHtmlResult {

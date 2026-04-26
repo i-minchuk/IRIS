@@ -45,14 +45,14 @@ export const AnalyticsPage: React.FC = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="text-sm text-gray-500">Загрузка дашборда…</div>;
+  if (loading) return <div className="text-sm text-gray-500 dark:text-gray-400">Загрузка дашборда…</div>;
   if (!data) return <div className="text-sm text-red-500">Ошибка загрузки дашборда</div>;
 
   const { kpis, scorecard, team } = data;
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-bold text-gray-800">Аналитика и управление проектами</h2>
+      <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200">Аналитика и управление проектами</h2>
 
       {/* KPI Portlets */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -65,14 +65,14 @@ export const AnalyticsPage: React.FC = () => {
       </div>
 
       {/* Project Scorecard */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
-          <h3 className="text-sm font-semibold text-gray-700">Портфель проектов (Scorecard)</h3>
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Портфель проектов (Scorecard)</h3>
         </div>
         <div className="overflow-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b text-left text-gray-400 text-xs">
+              <tr className="border-b text-left text-gray-400 dark:text-gray-500 text-xs">
                 <th className="pb-2 pr-3 pt-2 pl-4 font-medium">Проект</th>
                 <th className="pb-2 pr-3 pt-2 font-medium">Прогресс</th>
                 <th className="pb-2 pr-3 pt-2 font-medium">Здоровье</th>
@@ -84,14 +84,14 @@ export const AnalyticsPage: React.FC = () => {
             </thead>
             <tbody>
               {scorecard.map((project: ScorecardProject) => (
-                <tr key={project.id} className="border-b border-gray-50 hover:bg-gray-50">
+                <tr key={project.id} className="border-b border-gray-50 hover:bg-gray-50 dark:hover:bg-gray-800">
                   <td className="py-2 pr-3 pl-4">
-                    <div className="font-medium text-gray-800">{project.name}</div>
-                    <div className="text-xs text-gray-400">{project.code}</div>
+                    <div className="font-medium text-gray-800 dark:text-gray-200">{project.name}</div>
+                    <div className="text-xs text-gray-400 dark:text-gray-500">{project.code}</div>
                   </td>
                   <td className="py-2 pr-3 w-40">
                     <ProgressBar progress={project.progress} />
-                    <div className="text-xs text-gray-500 mt-0.5">{project.progress}%</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{project.progress}%</div>
                   </td>
                   <td className="py-2 pr-3">
                     <div className="flex items-center gap-1.5">
@@ -101,15 +101,15 @@ export const AnalyticsPage: React.FC = () => {
                       </span>
                     </div>
                   </td>
-                  <td className="py-2 pr-3 text-xs text-gray-600">
+                  <td className="py-2 pr-3 text-xs text-gray-600 dark:text-gray-400">
                     {project.documents_approved} / {project.documents_total}
                   </td>
                   <td className="py-2 pr-3 text-xs">
-                    <span className={`${project.open_remarks > 3 ? 'text-red-600 font-medium' : 'text-gray-600'}`}>
+                    <span className={`${project.open_remarks > 3 ? 'text-red-600 font-medium' : 'text-gray-600 dark:text-gray-400'}`}>
                       {project.open_remarks} открытых
                     </span>
                   </td>
-                  <td className="py-2 pr-3 text-xs text-gray-500 whitespace-nowrap">
+                  <td className="py-2 pr-3 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
                     {project.deadline ? new Date(project.deadline).toLocaleDateString('ru-RU') : '—'}
                   </td>
                   <td className="py-2 pr-3">
@@ -123,14 +123,14 @@ export const AnalyticsPage: React.FC = () => {
       </div>
 
       {/* Team Performance */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
-          <h3 className="text-sm font-semibold text-gray-700">Производительность команды</h3>
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Производительность команды</h3>
         </div>
         <div className="overflow-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b text-left text-gray-400 text-xs">
+              <tr className="border-b text-left text-gray-400 dark:text-gray-500 text-xs">
                 <th className="pb-2 pr-3 pt-2 pl-4 font-medium">Сотрудник</th>
                 <th className="pb-2 pr-3 pt-2 font-medium">Роль</th>
                 <th className="pb-2 pr-3 pt-2 font-medium">Документы</th>
@@ -142,16 +142,16 @@ export const AnalyticsPage: React.FC = () => {
             </thead>
             <tbody>
               {team.map((member: TeamMember) => (
-                <tr key={member.id} className="border-b border-gray-50 hover:bg-gray-50">
-                  <td className="py-2 pr-3 pl-4 font-medium text-gray-800">{member.full_name}</td>
-                  <td className="py-2 pr-3 text-xs text-gray-500">{member.role}</td>
-                  <td className="py-2 pr-3 text-xs text-gray-600">{member.documents_count}</td>
+                <tr key={member.id} className="border-b border-gray-50 hover:bg-gray-50 dark:hover:bg-gray-800">
+                  <td className="py-2 pr-3 pl-4 font-medium text-gray-800 dark:text-gray-200">{member.full_name}</td>
+                  <td className="py-2 pr-3 text-xs text-gray-500 dark:text-gray-400">{member.role}</td>
+                  <td className="py-2 pr-3 text-xs text-gray-600 dark:text-gray-400">{member.documents_count}</td>
                   <td className="py-2 pr-3 text-xs">
-                    <span className={member.open_remarks > 5 ? 'text-red-600 font-medium' : 'text-gray-600'}>
+                    <span className={member.open_remarks > 5 ? 'text-red-600 font-medium' : 'text-gray-600 dark:text-gray-400'}>
                       {member.open_remarks}
                     </span>
                   </td>
-                  <td className="py-2 pr-3 text-xs text-gray-600">{member.sessions}</td>
+                  <td className="py-2 pr-3 text-xs text-gray-600 dark:text-gray-400">{member.sessions}</td>
                   <td className="py-2 pr-3">
                     <div className="flex items-center gap-2">
                       <div className="w-16 bg-gray-200 rounded-full h-1.5">
@@ -160,10 +160,10 @@ export const AnalyticsPage: React.FC = () => {
                           style={{ width: `${Math.min(100, member.efficiency)}%` }}
                         />
                       </div>
-                      <span className="text-xs text-gray-600">{member.efficiency}%</span>
+                      <span className="text-xs text-gray-600 dark:text-gray-400">{member.efficiency}%</span>
                     </div>
                   </td>
-                  <td className="py-2 pr-3 text-xs text-gray-600">{member.active_time_hours}ч</td>
+                  <td className="py-2 pr-3 text-xs text-gray-600 dark:text-gray-400">{member.active_time_hours}ч</td>
                 </tr>
               ))}
             </tbody>

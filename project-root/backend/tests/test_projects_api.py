@@ -50,9 +50,18 @@ def _make_mock_db(project=None, projects=None):
 class TestListProjects:
     def test_list_projects(self, client_with_auth):
         with client_with_auth as client:
-            # list_projects returns result.scalars().all() directly,
-            # so we return plain dicts to avoid MagicMock JSON serialization
-            mock_db = _make_mock_db(projects=[{"id": 1, "name": "Project A", "code": "PRJ-A", "status": "draft"}])
+            # Создаём mock-объекты с атрибутами (не dict)
+            mock_project = MagicMock()
+            mock_project.id = 1
+            mock_project.name = "Project A"
+            mock_project.code = "PRJ-A"
+            mock_project.customer_name = "Customer A"
+            mock_project.contract_number = None
+            mock_project.stage = "draft"
+            mock_project.status = "draft"
+            mock_project.created_at = datetime.now(timezone.utc)
+            
+            mock_db = _make_mock_db(projects=[mock_project])
 
             async def override_get_db():
                 yield mock_db
@@ -64,6 +73,7 @@ class TestListProjects:
                 data = response.json()
                 assert len(data) == 1
                 assert data[0]["name"] == "Project A"
+                assert data[0]["code"] == "PRJ-A"
             finally:
                 app.dependency_overrides.pop(get_db, None)
 

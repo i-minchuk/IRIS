@@ -76,7 +76,7 @@ function normalizeSummary(input: PortfolioSummary | null | undefined): Portfolio
   };
 }
 
-function normalizeProjects(input: Project[] | null | undefined): Project[] {
+function normalizeProjects(input: unknown[] | null | undefined): Project[] {
   if (!Array.isArray(input)) return MOCK_PROJECTS;
 
   return input.map((item, index) => {
@@ -109,7 +109,7 @@ export default function Dashboard() {
     let mounted = true;
 
     getPortfolio()
-      .then((d: { summary: PortfolioSummary; projects: Project[] }) => {
+      .then((d) => {
         if (!mounted) return;
 
         setSummary(normalizeSummary(d?.summary));
@@ -358,7 +358,7 @@ export default function Dashboard() {
                       <tr
                         key={p.id}
                         onClick={() => navigate(`/projects/${p.id}`)}
-                        className="cursor-pointer transition-colors duration-150 hover:bg-white/[0.02]"
+                        className="cursor-pointer transition-colors duration-150 hover:bg-white dark:hover:bg-gray-800/50 dark:bg-gray-800/[0.02]"
                         style={{ borderTop: '1px solid var(--border-light)' }}
                       >
                         <td className="px-5 py-4">

@@ -5,12 +5,12 @@ import { useCollaborationStore } from '@/features/collaboration/store/collaborat
 
 export const CollaborationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { token, user } = useAuthStore();
-  const { isConnected, lastMessage, send } = useWebSocket(token ?? undefined);
+  const { isConnected, lastMessage, send } = useWebSocket(token || null);
   const collab = useCollaborationStore();
 
   // Sync WebSocket state into store
   useEffect(() => {
-    collab.setWsState({ isConnected, sendMessage: send as (msg: import('@/features/collaboration/store/collaborationStore').WSMessage) => void });
+    collab.setWsState({ isConnected, sendMessage: send });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isConnected, send]);
 

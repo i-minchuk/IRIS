@@ -1,79 +1,107 @@
-/* eslint-disable react-refresh/only-export-components */
-import { createContext, useState } from 'react';
-
+import { createContext, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
+import { useAuthStore } from '@/features/auth/store/authStore';
+import { authApi } from '@/features/auth/api/authApi';
 
-
-interface User {
+export interface User {
   id: number;
   email: string;
-  full_name?: string;
-  username?: string;
-  role?: string;
+  full_name: string | null;
+  username: string;
+  role: string;
+  is_active: boolean;
 }
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   loading: boolean;
-  login: (email: string, _password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
   loginDemo: () => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function normalizeUser(raw: unknown): User {
+  const r = raw as Record<string, unknown>;
+  const email = String(r?.email ?? '');
+  return {
+    id: Number(r?.id ?? 0),
+    email,
+    full_name: (r?.full_name as string | null) ?? null,
+    username: (r?.username as string | undefined) ?? email.split('@')[0],
+    role: (r?.role as string | undefined) ?? 'engineer',
+    is_active: Boolean(r?.is_active ?? true),
+  };
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem('stdo-user');
-    if (!saved) return null;
+  const [loading, setLoading] = useState(true);
+  const storeUser = useAuthStore((state) => state.user);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const setAuth = useAuthStore((state) => state.setAuth);
+  const storeLogout = useAuthStore((state) => state.logout);
 
-    try {
-      return JSON.parse(saved) as User;
-    } catch {
-      localStorage.removeItem('stdo-user');
-      return null;
-    }
-  });
-  const [loading] = useState(false);
-
-  const login = async (email: string, password: string) => {
-    void password;
-
-    const mockUser: User = {
-      id: 1,
-      email,
-      username: email.split('@')[0],
-      full_name: 'Администратор',
-      role: 'admin',
+  useEffect(() => {
+    let mounted = true;
+    const restore = async () => {
+      try {
+        const currentUser = await authApi.getCurrentUser();
+        if (!mounted) return;
+        const token = useAuthStore.getState().token || '';
+        setAuth(normalizeUser(currentUser), token || 'restored');
+      } catch {
+        if (mounted) storeLogout();
+      } finally {
+        if (mounted) setLoading(false);
+      }
     };
-    setUser(mockUser);
-    localStorage.setItem('stdo-user', JSON.stringify(mockUser));
-  };
+    restore();
+    return () => {
+      mounted = false;
+    };
+  }, [setAuth, storeLogout]);
 
-  const loginDemo = async () => {
+  const login = useCallback(
+    async (email: string, password: string) => {
+      const tokenResponse = await authApi.login({ email, password });
+      const currentUser = await authApi.getCurrentUser();
+      localStorage.setItem('access_token', tokenResponse.access_token);
+      localStorage.setItem('refresh_token', tokenResponse.refresh_token);
+      setAuth(normalizeUser(currentUser), tokenResponse.access_token);
+    },
+    [setAuth]
+  );
+
+  const loginDemo = useCallback(async () => {
     const demoUser: User = {
       id: 1,
       email: 'demo@stdo.local',
-      username: 'demo',
       full_name: 'Demo User',
+      username: 'demo',
       role: 'admin',
+      is_active: true,
     };
-    setUser(demoUser);
-    localStorage.setItem('stdo-user', JSON.stringify(demoUser));
-  };
+    setAuth(demoUser, 'demo-token');
+  }, [setAuth]);
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('stdo-user');
-  };
+  const logout = useCallback(async () => {
+    try {
+      await authApi.logout();
+    } catch {
+      // ignore
+    }
+    storeLogout();
+  }, [storeLogout]);
+
+  const user = storeUser ? normalizeUser(storeUser) : null;
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        isAuthenticated: Boolean(user),
+        isAuthenticated,
         loading,
         login,
         loginDemo,
@@ -84,4 +112,3 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     </AuthContext.Provider>
   );
 }
-

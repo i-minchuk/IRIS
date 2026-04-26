@@ -55,6 +55,7 @@ class TestAuthRegister:
                 mock_created = MagicMock()
                 mock_created.id = 1
                 mock_created.email = "new@example.com"
+                mock_created.username = "newuser"
                 mock_created.full_name = "New User"
                 mock_created.role = "engineer"
                 mock_created.is_active = True

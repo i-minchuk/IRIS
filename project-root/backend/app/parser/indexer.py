@@ -22,18 +22,22 @@ class DocumentIndexer:
     
     def _ensure_collection(self):
         """Создаёт коллекцию, если не существует"""
-        collections = self.qdrant.get_collections().collections
-        exists = any(c.name == self.collection for c in collections)
-        
-        if not exists:
-            # Размерность для text-embedding-3-large = 3072
-            self.qdrant.create_collection(
-                collection_name=self.collection,
-                vectors_config=VectorParams(
-                    size=3072,
-                    distance=Distance.COSINE
+        try:
+            collections = self.qdrant.get_collections().collections
+            exists = any(c.name == self.collection for c in collections)
+            
+            if not exists:
+                # Размерность для text-embedding-3-large = 3072
+                self.qdrant.create_collection(
+                    collection_name=self.collection,
+                    vectors_config=VectorParams(
+                        size=3072,
+                        distance=Distance.COSINE
+                    )
                 )
-            )
+        except Exception:
+            # Qdrant недоступен — индексирование отключено
+            pass
     
     def _create_chunks(self, doc: ParsedDocument) -> List[Dict[str, Any]]:
         """Умное разбиение на чанки"""

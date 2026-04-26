@@ -1,4 +1,5 @@
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, BackgroundTasks
+from functools import lru_cache
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends
 from fastapi.responses import JSONResponse
 from typing import Optional
 from uuid import UUID, uuid4
@@ -9,17 +10,25 @@ from app.ai.service import AIService
 from app.parser.factory import ParserFactory
 from app.parser.indexer import DocumentIndexer
 from app.core.config import settings
-from app.db.session import get_db  # Ваша существующая сессия БД
+from app.db.session import get_db
 
 router = APIRouter(prefix="/ai", tags=["AI"])
-ai_service = AIService()
-indexer = DocumentIndexer()
+
+
+@lru_cache(maxsize=1)
+def get_ai_service() -> AIService:
+    return AIService()
+
+
+@lru_cache(maxsize=1)
+def get_indexer() -> DocumentIndexer:
+    return DocumentIndexer()
 
 @router.post("/upload")
 async def upload_document(
-    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     project_id: Optional[UUID] = Form(None),
+    document_type: str = Form(...),
     db = Depends(get_db)
 ):
     """Загрузка и индексация документа"""
@@ -53,9 +62,8 @@ async def upload_document(
     # db.add(ai_doc)
     # db.commit()
     
-    # Индексируем в Qdrant (в фоне или синхронно)
-    # Для MVP — синхронно, чтобы сразу можно было спрашивать
-    chunk_ids = await indexer.index(parsed, original_doc_id=uuid4())
+    # Индексируем в Qdrant
+    chunk_ids = await get_indexer().index(parsed, original_doc_id=uuid4())
     
     return JSONResponse({
         "document_id": str(parsed.document_id),
@@ -72,7 +80,7 @@ async def upload_document(
 @router.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest, db = Depends(get_db)):
     """Диалог с AI-ассистентом"""
-    response = await ai_service.chat(request)
+    response = await get_ai_service().chat(request)
     
     # Сохраняем в историю
     # interaction = AIInteraction(
@@ -94,7 +102,7 @@ async def chat(request: ChatRequest, db = Depends(get_db)):
 @router.post("/analyze/{document_id}", response_model=DocumentAnalysisResult)
 async def analyze_document(document_id: UUID, db = Depends(get_db)):
     """Анализ документа на ошибки"""
-    result = await ai_service.analyze_document(document_id)
+    result = await get_ai_service().analyze_document(document_id)
     
     # Сохраняем результат анализа
     # analysis = AIAnalysis(
@@ -113,7 +121,7 @@ async def get_document_status(document_id: UUID):
     """Статус индексации документа"""
     # Проверяем в Qdrant
     try:
-        points = indexer.qdrant.scroll(
+        points = get_indexer().qdrant.scroll(
             collection_name=settings.QDRANT_COLLECTION,
             filter={
                 "must": [

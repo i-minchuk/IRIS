@@ -115,7 +115,7 @@ export const DependencyGraph: React.FC<Props> = ({ nodes, edges, onNodeClick, on
   };
 
   return (
-    <svg width={layout.width} height={layout.height} className="bg-white rounded-lg border border-gray-200">
+    <svg width={layout.width} height={layout.height} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
       <defs>
         <marker id="arrow" markerWidth="10" markerHeight="10" refX="10" refY="5" orient="auto">
           <path d="M0,0 L10,5 L0,10 L2,5 Z" fill="#9ca3af" />

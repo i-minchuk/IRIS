@@ -1,3 +1,4 @@
+from functools import lru_cache
 from openai import AsyncOpenAI
 from app.core.config import settings
 from app.parser.indexer import DocumentIndexer
@@ -14,9 +15,15 @@ class AIService:
             api_key=settings.OPENAI_API_KEY,
             base_url=settings.OPENAI_BASE_URL
         )
-        self.indexer = DocumentIndexer()
+        self._indexer = None
         self.model = settings.LLM_MODEL
         self.max_tokens = settings.MAX_CONTEXT_TOKENS
+
+    @property
+    def indexer(self):
+        if self._indexer is None:
+            self._indexer = DocumentIndexer()
+        return self._indexer
     
     def _count_tokens(self, text: str) -> int:
         """Подсчёт токенов для контроля контекста"""

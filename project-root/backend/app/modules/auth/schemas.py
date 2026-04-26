@@ -7,6 +7,7 @@ from datetime import datetime
 class UserBase(BaseModel):
     email: EmailStr
     full_name: Optional[str] = None
+    username: Optional[str] = None
 
 
 class UserCreate(UserBase):
@@ -62,8 +63,16 @@ class TokenPayload(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    email: EmailStr
+    email: Optional[str] = None
+    username: Optional[str] = None
     password: str
+
+    def model_post_init(self, __context) -> None:
+        """Validate that either email or username is provided."""
+        if not self.email and not self.username:
+            raise ValueError("Either email or username must be provided")
+        if self.email and self.username:
+            raise ValueError("Provide either email or username, not both")
 
 
 class RefreshTokenRequest(BaseModel):
