@@ -14,10 +14,16 @@ export const Layout: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#F5F7FA] dark:bg-[#0B1220] flex flex-col">
+    <div
+      className="min-h-screen flex flex-col transition-colors duration-200"
+      style={{ backgroundColor: 'var(--layout-bg)' }}
+    >
       {/* Хедер */}
-      <header className="bg-white dark:bg-[#0F172A] shadow-sm border-b border-[#E2E8F0] dark:border-[#1E293B]">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
+      <header
+        className="shadow-sm border-b transition-colors duration-200"
+        style={{ backgroundColor: 'var(--header-bg)', borderColor: 'var(--header-border)' }}
+      >
+        <div className="mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-14">
             {/* Логотип */}
             <div className="flex items-center space-x-2">
@@ -31,7 +37,10 @@ export const Layout: React.FC = () => {
                 alt="ДокПоток IRIS"
                 className="h-8 w-8 hidden dark:block"
               />
-              <h1 className="text-lg font-bold text-[#1E2230] dark:text-white tracking-tight">
+              <h1
+                className="text-lg font-bold tracking-tight transition-colors duration-200"
+                style={{ color: 'var(--text-primary)' }}
+              >
                 ДокПоток <span className="text-[#4F7A4C]">IRIS</span>
               </h1>
             </div>
@@ -39,19 +48,38 @@ export const Layout: React.FC = () => {
             {/* Гамбургер меню (только mobile) */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 text-[#64748B] dark:text-[#94A3B8] hover:bg-[#F1F5F9] dark:hover:bg-[#1E293B] rounded-lg"
+              className="lg:hidden p-2 rounded-lg transition-colors duration-200"
+              style={{ color: 'var(--text-secondary)' }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--hover-bg)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
             >
               {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
 
             {/* Десктоп панель */}
             <div className="hidden lg:flex items-center space-x-3">
-              <span className="text-sm text-[#64748B] dark:text-[#94A3B8]">{user?.full_name || user?.email}</span>
+              <span className="text-sm transition-colors duration-200" style={{ color: 'var(--text-secondary)' }}>
+                {user?.full_name || user?.email}
+              </span>
 
               {/* Кнопка переключения темы */}
               <button
                 onClick={toggleTheme}
-                className="p-2 rounded-lg bg-[#F5F7FA] dark:bg-[#1E293B] text-[#64748B] dark:text-[#94A3B8] hover:bg-[#E2E8F0] dark:hover:bg-[#334155] transition-colors"
+                className="p-2 rounded-lg transition-colors duration-200"
+                style={{
+                  backgroundColor: 'var(--button-bg)',
+                  color: 'var(--text-secondary)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--button-hover-bg)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--button-bg)';
+                }}
                 title={theme === 'light' ? 'Переключить на тёмную тему' : 'Переключить на светлую тему'}
               >
                 {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
@@ -69,13 +97,19 @@ export const Layout: React.FC = () => {
 
         {/* Mobile меню */}
         {mobileMenuOpen && (
-          <div className="lg:hidden border-t border-[#E2E8F0] dark:border-[#1E293B] bg-white dark:bg-[#0F172A]">
+          <div
+            className="lg:hidden border-t transition-colors duration-200"
+            style={{ borderColor: 'var(--header-border)', backgroundColor: 'var(--header-bg)' }}
+          >
             <div className="px-4 py-3 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-[#64748B] dark:text-[#94A3B8]">{user?.full_name || user?.email}</span>
+                <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  {user?.full_name || user?.email}
+                </span>
                 <button
                   onClick={toggleTheme}
-                  className="p-2 rounded-lg bg-[#F5F7FA] dark:bg-[#1E293B] text-[#64748B] dark:text-[#94A3B8]"
+                  className="p-2 rounded-lg"
+                  style={{ backgroundColor: 'var(--button-bg)', color: 'var(--text-secondary)' }}
                 >
                   {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
                 </button>
@@ -94,23 +128,29 @@ export const Layout: React.FC = () => {
         )}
       </header>
 
-      {/* Вкладки-разделители */}
-      <FolderTabs />
-
-      {/* Контентная область (папка) */}
-      <main className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 -mt-px">
-        <div className="bg-white dark:bg-[#0F172A] rounded-b-xl rounded-tr-xl rounded-tl-none shadow-sm border border-[#E2E8F0] dark:border-[#1E293B] border-t-0 min-h-[calc(100vh-200px)] p-4 sm:p-6">
-          <CollaborationProvider>
-            <Outlet />
-          </CollaborationProvider>
+      {/* Контентная область (папка + вкладки) */}
+      <main className="flex-1 w-full">
+        <div className="mx-auto w-full px-4 sm:px-6 lg:px-8">
+          <FolderTabs />
+          <div
+            className="rounded-b-xl rounded-tr-xl rounded-tl-none shadow-sm border border-t-0 -mt-px min-h-[calc(100vh-var(--iris-header-height)-80px)] p-4 sm:p-6 transition-colors duration-200"
+            style={{ backgroundColor: 'var(--content-bg)', borderColor: 'var(--content-border)' }}
+          >
+            <CollaborationProvider>
+              <Outlet />
+            </CollaborationProvider>
+          </div>
         </div>
       </main>
 
       <StatusBar />
 
-      <footer className="bg-[#F5F7FA] dark:bg-[#0B1220] border-t border-[#E2E8F0] dark:border-[#1E293B] py-1">
-        <div className="max-w-[1600px] mx-auto px-4 text-[10px] text-[#94A3B8] dark:text-[#64748B] flex justify-between">
-          <span>ДокПоток IRIS — управление инженерной документацией</span>
+      <footer
+        className="border-t py-1 transition-colors duration-200"
+        style={{ backgroundColor: 'var(--layout-bg)', borderColor: 'var(--header-border)' }}
+      >
+        <div className="mx-auto px-4 text-[10px] flex justify-between transition-colors duration-200" style={{ color: 'var(--text-muted)' }}>
+          <span>ДокПоток IRIS — система управления инженерной документацией</span>
           <span>© 2026</span>
         </div>
       </footer>

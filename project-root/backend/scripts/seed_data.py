@@ -74,7 +74,7 @@ async def create_test_projects(db: AsyncSession) -> None:
             risk_level="medium",
         ),
         ProjectCreate(
-            name="Система управления документами",
+            name="Система управления техническими документами",
             code="DMS-001",
             customer_name="Госкорпорация",
             contract_number="ГК-2024-123",

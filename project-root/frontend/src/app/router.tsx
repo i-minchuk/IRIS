@@ -10,6 +10,7 @@ import { AnalyticsPage } from '@/features/analytics/pages/AnalyticsPage';
 import { ResourcesPage } from '@/pages/ResourcesPage';
 import { TendersPage } from '@/pages/TendersPage';
 import { AdminPage } from '@/pages/AdminPage';
+import { ArchivePage } from '@/pages/ArchivePage';
 import { Layout } from './Layout';
 import { ProtectedRoute } from './ProtectedRoute';
 
@@ -64,6 +65,10 @@ export const router = createBrowserRouter([
           {
             path: 'admin',
             element: <AdminPage />,
+          },
+          {
+            path: 'archive',
+            element: <ArchivePage />,
           },
           /* Обратная совместимость: старый путь перенаправляет на новый */
           {

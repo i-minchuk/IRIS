@@ -101,7 +101,7 @@ export default function Layout({ children }: LayoutProps) {
           borderColor: 'var(--iris-border)',
         }}
       >
-        <div className="flex min-h-14 items-center justify-between gap-4 px-4 md:px-6">
+        <div className="mx-auto w-full max-w-6xl flex min-h-14 items-center justify-between gap-4 px-4 md:px-6">
           {/* Логотип + Навигация */}
           <div className="flex min-w-0 items-center gap-6">
             <Link to="/dashboard" className="flex items-center gap-3 no-underline">
@@ -340,10 +340,12 @@ export default function Layout({ children }: LayoutProps) {
         style={{
           backgroundColor: 'var(--iris-bg)',
           color: 'var(--iris-text)',
-          minHeight: 'calc(100vh - 56px)',
+          minHeight: 'calc(100vh - var(--iris-header-height))',
         }}
       >
-        {children ?? <Outlet />}
+        <div className="mx-auto w-full max-w-6xl">
+          {children ?? <Outlet />}
+        </div>
       </main>
     </div>
   );

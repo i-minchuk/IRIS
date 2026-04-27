@@ -34,6 +34,24 @@ export interface WorkloadData {
   total_team_size: number;
 }
 
+export interface HeatmapEmployee {
+  id: number;
+  name: string;
+  load: number;
+  projects: string[];
+}
+
+export interface HeatmapDepartment {
+  dept: string;
+  employees: HeatmapEmployee[];
+}
+
+export interface HeatmapData {
+  departments: HeatmapDepartment[];
+  updated_at: string;
+}
+
 export const resourcesApi = {
   getWorkload: () => client.get<WorkloadData>('/resources/workload'),
+  getHeatmap: () => client.get<HeatmapData>('/resources/heatmap'),
 };

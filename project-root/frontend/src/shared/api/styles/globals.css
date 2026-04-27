@@ -47,6 +47,9 @@
   --space-lg: 24px;
   --space-xl: 32px;
   --space-xxl: 48px;
+
+  /* Layout */
+  --iris-header-height: 56px;
 }
 
 /* Тёмная тема */
@@ -77,6 +80,9 @@
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.35);
   --shadow-md: 0 4px 12px rgba(0,0,0,0.45);
   --shadow-lg: 0 8px 24px rgba(0,0,0,0.55);
+
+  /* Layout */
+  --iris-header-height: 56px;
 }
 
 /* Глобальные стили */
@@ -122,5 +128,38 @@ h1, h2, h3, h4, h5, h6 {
   .iris-input:focus {
     border-color: var(--iris-primary);
     box-shadow: 0 0 0 3px rgba(59, 79, 168, 0.15);
+  }
+}
+
+/* FolderTabs scrollbar styling */
+.folder-tabs-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--iris-border) transparent;
+}
+:root[data-theme="dark"] .folder-tabs-scroll {
+  scrollbar-color: #3d4554 transparent;
+}
+
+.folder-tabs-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+.folder-tabs-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.folder-tabs-scroll::-webkit-scrollbar-thumb {
+  background-color: var(--iris-border);
+  border-radius: 3px;
+}
+:root[data-theme="dark"] .folder-tabs-scroll::-webkit-scrollbar-thumb {
+  background-color: #3d4554;
+}
+
+/* Hide scrollbar on wide screens (xl and up) */
+@media (min-width: 1280px) {
+  .folder-tabs-scroll {
+    scrollbar-width: none;
+  }
+  .folder-tabs-scroll::-webkit-scrollbar {
+    display: none;
   }
 }

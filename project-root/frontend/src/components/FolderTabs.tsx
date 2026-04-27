@@ -1,28 +1,73 @@
 import { NavLink, useLocation } from 'react-router-dom';
+import { useTheme } from '@/providers/ThemeProvider';
 
 interface TabItem {
   path: string;
   label: string;
-  color: string;
+  lightBg: string;
+  darkBg: string;
+  lightText: string;
+  darkText: string;
 }
 
 const tabs: TabItem[] = [
-  { path: '/dashboard', label: 'Дашборд', color: '#D4A843' },
-  { path: '/projects', label: 'Проекты', color: '#4F7A4C' },
-  { path: '/documents', label: 'Документы', color: '#9B7EDE' },
-  { path: '/approval', label: 'Согласование', color: '#8B9DAF' },
-  { path: '/remarks', label: 'Замечания', color: '#C75B5B' },
-  { path: '/analytics', label: 'Аналитика', color: '#5B8FC7' },
-  { path: '/resources', label: 'Ресурсы', color: '#6B8E6B' },
-  { path: '/tenders', label: 'Тендеры', color: '#B8956B' },
-  { path: '/admin', label: 'Админ', color: '#6B7280' },
+  {
+    path: '/dashboard',
+    label: 'Панель аналитики и контроля',
+    lightBg: '#3B4FA8',
+    darkBg: '#5C75E0',
+    lightText: '#FFFFFF',
+    darkText: '#FFFFFF',
+  },
+  {
+    path: '/projects',
+    label: 'Портфель проектов',
+    lightBg: '#8D79C7',
+    darkBg: '#A898D9',
+    lightText: '#FFFFFF',
+    darkText: '#FFFFFF',
+  },
+  {
+    path: '/documents',
+    label: 'Пакет документации',
+    lightBg: '#3498DB',
+    darkBg: '#5DADE2',
+    lightText: '#FFFFFF',
+    darkText: '#FFFFFF',
+  },
+  {
+    path: '/approval',
+    label: 'Согласования',
+    lightBg: '#D4A62A',
+    darkBg: '#E8C44A',
+    lightText: '#1E2230',
+    darkText: '#1E2230',
+  },
+  {
+    path: '/remarks',
+    label: 'Замечания',
+    lightBg: '#C0392B',
+    darkBg: '#E74C3C',
+    lightText: '#FFFFFF',
+    darkText: '#FFFFFF',
+  },
+  {
+    path: '/archive',
+    label: 'Архив',
+    lightBg: '#A0A8B8',
+    darkBg: '#5A6270',
+    lightText: '#FFFFFF',
+    darkText: '#FFFFFF',
+  },
 ];
 
 export const FolderTabs = () => {
   const location = useLocation();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   return (
-    <nav className="flex items-end gap-2 px-4 sm:px-6 lg:px-8 pt-4 bg-[#F5F7FA] dark:bg-[#0B1220] overflow-x-auto scrollbar-hide">
+    <nav className="flex items-end gap-0 pt-4 bg-[#F5F7FA] dark:bg-[#0B1220] overflow-x-auto folder-tabs-scroll">
       {tabs.map((tab) => {
         const isActive =
           location.pathname === tab.path ||
@@ -33,21 +78,23 @@ export const FolderTabs = () => {
             key={tab.path}
             to={tab.path}
             className={[
-              'relative flex items-center gap-2 px-4 sm:px-5 py-3 rounded-t-lg text-sm font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0',
+              'relative flex items-center px-3 sm:px-4 lg:px-3 py-2.5 sm:py-3 lg:py-2.5 rounded-t-lg text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0',
               isActive
-                ? 'text-white font-bold -translate-y-0.5 shadow-md'
-                : 'bg-white dark:bg-[#1E293B] text-[#64748B] dark:text-[#94A3B8] hover:text-[#1E2230] dark:hover:text-white border border-[#E2E8F0] dark:border-[#334155] border-b-0',
+                ? 'font-bold -translate-y-0.5 shadow-md z-10'
+                : 'opacity-80 hover:opacity-100 hover:-translate-y-0.5',
             ].join(' ')}
-            style={isActive ? { backgroundColor: tab.color } : undefined}
+            style={
+              isActive
+                ? {
+                    backgroundColor: isDark ? tab.darkBg : tab.lightBg,
+                    color: isDark ? tab.darkText : tab.lightText,
+                  }
+                : {
+                    backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(30,34,48,0.06)',
+                    color: isDark ? '#94A3B8' : '#64748B',
+                  }
+            }
           >
-            {/* Цветная вертикальная полоска для неактивных */}
-            {!isActive && (
-              <span
-                className="w-1 h-5 rounded-full flex-shrink-0"
-                style={{ backgroundColor: tab.color }}
-              />
-            )}
-
             {tab.label}
           </NavLink>
         );

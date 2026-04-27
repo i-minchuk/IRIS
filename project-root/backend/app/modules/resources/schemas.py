@@ -48,3 +48,24 @@ class WorkloadResponse(BaseModel):
     
     class Config:
         from_attributes = True
+
+
+# Heatmap schemas
+class HeatmapEmployee(BaseModel):
+    """Employee load cell for heatmap."""
+    id: int
+    name: str
+    load: int
+    projects: List[str]
+
+
+class HeatmapDepartment(BaseModel):
+    """Department row in heatmap."""
+    dept: str
+    employees: List[HeatmapEmployee]
+
+
+class HeatmapResponse(BaseModel):
+    """Resource heatmap response."""
+    departments: List[HeatmapDepartment]
+    updated_at: str

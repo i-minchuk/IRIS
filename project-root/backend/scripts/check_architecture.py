@@ -206,7 +206,7 @@ class ImportChecker:
             # Level 2 (overlays)
             "collaboration": {"auth", "documents"},  # Collaboration on documents
             "time_tracking": {"auth", "projects", "tasks"},  # Time tracking for projects and tasks
-            "analytics": {"auth", "documents", "projects", "time_tracking"},  # Analytics from multiple sources
+            "analytics": {"auth", "documents", "projects", "time_tracking", "tenders"},  # Analytics from multiple sources
             "gamification": {"auth", "documents", "projects"},  # Gamification based on activity
             "resources": {"auth", "documents", "projects", "time_tracking"},  # Shared resources
         }

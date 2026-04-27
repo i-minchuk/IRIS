@@ -19,16 +19,16 @@ export const LoginForm: React.FC = () => {
     setError('');
     setLoading(true);
     try {
-      const loginData = loginType === 'email' 
+      const loginData = loginType === 'email'
         ? { email, password }
         : { username, password };
-      
+
       const tokenResponse = await authApi.login(loginData);
-      
+
       // Сохраняем токены
       localStorage.setItem('access_token', tokenResponse.access_token);
       localStorage.setItem('refresh_token', tokenResponse.refresh_token);
-      
+
       // Создаём минимальный объект пользователя из токена
       const user = {
         id: 1,
@@ -36,9 +36,9 @@ export const LoginForm: React.FC = () => {
         full_name: 'User',
         is_active: true,
       };
-      
+
       setAuth(user, tokenResponse.access_token);
-      navigate('/projects');
+      navigate('/dashboard');
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Ошибка входа');
     } finally {
@@ -65,7 +65,7 @@ export const LoginForm: React.FC = () => {
             />
           </div>
           <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
-            DokPotok IRIS
+            ДокПоток IRIS
           </h1>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
             Система управления инженерной документацией
@@ -123,7 +123,12 @@ export const LoginForm: React.FC = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   placeholder="example@domain.com"
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors"
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors duration-200"
+                  style={{
+                    backgroundColor: 'var(--color-brand-surface)',
+                    borderColor: 'var(--color-brand-border)',
+                    color: 'var(--color-brand-primary)',
+                  }}
                 />
               </div>
             ) : (
@@ -138,7 +143,12 @@ export const LoginForm: React.FC = () => {
                   onChange={(e) => setUsername(e.target.value)}
                   required
                   placeholder="username"
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors"
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors duration-200"
+                  style={{
+                    backgroundColor: 'var(--color-brand-surface)',
+                    borderColor: 'var(--color-brand-border)',
+                    color: 'var(--color-brand-primary)',
+                  }}
                 />
               </div>
             )}
@@ -154,7 +164,12 @@ export const LoginForm: React.FC = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 placeholder="••••••••"
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors"
+                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors duration-200"
+                style={{
+                  backgroundColor: 'var(--color-brand-surface)',
+                  borderColor: 'var(--color-brand-border)',
+                  color: 'var(--color-brand-primary)',
+                }}
               />
             </div>
 

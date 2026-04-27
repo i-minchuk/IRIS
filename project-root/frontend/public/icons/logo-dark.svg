@@ -10,7 +10,6 @@
 
   <!-- Документ: тёмный -->
   <rect x="6" y="4" width="20" height="24" rx="2" fill="#1E293B"/>
-  <rect x="6" y="4" width="20" height="24" rx="2" fill="none" stroke="#334155" stroke-width="1"/>
 
   <!-- Загнутый уголок: фиолетовый -->
   <polygon points="20,4 26,4 26,10" fill="#9B7EDE"/>

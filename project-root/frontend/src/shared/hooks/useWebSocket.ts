@@ -2,7 +2,9 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 
 const WS_URL = (() => {
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-  return apiUrl.replace(/^http/, 'ws') + '/ws';
+  // Use base URL without /api/v1 suffix for WebSocket
+  const baseUrl = apiUrl.replace(/\/api\/v1\/?$/, '');
+  return baseUrl.replace(/^http/, 'ws') + '/ws';
 })();
 
 export interface WSMessage {
@@ -17,11 +19,12 @@ export interface WSMessage {
     | 'document_subscribers'
     | 'ping'
     | 'pong'
+    | 'dashboard_update'
     | 'error';
   payload?: Record<string, unknown>;
 }
 
-export function useWebSocket(token: string | null) {
+export function useWebSocket(_token: string | null) {
   const [isConnected, setIsConnected] = useState(false);
   const [lastMessage, setLastMessage] = useState<WSMessage | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
@@ -30,8 +33,11 @@ export function useWebSocket(token: string | null) {
   const maxReconnectDelay = 5000;
   const pingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const token = _token ?? localStorage.getItem('access_token');
+  const isMock = token?.startsWith('mock_');
+
   const connect = useCallback(() => {
-    if (!token) return;
+    if (!token || isMock) return;
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
 
     try {

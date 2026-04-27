@@ -12,6 +12,20 @@
     --color-brand-surface: #FFFFFF;
     --color-brand-border: #E2E8F0;
 
+    /* Layout переменные */
+    --layout-bg: #F5F7FA;
+    --header-bg: #FFFFFF;
+    --header-border: #E2E8F0;
+    --iris-header-height: 56px;
+    --text-primary: #1E2230;
+    --text-secondary: #64748B;
+    --text-muted: #94A3B8;
+    --hover-bg: #F1F5F9;
+    --button-bg: #F5F7FA;
+    --button-hover-bg: #E2E8F0;
+    --content-bg: #FFFFFF;
+    --content-border: #E2E8F0;
+
     /* Шрифты */
     --font-heading: 'Montserrat', 'Segoe UI', sans-serif;
     --font-body: 'Inter', 'Segoe UI', system-ui, sans-serif;
@@ -21,14 +35,25 @@
     background-color: var(--color-brand-bg);
   }
 
-  html.dark {
-    background-color: #0F172A;
-  }
-
   body {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     background-color: var(--color-brand-bg);
     color: var(--color-brand-primary);
+  }
+
+  /* Отключаем стандартное автозаполнение (белый/жёлтый фон в тёмной теме) */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill,
+  textarea:-webkit-autofill:hover,
+  textarea:-webkit-autofill:focus,
+  select:-webkit-autofill,
+  select:-webkit-autofill:hover,
+  select:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--text-primary);
+    -webkit-box-shadow: 0 0 0px 1000px var(--color-brand-surface) inset;
+    transition: background-color 5000s ease-in-out 0s;
   }
 }
 
@@ -40,6 +65,20 @@
   --color-brand-bg: #0F172A;
   --color-brand-surface: #1E293B;
   --color-brand-border: #334155;
+
+  /* Layout переменные тёмной темы */
+  --layout-bg: #0B1220;
+  --header-bg: #0F172A;
+  --header-border: #1E293B;
+  --iris-header-height: 56px;
+  --text-primary: #FFFFFF;
+  --text-secondary: #94A3B8;
+  --text-muted: #64748B;
+  --hover-bg: #1E293B;
+  --button-bg: #1E293B;
+  --button-hover-bg: #334155;
+  --content-bg: #0F172A;
+  --content-border: #1E293B;
 }
 
 @layer components {
@@ -122,4 +161,37 @@
   --topbar-icon: #cbd5e1;
   --logo-iris-top: #60a5fa;
   --logo-iris: #3b82f6;
+}
+
+/* FolderTabs scrollbar styling */
+.folder-tabs-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-brand-border) transparent;
+}
+.dark .folder-tabs-scroll {
+  scrollbar-color: #334155 transparent;
+}
+
+.folder-tabs-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+.folder-tabs-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.folder-tabs-scroll::-webkit-scrollbar-thumb {
+  background-color: var(--color-brand-border);
+  border-radius: 3px;
+}
+.dark .folder-tabs-scroll::-webkit-scrollbar-thumb {
+  background-color: #334155;
+}
+
+/* Hide scrollbar on wide screens (xl and up) */
+@media (min-width: 1280px) {
+  .folder-tabs-scroll {
+    scrollbar-width: none;
+  }
+  .folder-tabs-scroll::-webkit-scrollbar {
+    display: none;
+  }
 }
