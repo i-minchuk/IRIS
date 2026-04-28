@@ -5,10 +5,8 @@ interface TabItem {
   path: string;
   label: string;
   shortLabel: string;
-  lightBg: string;
-  darkBg: string;
-  lightText: string;
-  darkText: string;
+  color: string;
+  glow: string;
 }
 
 const tabs: TabItem[] = [
@@ -16,55 +14,43 @@ const tabs: TabItem[] = [
     path: '/dashboard',
     label: 'Панель аналитики и контроля',
     shortLabel: 'Аналитика',
-    lightBg: '#3B4FA8',
-    darkBg: '#5C75E0',
-    lightText: '#FFFFFF',
-    darkText: '#FFFFFF',
+    color: '#00F0FF',
+    glow: 'rgba(0, 240, 255, 0.25)',
   },
   {
     path: '/projects',
     label: 'Портфель проектов',
     shortLabel: 'Проекты',
-    lightBg: '#8D79C7',
-    darkBg: '#A898D9',
-    lightText: '#FFFFFF',
-    darkText: '#FFFFFF',
+    color: '#B829DD',
+    glow: 'rgba(184, 41, 221, 0.25)',
   },
   {
     path: '/documents',
     label: 'Пакет документации',
     shortLabel: 'Документы',
-    lightBg: '#3498DB',
-    darkBg: '#5DADE2',
-    lightText: '#FFFFFF',
-    darkText: '#FFFFFF',
+    color: '#2979FF',
+    glow: 'rgba(41, 121, 255, 0.25)',
   },
   {
     path: '/approval',
     label: 'Согласования',
     shortLabel: 'Согласования',
-    lightBg: '#D4A62A',
-    darkBg: '#E8C44A',
-    lightText: '#1E2230',
-    darkText: '#1E2230',
+    color: '#FFAA00',
+    glow: 'rgba(255, 170, 0, 0.25)',
   },
   {
     path: '/remarks',
     label: 'Замечания',
     shortLabel: 'Замечания',
-    lightBg: '#C0392B',
-    darkBg: '#E74C3C',
-    lightText: '#FFFFFF',
-    darkText: '#FFFFFF',
+    color: '#FF4D6D',
+    glow: 'rgba(255, 77, 109, 0.25)',
   },
   {
     path: '/archive',
     label: 'Архив',
     shortLabel: 'Архив',
-    lightBg: '#A0A8B8',
-    darkBg: '#5A6270',
-    lightText: '#FFFFFF',
-    darkText: '#FFFFFF',
+    color: '#8892A8',
+    glow: 'rgba(136, 146, 168, 0.25)',
   },
 ];
 
@@ -74,7 +60,9 @@ export const FolderTabs = () => {
   const isDark = theme === 'dark';
 
   return (
-    <nav className="flex items-end gap-1.5 pt-2 sm:pt-4 bg-[#F5F7FA] dark:bg-[#0B1220] overflow-x-auto folder-tabs-scroll snap-x snap-mandatory">
+    <nav className="flex items-end gap-1.5 pt-2 sm:pt-4 overflow-x-auto folder-tabs-scroll snap-x snap-mandatory"
+      style={{ background: isDark ? 'transparent' : '#F5F7FA' }}
+    >
       {tabs.map((tab) => {
         const isActive =
           location.pathname === tab.path ||
@@ -85,20 +73,26 @@ export const FolderTabs = () => {
             key={tab.path}
             to={tab.path}
             className={[
-              'relative flex items-center px-2 sm:px-4 py-2 sm:py-3 rounded-t-lg text-[11px] sm:text-sm font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0 snap-start',
+              'relative flex items-center px-2 sm:px-4 py-2 sm:py-3 rounded-t-lg text-[11px] sm:text-sm font-medium transition-all duration-300 whitespace-nowrap flex-shrink-0 snap-start',
               isActive
-                ? 'font-bold -translate-y-0.5 shadow-md z-10'
-                : 'opacity-80 hover:opacity-100 hover:-translate-y-0.5',
+                ? 'font-bold -translate-y-0.5 z-10'
+                : 'opacity-70 hover:opacity-100 hover:-translate-y-0.5',
             ].join(' ')}
             style={
               isActive
                 ? {
-                    backgroundColor: isDark ? tab.darkBg : tab.lightBg,
-                    color: isDark ? tab.darkText : tab.lightText,
+                    background: isDark
+                      ? `linear-gradient(180deg, ${tab.color}22 0%, ${tab.color}11 100%)`
+                      : tab.color,
+                    color: isDark ? tab.color : '#fff',
+                    boxShadow: isDark
+                      ? `0 -4px 20px ${tab.glow}, inset 0 1px 0 ${tab.color}33`
+                      : `0 -4px 20px ${tab.glow}`,
+                    borderTop: isDark ? `2px solid ${tab.color}` : 'none',
                   }
                 : {
-                    backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(30,34,48,0.06)',
-                    color: isDark ? '#94A3B8' : '#64748B',
+                    backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(30,34,48,0.06)',
+                    color: isDark ? '#5A6380' : '#64748B',
                   }
             }
             title={tab.label}

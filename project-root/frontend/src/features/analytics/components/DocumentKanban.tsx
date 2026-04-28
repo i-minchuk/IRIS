@@ -33,7 +33,7 @@ export function DocumentKanban({ data, loading }: DocumentKanbanProps) {
       {/* Header */}
       <div className="mb-4 flex items-center gap-2">
         <FileText className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-        <h3 className="text-base sm:text-lg font-semibold text-slate-800 dark:text-slate-100">
+        <h3 className="text-base sm:text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
           Документооборот по проектам
         </h3>
       </div>
@@ -43,7 +43,7 @@ export function DocumentKanban({ data, loading }: DocumentKanbanProps) {
         {projects.map((project) => (
           <div
             key={project.project_id}
-            className="rounded-lg border border-slate-200 p-3 dark:border-slate-700"
+            className="rounded-lg border p-3" style={{ borderColor: 'rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)' }}
           >
             {/* Project title */}
             <div className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">

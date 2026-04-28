@@ -72,9 +72,9 @@ export function ProjectPortfolio({ data, loading }: ProjectPortfolioProps) {
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm dark:border-slate-700 dark:bg-[#1e293b]">
-        <div className="mb-4 h-6 w-48 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
-        <div className="aspect-[16/10] w-full animate-pulse rounded-lg bg-slate-100 dark:bg-slate-800" />
+      <div className="rounded-2xl p-4 sm:p-6 neon-card">
+        <div className="mb-4 h-6 w-48 animate-pulse rounded" style={{ background: 'rgba(255,255,255,0.06)' }} />
+        <div className="aspect-[16/10] w-full animate-pulse rounded-lg" style={{ background: 'rgba(255,255,255,0.04)' }} />
       </div>
     );
   }
@@ -361,7 +361,7 @@ export function ProjectPortfolio({ data, loading }: ProjectPortfolioProps) {
   return (
     <>
       {/* Normal view */}
-      <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm dark:border-slate-700 dark:bg-[#1e293b]">
+      <div className="rounded-2xl p-4 sm:p-6 neon-card">
         {renderHeader(false)}
         {renderChart(false)}
         {projects.length === 0 && emptyState}
@@ -369,8 +369,8 @@ export function ProjectPortfolio({ data, loading }: ProjectPortfolioProps) {
 
       {/* Fullscreen overlay */}
       {isFullscreen && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-black/60 backdrop-blur-sm p-3 sm:p-6 lg:p-10">
-          <div className="flex flex-col h-full rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-[#1e293b] p-5 sm:p-8 overflow-hidden">
+        <div className="fixed inset-0 z-50 flex flex-col bg-black/70 backdrop-blur-md p-3 sm:p-6 lg:p-10">
+          <div className="flex flex-col h-full rounded-2xl p-5 sm:p-8 overflow-hidden neon-card">
             {renderHeader(true)}
             {renderChart(true)}
             {projects.length === 0 && emptyState}

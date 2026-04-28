@@ -59,40 +59,70 @@
 
 /* Тёмная тема через класс .dark на html */
 .dark {
-  --color-brand-primary: #F1F5F9;
+  --color-brand-primary: #E2E8F0;
   --color-brand-secondary: #94A3B8;
-  --color-brand-accent: #4F7A4C;
-  --color-brand-bg: #0F172A;
-  --color-brand-surface: #1E293B;
-  --color-brand-border: #334155;
+  --color-brand-accent: #00F0FF;
+  --color-brand-bg: #0B0E14;
+  --color-brand-surface: #111420;
+  --color-brand-border: rgba(255, 255, 255, 0.06);
 
-  /* Layout переменные тёмной темы */
-  --layout-bg: #0B1220;
-  --header-bg: #0F172A;
-  --header-border: #1E293B;
+  /* Layout переменные тёмной темы — Neon Dark */
+  --layout-bg: #0B0E14;
+  --header-bg: #0D1018;
+  --header-border: rgba(255, 255, 255, 0.05);
   --iris-header-height: 56px;
-  --text-primary: #FFFFFF;
-  --text-secondary: #94A3B8;
-  --text-muted: #64748B;
-  --hover-bg: #1E293B;
-  --button-bg: #1E293B;
-  --button-hover-bg: #334155;
-  --content-bg: #0F172A;
-  --content-border: #1E293B;
+  --text-primary: #E2E8F0;
+  --text-secondary: #8892A8;
+  --text-muted: #5A6380;
+  --hover-bg: rgba(0, 240, 255, 0.05);
+  --button-bg: rgba(255, 255, 255, 0.04);
+  --button-hover-bg: rgba(255, 255, 255, 0.08);
+  --content-bg: #111420;
+  --content-border: rgba(255, 255, 255, 0.06);
 }
 
 @layer components {
-  /* Карточки */
-  .card {
-    background-color: var(--color-brand-surface);
-    border: 1px solid var(--color-brand-border);
-    border-radius: 0.5rem;
-    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  /* Neon Card — основной стиль карточек дашборда */
+  .neon-card {
+    background: linear-gradient(145deg, rgba(26, 29, 45, 0.9), rgba(17, 20, 32, 0.95));
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 1rem;
+    box-shadow:
+      0 4px 24px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(12px);
   }
 
-  .dark .card {
-    background-color: #1e293b;
-    border-color: #334155;
+  .dark .neon-card {
+    background: linear-gradient(145deg, rgba(26, 29, 45, 0.9), rgba(17, 20, 32, 0.95));
+    border-color: rgba(255, 255, 255, 0.06);
+  }
+
+  /* Neon glow accents */
+  .neon-glow-cyan {
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.15), 0 0 60px rgba(0, 240, 255, 0.05);
+  }
+  .neon-glow-magenta {
+    box-shadow: 0 0 20px rgba(255, 0, 170, 0.15), 0 0 60px rgba(255, 0, 170, 0.05);
+  }
+  .neon-glow-purple {
+    box-shadow: 0 0 20px rgba(184, 41, 221, 0.15), 0 0 60px rgba(184, 41, 221, 0.05);
+  }
+  .neon-glow-blue {
+    box-shadow: 0 0 20px rgba(41, 121, 255, 0.15), 0 0 60px rgba(41, 121, 255, 0.05);
+  }
+
+  /* Neon text gradients */
+  .neon-text-gradient {
+    background: linear-gradient(135deg, #00F0FF, #B829DD, #FF00AA);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Neon border gradient */
+  .neon-border-gradient {
+    border-image: linear-gradient(135deg, #00F0FF, #B829DD, #FF00AA) 1;
   }
 
   /* Ссылки навигации */
@@ -145,22 +175,22 @@
 }
 
 :root[data-theme="dark"] {
-  --bg-app: #0f172a;
-  --bg-topbar: #0b1220;
-  --bg-surface: #1e293b;
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-tertiary: #64748b;
-  --text-inverse: #0f172a;
-  --primary: #3b82f6;
-  --border-default: #334155;
-  --error: #ef4444;
-  --notification-badge: #f87171;
-  --notification-icon: #cbd5e1;
-  --topbar-hover: rgba(255, 255, 255, 0.05);
-  --topbar-icon: #cbd5e1;
-  --logo-iris-top: #60a5fa;
-  --logo-iris: #3b82f6;
+  --bg-app: #0B0E14;
+  --bg-topbar: #0D1018;
+  --bg-surface: #111420;
+  --text-primary: #E2E8F0;
+  --text-secondary: #8892A8;
+  --text-tertiary: #5A6380;
+  --text-inverse: #0B0E14;
+  --primary: #00F0FF;
+  --border-default: rgba(255, 255, 255, 0.06);
+  --error: #FF4D6D;
+  --notification-badge: #FF00AA;
+  --notification-icon: #5A6380;
+  --topbar-hover: rgba(0, 240, 255, 0.08);
+  --topbar-icon: #5A6380;
+  --logo-iris-top: #00F0FF;
+  --logo-iris: #B829DD;
 }
 
 /* FolderTabs scrollbar styling */
@@ -169,7 +199,7 @@
   scrollbar-color: var(--color-brand-border) transparent;
 }
 .dark .folder-tabs-scroll {
-  scrollbar-color: #334155 transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
 }
 
 .folder-tabs-scroll::-webkit-scrollbar {
@@ -183,7 +213,7 @@
   border-radius: 3px;
 }
 .dark .folder-tabs-scroll::-webkit-scrollbar-thumb {
-  background-color: #334155;
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 /* Hide scrollbar on wide screens (xl and up) */

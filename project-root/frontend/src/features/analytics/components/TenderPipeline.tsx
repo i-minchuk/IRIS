@@ -22,11 +22,11 @@ export function TenderPipeline({ data, loading }: TenderPipelineProps) {
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm dark:border-slate-700 dark:bg-[#1e293b]">
-        <div className="mb-4 h-6 w-56 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
+      <div className="rounded-2xl p-4 sm:p-6 neon-card">
+        <div className="mb-4 h-6 w-56 animate-pulse rounded" style={{ background: 'rgba(255,255,255,0.06)' }} />
         <div className="space-y-3">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="h-14 animate-pulse rounded-lg bg-slate-100 dark:bg-slate-800" />
+            <div key={i} className="h-14 animate-pulse rounded-lg" style={{ background: 'rgba(255,255,255,0.04)' }} />
           ))}
         </div>
       </div>
@@ -34,22 +34,22 @@ export function TenderPipeline({ data, loading }: TenderPipelineProps) {
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm dark:border-slate-700 dark:bg-[#1e293b]">
+    <div className="rounded-2xl p-4 sm:p-6 neon-card">
       {/* Header */}
       <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <Target className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-          <h3 className="text-base sm:text-lg font-semibold text-slate-800 dark:text-slate-100">
+          <h3 className="text-base sm:text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
             Тендерный отдел — Pipeline
           </h3>
         </div>
-        <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+        <div className="flex flex-wrap items-center gap-3 text-xs" style={{ color: 'var(--text-secondary)' }}>
           <span className="flex items-center gap-1">
             <Clock className="h-3.5 w-3.5" />
-            Средняя подготовка: <strong className="text-slate-700 dark:text-slate-300">{data?.avg_prep_days ?? 0} дн</strong>
+            Средняя подготовка: <strong style={{ color: 'var(--text-primary)' }}>{data?.avg_prep_days ?? 0} дн</strong>
           </span>
           <span className="flex items-center gap-1">
-            Win rate: <strong className="text-slate-700 dark:text-slate-300">{data?.win_rate ?? 0}%</strong>
+            Win rate: <strong style={{ color: 'var(--text-primary)' }}>{data?.win_rate ?? 0}%</strong>
           </span>
           {!!data?.overdue_count && (
             <span className="flex items-center gap-1 text-rose-600 dark:text-rose-400">

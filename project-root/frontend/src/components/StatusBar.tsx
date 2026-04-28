@@ -16,7 +16,9 @@ export const StatusBar: React.FC = () => {
   const overflowCount = users.length - maxVisible;
 
   return (
-    <div className="bg-white dark:bg-[#0F172A] border-t border-gray-200 dark:border-[#1E293B] px-3 sm:px-4 py-1.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 shrink-0">
+    <div className="border-t px-3 sm:px-4 py-1.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 text-[11px] sm:text-xs shrink-0"
+      style={{ backgroundColor: 'var(--layout-bg)', borderColor: 'var(--header-border)', color: 'var(--text-muted)' }}
+    >
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <span>⏱️ {time.toLocaleTimeString('ru-RU')}</span>
         <span className="flex items-center gap-1">

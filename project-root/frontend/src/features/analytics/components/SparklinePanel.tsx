@@ -59,10 +59,10 @@ export function SparklinePanel({ data, loading }: SparklinePanelProps) {
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm dark:border-slate-700 dark:bg-[#1e293b]">
+      <div className="rounded-2xl p-4 sm:p-6 neon-card">
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-32 animate-pulse rounded-lg bg-slate-100 dark:bg-slate-800" />
+            <div key={i} className="h-32 animate-pulse rounded-lg" style={{ background: 'rgba(255,255,255,0.04)' }} />
           ))}
         </div>
       </div>
@@ -70,7 +70,7 @@ export function SparklinePanel({ data, loading }: SparklinePanelProps) {
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm dark:border-slate-700 dark:bg-[#1e293b]">
+    <div className="rounded-2xl p-4 sm:p-6 neon-card">
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {charts.map((chart) => {
           const cfg = STATUS_CONFIG[chart.status] ?? STATUS_CONFIG.yellow;
@@ -81,11 +81,11 @@ export function SparklinePanel({ data, loading }: SparklinePanelProps) {
           return (
             <div
               key={chart.id}
-              className={[
-                'flex flex-col rounded-lg border p-3 sm:p-4',
-                cfg.bg,
-                cfg.border,
-              ].join(' ')}
+              className="flex flex-col rounded-lg border p-3 sm:p-4"
+              style={{
+                background: 'rgba(255,255,255,0.03)',
+                borderColor: 'rgba(255,255,255,0.06)',
+              }}
             >
               <div className="mb-1 text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 {chart.label}

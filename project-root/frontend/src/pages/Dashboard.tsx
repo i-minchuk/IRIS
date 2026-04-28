@@ -96,15 +96,10 @@ export default function Dashboard() {
   useEffect(() => {
     const intervals: ReturnType<typeof setInterval>[] = [];
 
-    // KPI + Documents + Shipments — 5 мин
     intervals.push(setInterval(() => loadAll(true), 5 * 60 * 1000));
-    // Resources — 15 мин
     intervals.push(setInterval(() => resourcesApi.getHeatmap().then((r) => setHeatmap(r.data)).catch(console.error), 15 * 60 * 1000));
-    // Tenders — 10 мин
     intervals.push(setInterval(() => analyticsApi.getTenderPipeline().then((r) => setTenderPipeline(r.data)).catch(console.error), 10 * 60 * 1000));
-    // Production — 2 мин
     intervals.push(setInterval(() => analyticsApi.getProductionSqcdp().then((r) => setSqcdp(r.data)).catch(console.error), 2 * 60 * 1000));
-    // Shipments — 1 мин
     intervals.push(setInterval(() => analyticsApi.getShipmentsCalendar().then((r) => setShipments(r.data)).catch(console.error), 1 * 60 * 1000));
 
     return () => intervals.forEach(clearInterval);
@@ -125,7 +120,7 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center text-gray-400 dark:text-slate-400">
+      <div className="min-h-[60vh] flex items-center justify-center" style={{ color: 'var(--text-muted)' }}>
         <div className="flex items-center gap-3">
           <FolderOpen className="animate-pulse" size={24} />
           <span className="text-sm">Загрузка дашборда…</span>
@@ -137,12 +132,12 @@ export default function Dashboard() {
   if (error && tiles.length === 0) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
-        <div className="rounded-xl border border-rose-500/30 bg-white dark:bg-[#1e293b] p-6 max-w-md shadow-sm">
+        <div className="rounded-xl border border-rose-500/30 p-6 max-w-md shadow-sm neon-card">
           <div className="flex items-start gap-3">
             <AlertTriangle className="text-rose-500 shrink-0 mt-0.5" size={20} />
             <div>
-              <div className="text-gray-900 dark:text-white font-medium text-sm">Ошибка загрузки</div>
-              <div className="text-gray-500 dark:text-slate-400 text-xs mt-1">{error}</div>
+              <div className="font-medium text-sm" style={{ color: 'var(--text-primary)' }}>Ошибка загрузки</div>
+              <div className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{error}</div>
             </div>
           </div>
         </div>
@@ -151,32 +146,37 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-3 sm:space-y-4">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 sm:gap-3">
         <div>
-          <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
+          <h1 className="text-lg sm:text-xl lg:text-2xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
             Единый центр управления
           </h1>
-          <p className="text-xs sm:text-sm text-gray-500 dark:text-slate-400 mt-1">
+          <p className="text-xs sm:text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
             Обзор потока ключевых показателей проектной организации
           </p>
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
           {isConnected && (
-            <span className="hidden sm:inline-flex items-center gap-1 text-[10px] text-emerald-500">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="hidden sm:inline-flex items-center gap-1 text-[10px]" style={{ color: '#00F0FF' }}>
+              <span className="h-1.5 w-1.5 rounded-full animate-pulse" style={{ backgroundColor: '#00F0FF', boxShadow: '0 0 8px #00F0FF' }} />
               live
             </span>
           )}
           {lastUpdated && (
-            <span className="text-[10px] text-slate-400 dark:text-slate-500">
+            <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
               обновлено {lastUpdated.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
             </span>
           )}
           <button
             onClick={() => loadAll()}
-            className="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-[10px] text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800"
+            className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] transition-all duration-200 hover:brightness-110"
+            style={{
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              color: 'var(--text-secondary)',
+            }}
           >
             <RefreshCw className="h-3 w-3" />
             <span className="hidden sm:inline">Обновить</span>
@@ -184,8 +184,8 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* KPI Tiles — adaptive: 1 col mobile, 2 col sm, auto-fit lg+ */}
-      <section className="grid gap-2 sm:gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))' }}>
+      {/* KPI Tiles */}
+      <section className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))' }}>
         {tiles.map((tile) => (
           <KPITile
             key={tile.id}
@@ -201,8 +201,8 @@ export default function Dashboard() {
         ))}
       </section>
 
-      {/* Row: Portfolio + Alerts — stack on mobile, side-by-side lg+ */}
-      <section className="grid gap-3 sm:gap-4 lg:grid-cols-3">
+      {/* Row: Portfolio + Alerts */}
+      <section className="grid gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <ProjectPortfolio data={portfolio} loading={false} />
         </div>
@@ -211,19 +211,15 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* Shipment Calendar — full width */}
-      <section>
+      {/* Row: Tenders + Production + Shipments */}
+      <section className="grid gap-4 lg:grid-cols-3">
+        <TenderPipeline data={tenderPipeline} loading={false} />
+        <ProductionSQCDP data={sqcdp} loading={false} />
         <ShipmentCalendar data={shipments} loading={false} />
       </section>
 
-      {/* Row: Tenders + Production — stack mobile, side-by-side md+ */}
-      <section className="grid gap-3 sm:gap-4 md:grid-cols-2">
-        <TenderPipeline data={tenderPipeline} loading={false} />
-        <ProductionSQCDP data={sqcdp} loading={false} />
-      </section>
-
-      {/* Row: Documents + Resource Heatmap — stack mobile, side-by-side lg+ */}
-      <section className="grid gap-3 sm:gap-4 lg:grid-cols-5">
+      {/* Row: Documents + Resource Heatmap */}
+      <section className="grid gap-4 lg:grid-cols-5">
         <div className="lg:col-span-3">
           <DocumentKanban data={documentsByProject} loading={false} />
         </div>

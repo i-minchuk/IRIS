@@ -34,7 +34,7 @@ export const ResourceHeatmap: React.FC<ResourceHeatmapProps> = ({
   };
 
   return (
-    <div className="rounded-xl border border-gray-200 dark:border-slate-700/50 bg-white dark:bg-[#1e293b] p-4 sm:p-5 shadow-sm">
+    <div className="rounded-2xl p-4 sm:p-5 neon-card">
       <div className="flex items-center gap-2 mb-4">
         <span className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wide">
           ⚡ Загруженность персонала

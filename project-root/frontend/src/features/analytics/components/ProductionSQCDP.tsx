@@ -119,11 +119,11 @@ export function ProductionSQCDP({ data, loading }: ProductionSQCDPProps) {
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm dark:border-slate-700 dark:bg-[#1e293b]">
-        <div className="mb-4 h-6 w-48 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
+      <div className="rounded-2xl p-4 sm:p-6 neon-card">
+        <div className="mb-4 h-6 w-48 animate-pulse rounded" style={{ background: 'rgba(255,255,255,0.06)' }} />
         <div className="space-y-3">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="h-12 animate-pulse rounded-lg bg-slate-100 dark:bg-slate-800" />
+            <div key={i} className="h-12 animate-pulse rounded-lg" style={{ background: 'rgba(255,255,255,0.04)' }} />
           ))}
         </div>
       </div>
@@ -131,11 +131,11 @@ export function ProductionSQCDP({ data, loading }: ProductionSQCDPProps) {
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm dark:border-slate-700 dark:bg-[#1e293b]">
+    <div className="rounded-2xl p-4 sm:p-6 neon-card">
       {/* Header */}
       <div className="mb-4 flex items-center gap-2">
         <Gauge className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-        <h3 className="text-base sm:text-lg font-semibold text-slate-800 dark:text-slate-100">
+        <h3 className="text-base sm:text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
           Производство — SQCDP
         </h3>
       </div>
@@ -150,11 +150,11 @@ export function ProductionSQCDP({ data, loading }: ProductionSQCDPProps) {
           return (
             <div
               key={pillar.id}
-              className="rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden"
+              className="rounded-lg border overflow-hidden" style={{ borderColor: 'rgba(255,255,255,0.06)' }}
             >
               <button
                 onClick={() => setExpanded(isExpanded ? null : pillar.id)}
-                className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors" style={{ color: 'var(--text-primary)' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.03)'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
               >
                 <Icon className={`h-5 w-5 shrink-0 ${meta.color}`} />
                 <div className="min-w-0 flex-1">

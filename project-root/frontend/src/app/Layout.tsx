@@ -16,12 +16,12 @@ export const Layout: React.FC = () => {
 
   return (
     <div
-      className="min-h-screen flex flex-col transition-colors duration-200"
+      className="min-h-screen flex flex-col transition-colors duration-300"
       style={{ backgroundColor: 'var(--layout-bg)' }}
     >
       {/* Хедер */}
       <header
-        className="shadow-sm border-b transition-colors duration-200"
+        className="transition-colors duration-300 border-b"
         style={{ backgroundColor: 'var(--header-bg)', borderColor: 'var(--header-border)' }}
       >
         <div className="mx-auto px-4 sm:px-6 lg:px-8">
@@ -42,7 +42,7 @@ export const Layout: React.FC = () => {
                 className="text-lg font-bold tracking-tight transition-colors duration-200"
                 style={{ color: 'var(--text-primary)' }}
               >
-                ДокПоток <span className="text-[#4F7A4C]">IRIS</span>
+                ДокПоток <span className="text-[#00F0FF]">IRIS</span>
               </h1>
             </div>
 
@@ -90,7 +90,17 @@ export const Layout: React.FC = () => {
 
               <button
                 onClick={logout}
-                className="px-3 py-1.5 text-sm border border-[#DC2626] text-[#DC2626] rounded-md hover:bg-[#DC2626]/5 dark:hover:bg-[#DC2626]/10 transition-colors"
+                className="px-3 py-1.5 text-sm rounded-md transition-colors"
+                style={{
+                  border: '1px solid rgba(255, 77, 109, 0.4)',
+                  color: '#FF4D6D',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 77, 109, 0.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
               >
                 Выйти
               </button>
@@ -125,7 +135,11 @@ export const Layout: React.FC = () => {
                   logout();
                   setMobileMenuOpen(false);
                 }}
-                className="w-full px-3 py-2 text-sm border border-[#DC2626] text-[#DC2626] rounded-md hover:bg-[#DC2626]/5 dark:hover:bg-[#DC2626]/10 transition-colors"
+                className="w-full px-3 py-2 text-sm rounded-md transition-colors"
+                style={{
+                  border: '1px solid rgba(255, 77, 109, 0.4)',
+                  color: '#FF4D6D',
+                }}
               >
                 Выйти
               </button>
@@ -139,8 +153,11 @@ export const Layout: React.FC = () => {
         <div className="mx-auto w-full px-4 sm:px-6 lg:px-8">
           <FolderTabs />
           <div
-            className="rounded-b-xl rounded-tr-xl rounded-tl-none shadow-sm border border-t-0 -mt-px min-h-[calc(100vh-var(--iris-header-height)-80px)] p-4 sm:p-6 transition-colors duration-200"
-            style={{ backgroundColor: 'var(--content-bg)', borderColor: 'var(--content-border)' }}
+            className="rounded-b-2xl rounded-tr-2xl rounded-tl-none shadow-2xl border border-t-0 -mt-px min-h-[calc(100vh-var(--iris-header-height)-80px)] p-4 sm:p-6 transition-colors duration-300"
+            style={{
+              background: 'linear-gradient(180deg, var(--content-bg) 0%, var(--layout-bg) 100%)',
+              borderColor: 'var(--content-border)',
+            }}
           >
             <CollaborationProvider>
               <Outlet />

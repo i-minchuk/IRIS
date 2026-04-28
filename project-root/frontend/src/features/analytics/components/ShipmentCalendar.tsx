@@ -47,7 +47,7 @@ export function ShipmentCalendar({ data, loading }: ShipmentCalendarProps) {
       <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <Truck className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-          <h3 className="text-base sm:text-lg font-semibold text-slate-800 dark:text-slate-100">
+          <h3 className="text-base sm:text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
             Отгрузка и логистика
           </h3>
         </div>

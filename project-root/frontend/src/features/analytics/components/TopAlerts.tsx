@@ -50,11 +50,11 @@ export function TopAlerts({ data, loading }: TopAlertsProps) {
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-[#1e293b]">
-        <div className="mb-4 h-6 w-40 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
+      <div className="rounded-2xl p-6 neon-card">
+        <div className="mb-4 h-6 w-40 animate-pulse rounded" style={{ background: 'rgba(255,255,255,0.06)' }} />
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-20 animate-pulse rounded-lg bg-slate-100 dark:bg-slate-800" />
+            <div key={i} className="h-20 animate-pulse rounded-lg" style={{ background: 'rgba(255,255,255,0.04)' }} />
           ))}
         </div>
       </div>
@@ -62,10 +62,10 @@ export function TopAlerts({ data, loading }: TopAlertsProps) {
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-[#1e293b]">
+    <div className="rounded-2xl p-6 neon-card">
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
+          <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
             Тревоги
           </h3>
           {total > 0 && (
@@ -74,12 +74,12 @@ export function TopAlerts({ data, loading }: TopAlertsProps) {
             </span>
           )}
         </div>
-        <span className="text-xs text-slate-400 dark:text-slate-500">Топ-3 приоритетных</span>
+        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Топ-3 приоритетных</span>
       </div>
 
       <div className="space-y-3">
         {alerts.length === 0 && (
-          <div className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500 dark:border-slate-600 dark:text-slate-400">
+          <div className="rounded-lg border border-dashed p-6 text-center text-sm" style={{ borderColor: 'rgba(255,255,255,0.08)', color: 'var(--text-muted)' }}>
             <ShieldAlert className="mx-auto mb-2 h-6 w-6 opacity-50" />
             Все системы в норме. Тревог нет.
           </div>
@@ -97,7 +97,7 @@ export function TopAlerts({ data, loading }: TopAlertsProps) {
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                  <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
                     {alert.title}
                   </p>
                   {alert.severity === 'critical' && (
@@ -106,7 +106,7 @@ export function TopAlerts({ data, loading }: TopAlertsProps) {
                     </span>
                   )}
                 </div>
-                <p className="mt-0.5 text-xs leading-relaxed text-slate-600 dark:text-slate-400">
+                <p className="mt-0.5 text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
                   {alert.message}
                 </p>
               </div>

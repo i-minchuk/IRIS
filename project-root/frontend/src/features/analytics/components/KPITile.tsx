@@ -11,24 +11,25 @@ export interface KPITileProps {
   onClick?: () => void;
 }
 
-const statusColors: Record<string, { border: string; glow: string; trendUp: string; trendDown: string }> = {
+const statusConfig: Record<string, {
+  gradient: string;
+  glow: string;
+  border: string;
+}> = {
   green: {
-    border: 'border-emerald-500/40',
-    glow: 'shadow-emerald-500/10',
-    trendUp: 'text-emerald-400',
-    trendDown: 'text-rose-400',
+    gradient: 'linear-gradient(135deg, #00F0FF, #00C853)',
+    glow: 'rgba(0, 240, 255, 0.15)',
+    border: 'rgba(0, 240, 255, 0.3)',
   },
   yellow: {
-    border: 'border-amber-500/40',
-    glow: 'shadow-amber-500/10',
-    trendUp: 'text-emerald-400',
-    trendDown: 'text-rose-400',
+    gradient: 'linear-gradient(135deg, #FFAA00, #FF00AA)',
+    glow: 'rgba(255, 170, 0, 0.15)',
+    border: 'rgba(255, 170, 0, 0.3)',
   },
   red: {
-    border: 'border-rose-500/40',
-    glow: 'shadow-rose-500/10',
-    trendUp: 'text-emerald-400',
-    trendDown: 'text-rose-400',
+    gradient: 'linear-gradient(135deg, #FF4D6D, #FF00AA)',
+    glow: 'rgba(255, 77, 109, 0.15)',
+    border: 'rgba(255, 77, 109, 0.3)',
   },
 };
 
@@ -86,50 +87,78 @@ export const KPITile: React.FC<KPITileProps> = ({
   clickable,
   onClick,
 }) => {
-  const colors = statusColors[status] || statusColors.green;
+  const cfg = statusConfig[status] || statusConfig.green;
   const animatedValue = useCountUp(value);
 
   return (
     <div
       onClick={onClick}
       className={[
-        'relative rounded-xl border bg-white dark:bg-[#1e293b] p-4 sm:p-5 transition-all duration-200',
-        'shadow-sm dark:shadow-lg',
-        colors.border,
-        colors.glow,
-        clickable ? 'cursor-pointer hover:brightness-105 dark:hover:brightness-110 hover:scale-[1.01]' : '',
+        'relative rounded-2xl p-4 sm:p-5 transition-all duration-300 overflow-hidden',
+        clickable ? 'cursor-pointer hover:scale-[1.02]' : '',
       ].join(' ')}
+      style={{
+        background: 'linear-gradient(145deg, rgba(26, 29, 45, 0.9), rgba(17, 20, 32, 0.95))',
+        border: `1px solid ${cfg.border}`,
+        boxShadow: `0 4px 24px rgba(0,0,0,0.4), 0 0 20px ${cfg.glow}, inset 0 1px 0 rgba(255,255,255,0.04)`,
+      }}
     >
-      <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-slate-400 mb-3">
-        {label}
-      </div>
+      {/* Neon corner accent */}
+      <div
+        className="absolute top-0 right-0 w-20 h-20 opacity-20"
+        style={{
+          background: cfg.gradient,
+          filter: 'blur(30px)',
+          borderRadius: '50%',
+          transform: 'translate(30%, -30%)',
+        }}
+      />
 
-      <div className="flex items-end justify-between gap-3 mb-3">
-        <span className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
-          {animatedValue}
-        </span>
-        {trend && (
+      <div className="relative">
+        <div className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--text-muted)' }}>
+          {label}
+        </div>
+
+        <div className="flex items-end justify-between gap-3 mb-3">
           <span
-            className={[
-              'text-xs font-semibold whitespace-nowrap mb-1',
-              trend_direction === 'up' ? colors.trendUp : colors.trendDown,
-            ].join(' ')}
+            className="text-2xl sm:text-3xl font-bold tracking-tight"
+            style={{
+              background: cfg.gradient,
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+            }}
           >
-            {trend}
+            {animatedValue}
           </span>
-        )}
+          {trend && (
+            <span
+              className="text-xs font-semibold whitespace-nowrap mb-1"
+              style={{
+                color: trend_direction === 'up' ? '#00F0FF' : '#FF4D6D',
+                textShadow: trend_direction === 'up'
+                  ? '0 0 8px rgba(0, 240, 255, 0.4)'
+                  : '0 0 8px rgba(255, 77, 109, 0.4)',
+              }}
+            >
+              {trend}
+            </span>
+          )}
+        </div>
+
+        <div className="text-[11px] leading-relaxed truncate" style={{ color: 'var(--text-muted)' }}>
+          {subtext}
+        </div>
       </div>
 
-      <div className="text-[11px] text-gray-500 dark:text-slate-400 leading-relaxed truncate">
-        {subtext}
-      </div>
-
+      {/* Status dot */}
       <div className="absolute top-4 right-4">
         <span
-          className={[
-            'inline-block w-2 h-2 rounded-full',
-            status === 'green' ? 'bg-emerald-500' : status === 'yellow' ? 'bg-amber-500' : 'bg-rose-500',
-          ].join(' ')}
+          className="inline-block w-2 h-2 rounded-full"
+          style={{
+            background: cfg.gradient,
+            boxShadow: `0 0 8px ${cfg.glow}`,
+          }}
         />
       </div>
     </div>
