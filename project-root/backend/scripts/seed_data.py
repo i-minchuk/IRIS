@@ -11,7 +11,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import AsyncSessionLocal
 from app.modules.auth.schemas import UserCreate
 from app.modules.auth.repository import UserRepository
-from app.modules.projects.schemas import ProjectCreate
 from app.modules.projects.repository import ProjectRepository
 
 logging.basicConfig(level=logging.INFO)
@@ -53,38 +52,38 @@ async def create_test_projects(db: AsyncSession) -> None:
         logger.info(f"{len(existing_projects)} projects already exist")
         return
     
-    # Create test projects
-    projects = [
-        ProjectCreate(
-            name="Тестовый проект TP-001",
-            code="TP-001",
-            customer_name="ООО Тестовая Компания",
-            contract_number="Контракт-2024-001",
-            stage="Эскизный",
-            status="active",
-            risk_level="low",
-        ),
-        ProjectCreate(
-            name="Проект разработки ИИ-ассистента",
-            code="AI-2024",
-            customer_name="Внутренний проект",
-            contract_number=None,
-            stage="Технический",
-            status="active",
-            risk_level="medium",
-        ),
-        ProjectCreate(
-            name="Система управления техническими документами",
-            code="DMS-001",
-            customer_name="Госкорпорация",
-            contract_number="ГК-2024-123",
-            stage="Рабочий",
-            status="active",
-            risk_level="high",
-        ),
+    # Create test projects directly using repository
+    projects_data = [
+        {
+            "name": "Тестовый проект TP-001",
+            "code": "TP-001",
+            "customer_name": "ООО Тестовая Компания",
+            "contract_number": None,
+            "stage": "Эскизный",
+            "status": "active",
+            "risk_level": "low",
+        },
+        {
+            "name": "Проект разработки ИИ-ассистента",
+            "code": "AI-2024",
+            "customer_name": "Внутренний проект",
+            "contract_number": None,
+            "stage": "Технический",
+            "status": "active",
+            "risk_level": "medium",
+        },
+        {
+            "name": "Система управления документами",
+            "code": "DMS-001",
+            "customer_name": "Госкорпорация",
+            "contract_number": "ГК-2024-123",
+            "stage": "Рабочий",
+            "status": "active",
+            "risk_level": "high",
+        },
     ]
     
-    for project_data in projects:
+    for project_data in projects_data:
         project = await repo.create(project_data)
         logger.info(f"Created project: {project.code} - {project.name}")
 

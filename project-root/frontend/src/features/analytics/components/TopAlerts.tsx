@@ -112,9 +112,9 @@ export function TopAlerts({ data, loading }: TopAlertsProps) {
               </div>
               <button
                 onClick={() => navigate(alert.action_path)}
-                className={`shrink-0 inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${cfg.btn}`}
+                className={`shrink-0 inline-flex items-center gap-1 rounded-md px-2 sm:px-2.5 py-1.5 text-[11px] sm:text-xs font-medium transition-colors ${cfg.btn}`}
               >
-                {alert.action_label}
+                <span className="hidden sm:inline">{alert.action_label}</span>
                 <ArrowRight className="h-3 w-3" />
               </button>
             </div>

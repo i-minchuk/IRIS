@@ -55,7 +55,7 @@ export function ShipmentCalendar({ data, loading }: ShipmentCalendarProps) {
       </div>
 
       {/* Calendar grid */}
-      <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
+      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
         {days.map((day, idx) => (
           <button
             key={day.day_label}

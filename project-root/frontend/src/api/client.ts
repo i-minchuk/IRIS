@@ -49,7 +49,6 @@ client.interceptors.response.use(
 
     // 401 auth handling
     if (error.response?.status === 401) {
-
       const refreshToken = localStorage.getItem('refresh_token');
       if (refreshToken && !error.config._retry) {
         error.config._retry = true;
@@ -61,14 +60,8 @@ client.interceptors.response.use(
           error.config.headers.Authorization = `Bearer ${data.access_token}`;
           return client(error.config);
         } catch {
-          localStorage.removeItem('access_token');
-          localStorage.removeItem('refresh_token');
-          window.location.href = '/login';
+          // Refresh failed — silently fail, let the app handle auth state
         }
-      } else {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        window.location.href = '/login';
       }
     }
     return Promise.reject(error);

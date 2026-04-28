@@ -8,7 +8,7 @@ const WS_URL = (() => {
 })();
 
 export interface WSMessage {
-  type: 
+  type:
     | 'presence_join'
     | 'presence_leave'
     | 'presence_update'
@@ -32,13 +32,15 @@ export function useWebSocket(_token: string | null) {
   const reconnectAttempts = useRef(0);
   const maxReconnectDelay = 5000;
   const pingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const shouldReconnect = useRef(true);
 
   const token = _token ?? localStorage.getItem('access_token');
   const isMock = token?.startsWith('mock_');
 
   const connect = useCallback(() => {
     if (!token || isMock) return;
-    if (wsRef.current?.readyState === WebSocket.OPEN) return;
+    if (wsRef.current?.readyState === WebSocket.OPEN || wsRef.current?.readyState === WebSocket.CONNECTING) return;
+    if (!shouldReconnect.current) return;
 
     try {
       const url = `${WS_URL}?token=${encodeURIComponent(token)}`;
@@ -75,15 +77,16 @@ export function useWebSocket(_token: string | null) {
           clearInterval(pingIntervalRef.current);
           pingIntervalRef.current = null;
         }
+        wsRef.current = null;
+
         // Логируем важные коды закрытия
         if (event.code === 1008) {
-          console.warn('WebSocket closed: Policy violation (invalid token)');
-          // Очищаем токены при policy violation
-          localStorage.removeItem('access_token');
-          localStorage.removeItem('refresh_token');
-          window.location.href = '/login';
-          return;
+          console.warn('WebSocket closed: Policy violation (multiple connections or invalid token)');
+          // НЕ очищаем токены — 1008 может быть из-за дублирующего подключения (backend разрешает только 1 соединение)
         }
+
+        if (!shouldReconnect.current) return;
+
         // Exponential backoff reconnect
         const delay = Math.min(1000 * 2 ** reconnectAttempts.current, maxReconnectDelay);
         reconnectAttempts.current += 1;
@@ -95,13 +98,15 @@ export function useWebSocket(_token: string | null) {
       };
     } catch {
       // fallback reconnect
+      if (!shouldReconnect.current) return;
       const delay = Math.min(1000 * 2 ** reconnectAttempts.current, maxReconnectDelay);
       reconnectAttempts.current += 1;
       reconnectTimeoutRef.current = setTimeout(connect, delay);
     }
-  }, [token]);
+  }, [token, isMock]);
 
   const disconnect = useCallback(() => {
+    shouldReconnect.current = false;
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
       reconnectTimeoutRef.current = null;
@@ -125,6 +130,7 @@ export function useWebSocket(_token: string | null) {
   }, []);
 
   useEffect(() => {
+    shouldReconnect.current = true;
     if (token) {
       connect();
     } else {

@@ -1,6 +1,6 @@
 // frontend/src/features/auth/components/LoginForm.tsx
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+
 import { authApi } from '../api/authApi';
 import { useAuthStore } from '../store/authStore';
 
@@ -11,7 +11,6 @@ export const LoginForm: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
   const setAuth = useAuthStore((state) => state.setAuth);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -23,11 +22,14 @@ export const LoginForm: React.FC = () => {
         ? { email, password }
         : { username, password };
 
+      console.log('[LoginForm] Attempting login with:', loginData);
       const tokenResponse = await authApi.login(loginData);
+      console.log('[LoginForm] Login response:', tokenResponse);
 
       // Сохраняем токены
       localStorage.setItem('access_token', tokenResponse.access_token);
       localStorage.setItem('refresh_token', tokenResponse.refresh_token);
+      console.log('[LoginForm] Tokens saved to localStorage');
 
       // Создаём минимальный объект пользователя из токена
       const user = {
@@ -37,9 +39,12 @@ export const LoginForm: React.FC = () => {
         is_active: true,
       };
 
+      console.log('[LoginForm] Calling setAuth with user:', user);
       setAuth(user, tokenResponse.access_token);
-      navigate('/dashboard');
+      console.log('[LoginForm] Redirecting to /dashboard');
+      window.location.href = '/dashboard';
     } catch (err: any) {
+      console.error('[LoginForm] Login error:', err);
       setError(err.response?.data?.detail || 'Ошибка входа');
     } finally {
       setLoading(false);
@@ -73,8 +78,8 @@ export const LoginForm: React.FC = () => {
         </div>
 
         {/* Login Form Card */}
-        <div className="bg-white dark:bg-gray-800 py-8 px-6 shadow-lg rounded-xl border border-gray-100 dark:border-gray-700">
-          <h2 className="text-2xl font-bold text-center text-gray-800 dark:text-gray-100 mb-6">
+        <div className="bg-white dark:bg-gray-800 py-6 px-4 sm:py-8 sm:px-6 shadow-lg rounded-xl border border-gray-100 dark:border-gray-700">
+          <h2 className="text-xl sm:text-2xl font-bold text-center text-gray-800 dark:text-gray-100 mb-6">
             Вход в систему
           </h2>
 

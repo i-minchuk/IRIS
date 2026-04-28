@@ -1,5 +1,6 @@
 // frontend/src/shared/api/client.ts
 import axios from 'axios';
+import { useAuthStore } from '@/features/auth/store/authStore';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -20,16 +21,14 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
+
 // Перехватчик для обработки ошибок (например, 401)
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Очищаем состояние
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      // Редирект на логин
-      window.location.href = '/login';
+      // Очищаем состояние через store (без перезагрузки страницы)
+      useAuthStore.getState().logout();
     }
     return Promise.reject(error);
   }

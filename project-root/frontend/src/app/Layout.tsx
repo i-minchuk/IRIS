@@ -7,6 +7,7 @@ import { CollaborationProvider } from '@/features/collaboration/components/Colla
 import { useTheme } from '@/providers/ThemeProvider';
 import { Moon, Sun, Menu, X } from 'lucide-react';
 import { FolderTabs } from '@/components/FolderTabs';
+import { ZoomControl } from '@/features/zoom/components/ZoomControl';
 
 export const Layout: React.FC = () => {
   const { user, logout } = useAuthStore();
@@ -62,6 +63,8 @@ export const Layout: React.FC = () => {
 
             {/* Десктоп панель */}
             <div className="hidden lg:flex items-center space-x-3">
+              <ZoomControl />
+
               <span className="text-sm transition-colors duration-200" style={{ color: 'var(--text-secondary)' }}>
                 {user?.full_name || user?.email}
               </span>
@@ -106,13 +109,16 @@ export const Layout: React.FC = () => {
                 <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                   {user?.full_name || user?.email}
                 </span>
-                <button
-                  onClick={toggleTheme}
-                  className="p-2 rounded-lg"
-                  style={{ backgroundColor: 'var(--button-bg)', color: 'var(--text-secondary)' }}
-                >
-                  {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
-                </button>
+                <div className="flex items-center gap-2">
+                  <ZoomControl />
+                  <button
+                    onClick={toggleTheme}
+                    className="p-2 rounded-lg"
+                    style={{ backgroundColor: 'var(--button-bg)', color: 'var(--text-secondary)' }}
+                  >
+                    {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+                  </button>
+                </div>
               </div>
               <button
                 onClick={() => {
@@ -146,11 +152,11 @@ export const Layout: React.FC = () => {
       <StatusBar />
 
       <footer
-        className="border-t py-1 transition-colors duration-200"
+        className="border-t py-2 transition-colors duration-200"
         style={{ backgroundColor: 'var(--layout-bg)', borderColor: 'var(--header-border)' }}
       >
-        <div className="mx-auto px-4 text-[10px] flex justify-between transition-colors duration-200" style={{ color: 'var(--text-muted)' }}>
-          <span>ДокПоток IRIS — система управления инженерной документацией</span>
+        <div className="mx-auto px-4 text-[10px] flex flex-col sm:flex-row justify-between items-center gap-1 transition-colors duration-200" style={{ color: 'var(--text-muted)' }}>
+          <span className="text-center sm:text-left">ДокПоток IRIS — система управления инженерной документацией</span>
           <span>© 2026</span>
         </div>
       </footer>

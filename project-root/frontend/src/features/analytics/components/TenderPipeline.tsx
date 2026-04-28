@@ -77,7 +77,7 @@ export function TenderPipeline({ data, loading }: TenderPipelineProps) {
                   colors.border,
                   isExpanded ? 'shadow-md' : '',
                 ].join(' ')}
-                style={{ width: `${widthPct}%`, minWidth: 180 }}
+                style={{ width: `${widthPct}%`, minWidth: 140 }}
               >
                 <div>
                   <div className={`text-sm font-semibold ${colors.text} dark:text-slate-200`}>
@@ -108,7 +108,7 @@ export function TenderPipeline({ data, loading }: TenderPipelineProps) {
               {isExpanded && (
                 <div
                   className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/50"
-                  style={{ width: `${widthPct}%`, minWidth: 180 }}
+                  style={{ width: `${widthPct}%`, minWidth: 140 }}
                 >
                   <p className="text-xs text-slate-500 dark:text-slate-400">
                     На этапе «{stage.label}» — {stage.count} тендер(ов).

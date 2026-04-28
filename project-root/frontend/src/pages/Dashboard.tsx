@@ -23,32 +23,7 @@ import { DocumentKanban } from '@/features/analytics/components/DocumentKanban';
 import { ProductionSQCDP } from '@/features/analytics/components/ProductionSQCDP';
 import { ShipmentCalendar } from '@/features/analytics/components/ShipmentCalendar';
 import { SparklinePanel } from '@/features/analytics/components/SparklinePanel';
-import { AlertTriangle, FolderOpen, ChevronDown, ChevronRight, RefreshCw } from 'lucide-react';
-
-interface SectionProps {
-  title: string;
-  children: React.ReactNode;
-  defaultOpen?: boolean;
-  className?: string;
-}
-
-function CollapsibleSection({ title, children, defaultOpen = true, className = '' }: SectionProps) {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <section className={className}>
-      <button
-        onClick={() => setOpen(!open)}
-        className="mb-2 flex w-full items-center justify-between sm:hidden"
-      >
-        <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-          {title}
-        </span>
-        {open ? <ChevronDown className="h-4 w-4 text-slate-400" /> : <ChevronRight className="h-4 w-4 text-slate-400" />}
-      </button>
-      <div className={`${open ? 'block' : 'hidden'} sm:block`}>{children}</div>
-    </section>
-  );
-}
+import { AlertTriangle, FolderOpen, RefreshCw } from 'lucide-react';
 
 export default function Dashboard() {
   const [tiles, setTiles] = useState<KpiTile[]>([]);
@@ -176,18 +151,18 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-4">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 sm:gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
+          <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
             Единый центр управления
           </h1>
           <p className="text-xs sm:text-sm text-gray-500 dark:text-slate-400 mt-1">
             Обзор потока ключевых показателей проектной организации
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           {isConnected && (
             <span className="hidden sm:inline-flex items-center gap-1 text-[10px] text-emerald-500">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -204,73 +179,65 @@ export default function Dashboard() {
             className="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-[10px] text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800"
           >
             <RefreshCw className="h-3 w-3" />
-            Обновить
+            <span className="hidden sm:inline">Обновить</span>
           </button>
         </div>
       </div>
 
-      {/* KPI Tiles */}
-      <CollapsibleSection title="KPI">
-        <section className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))' }}>
-          {tiles.map((tile) => (
-            <KPITile
-              key={tile.id}
-              label={tile.label}
-              value={tile.value}
-              trend={tile.trend}
-              trend_direction={tile.trend_direction}
-              status={tile.status}
-              subtext={tile.subtext}
-              clickable={tile.clickable}
-              onClick={() => handleTileClick(tile)}
-            />
-          ))}
-        </section>
-      </CollapsibleSection>
+      {/* KPI Tiles — adaptive: 1 col mobile, 2 col sm, auto-fit lg+ */}
+      <section className="grid gap-2 sm:gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))' }}>
+        {tiles.map((tile) => (
+          <KPITile
+            key={tile.id}
+            label={tile.label}
+            value={tile.value}
+            trend={tile.trend}
+            trend_direction={tile.trend_direction}
+            status={tile.status}
+            subtext={tile.subtext}
+            clickable={tile.clickable}
+            onClick={() => handleTileClick(tile)}
+          />
+        ))}
+      </section>
 
-      {/* Alerts + Portfolio row */}
-      <CollapsibleSection title="Портфель и тревоги">
-        <section className="grid gap-6 xl:grid-cols-3">
-          <div className="xl:col-span-2">
-            <ProjectPortfolio data={portfolio} loading={false} />
-          </div>
-          <div className="xl:col-span-1">
-            <TopAlerts data={alerts} loading={false} />
-          </div>
-        </section>
-      </CollapsibleSection>
+      {/* Row: Portfolio + Alerts — stack on mobile, side-by-side lg+ */}
+      <section className="grid gap-3 sm:gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <ProjectPortfolio data={portfolio} loading={false} />
+        </div>
+        <div className="lg:col-span-1">
+          <TopAlerts data={alerts} loading={false} />
+        </div>
+      </section>
 
-      {/* Resource Heatmap */}
-      <CollapsibleSection title="Загруженность персонала">
-        {heatmap && (
-          <ResourceHeatmap departments={heatmap.departments} onEmployeeClick={setSelectedEmployee} />
-        )}
-      </CollapsibleSection>
-
-      {/* Tender Pipeline */}
-      <CollapsibleSection title="Тендерный pipeline">
-        <TenderPipeline data={tenderPipeline} loading={false} />
-      </CollapsibleSection>
-
-      {/* Document Kanban */}
-      <CollapsibleSection title="Документооборот">
-        <DocumentKanban data={documentsByProject} loading={false} />
-      </CollapsibleSection>
-
-      {/* Production SQCDP */}
-      <CollapsibleSection title="Производство SQCDP">
-        <ProductionSQCDP data={sqcdp} loading={false} />
-      </CollapsibleSection>
-
-      {/* Shipment Calendar */}
-      <CollapsibleSection title="Отгрузки и логистика">
+      {/* Shipment Calendar — full width */}
+      <section>
         <ShipmentCalendar data={shipments} loading={false} />
-      </CollapsibleSection>
+      </section>
 
-      {/* Sparkline Panel */}
-      <CollapsibleSection title="Тренды">
+      {/* Row: Tenders + Production — stack mobile, side-by-side md+ */}
+      <section className="grid gap-3 sm:gap-4 md:grid-cols-2">
+        <TenderPipeline data={tenderPipeline} loading={false} />
+        <ProductionSQCDP data={sqcdp} loading={false} />
+      </section>
+
+      {/* Row: Documents + Resource Heatmap — stack mobile, side-by-side lg+ */}
+      <section className="grid gap-3 sm:gap-4 lg:grid-cols-5">
+        <div className="lg:col-span-3">
+          <DocumentKanban data={documentsByProject} loading={false} />
+        </div>
+        <div className="lg:col-span-2">
+          {heatmap && (
+            <ResourceHeatmap departments={heatmap.departments} onEmployeeClick={setSelectedEmployee} />
+          )}
+        </div>
+      </section>
+
+      {/* Sparklines */}
+      <section>
         <SparklinePanel data={sparklines} loading={false} />
-      </CollapsibleSection>
+      </section>
 
       {/* Employee Card Modal */}
       {selectedEmployee && (
