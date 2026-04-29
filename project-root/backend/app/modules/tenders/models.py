@@ -23,6 +23,18 @@ class Tender(Base):
     deadline: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     duration_months: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
+    # Portfolio / Pipeline fields
+    stage: Mapped[str] = mapped_column(String(50), default="new")  # new, qualification, preparation, approval, submitted, auction, waiting, won, lost, contract
+    nmc: Mapped[Optional[float]] = mapped_column(Float, nullable=True)  # начальная максимальная цена
+    our_price: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    margin_pct: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    probability: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # 0-100
+    platform: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)  # ЕИС, Сбер, РТС и т.д.
+    region: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    responsible_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
+    auction_end_time: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    loss_reason: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+
     calculated_hours: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     calculated_cost: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     team_size: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)

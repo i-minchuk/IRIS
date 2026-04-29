@@ -2,7 +2,9 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { LoginPage } from '@/features/auth/pages/LoginPage';
 import Dashboard from '@/pages/Dashboard';
+import { ProjectPortfolioPage } from '@/pages/ProjectPortfolioPage';
 import { ProjectsPage } from '@/features/projects/pages/ProjectsPage';
+import TenderPortfolioPage from '@/pages/TenderPortfolioPage';
 import { DocumentsPage } from '@/features/documents/pages/DocumentsPage';
 import { DependencyGraphPage } from '@/features/documents/pages/DependencyGraphPage';
 import { RemarksPage } from '@/features/remarks/pages/RemarksPage';
@@ -33,6 +35,14 @@ export const router = createBrowserRouter([
           {
             path: 'dashboard',
             element: <Dashboard />,
+          },
+          {
+            path: 'projects',
+            element: <ProjectPortfolioPage />,
+          },
+          {
+            path: 'portfolio',
+            element: <TenderPortfolioPage />,
           },
           {
             path: 'projects',
