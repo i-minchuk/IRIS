@@ -7,12 +7,12 @@ interface TenderPipelineProps {
   loading?: boolean;
 }
 
-const STAGE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  analysis: { bg: 'bg-blue-500', text: 'text-blue-700', border: 'border-blue-200' },
-  documentation: { bg: 'bg-indigo-500', text: 'text-indigo-700', border: 'border-indigo-200' },
-  pricing: { bg: 'bg-violet-500', text: 'text-violet-700', border: 'border-violet-200' },
-  sent: { bg: 'bg-purple-500', text: 'text-purple-700', border: 'border-purple-200' },
-  review: { bg: 'bg-fuchsia-500', text: 'text-fuchsia-700', border: 'border-fuchsia-200' },
+const STAGE_NEON: Record<string, { gradient: string; glow: string; text: string }> = {
+  analysis: { gradient: 'linear-gradient(90deg, #00F0FF, #00C8D4)', glow: 'rgba(0, 240, 255, 0.25)', text: '#00F0FF' },
+  documentation: { gradient: 'linear-gradient(90deg, #2979FF, #00F0FF)', glow: 'rgba(41, 121, 255, 0.25)', text: '#2979FF' },
+  pricing: { gradient: 'linear-gradient(90deg, #B829DD, #2979FF)', glow: 'rgba(184, 41, 221, 0.25)', text: '#B829DD' },
+  sent: { gradient: 'linear-gradient(90deg, #FF00AA, #B829DD)', glow: 'rgba(255, 0, 170, 0.25)', text: '#FF00AA' },
+  review: { gradient: 'linear-gradient(90deg, #FF4D6D, #FF00AA)', glow: 'rgba(255, 77, 109, 0.25)', text: '#FF4D6D' },
 };
 
 export function TenderPipeline({ data, loading }: TenderPipelineProps) {
@@ -38,7 +38,7 @@ export function TenderPipeline({ data, loading }: TenderPipelineProps) {
       {/* Header */}
       <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
-          <Target className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+          <Target className="h-5 w-5" style={{ color: '#00F0FF' }} />
           <h3 className="text-base sm:text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
             Тендерный отдел — Pipeline
           </h3>
@@ -52,7 +52,7 @@ export function TenderPipeline({ data, loading }: TenderPipelineProps) {
             Win rate: <strong style={{ color: 'var(--text-primary)' }}>{data?.win_rate ?? 0}%</strong>
           </span>
           {!!data?.overdue_count && (
-            <span className="flex items-center gap-1 text-rose-600 dark:text-rose-400">
+            <span className="flex items-center gap-1" style={{ color: '#FF4D6D' }}>
               <AlertTriangle className="h-3.5 w-3.5" />
               Просрочено: {data.overdue_count}
             </span>
@@ -63,7 +63,7 @@ export function TenderPipeline({ data, loading }: TenderPipelineProps) {
       {/* Funnel */}
       <div className="flex flex-col items-center gap-2">
         {stages.map((stage) => {
-          const colors = STAGE_COLORS[stage.key] ?? STAGE_COLORS.analysis;
+          const neon = STAGE_NEON[stage.key] ?? STAGE_NEON.analysis;
           const widthPct = maxCount > 0 ? Math.max(30, (stage.count / maxCount) * 100) : 30;
           const isExpanded = expanded === stage.key;
 
@@ -71,34 +71,39 @@ export function TenderPipeline({ data, loading }: TenderPipelineProps) {
             <div key={stage.key} className="w-full flex flex-col items-center">
               <button
                 onClick={() => setExpanded(isExpanded ? null : stage.key)}
-                className={[
-                  'relative flex items-center justify-between rounded-lg border px-4 py-3 text-left',
-                  'transition-all duration-200 hover:shadow-md dark:border-slate-600',
-                  colors.border,
-                  isExpanded ? 'shadow-md' : '',
-                ].join(' ')}
-                style={{ width: `${widthPct}%`, minWidth: 140 }}
+                className="relative flex items-center justify-between rounded-lg border px-4 py-3 text-left transition-all duration-200"
+                style={{
+                  width: `${widthPct}%`,
+                  minWidth: 140,
+                  background: 'rgba(255,255,255,0.03)',
+                  borderColor: isExpanded ? neon.glow.replace('0.25', '0.5') : 'rgba(255,255,255,0.06)',
+                  boxShadow: isExpanded ? `0 0 20px ${neon.glow}` : 'none',
+                }}
               >
                 <div>
-                  <div className={`text-sm font-semibold ${colors.text} dark:text-slate-200`}>
+                  <div className="text-sm font-semibold" style={{ color: neon.text }}>
                     {stage.label}
                   </div>
-                  <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                  <div className="mt-0.5 text-xs" style={{ color: 'var(--text-muted)' }}>
                     {stage.count} шт · {stage.sum_cost_m} млн ₽
                   </div>
                 </div>
-                <div className="flex items-center gap-1 text-slate-400">
+                <div className="flex items-center gap-1" style={{ color: 'var(--text-muted)' }}>
                   {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                 </div>
                 {/* Progress bar inside block */}
                 <div
-                  className={`absolute bottom-0 left-0 h-1 rounded-b-lg ${colors.bg} opacity-60`}
-                  style={{ width: `${widthPct}%` }}
+                  className="absolute bottom-0 left-0 h-1 rounded-b-lg"
+                  style={{
+                    width: `${widthPct}%`,
+                    background: neon.gradient,
+                    boxShadow: `0 0 8px ${neon.glow}`,
+                  }}
                 />
               </button>
 
               {/* Arrow */}
-              <div className="my-0.5 text-slate-300 dark:text-slate-600">
+              <div className="my-0.5" style={{ color: 'var(--text-muted)' }}>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                   <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
@@ -107,10 +112,15 @@ export function TenderPipeline({ data, loading }: TenderPipelineProps) {
               {/* Expanded content */}
               {isExpanded && (
                 <div
-                  className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/50"
-                  style={{ width: `${widthPct}%`, minWidth: 140 }}
+                  className="rounded-lg border p-3"
+                  style={{
+                    width: `${widthPct}%`,
+                    minWidth: 140,
+                    background: 'rgba(255,255,255,0.02)',
+                    borderColor: 'rgba(255,255,255,0.06)',
+                  }}
                 >
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
                     На этапе «{stage.label}» — {stage.count} тендер(ов).
                     Общая сумма: {stage.sum_cost_m} млн ₽.
                   </p>

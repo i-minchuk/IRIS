@@ -9,22 +9,34 @@ interface TopAlertsProps {
 
 const severityConfig = {
   critical: {
-    border: 'border-rose-200 dark:border-rose-900/40',
-    bg: 'bg-rose-50 dark:bg-rose-900/15',
-    iconBg: 'bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400',
-    btn: 'bg-rose-600 hover:bg-rose-700 text-white dark:bg-rose-600 dark:hover:bg-rose-500',
+    border: 'rgba(255,0,85,0.2)',
+    bg: 'rgba(255,0,85,0.06)',
+    iconColor: '#FF0055',
+    iconGlow: 'rgba(255,0,85,0.3)',
+    btnBg: 'linear-gradient(135deg, #FF0055, #FF4D6D)',
+    btnGlow: 'rgba(255,0,85,0.3)',
+    badgeBg: 'rgba(255,0,85,0.15)',
+    badgeColor: '#FF0055',
   },
   warning: {
-    border: 'border-amber-200 dark:border-amber-900/40',
-    bg: 'bg-amber-50 dark:bg-amber-900/15',
-    iconBg: 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',
-    btn: 'bg-amber-600 hover:bg-amber-700 text-white dark:bg-amber-600 dark:hover:bg-amber-500',
+    border: 'rgba(255,170,0,0.2)',
+    bg: 'rgba(255,170,0,0.06)',
+    iconColor: '#FFAA00',
+    iconGlow: 'rgba(255,170,0,0.3)',
+    btnBg: 'linear-gradient(135deg, #FFAA00, #FFCC33)',
+    btnGlow: 'rgba(255,170,0,0.3)',
+    badgeBg: 'rgba(255,170,0,0.15)',
+    badgeColor: '#FFAA00',
   },
   info: {
-    border: 'border-blue-200 dark:border-blue-900/40',
-    bg: 'bg-blue-50 dark:bg-blue-900/15',
-    iconBg: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
-    btn: 'bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-600 dark:hover:bg-blue-500',
+    border: 'rgba(41,121,255,0.2)',
+    bg: 'rgba(41,121,255,0.06)',
+    iconColor: '#2979FF',
+    iconGlow: 'rgba(41,121,255,0.3)',
+    btnBg: 'linear-gradient(135deg, #2979FF, #00F0FF)',
+    btnGlow: 'rgba(41,121,255,0.3)',
+    badgeBg: 'rgba(41,121,255,0.15)',
+    badgeColor: '#2979FF',
   },
 };
 
@@ -69,7 +81,10 @@ export function TopAlerts({ data, loading }: TopAlertsProps) {
             Тревоги
           </h3>
           {total > 0 && (
-            <span className="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-rose-100 px-1.5 text-[11px] font-bold text-rose-600 dark:bg-rose-900/30 dark:text-rose-400">
+            <span
+              className="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1.5 text-[11px] font-bold"
+              style={{ background: 'rgba(255,0,85,0.15)', color: '#FF0055' }}
+            >
               {total}
             </span>
           )}
@@ -90,9 +105,20 @@ export function TopAlerts({ data, loading }: TopAlertsProps) {
           return (
             <div
               key={alert.id}
-              className={`flex items-start gap-3 rounded-lg border p-3 transition-colors ${cfg.border} ${cfg.bg}`}
+              className="flex items-start gap-3 rounded-lg border p-3 transition-all duration-200"
+              style={{
+                borderColor: cfg.border,
+                background: cfg.bg,
+              }}
             >
-              <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${cfg.iconBg}`}>
+              <div
+                className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
+                style={{
+                  background: cfg.iconGlow,
+                  color: cfg.iconColor,
+                  boxShadow: `0 0 12px ${cfg.iconGlow}`,
+                }}
+              >
                 <AlertIcon icon={alert.icon} />
               </div>
               <div className="min-w-0 flex-1">
@@ -101,7 +127,10 @@ export function TopAlerts({ data, loading }: TopAlertsProps) {
                     {alert.title}
                   </p>
                   {alert.severity === 'critical' && (
-                    <span className="rounded bg-rose-100 px-1.5 py-0.5 text-[10px] font-bold text-rose-600 dark:bg-rose-900/30 dark:text-rose-400">
+                    <span
+                      className="rounded px-1.5 py-0.5 text-[10px] font-bold"
+                      style={{ background: cfg.badgeBg, color: cfg.badgeColor }}
+                    >
                       КРИТИЧНО
                     </span>
                   )}
@@ -112,7 +141,12 @@ export function TopAlerts({ data, loading }: TopAlertsProps) {
               </div>
               <button
                 onClick={() => navigate(alert.action_path)}
-                className={`shrink-0 inline-flex items-center gap-1 rounded-md px-2 sm:px-2.5 py-1.5 text-[11px] sm:text-xs font-medium transition-colors ${cfg.btn}`}
+                className="shrink-0 inline-flex items-center gap-1 rounded-md px-2 sm:px-2.5 py-1.5 text-[11px] sm:text-xs font-medium transition-all duration-200 hover:brightness-110"
+                style={{
+                  background: cfg.btnBg,
+                  color: '#FFFFFF',
+                  boxShadow: `0 0 12px ${cfg.btnGlow}`,
+                }}
               >
                 <span className="hidden sm:inline">{alert.action_label}</span>
                 <ArrowRight className="h-3 w-3" />

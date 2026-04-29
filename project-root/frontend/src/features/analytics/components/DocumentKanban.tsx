@@ -7,9 +7,9 @@ interface DocumentKanbanProps {
 }
 
 const STATUS_META = [
-  { key: 'draft', label: 'ЧЕРН', icon: FileText, bg: 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300', border: 'border-slate-300 dark:border-slate-600' },
-  { key: 'in_review', label: 'СОГЛ', icon: FileClock, bg: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400', border: 'border-amber-200 dark:border-amber-900/40' },
-  { key: 'approved', label: 'УТВ', icon: FileCheck, bg: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400', border: 'border-emerald-200 dark:border-emerald-900/40' },
+  { key: 'draft', label: 'ЧЕРН', icon: FileText, color: '#8892A8', glow: 'rgba(136,146,168,0.15)', bg: 'rgba(136,146,168,0.08)' },
+  { key: 'in_review', label: 'СОГЛ', icon: FileClock, color: '#FFAA00', glow: 'rgba(255,170,0,0.15)', bg: 'rgba(255,170,0,0.08)' },
+  { key: 'approved', label: 'УТВ', icon: FileCheck, color: '#00F0FF', glow: 'rgba(0,240,255,0.15)', bg: 'rgba(0,240,255,0.08)' },
 ];
 
 export function DocumentKanban({ data, loading }: DocumentKanbanProps) {
@@ -17,11 +17,11 @@ export function DocumentKanban({ data, loading }: DocumentKanbanProps) {
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm dark:border-slate-700 dark:bg-[#1e293b]">
-        <div className="mb-4 h-6 w-56 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-32 animate-pulse rounded-lg bg-slate-100 dark:bg-slate-800" />
+      <div className="rounded-xl p-4 sm:p-6 neon-card">
+        <div className="mb-4 h-6 w-56 animate-pulse rounded" style={{ background: 'rgba(255,255,255,0.06)' }} />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-32 animate-pulse rounded-lg" style={{ background: 'rgba(255,255,255,0.04)' }} />
           ))}
         </div>
       </div>
@@ -29,10 +29,10 @@ export function DocumentKanban({ data, loading }: DocumentKanbanProps) {
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm dark:border-slate-700 dark:bg-[#1e293b]">
+    <div className="rounded-xl p-4 sm:p-6 neon-card">
       {/* Header */}
       <div className="mb-4 flex items-center gap-2">
-        <FileText className="h-5 w-5 text-slate-600 dark:text-slate-400" />
+        <FileText className="h-5 w-5" style={{ color: '#2979FF' }} />
         <h3 className="text-base sm:text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
           Документооборот по проектам
         </h3>
@@ -43,10 +43,11 @@ export function DocumentKanban({ data, loading }: DocumentKanbanProps) {
         {projects.map((project) => (
           <div
             key={project.project_id}
-            className="rounded-lg border p-3" style={{ borderColor: 'rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)' }}
+            className="rounded-lg border p-3 transition-all duration-200 hover:border-[#2979FF]/20"
+            style={{ borderColor: 'rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)' }}
           >
             {/* Project title */}
-            <div className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">
+            <div className="mb-2 text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
               {project.project_name}
             </div>
 
@@ -58,11 +59,12 @@ export function DocumentKanban({ data, loading }: DocumentKanbanProps) {
                 return (
                   <button
                     key={status.key}
-                    className={[
-                      'flex flex-col items-center gap-0.5 rounded-md border py-2 transition-colors hover:brightness-95',
-                      status.bg,
-                      status.border,
-                    ].join(' ')}
+                    className="flex flex-col items-center gap-0.5 rounded-md border py-2 transition-all duration-200 hover:brightness-110"
+                    style={{
+                      background: status.bg,
+                      borderColor: status.glow.replace('0.15', '0.2'),
+                      color: status.color,
+                    }}
                   >
                     <Icon className="h-3.5 w-3.5 opacity-70" />
                     <span className="text-xs font-bold">{count}</span>
@@ -74,9 +76,12 @@ export function DocumentKanban({ data, loading }: DocumentKanbanProps) {
 
             {/* Overdue */}
             {project.overdue > 0 && (
-              <div className="mt-2 flex items-center gap-1.5 rounded-md bg-rose-50 px-2 py-1 dark:bg-rose-900/15">
-                <AlertTriangle className="h-3 w-3 text-rose-500" />
-                <span className="text-[11px] font-medium text-rose-600 dark:text-rose-400">
+              <div
+                className="mt-2 flex items-center gap-1.5 rounded-md px-2 py-1"
+                style={{ background: 'rgba(255,0,85,0.08)' }}
+              >
+                <AlertTriangle className="h-3 w-3" style={{ color: '#FF0055' }} />
+                <span className="text-[11px] font-medium" style={{ color: '#FF0055' }}>
                   Просрочено: {project.overdue}
                 </span>
               </div>
@@ -86,23 +91,23 @@ export function DocumentKanban({ data, loading }: DocumentKanbanProps) {
       </div>
 
       {/* Legend */}
-      <div className="mt-4 flex flex-wrap gap-3 border-t border-slate-100 pt-3 text-[10px] text-slate-500 dark:border-slate-700 dark:text-slate-400">
+      <div className="mt-4 flex flex-wrap gap-3 border-t pt-3 text-[10px]" style={{ borderColor: 'rgba(255,255,255,0.06)', color: 'var(--text-muted)' }}>
         <span className="flex items-center gap-1">
-          <span className="h-2.5 w-2.5 rounded-sm bg-slate-300 dark:bg-slate-600" /> Черновик
+          <span className="h-2.5 w-2.5 rounded-sm" style={{ background: '#8892A8' }} /> Черновик
         </span>
         <span className="flex items-center gap-1">
-          <span className="h-2.5 w-2.5 rounded-sm bg-amber-400" /> На согласовании
+          <span className="h-2.5 w-2.5 rounded-sm" style={{ background: '#FFAA00' }} /> На согласовании
         </span>
         <span className="flex items-center gap-1">
-          <span className="h-2.5 w-2.5 rounded-sm bg-emerald-500" /> Утверждено
+          <span className="h-2.5 w-2.5 rounded-sm" style={{ background: '#00F0FF' }} /> Утверждено
         </span>
         <span className="flex items-center gap-1">
-          <span className="h-2.5 w-2.5 rounded-sm bg-rose-500" /> Просрочено
+          <span className="h-2.5 w-2.5 rounded-sm" style={{ background: '#FF0055' }} /> Просрочено
         </span>
       </div>
 
       {projects.length === 0 && (
-        <div className="mt-4 rounded-lg border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500 dark:border-slate-600 dark:text-slate-400">
+        <div className="mt-4 rounded-lg border border-dashed p-8 text-center text-sm" style={{ borderColor: 'rgba(255,255,255,0.1)', color: 'var(--text-muted)' }}>
           Нет данных по документам
         </div>
       )}

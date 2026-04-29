@@ -7,11 +7,11 @@ interface ProjectPortfolioProps {
   loading?: boolean;
 }
 
-const ZONE_META: Record<string, { bg: string; fill: string; label: string; icon: string }> = {
-  stars: { bg: 'rgba(16,185,129,0.12)', fill: '#10b981', label: 'В плане', icon: '✅' },
-  budget: { bg: 'rgba(245,158,11,0.12)', fill: '#f59e0b', label: 'Проблемы бюджета', icon: '⚠️' },
-  recoverable: { bg: 'rgba(59,130,246,0.12)', fill: '#3b82f6', label: 'Риск срыва сроков', icon: '📈' },
-  crisis: { bg: 'rgba(239,68,68,0.12)', fill: '#ef4444', label: 'Кризис', icon: '🔥' },
+const ZONE_META: Record<string, { bg: string; fill: string; glow: string; label: string; icon: string }> = {
+  stars: { bg: 'rgba(0, 240, 255, 0.08)', fill: '#00F0FF', glow: 'rgba(0, 240, 255, 0.3)', label: 'В плане', icon: '✅' },
+  budget: { bg: 'rgba(255, 170, 0, 0.08)', fill: '#FFAA00', glow: 'rgba(255, 170, 0, 0.3)', label: 'Проблемы бюджета', icon: '⚠️' },
+  recoverable: { bg: 'rgba(41, 121, 255, 0.08)', fill: '#2979FF', glow: 'rgba(41, 121, 255, 0.3)', label: 'Риск срыва сроков', icon: '📈' },
+  crisis: { bg: 'rgba(255, 77, 109, 0.08)', fill: '#FF4D6D', glow: 'rgba(255, 77, 109, 0.3)', label: 'Кризис', icon: '🔥' },
 };
 
 const MAX_AXIS = 160;
@@ -87,7 +87,35 @@ export function ProjectPortfolio({ data, loading }: ProjectPortfolioProps) {
         style={isFs ? {} : { minHeight: 280 }}
         onMouseLeave={handleMouseLeave}
       >
-        {/* Background zones */}
+        <defs>
+          {/* Glow filter for bubbles */}
+          <filter id="bubble-glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="4" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+          {/* Radial gradient for bubbles */}
+          <radialGradient id="grad-stars" cx="30%" cy="30%">
+            <stop offset="0%" stopColor="#00F0FF" />
+            <stop offset="100%" stopColor="#00C8D4" />
+          </radialGradient>
+          <radialGradient id="grad-budget" cx="30%" cy="30%">
+            <stop offset="0%" stopColor="#FFAA00" />
+            <stop offset="100%" stopColor="#D49500" />
+          </radialGradient>
+          <radialGradient id="grad-recoverable" cx="30%" cy="30%">
+            <stop offset="0%" stopColor="#2979FF" />
+            <stop offset="100%" stopColor="#1E5AD4" />
+          </radialGradient>
+          <radialGradient id="grad-crisis" cx="30%" cy="30%">
+            <stop offset="0%" stopColor="#FF4D6D" />
+            <stop offset="100%" stopColor="#D43A56" />
+          </radialGradient>
+        </defs>
+
+        {/* Background zones -->
         <rect
           x={xScale(0)}
           y={yScale(100)}
@@ -209,20 +237,31 @@ export function ProjectPortfolio({ data, loading }: ProjectPortfolioProps) {
           const cy = yScale(p.schedule_pct);
           const r = rScale(p.total_budget_m);
           const isHovered = hovered === p.id;
-          const fill = ZONE_META[p.zone]?.fill ?? '#3b82f6';
+          const zone = p.zone ?? 'recoverable';
+          const gradId = `grad-${zone}`;
+          const glow = ZONE_META[zone]?.glow ?? 'rgba(41, 121, 255, 0.3)';
 
           return (
             <g key={p.id}>
+              {/* Glow halo */}
+              <circle
+                cx={cx}
+                cy={cy}
+                r={r + 4}
+                fill={glow}
+                opacity={isHovered ? 0.5 : 0.2}
+                className="pointer-events-none transition-all duration-200"
+              />
               <circle
                 cx={cx}
                 cy={cy}
                 r={r}
-                fill={fill}
-                fillOpacity={isHovered ? 0.9 : 0.55}
-                stroke={fill}
+                fill={`url(#${gradId})`}
+                stroke={ZONE_META[zone]?.fill ?? '#2979FF'}
                 strokeWidth={isHovered ? 2.5 : 1.5}
-                strokeOpacity={isHovered ? 1 : 0.75}
+                strokeOpacity={isHovered ? 1 : 0.8}
                 className="cursor-pointer transition-all duration-200"
+                filter="url(#bubble-glow)"
                 onMouseMove={(e) => handleMouseMove(e, p)}
                 onMouseEnter={(e) => handleMouseMove(e, p)}
                 onMouseLeave={handleMouseLeave}
@@ -233,7 +272,7 @@ export function ProjectPortfolio({ data, loading }: ProjectPortfolioProps) {
                   y={cy + 4}
                   textAnchor="middle"
                   className="fill-white font-semibold pointer-events-none select-none"
-                  style={{ fontSize: Math.max(10, r * 0.5) }}
+                  style={{ fontSize: Math.max(10, r * 0.5), textShadow: '0 1px 4px rgba(0,0,0,0.6)' }}
                 >
                   {p.code}
                 </text>
