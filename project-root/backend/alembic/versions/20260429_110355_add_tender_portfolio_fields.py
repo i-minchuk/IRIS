@@ -19,27 +19,29 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Add portfolio fields to tenders table
-    op.add_column('tenders', sa.Column('stage', sa.String(50), nullable=False, server_default='new'))
-    op.add_column('tenders', sa.Column('nmc', sa.Float(), nullable=True))
-    op.add_column('tenders', sa.Column('our_price', sa.Float(), nullable=True))
-    op.add_column('tenders', sa.Column('margin_pct', sa.Float(), nullable=True))
-    op.add_column('tenders', sa.Column('probability', sa.Integer(), nullable=True))
-    op.add_column('tenders', sa.Column('platform', sa.String(100), nullable=True))
-    op.add_column('tenders', sa.Column('region', sa.String(100), nullable=True))
-    op.add_column('tenders', sa.Column('responsible_id', sa.Integer(), sa.ForeignKey('users.id'), nullable=True))
-    op.add_column('tenders', sa.Column('auction_end_time', sa.DateTime(timezone=True), nullable=True))
-    op.add_column('tenders', sa.Column('loss_reason', sa.String(255), nullable=True))
+    # SQLite requires batch mode for adding columns
+    with op.batch_alter_table('tenders', schema=None) as batch_op:
+        batch_op.add_column(sa.Column('stage', sa.String(50), nullable=False, server_default='new'))
+        batch_op.add_column(sa.Column('nmc', sa.Float(), nullable=True))
+        batch_op.add_column(sa.Column('our_price', sa.Float(), nullable=True))
+        batch_op.add_column(sa.Column('margin_pct', sa.Float(), nullable=True))
+        batch_op.add_column(sa.Column('probability', sa.Integer(), nullable=True))
+        batch_op.add_column(sa.Column('platform', sa.String(100), nullable=True))
+        batch_op.add_column(sa.Column('region', sa.String(100), nullable=True))
+        batch_op.add_column(sa.Column('responsible_id', sa.Integer(), nullable=True))
+        batch_op.add_column(sa.Column('auction_end_time', sa.DateTime(timezone=True), nullable=True))
+        batch_op.add_column(sa.Column('loss_reason', sa.String(255), nullable=True))
 
 
 def downgrade() -> None:
-    op.drop_column('tenders', 'stage')
-    op.drop_column('tenders', 'nmc')
-    op.drop_column('tenders', 'our_price')
-    op.drop_column('tenders', 'margin_pct')
-    op.drop_column('tenders', 'probability')
-    op.drop_column('tenders', 'platform')
-    op.drop_column('tenders', 'region')
-    op.drop_column('tenders', 'responsible_id')
-    op.drop_column('tenders', 'auction_end_time')
-    op.drop_column('tenders', 'loss_reason')
+    with op.batch_alter_table('tenders', schema=None) as batch_op:
+        batch_op.drop_column('loss_reason')
+        batch_op.drop_column('auction_end_time')
+        batch_op.drop_column('responsible_id')
+        batch_op.drop_column('region')
+        batch_op.drop_column('platform')
+        batch_op.drop_column('probability')
+        batch_op.drop_column('margin_pct')
+        batch_op.drop_column('our_price')
+        batch_op.drop_column('nmc')
+        batch_op.drop_column('stage')
