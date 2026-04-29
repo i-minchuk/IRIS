@@ -8,11 +8,11 @@ interface TenderPipelineProps {
 }
 
 const STAGE_NEON: Record<string, { gradient: string; glow: string; text: string }> = {
-  analysis: { gradient: 'linear-gradient(90deg, #00F0FF, #00C8D4)', glow: 'rgba(0, 240, 255, 0.25)', text: '#00F0FF' },
-  documentation: { gradient: 'linear-gradient(90deg, #2979FF, #00F0FF)', glow: 'rgba(41, 121, 255, 0.25)', text: '#2979FF' },
-  pricing: { gradient: 'linear-gradient(90deg, #B829DD, #2979FF)', glow: 'rgba(184, 41, 221, 0.25)', text: '#B829DD' },
-  sent: { gradient: 'linear-gradient(90deg, #FF00AA, #B829DD)', glow: 'rgba(255, 0, 170, 0.25)', text: '#FF00AA' },
-  review: { gradient: 'linear-gradient(90deg, #FF4D6D, #FF00AA)', glow: 'rgba(255, 77, 109, 0.25)', text: '#FF4D6D' },
+  analysis:      { gradient: 'linear-gradient(90deg, var(--iris-accent-cyan), #00C8D4)',   glow: 'var(--iris-glow-cyan)',    text: 'var(--iris-accent-cyan)' },
+  documentation: { gradient: 'linear-gradient(90deg, var(--iris-accent-blue), var(--iris-accent-cyan))', glow: 'var(--iris-glow-blue)', text: 'var(--iris-accent-blue)' },
+  pricing:       { gradient: 'linear-gradient(90deg, var(--iris-accent-purple), var(--iris-accent-blue))', glow: 'var(--iris-glow-purple)', text: 'var(--iris-accent-purple)' },
+  sent:          { gradient: 'linear-gradient(90deg, var(--iris-accent-magenta), var(--iris-accent-purple))', glow: 'var(--iris-glow-magenta)', text: 'var(--iris-accent-magenta)' },
+  review:        { gradient: 'linear-gradient(90deg, var(--iris-accent-coral), var(--iris-accent-magenta))', glow: 'var(--iris-glow-coral)', text: 'var(--iris-accent-coral)' },
 };
 
 export function TenderPipeline({ data, loading }: TenderPipelineProps) {
@@ -23,10 +23,10 @@ export function TenderPipeline({ data, loading }: TenderPipelineProps) {
   if (loading) {
     return (
       <div className="rounded-2xl p-4 sm:p-6 neon-card">
-        <div className="mb-4 h-6 w-56 animate-pulse rounded" style={{ background: 'rgba(255,255,255,0.06)' }} />
+        <div className="mb-4 h-6 w-56 animate-pulse rounded" style={{ background: 'var(--iris-bg-skeleton)' }} />
         <div className="space-y-3">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="h-14 animate-pulse rounded-lg" style={{ background: 'rgba(255,255,255,0.04)' }} />
+            <div key={i} className="h-14 animate-pulse rounded-lg" style={{ background: 'var(--iris-bg-skeleton)' }} />
           ))}
         </div>
       </div>
@@ -38,7 +38,7 @@ export function TenderPipeline({ data, loading }: TenderPipelineProps) {
       {/* Header */}
       <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
-          <Target className="h-5 w-5" style={{ color: '#00F0FF' }} />
+          <Target className="h-5 w-5" style={{ color: 'var(--iris-accent-cyan)' }} />
           <h3 className="text-base sm:text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
             Тендерный отдел — Pipeline
           </h3>
@@ -52,7 +52,7 @@ export function TenderPipeline({ data, loading }: TenderPipelineProps) {
             Win rate: <strong style={{ color: 'var(--text-primary)' }}>{data?.win_rate ?? 0}%</strong>
           </span>
           {!!data?.overdue_count && (
-            <span className="flex items-center gap-1" style={{ color: '#FF4D6D' }}>
+            <span className="flex items-center gap-1" style={{ color: 'var(--iris-accent-coral)' }}>
               <AlertTriangle className="h-3.5 w-3.5" />
               Просрочено: {data.overdue_count}
             </span>
@@ -75,8 +75,8 @@ export function TenderPipeline({ data, loading }: TenderPipelineProps) {
                 style={{
                   width: `${widthPct}%`,
                   minWidth: 140,
-                  background: 'rgba(255,255,255,0.03)',
-                  borderColor: isExpanded ? neon.glow.replace('0.25', '0.5') : 'rgba(255,255,255,0.06)',
+                  background: 'var(--iris-bg-subtle)',
+                  borderColor: isExpanded ? neon.text : 'var(--iris-border-subtle)',
                   boxShadow: isExpanded ? `0 0 20px ${neon.glow}` : 'none',
                 }}
               >
@@ -116,8 +116,8 @@ export function TenderPipeline({ data, loading }: TenderPipelineProps) {
                   style={{
                     width: `${widthPct}%`,
                     minWidth: 140,
-                    background: 'rgba(255,255,255,0.02)',
-                    borderColor: 'rgba(255,255,255,0.06)',
+                    background: 'var(--iris-bg-tertiary)',
+                    borderColor: 'var(--iris-border-subtle)',
                   }}
                 >
                   <p className="text-xs" style={{ color: 'var(--text-muted)' }}>

@@ -15,21 +15,25 @@ const statusConfig: Record<string, {
   gradient: string;
   glow: string;
   border: string;
+  accent: string;
 }> = {
   green: {
-    gradient: 'linear-gradient(135deg, #00F0FF, #00C853)',
-    glow: 'rgba(0, 240, 255, 0.15)',
-    border: 'rgba(0, 240, 255, 0.3)',
+    gradient: 'linear-gradient(135deg, var(--iris-accent-cyan), #00C853)',
+    glow: 'var(--iris-glow-cyan)',
+    border: 'var(--iris-accent-cyan)',
+    accent: 'var(--iris-accent-cyan)',
   },
   yellow: {
-    gradient: 'linear-gradient(135deg, #FFAA00, #FF00AA)',
-    glow: 'rgba(255, 170, 0, 0.15)',
-    border: 'rgba(255, 170, 0, 0.3)',
+    gradient: 'linear-gradient(135deg, var(--iris-accent-amber), var(--iris-accent-magenta))',
+    glow: 'var(--iris-glow-amber)',
+    border: 'var(--iris-accent-amber)',
+    accent: 'var(--iris-accent-amber)',
   },
   red: {
-    gradient: 'linear-gradient(135deg, #FF4D6D, #FF00AA)',
-    glow: 'rgba(255, 77, 109, 0.15)',
-    border: 'rgba(255, 77, 109, 0.3)',
+    gradient: 'linear-gradient(135deg, var(--iris-accent-coral), var(--iris-accent-magenta))',
+    glow: 'var(--iris-glow-coral)',
+    border: 'var(--iris-accent-coral)',
+    accent: 'var(--iris-accent-coral)',
   },
 };
 
@@ -98,9 +102,9 @@ export const KPITile: React.FC<KPITileProps> = ({
         clickable ? 'cursor-pointer hover:scale-[1.02]' : '',
       ].join(' ')}
       style={{
-        background: 'linear-gradient(145deg, rgba(26, 29, 45, 0.9), rgba(17, 20, 32, 0.95))',
-        border: `1px solid ${cfg.border}`,
-        boxShadow: `0 4px 24px rgba(0,0,0,0.4), 0 0 20px ${cfg.glow}, inset 0 1px 0 rgba(255,255,255,0.04)`,
+        background: 'var(--iris-bg-card)',
+        border: `1px solid var(--iris-border-subtle)`,
+        boxShadow: `var(--iris-shadow-card), 0 0 20px ${cfg.glow}, var(--iris-shadow-inset)`,
       }}
     >
       {/* Neon corner accent */}
@@ -135,10 +139,10 @@ export const KPITile: React.FC<KPITileProps> = ({
             <span
               className="text-xs font-semibold whitespace-nowrap mb-1"
               style={{
-                color: trend_direction === 'up' ? '#00F0FF' : '#FF4D6D',
+                color: trend_direction === 'up' ? 'var(--iris-accent-cyan)' : 'var(--iris-accent-coral)',
                 textShadow: trend_direction === 'up'
-                  ? '0 0 8px rgba(0, 240, 255, 0.4)'
-                  : '0 0 8px rgba(255, 77, 109, 0.4)',
+                  ? '0 0 8px var(--iris-glow-cyan)'
+                  : '0 0 8px var(--iris-glow-coral)',
               }}
             >
               {trend}

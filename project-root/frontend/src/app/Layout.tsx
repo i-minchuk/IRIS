@@ -14,6 +14,8 @@ export const Layout: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  const isDark = theme === 'dark';
+
   return (
     <div
       className="min-h-screen flex flex-col transition-colors duration-300"
@@ -42,7 +44,7 @@ export const Layout: React.FC = () => {
                 className="text-lg font-bold tracking-tight transition-colors duration-200"
                 style={{ color: 'var(--text-primary)' }}
               >
-                ДокПоток <span className="text-[#00F0FF]">IRIS</span>
+                ДокПоток <span style={{ color: 'var(--iris-accent-cyan)' }}>IRIS</span>
               </h1>
             </div>
 
@@ -83,20 +85,20 @@ export const Layout: React.FC = () => {
                 onMouseLeave={(e) => {
                   e.currentTarget.style.backgroundColor = 'var(--button-bg)';
                 }}
-                title={theme === 'light' ? 'Переключить на тёмную тему' : 'Переключить на светлую тему'}
+                title={isDark ? 'Переключить на светлую тему' : 'Переключить на тёмную тему'}
               >
-                {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+                {isDark ? <Sun size={18} /> : <Moon size={18} />}
               </button>
 
               <button
                 onClick={logout}
                 className="px-3 py-1.5 text-sm rounded-md transition-colors"
                 style={{
-                  border: '1px solid rgba(255, 77, 109, 0.4)',
-                  color: '#FF4D6D',
+                  border: '1px solid var(--iris-accent-coral)',
+                  color: 'var(--iris-accent-coral)',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(255, 77, 109, 0.1)';
+                  e.currentTarget.style.backgroundColor = 'var(--iris-status-bg-coral)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.backgroundColor = 'transparent';
@@ -126,7 +128,7 @@ export const Layout: React.FC = () => {
                     className="p-2 rounded-lg"
                     style={{ backgroundColor: 'var(--button-bg)', color: 'var(--text-secondary)' }}
                   >
-                    {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+                    {isDark ? <Sun size={18} /> : <Moon size={18} />}
                   </button>
                 </div>
               </div>
@@ -137,8 +139,8 @@ export const Layout: React.FC = () => {
                 }}
                 className="w-full px-3 py-2 text-sm rounded-md transition-colors"
                 style={{
-                  border: '1px solid rgba(255, 77, 109, 0.4)',
-                  color: '#FF4D6D',
+                  border: '1px solid var(--iris-accent-coral)',
+                  color: 'var(--iris-accent-coral)',
                 }}
               >
                 Выйти

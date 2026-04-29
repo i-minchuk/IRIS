@@ -9,34 +9,34 @@ interface TopAlertsProps {
 
 const severityConfig = {
   critical: {
-    border: 'rgba(255,0,85,0.2)',
-    bg: 'rgba(255,0,85,0.06)',
-    iconColor: '#FF0055',
-    iconGlow: 'rgba(255,0,85,0.3)',
-    btnBg: 'linear-gradient(135deg, #FF0055, #FF4D6D)',
-    btnGlow: 'rgba(255,0,85,0.3)',
-    badgeBg: 'rgba(255,0,85,0.15)',
-    badgeColor: '#FF0055',
+    border: 'var(--iris-accent-coral)',
+    bg: 'var(--iris-status-bg-coral)',
+    iconColor: 'var(--iris-accent-coral)',
+    iconGlow: 'var(--iris-glow-coral)',
+    btnBg: 'linear-gradient(135deg, var(--iris-accent-coral), #FF4D6D)',
+    btnGlow: 'var(--iris-glow-coral)',
+    badgeBg: 'var(--iris-status-bg-coral)',
+    badgeColor: 'var(--iris-accent-coral)',
   },
   warning: {
-    border: 'rgba(255,170,0,0.2)',
-    bg: 'rgba(255,170,0,0.06)',
-    iconColor: '#FFAA00',
-    iconGlow: 'rgba(255,170,0,0.3)',
-    btnBg: 'linear-gradient(135deg, #FFAA00, #FFCC33)',
-    btnGlow: 'rgba(255,170,0,0.3)',
-    badgeBg: 'rgba(255,170,0,0.15)',
-    badgeColor: '#FFAA00',
+    border: 'var(--iris-accent-amber)',
+    bg: 'var(--iris-status-bg-amber)',
+    iconColor: 'var(--iris-accent-amber)',
+    iconGlow: 'var(--iris-glow-amber)',
+    btnBg: 'linear-gradient(135deg, var(--iris-accent-amber), #FFCC33)',
+    btnGlow: 'var(--iris-glow-amber)',
+    badgeBg: 'var(--iris-status-bg-amber)',
+    badgeColor: 'var(--iris-accent-amber)',
   },
   info: {
-    border: 'rgba(41,121,255,0.2)',
-    bg: 'rgba(41,121,255,0.06)',
-    iconColor: '#2979FF',
-    iconGlow: 'rgba(41,121,255,0.3)',
-    btnBg: 'linear-gradient(135deg, #2979FF, #00F0FF)',
-    btnGlow: 'rgba(41,121,255,0.3)',
-    badgeBg: 'rgba(41,121,255,0.15)',
-    badgeColor: '#2979FF',
+    border: 'var(--iris-accent-blue)',
+    bg: 'var(--iris-status-bg-blue)',
+    iconColor: 'var(--iris-accent-blue)',
+    iconGlow: 'var(--iris-glow-blue)',
+    btnBg: 'linear-gradient(135deg, var(--iris-accent-blue), var(--iris-accent-cyan))',
+    btnGlow: 'var(--iris-glow-blue)',
+    badgeBg: 'var(--iris-status-bg-blue)',
+    badgeColor: 'var(--iris-accent-blue)',
   },
 };
 
@@ -63,10 +63,10 @@ export function TopAlerts({ data, loading }: TopAlertsProps) {
   if (loading) {
     return (
       <div className="rounded-2xl p-6 neon-card">
-        <div className="mb-4 h-6 w-40 animate-pulse rounded" style={{ background: 'rgba(255,255,255,0.06)' }} />
+        <div className="mb-4 h-6 w-40 animate-pulse rounded" style={{ background: 'var(--iris-bg-skeleton)' }} />
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-20 animate-pulse rounded-lg" style={{ background: 'rgba(255,255,255,0.04)' }} />
+            <div key={i} className="h-20 animate-pulse rounded-lg" style={{ background: 'var(--iris-bg-skeleton)' }} />
           ))}
         </div>
       </div>
@@ -81,10 +81,7 @@ export function TopAlerts({ data, loading }: TopAlertsProps) {
             Тревоги
           </h3>
           {total > 0 && (
-            <span
-              className="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1.5 text-[11px] font-bold"
-              style={{ background: 'rgba(255,0,85,0.15)', color: '#FF0055' }}
-            >
+            <span className="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1.5 text-[11px] font-bold" style={{ background: 'var(--iris-status-bg-coral)', color: 'var(--iris-accent-coral)' }}>
               {total}
             </span>
           )}
@@ -94,7 +91,7 @@ export function TopAlerts({ data, loading }: TopAlertsProps) {
 
       <div className="space-y-3">
         {alerts.length === 0 && (
-          <div className="rounded-lg border border-dashed p-6 text-center text-sm" style={{ borderColor: 'rgba(255,255,255,0.08)', color: 'var(--text-muted)' }}>
+          <div className="rounded-lg border border-dashed p-6 text-center text-sm" style={{ borderColor: 'var(--iris-border-dashed)', color: 'var(--text-muted)' }}>
             <ShieldAlert className="mx-auto mb-2 h-6 w-6 opacity-50" />
             Все системы в норме. Тревог нет.
           </div>
@@ -127,10 +124,7 @@ export function TopAlerts({ data, loading }: TopAlertsProps) {
                     {alert.title}
                   </p>
                   {alert.severity === 'critical' && (
-                    <span
-                      className="rounded px-1.5 py-0.5 text-[10px] font-bold"
-                      style={{ background: cfg.badgeBg, color: cfg.badgeColor }}
-                    >
+                    <span className="rounded px-1.5 py-0.5 text-[10px] font-bold" style={{ background: cfg.badgeBg, color: cfg.badgeColor }}>
                       КРИТИЧНО
                     </span>
                   )}
@@ -144,7 +138,7 @@ export function TopAlerts({ data, loading }: TopAlertsProps) {
                 className="shrink-0 inline-flex items-center gap-1 rounded-md px-2 sm:px-2.5 py-1.5 text-[11px] sm:text-xs font-medium transition-all duration-200 hover:brightness-110"
                 style={{
                   background: cfg.btnBg,
-                  color: '#FFFFFF',
+                  color: 'var(--iris-text-inverse)',
                   boxShadow: `0 0 12px ${cfg.btnGlow}`,
                 }}
               >

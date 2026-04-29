@@ -8,10 +8,10 @@ interface ProjectPortfolioProps {
 }
 
 const ZONE_META: Record<string, { bg: string; fill: string; glow: string; label: string; icon: string }> = {
-  stars: { bg: 'rgba(0, 240, 255, 0.08)', fill: '#00F0FF', glow: 'rgba(0, 240, 255, 0.3)', label: 'В плане', icon: '✅' },
-  budget: { bg: 'rgba(255, 170, 0, 0.08)', fill: '#FFAA00', glow: 'rgba(255, 170, 0, 0.3)', label: 'Проблемы бюджета', icon: '⚠️' },
-  recoverable: { bg: 'rgba(41, 121, 255, 0.08)', fill: '#2979FF', glow: 'rgba(41, 121, 255, 0.3)', label: 'Риск срыва сроков', icon: '📈' },
-  crisis: { bg: 'rgba(255, 77, 109, 0.08)', fill: '#FF4D6D', glow: 'rgba(255, 77, 109, 0.3)', label: 'Кризис', icon: '🔥' },
+  stars:      { bg: 'var(--iris-status-bg-cyan)',    fill: 'var(--iris-accent-cyan)',    glow: 'var(--iris-glow-cyan)',    label: 'В плане', icon: '✅' },
+  budget:     { bg: 'var(--iris-status-bg-amber)',   fill: 'var(--iris-accent-amber)',   glow: 'var(--iris-glow-amber)',   label: 'Проблемы бюджета', icon: '⚠️' },
+  recoverable:{ bg: 'var(--iris-status-bg-blue)',    fill: 'var(--iris-accent-blue)',    glow: 'var(--iris-glow-blue)',    label: 'Риск срыва сроков', icon: '📈' },
+  crisis:     { bg: 'var(--iris-status-bg-coral)',   fill: 'var(--iris-accent-coral)',   glow: 'var(--iris-glow-coral)',   label: 'Кризис', icon: '🔥' },
 };
 
 const MAX_AXIS = 160;
@@ -36,7 +36,7 @@ export function ProjectPortfolio({ data, loading }: ProjectPortfolioProps) {
 
   const xScale = (v: number) => PADDING.left + (v / MAX_AXIS) * plotW;
   const yScale = (v: number) => PADDING.top + plotH - (v / MAX_AXIS) * plotH;
-  const rScale = (v: number) => 8 + (v / maxBudget) * 32; // radius 8..40
+  const rScale = (v: number) => 8 + (v / maxBudget) * 32;
 
   const handleMouseMove = (e: React.MouseEvent, project: PortfolioProject) => {
     const rect = (e.currentTarget as SVGElement).closest('svg')?.getBoundingClientRect();
@@ -51,7 +51,6 @@ export function ProjectPortfolio({ data, loading }: ProjectPortfolioProps) {
     setTooltipPos(null);
   };
 
-  // Escape closes fullscreen
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isFullscreen) setIsFullscreen(false);
@@ -60,7 +59,6 @@ export function ProjectPortfolio({ data, loading }: ProjectPortfolioProps) {
     return () => window.removeEventListener('keydown', onKey);
   }, [isFullscreen]);
 
-  // Lock body scroll when fullscreen
   useEffect(() => {
     if (isFullscreen) {
       document.body.style.overflow = 'hidden';
@@ -73,8 +71,8 @@ export function ProjectPortfolio({ data, loading }: ProjectPortfolioProps) {
   if (loading) {
     return (
       <div className="rounded-2xl p-4 sm:p-6 neon-card">
-        <div className="mb-4 h-6 w-48 animate-pulse rounded" style={{ background: 'rgba(255,255,255,0.06)' }} />
-        <div className="aspect-[16/10] w-full animate-pulse rounded-lg" style={{ background: 'rgba(255,255,255,0.04)' }} />
+        <div className="mb-4 h-6 w-48 animate-pulse rounded" style={{ background: 'var(--iris-bg-skeleton)' }} />
+        <div className="aspect-[16/10] w-full animate-pulse rounded-lg" style={{ background: 'var(--iris-bg-skeleton)' }} />
       </div>
     );
   }
@@ -88,7 +86,6 @@ export function ProjectPortfolio({ data, loading }: ProjectPortfolioProps) {
         onMouseLeave={handleMouseLeave}
       >
         <defs>
-          {/* Glow filter for bubbles */}
           <filter id="bubble-glow" x="-50%" y="-50%" width="200%" height="200%">
             <feGaussianBlur stdDeviation="4" result="blur" />
             <feMerge>
@@ -96,140 +93,55 @@ export function ProjectPortfolio({ data, loading }: ProjectPortfolioProps) {
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
-          {/* Radial gradient for bubbles */}
           <radialGradient id="grad-stars" cx="30%" cy="30%">
-            <stop offset="0%" stopColor="#00F0FF" />
-            <stop offset="100%" stopColor="#00C8D4" />
+            <stop offset="0%" stopColor="var(--iris-accent-cyan)" />
+            <stop offset="100%" stopColor="var(--iris-accent-cyan)" stopOpacity="0.6" />
           </radialGradient>
           <radialGradient id="grad-budget" cx="30%" cy="30%">
-            <stop offset="0%" stopColor="#FFAA00" />
-            <stop offset="100%" stopColor="#D49500" />
+            <stop offset="0%" stopColor="var(--iris-accent-amber)" />
+            <stop offset="100%" stopColor="var(--iris-accent-amber)" stopOpacity="0.6" />
           </radialGradient>
           <radialGradient id="grad-recoverable" cx="30%" cy="30%">
-            <stop offset="0%" stopColor="#2979FF" />
-            <stop offset="100%" stopColor="#1E5AD4" />
+            <stop offset="0%" stopColor="var(--iris-accent-blue)" />
+            <stop offset="100%" stopColor="var(--iris-accent-blue)" stopOpacity="0.6" />
           </radialGradient>
           <radialGradient id="grad-crisis" cx="30%" cy="30%">
-            <stop offset="0%" stopColor="#FF4D6D" />
-            <stop offset="100%" stopColor="#D43A56" />
+            <stop offset="0%" stopColor="var(--iris-accent-coral)" />
+            <stop offset="100%" stopColor="var(--iris-accent-coral)" stopOpacity="0.6" />
           </radialGradient>
         </defs>
 
-        {/* Background zones -->
-        <rect
-          x={xScale(0)}
-          y={yScale(100)}
-          width={(100 / MAX_AXIS) * plotW}
-          height={(100 / MAX_AXIS) * plotH}
-          fill={ZONE_META.stars.bg}
-          rx={6}
-        />
-        <rect
-          x={xScale(100)}
-          y={yScale(100)}
-          width={((MAX_AXIS - 100) / MAX_AXIS) * plotW}
-          height={(100 / MAX_AXIS) * plotH}
-          fill={ZONE_META.budget.bg}
-          rx={6}
-        />
-        <rect
-          x={xScale(0)}
-          y={yScale(MAX_AXIS)}
-          width={(100 / MAX_AXIS) * plotW}
-          height={((MAX_AXIS - 100) / MAX_AXIS) * plotH}
-          fill={ZONE_META.recoverable.bg}
-          rx={6}
-        />
-        <rect
-          x={xScale(100)}
-          y={yScale(MAX_AXIS)}
-          width={((MAX_AXIS - 100) / MAX_AXIS) * plotW}
-          height={((MAX_AXIS - 100) / MAX_AXIS) * plotH}
-          fill={ZONE_META.crisis.bg}
-          rx={6}
-        />
+        {/* Background zones */}
+        <rect x={xScale(0)} y={yScale(100)} width={(100 / MAX_AXIS) * plotW} height={(100 / MAX_AXIS) * plotH} fill={ZONE_META.stars.bg} rx={6} />
+        <rect x={xScale(100)} y={yScale(100)} width={((MAX_AXIS - 100) / MAX_AXIS) * plotW} height={(100 / MAX_AXIS) * plotH} fill={ZONE_META.budget.bg} rx={6} />
+        <rect x={xScale(0)} y={yScale(MAX_AXIS)} width={(100 / MAX_AXIS) * plotW} height={((MAX_AXIS - 100) / MAX_AXIS) * plotH} fill={ZONE_META.recoverable.bg} rx={6} />
+        <rect x={xScale(100)} y={yScale(MAX_AXIS)} width={((MAX_AXIS - 100) / MAX_AXIS) * plotW} height={((MAX_AXIS - 100) / MAX_AXIS) * plotH} fill={ZONE_META.crisis.bg} rx={6} />
 
         {/* Grid lines + ticks X */}
         {[0, 50, 100, 150].map((tick) => (
           <g key={`x-${tick}`}>
-            <line
-              x1={xScale(tick)}
-              y1={yScale(0)}
-              x2={xScale(tick)}
-              y2={yScale(MAX_AXIS)}
-              stroke="currentColor"
-              strokeDasharray="3,3"
-              className="text-slate-200 dark:text-slate-700"
-            />
-            <text
-              x={xScale(tick)}
-              y={yScale(0) + 22}
-              textAnchor="middle"
-              className="fill-slate-400 dark:fill-slate-500"
-              style={{ fontSize: 13 }}
-            >
-              {tick}%
-            </text>
+            <line x1={xScale(tick)} y1={yScale(0)} x2={xScale(tick)} y2={yScale(MAX_AXIS)} stroke="var(--iris-border-default)" strokeDasharray="3,3" />
+            <text x={xScale(tick)} y={yScale(0) + 22} textAnchor="middle" fill="var(--text-muted)" style={{ fontSize: 13 }}>{tick}%</text>
           </g>
         ))}
 
         {/* Grid lines + ticks Y */}
         {[0, 50, 100, 150].map((tick) => (
           <g key={`y-${tick}`}>
-            <line
-              x1={xScale(0)}
-              y1={yScale(tick)}
-              x2={xScale(MAX_AXIS)}
-              y2={yScale(tick)}
-              stroke="currentColor"
-              strokeDasharray="3,3"
-              className="text-slate-200 dark:text-slate-700"
-            />
-            <text
-              x={xScale(0) - 10}
-              y={yScale(tick) + 4}
-              textAnchor="end"
-              className="fill-slate-400 dark:fill-slate-500"
-              style={{ fontSize: 13 }}
-            >
-              {tick}%
-            </text>
+            <line x1={xScale(0)} y1={yScale(tick)} x2={xScale(MAX_AXIS)} y2={yScale(tick)} stroke="var(--iris-border-default)" strokeDasharray="3,3" />
+            <text x={xScale(0) - 10} y={yScale(tick) + 4} textAnchor="end" fill="var(--text-muted)" style={{ fontSize: 13 }}>{tick}%</text>
           </g>
         ))}
 
         {/* Zone labels */}
-        <text x={xScale(50)} y={yScale(50)} textAnchor="middle" className="fill-slate-400 dark:fill-slate-500" style={{ fontSize: 14 }}>
-          В плане
-        </text>
-        <text x={xScale(130)} y={yScale(50)} textAnchor="middle" className="fill-slate-400 dark:fill-slate-500" style={{ fontSize: 14 }}>
-          Проблемы бюджета
-        </text>
-        <text x={xScale(50)} y={yScale(130)} textAnchor="middle" className="fill-slate-400 dark:fill-slate-500" style={{ fontSize: 14 }}>
-          Риск срыва сроков
-        </text>
-        <text x={xScale(130)} y={yScale(130)} textAnchor="middle" className="fill-slate-400 dark:fill-slate-500" style={{ fontSize: 14 }}>
-          Кризис
-        </text>
+        <text x={xScale(50)} y={yScale(50)} textAnchor="middle" fill="var(--text-muted)" style={{ fontSize: 14 }}>В плане</text>
+        <text x={xScale(130)} y={yScale(50)} textAnchor="middle" fill="var(--text-muted)" style={{ fontSize: 14 }}>Проблемы бюджета</text>
+        <text x={xScale(50)} y={yScale(130)} textAnchor="middle" fill="var(--text-muted)" style={{ fontSize: 14 }}>Риск срыва сроков</text>
+        <text x={xScale(130)} y={yScale(130)} textAnchor="middle" fill="var(--text-muted)" style={{ fontSize: 14 }}>Кризис</text>
 
         {/* 100% threshold lines */}
-        <line
-          x1={xScale(100)}
-          y1={yScale(0)}
-          x2={xScale(100)}
-          y2={yScale(MAX_AXIS)}
-          stroke="currentColor"
-          strokeWidth={2}
-          className="text-slate-300 dark:text-slate-600"
-        />
-        <line
-          x1={xScale(0)}
-          y1={yScale(100)}
-          x2={xScale(MAX_AXIS)}
-          y2={yScale(100)}
-          stroke="currentColor"
-          strokeWidth={2}
-          className="text-slate-300 dark:text-slate-600"
-        />
+        <line x1={xScale(100)} y1={yScale(0)} x2={xScale(100)} y2={yScale(MAX_AXIS)} stroke="var(--iris-border-strong)" strokeWidth={2} />
+        <line x1={xScale(0)} y1={yScale(100)} x2={xScale(MAX_AXIS)} y2={yScale(100)} stroke="var(--iris-border-strong)" strokeWidth={2} />
 
         {/* Bubbles */}
         {projects.map((p) => {
@@ -239,25 +151,15 @@ export function ProjectPortfolio({ data, loading }: ProjectPortfolioProps) {
           const isHovered = hovered === p.id;
           const zone = p.zone ?? 'recoverable';
           const gradId = `grad-${zone}`;
-          const glow = ZONE_META[zone]?.glow ?? 'rgba(41, 121, 255, 0.3)';
+          const glow = ZONE_META[zone]?.glow ?? 'var(--iris-glow-blue)';
 
           return (
             <g key={p.id}>
-              {/* Glow halo */}
+              <circle cx={cx} cy={cy} r={r + 4} fill={glow} opacity={isHovered ? 0.5 : 0.2} className="pointer-events-none transition-all duration-200" />
               <circle
-                cx={cx}
-                cy={cy}
-                r={r + 4}
-                fill={glow}
-                opacity={isHovered ? 0.5 : 0.2}
-                className="pointer-events-none transition-all duration-200"
-              />
-              <circle
-                cx={cx}
-                cy={cy}
-                r={r}
+                cx={cx} cy={cy} r={r}
                 fill={`url(#${gradId})`}
-                stroke={ZONE_META[zone]?.fill ?? '#2979FF'}
+                stroke={ZONE_META[zone]?.fill ?? 'var(--iris-accent-blue)'}
                 strokeWidth={isHovered ? 2.5 : 1.5}
                 strokeOpacity={isHovered ? 1 : 0.8}
                 className="cursor-pointer transition-all duration-200"
@@ -267,13 +169,7 @@ export function ProjectPortfolio({ data, loading }: ProjectPortfolioProps) {
                 onMouseLeave={handleMouseLeave}
               />
               {r > 16 && (
-                <text
-                  x={cx}
-                  y={cy + 4}
-                  textAnchor="middle"
-                  className="fill-white font-semibold pointer-events-none select-none"
-                  style={{ fontSize: Math.max(10, r * 0.5), textShadow: '0 1px 4px rgba(0,0,0,0.6)' }}
-                >
+                <text x={cx} y={cy + 4} textAnchor="middle" fill="var(--iris-text-inverse)" fontWeight={600} className="pointer-events-none select-none" style={{ fontSize: Math.max(10, r * 0.5), textShadow: '0 1px 4px rgba(0,0,0,0.6)' }}>
                   {p.code}
                 </text>
               )}
@@ -282,27 +178,10 @@ export function ProjectPortfolio({ data, loading }: ProjectPortfolioProps) {
         })}
 
         {/* Axis labels */}
-        <text
-          x={VB_W / 2}
-          y={VB_H - 14}
-          textAnchor="middle"
-          className="fill-slate-500 dark:fill-slate-400"
-          style={{ fontSize: 14 }}
-        >
-          Бюджет выполнено, %
-        </text>
-        <text
-          x={18}
-          y={VB_H / 2}
-          textAnchor="middle"
-          transform={`rotate(-90, 18, ${VB_H / 2})`}
-          className="fill-slate-500 dark:fill-slate-400"
-          style={{ fontSize: 14 }}
-        >
-          График выполнено, %
-        </text>
+        <text x={VB_W / 2} y={VB_H - 14} textAnchor="middle" fill="var(--text-muted)" style={{ fontSize: 14 }}>Бюджет выполнено, %</text>
+        <text x={18} y={VB_H / 2} textAnchor="middle" transform={`rotate(-90, 18, ${VB_H / 2})`} fill="var(--text-muted)" style={{ fontSize: 14 }}>График выполнено, %</text>
 
-        {/* Tooltip inside SVG */}
+        {/* Tooltip */}
         {hovered !== null && tooltipPos && (() => {
           const p = projects.find((pr) => pr.id === hovered);
           if (!p) return null;
@@ -310,26 +189,10 @@ export function ProjectPortfolio({ data, loading }: ProjectPortfolioProps) {
           const ty = Math.max(tooltipPos.y - 80, 10);
           return (
             <g>
-              <rect
-                x={tx}
-                y={ty}
-                width={200}
-                height={72}
-                rx={8}
-                fill="rgba(15,23,42,0.92)"
-                className="dark:fill-slate-900"
-                stroke="rgba(100,116,139,0.3)"
-                strokeWidth={1}
-              />
-              <text x={tx + 12} y={ty + 22} className="fill-white" style={{ fontSize: 14, fontWeight: 600 }}>
-                {p.name}
-              </text>
-              <text x={tx + 12} y={ty + 42} className="fill-slate-300" style={{ fontSize: 12 }}>
-                Бюджет: {p.budget_pct}% · График: {p.schedule_pct}%
-              </text>
-              <text x={tx + 12} y={ty + 60} className="fill-slate-400" style={{ fontSize: 12 }}>
-                Стоимость: {p.total_budget_m.toFixed(1)} млн · {p.zone_label}
-              </text>
+              <rect x={tx} y={ty} width={200} height={72} rx={8} fill="var(--iris-bg-tooltip)" stroke="var(--iris-border-subtle)" strokeWidth={1} />
+              <text x={tx + 12} y={ty + 22} fill="var(--iris-text-primary)" style={{ fontSize: 14, fontWeight: 600 }}>{p.name}</text>
+              <text x={tx + 12} y={ty + 42} fill="var(--iris-text-secondary)" style={{ fontSize: 12 }}>Бюджет: {p.budget_pct}% · График: {p.schedule_pct}%</text>
+              <text x={tx + 12} y={ty + 60} fill="var(--iris-text-muted)" style={{ fontSize: 12 }}>Стоимость: {p.total_budget_m.toFixed(1)} млн · {p.zone_label}</text>
             </g>
           );
         })()}
@@ -341,37 +204,34 @@ export function ProjectPortfolio({ data, loading }: ProjectPortfolioProps) {
     <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between shrink-0">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <h3 className={`font-semibold text-slate-800 dark:text-slate-100 ${isFs ? 'text-xl sm:text-2xl' : 'text-base sm:text-lg'}`}>
+          <h3 className={`font-semibold ${isFs ? 'text-xl sm:text-2xl' : 'text-base sm:text-lg'}`} style={{ color: 'var(--text-primary)' }}>
             Портфель проектов
           </h3>
           {isFs && (
-            <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-bold text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-bold" style={{ background: 'var(--iris-status-bg-blue)', color: 'var(--iris-accent-blue)' }}>
               Режим демонстрации
             </span>
           )}
         </div>
-        <p className={`text-slate-500 dark:text-slate-400 ${isFs ? 'text-sm mt-1' : 'text-[11px] sm:text-xs'}`}>
+        <p className={`${isFs ? 'text-sm mt-1' : 'text-[11px] sm:text-xs'}`} style={{ color: 'var(--text-muted)' }}>
           X = бюджет % · Y = график % · размер = бюджет проекта
         </p>
       </div>
       <div className="flex items-center gap-2 shrink-0">
         <div className="flex flex-wrap items-center gap-2">
           {Object.entries(ZONE_META).map(([key, zone]) => (
-            <span
-              key={key}
-              className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] sm:text-xs font-medium dark:border-slate-600"
-              style={{ backgroundColor: zone.bg }}
-            >
+            <span key={key} className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] sm:text-xs font-medium" style={{ backgroundColor: zone.bg, borderColor: 'var(--iris-border-subtle)', color: 'var(--text-secondary)' }}>
               <span className="hidden sm:inline">{zone.label}</span>
               <span className="sm:hidden">{zone.icon}</span>
-              <span className="ml-1 text-slate-500 tabular-nums">{data?.zones?.[key] ?? 0}</span>
+              <span className="ml-1 tabular-nums">{data?.zones?.[key] ?? 0}</span>
             </span>
           ))}
         </div>
         {isFs ? (
           <button
             onClick={() => setIsFullscreen(false)}
-            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 shadow-sm hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors"
+            className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors"
+            style={{ background: 'var(--iris-bg-surface)', borderColor: 'var(--iris-border-subtle)', color: 'var(--text-secondary)' }}
             title="Закрыть (Esc)"
           >
             <X size={14} />
@@ -380,7 +240,8 @@ export function ProjectPortfolio({ data, loading }: ProjectPortfolioProps) {
         ) : (
           <button
             onClick={() => setIsFullscreen(true)}
-            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-medium text-slate-500 shadow-sm hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 transition-colors"
+            className="inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-medium transition-colors"
+            style={{ background: 'var(--iris-bg-surface)', borderColor: 'var(--iris-border-subtle)', color: 'var(--text-muted)' }}
             title="Развернуть на весь экран"
           >
             <Maximize2 size={13} />
@@ -392,23 +253,21 @@ export function ProjectPortfolio({ data, loading }: ProjectPortfolioProps) {
   );
 
   const emptyState = (
-    <div className="mt-4 rounded-lg border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500 dark:border-slate-600 dark:text-slate-400">
+    <div className="mt-4 rounded-lg border border-dashed p-8 text-center text-sm" style={{ borderColor: 'var(--iris-border-dashed)', color: 'var(--text-muted)' }}>
       Нет активных проектов для отображения
     </div>
   );
 
   return (
     <>
-      {/* Normal view */}
       <div className="rounded-2xl p-4 sm:p-6 neon-card">
         {renderHeader(false)}
         {renderChart(false)}
         {projects.length === 0 && emptyState}
       </div>
 
-      {/* Fullscreen overlay */}
       {isFullscreen && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-black/70 backdrop-blur-md p-3 sm:p-6 lg:p-10">
+        <div className="fixed inset-0 z-50 flex flex-col p-3 sm:p-6 lg:p-10" style={{ background: 'var(--iris-bg-backdrop)', backdropFilter: 'blur(8px)' }}>
           <div className="flex flex-col h-full rounded-2xl p-5 sm:p-8 overflow-hidden neon-card">
             {renderHeader(true)}
             {renderChart(true)}

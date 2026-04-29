@@ -7,9 +7,9 @@ interface DocumentKanbanProps {
 }
 
 const STATUS_META = [
-  { key: 'draft', label: 'ЧЕРН', icon: FileText, color: '#8892A8', glow: 'rgba(136,146,168,0.15)', bg: 'rgba(136,146,168,0.08)' },
-  { key: 'in_review', label: 'СОГЛ', icon: FileClock, color: '#FFAA00', glow: 'rgba(255,170,0,0.15)', bg: 'rgba(255,170,0,0.08)' },
-  { key: 'approved', label: 'УТВ', icon: FileCheck, color: '#00F0FF', glow: 'rgba(0,240,255,0.15)', bg: 'rgba(0,240,255,0.08)' },
+  { key: 'draft', label: 'ЧЕРН', icon: FileText, color: 'var(--text-muted)', glow: 'var(--iris-glow-blue)', bg: 'var(--iris-status-bg-slate)' },
+  { key: 'in_review', label: 'СОГЛ', icon: FileClock, color: 'var(--iris-accent-amber)', glow: 'var(--iris-glow-amber)', bg: 'var(--iris-status-bg-amber)' },
+  { key: 'approved', label: 'УТВ', icon: FileCheck, color: 'var(--iris-accent-cyan)', glow: 'var(--iris-glow-cyan)', bg: 'var(--iris-status-bg-cyan)' },
 ];
 
 export function DocumentKanban({ data, loading }: DocumentKanbanProps) {
@@ -18,10 +18,10 @@ export function DocumentKanban({ data, loading }: DocumentKanbanProps) {
   if (loading) {
     return (
       <div className="rounded-xl p-4 sm:p-6 neon-card">
-        <div className="mb-4 h-6 w-56 animate-pulse rounded" style={{ background: 'rgba(255,255,255,0.06)' }} />
+        <div className="mb-4 h-6 w-56 animate-pulse rounded" style={{ background: 'var(--iris-bg-skeleton)' }} />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-32 animate-pulse rounded-lg" style={{ background: 'rgba(255,255,255,0.04)' }} />
+            <div key={i} className="h-32 animate-pulse rounded-lg" style={{ background: 'var(--iris-bg-skeleton)' }} />
           ))}
         </div>
       </div>
@@ -32,7 +32,7 @@ export function DocumentKanban({ data, loading }: DocumentKanbanProps) {
     <div className="rounded-xl p-4 sm:p-6 neon-card">
       {/* Header */}
       <div className="mb-4 flex items-center gap-2">
-        <FileText className="h-5 w-5" style={{ color: '#2979FF' }} />
+        <FileText className="h-5 w-5" style={{ color: 'var(--iris-accent-blue)' }} />
         <h3 className="text-base sm:text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
           Документооборот по проектам
         </h3>
@@ -43,8 +43,10 @@ export function DocumentKanban({ data, loading }: DocumentKanbanProps) {
         {projects.map((project) => (
           <div
             key={project.project_id}
-            className="rounded-lg border p-3 transition-all duration-200 hover:border-[#2979FF]/20"
-            style={{ borderColor: 'rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)' }}
+            className="rounded-lg border p-3 transition-all duration-200"
+            style={{ borderColor: 'var(--iris-border-subtle)', background: 'var(--iris-bg-subtle)' }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--iris-accent-blue)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--iris-border-subtle)'; }}
           >
             {/* Project title */}
             <div className="mb-2 text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
@@ -62,7 +64,7 @@ export function DocumentKanban({ data, loading }: DocumentKanbanProps) {
                     className="flex flex-col items-center gap-0.5 rounded-md border py-2 transition-all duration-200 hover:brightness-110"
                     style={{
                       background: status.bg,
-                      borderColor: status.glow.replace('0.15', '0.2'),
+                      borderColor: status.color,
                       color: status.color,
                     }}
                   >
@@ -76,12 +78,9 @@ export function DocumentKanban({ data, loading }: DocumentKanbanProps) {
 
             {/* Overdue */}
             {project.overdue > 0 && (
-              <div
-                className="mt-2 flex items-center gap-1.5 rounded-md px-2 py-1"
-                style={{ background: 'rgba(255,0,85,0.08)' }}
-              >
-                <AlertTriangle className="h-3 w-3" style={{ color: '#FF0055' }} />
-                <span className="text-[11px] font-medium" style={{ color: '#FF0055' }}>
+              <div className="mt-2 flex items-center gap-1.5 rounded-md px-2 py-1" style={{ background: 'var(--iris-status-bg-coral)' }}>
+                <AlertTriangle className="h-3 w-3" style={{ color: 'var(--iris-accent-coral)' }} />
+                <span className="text-[11px] font-medium" style={{ color: 'var(--iris-accent-coral)' }}>
                   Просрочено: {project.overdue}
                 </span>
               </div>
@@ -91,23 +90,23 @@ export function DocumentKanban({ data, loading }: DocumentKanbanProps) {
       </div>
 
       {/* Legend */}
-      <div className="mt-4 flex flex-wrap gap-3 border-t pt-3 text-[10px]" style={{ borderColor: 'rgba(255,255,255,0.06)', color: 'var(--text-muted)' }}>
+      <div className="mt-4 flex flex-wrap gap-3 border-t pt-3 text-[10px]" style={{ borderColor: 'var(--iris-border-subtle)', color: 'var(--text-muted)' }}>
         <span className="flex items-center gap-1">
-          <span className="h-2.5 w-2.5 rounded-sm" style={{ background: '#8892A8' }} /> Черновик
+          <span className="h-2.5 w-2.5 rounded-sm" style={{ background: 'var(--text-muted)' }} /> Черновик
         </span>
         <span className="flex items-center gap-1">
-          <span className="h-2.5 w-2.5 rounded-sm" style={{ background: '#FFAA00' }} /> На согласовании
+          <span className="h-2.5 w-2.5 rounded-sm" style={{ background: 'var(--iris-accent-amber)' }} /> На согласовании
         </span>
         <span className="flex items-center gap-1">
-          <span className="h-2.5 w-2.5 rounded-sm" style={{ background: '#00F0FF' }} /> Утверждено
+          <span className="h-2.5 w-2.5 rounded-sm" style={{ background: 'var(--iris-accent-cyan)' }} /> Утверждено
         </span>
         <span className="flex items-center gap-1">
-          <span className="h-2.5 w-2.5 rounded-sm" style={{ background: '#FF0055' }} /> Просрочено
+          <span className="h-2.5 w-2.5 rounded-sm" style={{ background: 'var(--iris-accent-coral)' }} /> Просрочено
         </span>
       </div>
 
       {projects.length === 0 && (
-        <div className="mt-4 rounded-lg border border-dashed p-8 text-center text-sm" style={{ borderColor: 'rgba(255,255,255,0.1)', color: 'var(--text-muted)' }}>
+        <div className="mt-4 rounded-lg border border-dashed p-8 text-center text-sm" style={{ borderColor: 'var(--iris-border-dashed)', color: 'var(--text-muted)' }}>
           Нет данных по документам
         </div>
       )}

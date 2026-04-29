@@ -2,46 +2,191 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ================================================================
+   IRIS DESIGN SYSTEM — Unified Token Architecture
+   Supports: .theme-light / .theme-dark on <html>
+   ================================================================ */
+
 @layer base {
-  :root {
-    /* Брендовые цвета — Светлая тема */
-    --color-brand-primary: #1E2230;
-    --color-brand-secondary: #8B9DAF;
-    --color-brand-accent: #4F7A4C;
-    --color-brand-bg: #F5F7FA;
-    --color-brand-surface: #FFFFFF;
-    --color-brand-border: #E2E8F0;
+  /* ── LIGHT THEME (default) ── */
+  :root,
+  .theme-light {
+    /* Backgrounds */
+    --iris-bg-app: #F0F2F5;
+    --iris-bg-surface: #FFFFFF;
+    --iris-bg-surface-elevated: #FFFFFF;
+    --iris-bg-header: #FFFFFF;
+    --iris-bg-card: #FFFFFF;
+    --iris-bg-hover: rgba(0, 136, 170, 0.06);
+    --iris-bg-active: rgba(0, 136, 170, 0.10);
+    --iris-bg-subtle: rgba(0, 0, 0, 0.03);
+    --iris-bg-tertiary: rgba(0, 0, 0, 0.02);
+    --iris-bg-skeleton: rgba(0, 0, 0, 0.04);
+    --iris-bg-backdrop: rgba(0, 0, 0, 0.35);
+    --iris-bg-tooltip: rgba(30, 34, 48, 0.95);
 
-    /* Layout переменные */
-    --layout-bg: #F5F7FA;
-    --header-bg: #FFFFFF;
-    --header-border: #E2E8F0;
+    /* Text */
+    --iris-text-primary: #1E2230;
+    --iris-text-secondary: #4A5068;
+    --iris-text-muted: #8A90A8;
+    --iris-text-inverse: #FFFFFF;
+    --iris-text-on-accent: #FFFFFF;
+
+    /* Borders */
+    --iris-border-subtle: rgba(0, 0, 0, 0.06);
+    --iris-border-default: rgba(0, 0, 0, 0.10);
+    --iris-border-strong: rgba(0, 0, 0, 0.18);
+    --iris-border-dashed: rgba(0, 0, 0, 0.12);
+
+    /* Accent colors — muted for light theme (WCAG AA safe) */
+    --iris-accent-cyan: #0088AA;
+    --iris-accent-amber: #B86E00;
+    --iris-accent-coral: #CC3344;
+    --iris-accent-blue: #1A5ACC;
+    --iris-accent-purple: #7A2299;
+    --iris-accent-magenta: #AA0088;
+
+    /* Accent glows — subtle on light */
+    --iris-glow-cyan: rgba(0, 136, 170, 0.20);
+    --iris-glow-amber: rgba(184, 110, 0, 0.20);
+    --iris-glow-coral: rgba(204, 51, 68, 0.20);
+    --iris-glow-blue: rgba(26, 90, 204, 0.20);
+    --iris-glow-purple: rgba(122, 34, 153, 0.20);
+    --iris-glow-magenta: rgba(170, 0, 136, 0.20);
+
+    /* Status backgrounds (low opacity) */
+    --iris-status-bg-cyan: rgba(0, 136, 170, 0.08);
+    --iris-status-bg-amber: rgba(184, 110, 0, 0.08);
+    --iris-status-bg-coral: rgba(204, 51, 68, 0.08);
+    --iris-status-bg-blue: rgba(26, 90, 204, 0.08);
+    --iris-status-bg-purple: rgba(122, 34, 153, 0.08);
+    --iris-status-bg-magenta: rgba(170, 0, 136, 0.08);
+    --iris-status-bg-slate: rgba(100, 110, 140, 0.08);
+
+    /* Shadows */
+    --iris-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+    --iris-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.10);
+    --iris-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+    --iris-shadow-xl: 0 12px 40px rgba(0, 0, 0, 0.16);
+    --iris-shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.80);
+    --iris-shadow-card: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+    --iris-shadow-tooltip: 0 4px 24px rgba(0, 0, 0, 0.20);
+
+    /* Layout */
     --iris-header-height: 56px;
-    --text-primary: #1E2230;
-    --text-secondary: #64748B;
-    --text-muted: #94A3B8;
-    --hover-bg: #F1F5F9;
-    --button-bg: #F5F7FA;
-    --button-hover-bg: #E2E8F0;
-    --content-bg: #FFFFFF;
-    --content-border: #E2E8F0;
 
-    /* Шрифты */
+    /* Legacy bridge (for components still using old names) */
+    --layout-bg: var(--iris-bg-app);
+    --header-bg: var(--iris-bg-header);
+    --header-border: var(--iris-border-subtle);
+    --text-primary: var(--iris-text-primary);
+    --text-secondary: var(--iris-text-secondary);
+    --text-muted: var(--iris-text-muted);
+    --button-bg: var(--iris-bg-subtle);
+    --button-hover-bg: var(--iris-bg-hover);
+    --content-bg: var(--iris-bg-surface);
+    --content-border: var(--iris-border-subtle);
+
+    /* Fonts */
     --font-heading: 'Montserrat', 'Segoe UI', sans-serif;
     --font-body: 'Inter', 'Segoe UI', system-ui, sans-serif;
   }
 
+  /* ── DARK THEME (neon) ── */
+  .theme-dark,
+  .dark {
+    /* Backgrounds */
+    --iris-bg-app: #0B0E14;
+    --iris-bg-surface: #111420;
+    --iris-bg-surface-elevated: #131625;
+    --iris-bg-header: #0D1018;
+    --iris-bg-card: #131625;
+    --iris-bg-hover: rgba(0, 240, 255, 0.05);
+    --iris-bg-active: rgba(0, 240, 255, 0.08);
+    --iris-bg-subtle: rgba(255, 255, 255, 0.04);
+    --iris-bg-tertiary: rgba(255, 255, 255, 0.02);
+    --iris-bg-skeleton: rgba(255, 255, 255, 0.04);
+    --iris-bg-backdrop: rgba(0, 0, 0, 0.70);
+    --iris-bg-tooltip: rgba(11, 14, 20, 0.95);
+
+    /* Text */
+    --iris-text-primary: #E2E8F0;
+    --iris-text-secondary: #8892A8;
+    --iris-text-muted: #5A6380;
+    --iris-text-inverse: #0B0E14;
+    --iris-text-on-accent: #FFFFFF;
+
+    /* Borders */
+    --iris-border-subtle: rgba(255, 255, 255, 0.06);
+    --iris-border-default: rgba(255, 255, 255, 0.10);
+    --iris-border-strong: rgba(255, 255, 255, 0.18);
+    --iris-border-dashed: rgba(255, 255, 255, 0.08);
+
+    /* Accent colors — neon saturated */
+    --iris-accent-cyan: #00F0FF;
+    --iris-accent-amber: #FFAA00;
+    --iris-accent-coral: #FF4D6D;
+    --iris-accent-blue: #2979FF;
+    --iris-accent-purple: #B829DD;
+    --iris-accent-magenta: #FF00AA;
+
+    /* Accent glows — vibrant on dark */
+    --iris-glow-cyan: rgba(0, 240, 255, 0.25);
+    --iris-glow-amber: rgba(255, 170, 0, 0.25);
+    --iris-glow-coral: rgba(255, 77, 109, 0.25);
+    --iris-glow-blue: rgba(41, 121, 255, 0.25);
+    --iris-glow-purple: rgba(184, 41, 221, 0.25);
+    --iris-glow-magenta: rgba(255, 0, 170, 0.25);
+
+    /* Status backgrounds */
+    --iris-status-bg-cyan: rgba(0, 240, 255, 0.08);
+    --iris-status-bg-amber: rgba(255, 170, 0, 0.08);
+    --iris-status-bg-coral: rgba(255, 77, 109, 0.08);
+    --iris-status-bg-blue: rgba(41, 121, 255, 0.08);
+    --iris-status-bg-purple: rgba(184, 41, 221, 0.08);
+    --iris-status-bg-magenta: rgba(255, 0, 170, 0.08);
+    --iris-status-bg-slate: rgba(90, 99, 128, 0.08);
+
+    /* Shadows */
+    --iris-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
+    --iris-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45);
+    --iris-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.55);
+    --iris-shadow-xl: 0 12px 40px rgba(0, 0, 0, 0.65);
+    --iris-shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    --iris-shadow-card: 0 4px 24px rgba(0, 0, 0, 0.40);
+    --iris-shadow-tooltip: 0 4px 24px rgba(0, 0, 0, 0.50);
+
+    /* Layout */
+    --iris-header-height: 56px;
+
+    /* Legacy bridge */
+    --layout-bg: var(--iris-bg-app);
+    --header-bg: var(--iris-bg-header);
+    --header-border: var(--iris-border-subtle);
+    --text-primary: var(--iris-text-primary);
+    --text-secondary: var(--iris-text-secondary);
+    --text-muted: var(--iris-text-muted);
+    --button-bg: var(--iris-bg-subtle);
+    --button-hover-bg: var(--iris-bg-hover);
+    --content-bg: var(--iris-bg-surface);
+    --content-border: var(--iris-border-subtle);
+  }
+
   html {
-    background-color: var(--color-brand-bg);
+    background-color: var(--iris-bg-app);
+    transition: background-color 0.2s ease;
   }
 
   body {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    background-color: var(--color-brand-bg);
-    color: var(--color-brand-primary);
+    font-family: var(--font-body);
+    background-color: var(--iris-bg-app);
+    color: var(--iris-text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 
-  /* Отключаем стандартное автозаполнение (белый/жёлтый фон в тёмной теме) */
+  /* Disable autofill color flash */
   input:-webkit-autofill,
   input:-webkit-autofill:hover,
   input:-webkit-autofill:focus,
@@ -51,157 +196,74 @@
   select:-webkit-autofill,
   select:-webkit-autofill:hover,
   select:-webkit-autofill:focus {
-    -webkit-text-fill-color: var(--text-primary);
-    -webkit-box-shadow: 0 0 0px 1000px var(--color-brand-surface) inset;
+    -webkit-text-fill-color: var(--iris-text-primary);
+    -webkit-box-shadow: 0 0 0px 1000px var(--iris-bg-surface) inset;
     transition: background-color 5000s ease-in-out 0s;
   }
 }
 
-/* Тёмная тема через класс .dark на html */
-.dark {
-  --color-brand-primary: #E2E8F0;
-  --color-brand-secondary: #94A3B8;
-  --color-brand-accent: #00F0FF;
-  --color-brand-bg: #0B0E14;
-  --color-brand-surface: #111420;
-  --color-brand-border: rgba(255, 255, 255, 0.06);
-
-  /* Layout переменные тёмной темы — Neon Dark */
-  --layout-bg: #0B0E14;
-  --header-bg: #0D1018;
-  --header-border: rgba(255, 255, 255, 0.05);
-  --iris-header-height: 56px;
-  --text-primary: #E2E8F0;
-  --text-secondary: #8892A8;
-  --text-muted: #5A6380;
-  --hover-bg: rgba(0, 240, 255, 0.05);
-  --button-bg: rgba(255, 255, 255, 0.04);
-  --button-hover-bg: rgba(255, 255, 255, 0.08);
-  --content-bg: #111420;
-  --content-border: rgba(255, 255, 255, 0.06);
-}
-
 @layer components {
-  /* Neon Card — основной стиль карточек дашборда */
+  /* ── Neon Card ── adaptive for both themes */
   .neon-card {
-    background: linear-gradient(145deg, rgba(26, 29, 45, 0.9), rgba(17, 20, 32, 0.95));
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--iris-bg-card);
+    border: 1px solid var(--iris-border-subtle);
     border-radius: 1rem;
-    box-shadow:
-      0 4px 24px rgba(0, 0, 0, 0.4),
-      inset 0 1px 0 rgba(255, 255, 255, 0.04);
-    backdrop-filter: blur(12px);
+    box-shadow: var(--iris-shadow-card), var(--iris-shadow-inset);
+    transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
   }
 
+  .theme-dark .neon-card,
   .dark .neon-card {
-    background: linear-gradient(145deg, rgba(26, 29, 45, 0.9), rgba(17, 20, 32, 0.95));
+    background: linear-gradient(145deg, rgba(26, 29, 45, 0.90), rgba(17, 20, 32, 0.95));
     border-color: rgba(255, 255, 255, 0.06);
+    box-shadow:
+      0 4px 24px rgba(0, 0, 0, 0.40),
+      inset 0 1px 0 rgba(255, 255, 255, 0.04);
   }
 
-  /* Neon glow accents */
-  .neon-glow-cyan {
-    box-shadow: 0 0 20px rgba(0, 240, 255, 0.15), 0 0 60px rgba(0, 240, 255, 0.05);
-  }
-  .neon-glow-magenta {
-    box-shadow: 0 0 20px rgba(255, 0, 170, 0.15), 0 0 60px rgba(255, 0, 170, 0.05);
-  }
-  .neon-glow-purple {
-    box-shadow: 0 0 20px rgba(184, 41, 221, 0.15), 0 0 60px rgba(184, 41, 221, 0.05);
-  }
-  .neon-glow-blue {
-    box-shadow: 0 0 20px rgba(41, 121, 255, 0.15), 0 0 60px rgba(41, 121, 255, 0.05);
+  /* ── Glow utilities ── */
+  .iris-glow-cyan    { box-shadow: 0 0 20px var(--iris-glow-cyan),    0 0 60px var(--iris-glow-cyan); }
+  .iris-glow-amber   { box-shadow: 0 0 20px var(--iris-glow-amber),   0 0 60px var(--iris-glow-amber); }
+  .iris-glow-coral   { box-shadow: 0 0 20px var(--iris-glow-coral),   0 0 60px var(--iris-glow-coral); }
+  .iris-glow-blue    { box-shadow: 0 0 20px var(--iris-glow-blue),    0 0 60px var(--iris-glow-blue); }
+  .iris-glow-purple  { box-shadow: 0 0 20px var(--iris-glow-purple),  0 0 60px var(--iris-glow-purple); }
+  .iris-glow-magenta { box-shadow: 0 0 20px var(--iris-glow-magenta), 0 0 60px var(--iris-glow-magenta); }
+
+  /* ── Text gradients ── */
+  .iris-text-gradient {
+    background: linear-gradient(135deg, var(--iris-accent-cyan), var(--iris-accent-purple), var(--iris-accent-magenta));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 
-  /* Neon text gradients */
-  .neon-text-gradient {
+  .theme-dark .iris-text-gradient,
+  .dark .iris-text-gradient {
     background: linear-gradient(135deg, #00F0FF, #B829DD, #FF00AA);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
-  /* Neon border gradient */
-  .neon-border-gradient {
-    border-image: linear-gradient(135deg, #00F0FF, #B829DD, #FF00AA) 1;
-  }
-
-  /* Ссылки навигации */
+  /* ── Navigation links ── */
   .nav-link {
-    color: #4b5563;
-    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    transition-duration: 150ms;
+    color: var(--iris-text-muted);
+    transition: color 0.15s ease, background-color 0.15s ease;
   }
-
-  .dark .nav-link {
-    color: #9ca3af;
-  }
-
   .nav-link:hover {
-    color: var(--color-brand-accent);
+    color: var(--iris-accent-cyan);
   }
-
-  .dark .nav-link:hover {
-    color: var(--color-brand-accent);
-  }
-
   .nav-link-active {
-    color: var(--color-brand-accent);
-    border-bottom: 2px solid var(--color-brand-accent);
-  }
-
-  .dark .nav-link-active {
-    color: var(--color-brand-accent);
+    color: var(--iris-accent-cyan);
+    border-bottom: 2px solid var(--iris-accent-cyan);
   }
 }
 
-:root[data-theme="light"] {
-  --bg-app: #f8fafc;
-  --bg-topbar: #1e3a5f;
-  --bg-surface: #ffffff;
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-tertiary: #64748b;
-  --text-inverse: #ffffff;
-  --primary: #2563eb;
-  --border-default: #e2e8f0;
-  --error: #dc2626;
-  --notification-badge: #ef4444;
-  --notification-icon: #94a3b8;
-  --topbar-hover: rgba(255, 255, 255, 0.08);
-  --topbar-icon: #94a3b8;
-  --logo-iris-top: #3b82f6;
-  --logo-iris: #2563eb;
-}
-
-:root[data-theme="dark"] {
-  --bg-app: #0B0E14;
-  --bg-topbar: #0D1018;
-  --bg-surface: #111420;
-  --text-primary: #E2E8F0;
-  --text-secondary: #8892A8;
-  --text-tertiary: #5A6380;
-  --text-inverse: #0B0E14;
-  --primary: #00F0FF;
-  --border-default: rgba(255, 255, 255, 0.06);
-  --error: #FF4D6D;
-  --notification-badge: #FF00AA;
-  --notification-icon: #5A6380;
-  --topbar-hover: rgba(0, 240, 255, 0.08);
-  --topbar-icon: #5A6380;
-  --logo-iris-top: #00F0FF;
-  --logo-iris: #B829DD;
-}
-
-/* FolderTabs scrollbar styling */
+/* ── Scrollbar styling ── */
 .folder-tabs-scroll {
   scrollbar-width: thin;
-  scrollbar-color: var(--color-brand-border) transparent;
+  scrollbar-color: var(--iris-border-default) transparent;
 }
-.dark .folder-tabs-scroll {
-  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
-}
-
 .folder-tabs-scroll::-webkit-scrollbar {
   height: 6px;
 }
@@ -209,14 +271,11 @@
   background: transparent;
 }
 .folder-tabs-scroll::-webkit-scrollbar-thumb {
-  background-color: var(--color-brand-border);
+  background-color: var(--iris-border-default);
   border-radius: 3px;
 }
-.dark .folder-tabs-scroll::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.1);
-}
 
-/* Hide scrollbar on wide screens (xl and up) */
+/* Hide scrollbar on wide screens */
 @media (min-width: 1280px) {
   .folder-tabs-scroll {
     scrollbar-width: none;

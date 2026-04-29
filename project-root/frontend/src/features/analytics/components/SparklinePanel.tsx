@@ -7,9 +7,9 @@ interface SparklinePanelProps {
 }
 
 const STATUS_COLORS: Record<string, { stroke: string; fill: string; glow: string }> = {
-  green: { stroke: '#00F0FF', fill: '#00F0FF', glow: 'rgba(0, 240, 255, 0.4)' },
-  yellow: { stroke: '#FFAA00', fill: '#FFAA00', glow: 'rgba(255, 170, 0, 0.4)' },
-  red: { stroke: '#FF4D6D', fill: '#FF4D6D', glow: 'rgba(255, 77, 109, 0.4)' },
+  green: { stroke: 'var(--iris-accent-cyan)', fill: 'var(--iris-accent-cyan)', glow: 'var(--iris-glow-cyan)' },
+  yellow: { stroke: 'var(--iris-accent-amber)', fill: 'var(--iris-accent-amber)', glow: 'var(--iris-glow-amber)' },
+  red: { stroke: 'var(--iris-accent-coral)', fill: 'var(--iris-accent-coral)', glow: 'var(--iris-glow-coral)' },
 };
 
 function SparklineSVG({ values, colorKey }: { values: number[]; colorKey: string }) {
@@ -78,7 +78,7 @@ function SparklineSVG({ values, colorKey }: { values: number[]; colorKey: string
 
       {/* End dot with glow */}
       <circle cx={lastX} cy={lastY} r={4} fill={cfg.stroke} filter={`url(#glow-${colorKey})`} />
-      <circle cx={lastX} cy={lastY} r={2.5} fill="#0B0E14" stroke={cfg.stroke} strokeWidth={1.5} />
+      <circle cx={lastX} cy={lastY} r={2.5} fill="var(--iris-bg-app)" stroke={cfg.stroke} strokeWidth={1.5} />
     </svg>
   );
 }
@@ -91,7 +91,7 @@ export function SparklinePanel({ data, loading }: SparklinePanelProps) {
       <div className="rounded-2xl p-4 sm:p-6 neon-card">
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-32 animate-pulse rounded-lg" style={{ background: 'rgba(255,255,255,0.04)' }} />
+            <div key={i} className="h-32 animate-pulse rounded-lg" style={{ background: 'var(--iris-bg-skeleton)' }} />
           ))}
         </div>
       </div>
@@ -112,9 +112,9 @@ export function SparklinePanel({ data, loading }: SparklinePanelProps) {
               key={chart.id}
               className="flex flex-col rounded-xl p-3 sm:p-4 transition-all duration-300 hover:scale-[1.02]"
               style={{
-                background: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255,255,255,0.06)',
-                boxShadow: `inset 0 1px 0 rgba(255,255,255,0.04), 0 0 20px ${cfg.glow}`,
+                background: 'var(--iris-bg-subtle)',
+                border: '1px solid var(--iris-border-subtle)',
+                boxShadow: `var(--iris-shadow-inset), 0 0 20px ${cfg.glow}`,
               }}
             >
               <div className="mb-1 text-[10px] sm:text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>

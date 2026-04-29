@@ -16,11 +16,11 @@ const STATUS_ICON: Record<string, React.ElementType> = {
 };
 
 const STATUS_NEON: Record<string, { border: string; glow: string; text: string; bg: string }> = {
-  collected: { border: 'rgba(0,240,255,0.2)', glow: 'rgba(0,240,255,0.15)', text: '#00F0FF', bg: 'rgba(0,240,255,0.06)' },
-  qc: { border: 'rgba(184,41,221,0.2)', glow: 'rgba(184,41,221,0.15)', text: '#B829DD', bg: 'rgba(184,41,221,0.06)' },
-  accepted: { border: 'rgba(0,240,255,0.2)', glow: 'rgba(0,240,255,0.15)', text: '#00F0FF', bg: 'rgba(0,240,255,0.06)' },
-  packed: { border: 'rgba(41,121,255,0.2)', glow: 'rgba(41,121,255,0.15)', text: '#2979FF', bg: 'rgba(41,121,255,0.06)' },
-  shipped: { border: 'rgba(255,170,0,0.2)', glow: 'rgba(255,170,0,0.15)', text: '#FFAA00', bg: 'rgba(255,170,0,0.06)' },
+  collected: { border: 'var(--iris-accent-cyan)',  glow: 'var(--iris-glow-cyan)',  text: 'var(--iris-accent-cyan)',  bg: 'var(--iris-status-bg-cyan)' },
+  qc:        { border: 'var(--iris-accent-purple)', glow: 'var(--iris-glow-purple)', text: 'var(--iris-accent-purple)', bg: 'var(--iris-status-bg-purple)' },
+  accepted:  { border: 'var(--iris-accent-cyan)',  glow: 'var(--iris-glow-cyan)',  text: 'var(--iris-accent-cyan)',  bg: 'var(--iris-status-bg-cyan)' },
+  packed:    { border: 'var(--iris-accent-blue)',  glow: 'var(--iris-glow-blue)',  text: 'var(--iris-accent-blue)',  bg: 'var(--iris-status-bg-blue)' },
+  shipped:   { border: 'var(--iris-accent-amber)', glow: 'var(--iris-glow-amber)', text: 'var(--iris-accent-amber)', bg: 'var(--iris-status-bg-amber)' },
 };
 
 export function ShipmentCalendar({ data, loading }: ShipmentCalendarProps) {
@@ -31,10 +31,10 @@ export function ShipmentCalendar({ data, loading }: ShipmentCalendarProps) {
   if (loading) {
     return (
       <div className="rounded-xl p-4 sm:p-6 neon-card">
-        <div className="mb-4 h-6 w-56 animate-pulse rounded" style={{ background: 'rgba(255,255,255,0.06)' }} />
+        <div className="mb-4 h-6 w-56 animate-pulse rounded" style={{ background: 'var(--iris-bg-skeleton)' }} />
         <div className="grid grid-cols-7 gap-2">
           {[1, 2, 3, 4, 5, 6, 7].map((i) => (
-            <div key={i} className="h-24 animate-pulse rounded-lg" style={{ background: 'rgba(255,255,255,0.04)' }} />
+            <div key={i} className="h-24 animate-pulse rounded-lg" style={{ background: 'var(--iris-bg-skeleton)' }} />
           ))}
         </div>
       </div>
@@ -46,7 +46,7 @@ export function ShipmentCalendar({ data, loading }: ShipmentCalendarProps) {
       {/* Header */}
       <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
-          <Truck className="h-5 w-5" style={{ color: '#FFAA00' }} />
+          <Truck className="h-5 w-5" style={{ color: 'var(--iris-accent-amber)' }} />
           <h3 className="text-base sm:text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
             Отгрузка и логистика
           </h3>
@@ -62,9 +62,9 @@ export function ShipmentCalendar({ data, loading }: ShipmentCalendarProps) {
             onClick={() => setSelectedDay(selectedDay === idx ? null : idx)}
             className="relative flex flex-col rounded-lg border p-2 text-left transition-all"
             style={{
-              borderColor: day.is_weekend ? 'rgba(255,255,255,0.03)' : (selectedDay === idx ? 'rgba(0,240,255,0.3)' : 'rgba(255,255,255,0.06)'),
-              background: day.is_weekend ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.03)',
-              boxShadow: selectedDay === idx ? '0 0 16px rgba(0,240,255,0.1)' : 'none',
+              borderColor: day.is_weekend ? 'var(--iris-border-subtle)' : (selectedDay === idx ? 'var(--iris-accent-cyan)' : 'var(--iris-border-subtle)'),
+              background: day.is_weekend ? 'var(--iris-bg-tertiary)' : 'var(--iris-bg-subtle)',
+              boxShadow: selectedDay === idx ? '0 0 16px var(--iris-glow-cyan)' : 'none',
               minHeight: '80px',
             }}
           >
@@ -102,14 +102,8 @@ export function ShipmentCalendar({ data, loading }: ShipmentCalendarProps) {
 
       {/* Day detail */}
       {selectedDay !== null && days[selectedDay]?.items.length > 0 && (
-        <div
-          className="mt-3 rounded-lg border p-3"
-          style={{
-            borderColor: 'rgba(0,240,255,0.2)',
-            background: 'rgba(0,240,255,0.04)',
-          }}
-        >
-          <p className="text-xs font-semibold" style={{ color: '#00F0FF' }}>
+        <div className="mt-3 rounded-lg border p-3" style={{ borderColor: 'var(--iris-accent-cyan)', background: 'var(--iris-status-bg-cyan)' }}>
+          <p className="text-xs font-semibold" style={{ color: 'var(--iris-accent-cyan)' }}>
             {days[selectedDay].day_label}, {days[selectedDay].date}
           </p>
           <div className="mt-1 flex flex-wrap gap-2">
@@ -149,10 +143,7 @@ export function ShipmentCalendar({ data, loading }: ShipmentCalendarProps) {
                       {stage.tons} т
                     </div>
                   </div>
-                  <span
-                    className="ml-1 h-2 w-2 rounded-full"
-                    style={{ background: neon.text, boxShadow: `0 0 6px ${neon.glow}` }}
-                  />
+                  <span className="ml-1 h-2 w-2 rounded-full" style={{ background: neon.text, boxShadow: `0 0 6px ${neon.glow}` }} />
                 </button>
                 {idx < pipeline.length - 1 && (
                   <ArrowRight className="h-3 w-3" style={{ color: 'var(--text-muted)' }} />

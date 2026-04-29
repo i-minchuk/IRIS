@@ -8,17 +8,17 @@ interface ProductionSQCDPProps {
 }
 
 const PILLAR_META: Record<string, { icon: React.ElementType; color: string; glow: string }> = {
-  safety: { icon: ShieldCheck, color: '#00F0FF', glow: 'rgba(0,240,255,0.2)' },
-  quality: { icon: Gauge, color: '#2979FF', glow: 'rgba(41,121,255,0.2)' },
-  cost: { icon: Coins, color: '#FFAA00', glow: 'rgba(255,170,0,0.2)' },
-  delivery: { icon: Truck, color: '#B829DD', glow: 'rgba(184,41,221,0.2)' },
-  people: { icon: Users, color: '#FF00AA', glow: 'rgba(255,0,170,0.2)' },
+  safety:  { icon: ShieldCheck, color: 'var(--iris-accent-cyan)',    glow: 'var(--iris-glow-cyan)' },
+  quality: { icon: Gauge,       color: 'var(--iris-accent-blue)',    glow: 'var(--iris-glow-blue)' },
+  cost:    { icon: Coins,       color: 'var(--iris-accent-amber)',   glow: 'var(--iris-glow-amber)' },
+  delivery:{ icon: Truck,       color: 'var(--iris-accent-purple)',  glow: 'var(--iris-glow-purple)' },
+  people:  { icon: Users,       color: 'var(--iris-accent-magenta)', glow: 'var(--iris-glow-magenta)' },
 };
 
 const STATUS_DOT: Record<string, { color: string; glow: string }> = {
-  green: { color: '#00F0FF', glow: '0 0 6px rgba(0,240,255,0.5)' },
-  yellow: { color: '#FFAA00', glow: '0 0 6px rgba(255,170,0,0.5)' },
-  red: { color: '#FF0055', glow: '0 0 6px rgba(255,0,85,0.5)' },
+  green: { color: 'var(--iris-accent-cyan)',  glow: '0 0 6px var(--iris-glow-cyan)' },
+  yellow:{ color: 'var(--iris-accent-amber)', glow: '0 0 6px var(--iris-glow-amber)' },
+  red:   { color: 'var(--iris-accent-coral)', glow: '0 0 6px var(--iris-glow-coral)' },
 };
 
 function PillarDetails({ pillar }: { pillar: SqcdpPillar }) {
@@ -33,7 +33,7 @@ function PillarDetails({ pillar }: { pillar: SqcdpPillar }) {
           <span className="font-medium" style={{ color: 'var(--text-secondary)' }}>FPY по сменам:</span>
           <div className="mt-1 flex flex-wrap gap-3">
             {shifts.map((s) => (
-              <span key={s.name} className="rounded px-2 py-0.5" style={{ background: 'rgba(255,255,255,0.05)' }}>
+              <span key={s.name} className="rounded px-2 py-0.5" style={{ background: 'var(--iris-bg-subtle)' }}>
                 {s.name}: <strong>{s.fpy}%</strong>
               </span>
             ))}
@@ -47,9 +47,7 @@ function PillarDetails({ pillar }: { pillar: SqcdpPillar }) {
             ))}
           </ol>
         </div>
-        <div>
-          Партии на повторной приёмке: <strong>{d.rework_batches}</strong> ({d.rework_tons} тонн)
-        </div>
+        <div>Партии на повторной приёмке: <strong>{d.rework_batches}</strong> ({d.rework_tons} тонн)</div>
       </div>
     );
   }
@@ -63,7 +61,7 @@ function PillarDetails({ pillar }: { pillar: SqcdpPillar }) {
           <span className="font-medium" style={{ color: 'var(--text-secondary)' }}>Топ перерасходов:</span>
           <div className="mt-1 flex flex-wrap gap-3">
             {overruns.map((o) => (
-              <span key={o.name} className="rounded px-2 py-0.5" style={{ background: 'rgba(255,255,255,0.05)' }}>
+              <span key={o.name} className="rounded px-2 py-0.5" style={{ background: 'var(--iris-bg-subtle)' }}>
                 {o.name}: <strong>+{o.pct}%</strong>
               </span>
             ))}
@@ -82,7 +80,7 @@ function PillarDetails({ pillar }: { pillar: SqcdpPillar }) {
           <span className="font-medium" style={{ color: 'var(--text-secondary)' }}>Причины задержек:</span>
           <div className="mt-1 flex flex-wrap gap-3">
             {reasons.map((r) => (
-              <span key={r.name} className="rounded px-2 py-0.5" style={{ background: 'rgba(255,255,255,0.05)' }}>
+              <span key={r.name} className="rounded px-2 py-0.5" style={{ background: 'var(--iris-bg-subtle)' }}>
                 {r.name}: <strong>{r.count}</strong>
               </span>
             ))}
@@ -120,10 +118,10 @@ export function ProductionSQCDP({ data, loading }: ProductionSQCDPProps) {
   if (loading) {
     return (
       <div className="rounded-2xl p-4 sm:p-6 neon-card">
-        <div className="mb-4 h-6 w-48 animate-pulse rounded" style={{ background: 'rgba(255,255,255,0.06)' }} />
+        <div className="mb-4 h-6 w-48 animate-pulse rounded" style={{ background: 'var(--iris-bg-skeleton)' }} />
         <div className="space-y-3">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="h-12 animate-pulse rounded-lg" style={{ background: 'rgba(255,255,255,0.04)' }} />
+            <div key={i} className="h-12 animate-pulse rounded-lg" style={{ background: 'var(--iris-bg-skeleton)' }} />
           ))}
         </div>
       </div>
@@ -134,7 +132,7 @@ export function ProductionSQCDP({ data, loading }: ProductionSQCDPProps) {
     <div className="rounded-2xl p-4 sm:p-6 neon-card">
       {/* Header */}
       <div className="mb-4 flex items-center gap-2">
-        <Gauge className="h-5 w-5" style={{ color: '#B829DD' }} />
+        <Gauge className="h-5 w-5" style={{ color: 'var(--iris-accent-purple)' }} />
         <h3 className="text-base sm:text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
           Производство — SQCDP
         </h3>
@@ -143,7 +141,7 @@ export function ProductionSQCDP({ data, loading }: ProductionSQCDPProps) {
       {/* Pillars */}
       <div className="space-y-2">
         {pillars.map((pillar) => {
-          const meta = PILLAR_META[pillar.id] ?? { icon: Gauge, color: '#8892A8', glow: 'rgba(136,146,168,0.2)' };
+          const meta = PILLAR_META[pillar.id] ?? { icon: Gauge, color: 'var(--text-muted)', glow: 'none' };
           const Icon = meta.icon;
           const isExpanded = expanded === pillar.id;
           const dot = STATUS_DOT[pillar.status] ?? STATUS_DOT.green;
@@ -153,7 +151,7 @@ export function ProductionSQCDP({ data, loading }: ProductionSQCDPProps) {
               key={pillar.id}
               className="rounded-lg border overflow-hidden transition-all duration-200"
               style={{
-                borderColor: isExpanded ? meta.glow.replace('0.2', '0.4') : 'rgba(255,255,255,0.06)',
+                borderColor: isExpanded ? meta.color : 'var(--iris-border-subtle)',
                 boxShadow: isExpanded ? `0 0 20px ${meta.glow}` : 'none',
               }}
             >
@@ -161,7 +159,7 @@ export function ProductionSQCDP({ data, loading }: ProductionSQCDPProps) {
                 onClick={() => setExpanded(isExpanded ? null : pillar.id)}
                 className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors"
                 style={{ color: 'var(--text-primary)' }}
-                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.03)'; }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
               >
                 <Icon className="h-5 w-5 shrink-0" style={{ color: meta.color }} />
@@ -170,10 +168,7 @@ export function ProductionSQCDP({ data, loading }: ProductionSQCDPProps) {
                     <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
                       {pillar.label}
                     </span>
-                    <span
-                      className="h-2 w-2 rounded-full"
-                      style={{ backgroundColor: dot.color, boxShadow: dot.glow }}
-                    />
+                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: dot.color, boxShadow: dot.glow }} />
                   </div>
                 </div>
                 <div className="hidden sm:block text-sm" style={{ color: 'var(--text-secondary)' }}>
@@ -195,7 +190,7 @@ export function ProductionSQCDP({ data, loading }: ProductionSQCDPProps) {
               </div>
 
               {isExpanded && (
-                <div className="border-t px-4 py-3" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+                <div className="border-t px-4 py-3" style={{ borderColor: 'var(--iris-border-subtle)' }}>
                   <PillarDetails pillar={pillar} />
                 </div>
               )}

@@ -132,9 +132,9 @@ export default function Dashboard() {
   if (error && tiles.length === 0) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
-        <div className="rounded-xl border border-rose-500/30 p-6 max-w-md shadow-sm neon-card">
+        <div className="rounded-xl border p-6 max-w-md shadow-sm neon-card" style={{ borderColor: 'var(--iris-accent-coral)' }}>
           <div className="flex items-start gap-3">
-            <AlertTriangle className="text-rose-500 shrink-0 mt-0.5" size={20} />
+            <AlertTriangle className="shrink-0 mt-0.5" size={20} style={{ color: 'var(--iris-accent-coral)' }} />
             <div>
               <div className="font-medium text-sm" style={{ color: 'var(--text-primary)' }}>Ошибка загрузки</div>
               <div className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{error}</div>
@@ -159,8 +159,8 @@ export default function Dashboard() {
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
           {isConnected && (
-            <span className="hidden sm:inline-flex items-center gap-1 text-[10px]" style={{ color: '#00F0FF' }}>
-              <span className="h-1.5 w-1.5 rounded-full animate-pulse" style={{ backgroundColor: '#00F0FF', boxShadow: '0 0 8px #00F0FF' }} />
+            <span className="hidden sm:inline-flex items-center gap-1 text-[10px]" style={{ color: 'var(--iris-accent-cyan)' }}>
+              <span className="h-1.5 w-1.5 rounded-full animate-pulse" style={{ backgroundColor: 'var(--iris-accent-cyan)', boxShadow: '0 0 8px var(--iris-glow-cyan)' }} />
               live
             </span>
           )}
@@ -173,8 +173,8 @@ export default function Dashboard() {
             onClick={() => loadAll()}
             className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] transition-all duration-200 hover:brightness-110"
             style={{
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.08)',
+              background: 'var(--iris-bg-subtle)',
+              border: '1px solid var(--iris-border-subtle)',
               color: 'var(--text-secondary)',
             }}
           >
