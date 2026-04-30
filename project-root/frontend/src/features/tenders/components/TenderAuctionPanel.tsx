@@ -70,7 +70,7 @@ function AuctionCard({ tender }: { tender: Tender }) {
       </div>
       <div className="grid grid-cols-2 gap-2 text-[10px]">
         <div>
-          <div style={{ color: 'var(--text-muted)' }}>НМЦ</div>
+          <div style={{ color: 'var(--text-muted)' }}>Начальная цена</div>
           <div className="font-semibold" style={{ color: 'var(--text-primary)' }}>
             {tender.nmc ? `${(tender.nmc / 1_000_000).toFixed(1)} млн ₽` : '—'}
           </div>

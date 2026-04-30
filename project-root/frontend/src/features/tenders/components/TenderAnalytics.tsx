@@ -56,7 +56,7 @@ export function TenderAnalytics({ summary }: Props) {
               return (
                 <div key={stage} className="flex items-center gap-2">
                   <span className="text-[10px] w-20 truncate text-right" style={{ color: 'var(--text-secondary)' }}>
-                    {stage === 'new' ? 'Новый' : stage === 'qualification' ? 'Квалиф.' : stage === 'preparation' ? 'Подгот.' : stage === 'approval' ? 'Соглас.' : stage === 'submitted' ? 'Подан' : stage === 'auction' ? 'Аукцион' : stage === 'waiting' ? 'Ожид.' : stage === 'won' ? 'Выигран' : stage === 'lost' ? 'Проигран' : 'Договор'}
+                    {stage === 'new' ? 'Новый' : stage === 'qualification' ? 'Квалификация' : stage === 'preparation' ? 'Подготовка' : stage === 'approval' ? 'Согласование' : stage === 'submitted' ? 'Подан' : stage === 'auction' ? 'Аукцион' : stage === 'waiting' ? 'Ожидание' : stage === 'won' ? 'Выигран' : stage === 'lost' ? 'Проигран' : 'Договор'}
                   </span>
                   <div className="flex-1 bg-gray-100 dark:bg-gray-800 rounded-full h-3 overflow-hidden" style={{ background: 'var(--iris-bg-subtle)' }}>
                     <div
@@ -76,14 +76,14 @@ export function TenderAnalytics({ summary }: Props) {
           </div>
         </div>
 
-        {/* Win-rate mini stats */}
+        {/* Процент выигрыша — мини-метрики */}
         <div>
           <h4 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: 'var(--text-muted)' }}>
             Ключевые метрики
           </h4>
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-lg border p-3" style={{ borderColor: 'var(--iris-border-subtle)', background: 'var(--iris-bg-subtle)' }}>
-              <div className="text-[10px] uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>Win-rate</div>
+              <div className="text-[10px] uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>Процент выигрыша</div>
               <div className="text-2xl font-bold" style={{ color: summary.win_rate >= 30 ? 'var(--iris-accent-cyan)' : summary.win_rate >= 15 ? 'var(--iris-accent-amber)' : 'var(--iris-accent-coral)' }}>
                 {summary.win_rate}%
               </div>

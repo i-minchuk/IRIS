@@ -2,17 +2,17 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { LoginPage } from '@/features/auth/pages/LoginPage';
 import Dashboard from '@/pages/Dashboard';
-import { ProjectPortfolioPage } from '@/pages/ProjectPortfolioPage';
-import { ProjectsPage } from '@/features/projects/pages/ProjectsPage';
-import TenderPortfolioPage from '@/pages/TenderPortfolioPage';
-import { DocumentsPage } from '@/features/documents/pages/DocumentsPage';
-import { DependencyGraphPage } from '@/features/documents/pages/DependencyGraphPage';
 import { RemarksPage } from '@/features/remarks/pages/RemarksPage';
 import { AnalyticsPage } from '@/features/analytics/pages/AnalyticsPage';
 import { ResourcesPage } from '@/pages/ResourcesPage';
 import { TendersPage } from '@/pages/TendersPage';
 import { AdminPage } from '@/pages/AdminPage';
 import { ArchivePage } from '@/pages/ArchivePage';
+import { ProductionControlPage } from '@/pages/ProductionControl';
+import { ProjectTasksPage } from '@/pages/ProjectTasksPage';
+import { PackagePage } from '@/pages/PackagePage';
+import { WorkflowPage } from '@/pages/WorkflowPage';
+import TenderPortfolioPage from '@/pages/TenderPortfolioPage';
 import { Layout } from './Layout';
 import { ProtectedRoute } from './ProtectedRoute';
 
@@ -37,20 +37,24 @@ export const router = createBrowserRouter([
             element: <Dashboard />,
           },
           {
-            path: 'projects',
-            element: <ProjectPortfolioPage />,
-          },
-          {
             path: 'portfolio',
             element: <TenderPortfolioPage />,
           },
           {
-            path: 'projects',
-            element: <ProjectsPage />,
+            path: 'production',
+            element: <ProductionControlPage />,
           },
           {
-            path: 'documents',
-            element: <DocumentsPage />,
+            path: 'tasks',
+            element: <ProjectTasksPage />,
+          },
+          {
+            path: 'packages',
+            element: <PackagePage />,
+          },
+          {
+            path: 'workflow',
+            element: <WorkflowPage />,
           },
           {
             path: 'remarks',
@@ -65,10 +69,6 @@ export const router = createBrowserRouter([
             element: <ResourcesPage />,
           },
           {
-            path: 'approval',
-            element: <DependencyGraphPage />,
-          },
-          {
             path: 'tenders',
             element: <TendersPage />,
           },
@@ -80,10 +80,20 @@ export const router = createBrowserRouter([
             path: 'archive',
             element: <ArchivePage />,
           },
-          /* Обратная совместимость: старый путь перенаправляет на новый */
+          /* Обратная совместимость: старый путь портфеля проектов перенаправляет на задачи */
+          {
+            path: 'projects',
+            element: <Navigate to="/tasks" replace />,
+          },
+          /* Обратная совместимость: старый путь согласований перенаправляет на workflow */
+          {
+            path: 'approval',
+            element: <Navigate to="/workflow" replace />,
+          },
+          /* Обратная совместимость: старый путь перенаправляет на workflow */
           {
             path: 'dependencies',
-            element: <Navigate to="/approval" replace />,
+            element: <Navigate to="/workflow" replace />,
           },
         ],
       },

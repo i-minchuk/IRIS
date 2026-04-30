@@ -72,7 +72,7 @@ export function TenderRegistry({ tenders, selectedStage }: Props) {
     <div className="rounded-2xl p-4 sm:p-6 neon-card">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
         <h3 className="text-base sm:text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
-          Реестр тендеров
+          Реестр заказов
           {selectedStage && (
             <span className="ml-2 text-xs font-normal" style={{ color: 'var(--text-muted)' }}>
               · {STAGE_META[selectedStage].label}
@@ -81,7 +81,7 @@ export function TenderRegistry({ tenders, selectedStage }: Props) {
         </h3>
         <div className="flex items-center gap-2 text-[10px]">
           <button onClick={() => toggleSort('deadline')} className="flex items-center gap-0.5 px-2 py-1 rounded" style={{ background: sortField === 'deadline' ? 'var(--iris-bg-hover)' : 'var(--iris-bg-subtle)', color: 'var(--text-secondary)' }}>
-            Дедлайн {sortField === 'deadline' && (sortDesc ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />)}
+            Срок {sortField === 'deadline' && (sortDesc ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />)}
           </button>
           <button onClick={() => toggleSort('nmc')} className="flex items-center gap-0.5 px-2 py-1 rounded" style={{ background: sortField === 'nmc' ? 'var(--iris-bg-hover)' : 'var(--iris-bg-subtle)', color: 'var(--text-secondary)' }}>
             Сумма {sortField === 'nmc' && (sortDesc ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />)}
@@ -99,11 +99,11 @@ export function TenderRegistry({ tenders, selectedStage }: Props) {
               <th className="text-left py-2 px-2 font-semibold" style={{ color: 'var(--text-muted)' }}>№</th>
               <th className="text-left py-2 px-2 font-semibold" style={{ color: 'var(--text-muted)' }}>Название / Заказчик</th>
               <th className="text-left py-2 px-2 font-semibold" style={{ color: 'var(--text-muted)' }}>Стадия</th>
-              <th className="text-right py-2 px-2 font-semibold" style={{ color: 'var(--text-muted)' }}>НМЦ</th>
+              <th className="text-right py-2 px-2 font-semibold" style={{ color: 'var(--text-muted)' }}>Начальная цена</th>
               <th className="text-right py-2 px-2 font-semibold" style={{ color: 'var(--text-muted)' }}>Наша цена</th>
               <th className="text-right py-2 px-2 font-semibold" style={{ color: 'var(--text-muted)' }}>Маржа</th>
-              <th className="text-center py-2 px-2 font-semibold" style={{ color: 'var(--text-muted)' }}>Вер-ть</th>
-              <th className="text-left py-2 px-2 font-semibold" style={{ color: 'var(--text-muted)' }}>Дедлайн</th>
+              <th className="text-center py-2 px-2 font-semibold" style={{ color: 'var(--text-muted)' }}>Вероятность</th>
+              <th className="text-left py-2 px-2 font-semibold" style={{ color: 'var(--text-muted)' }}>Срок</th>
               <th className="text-left py-2 px-2 font-semibold" style={{ color: 'var(--text-muted)' }}>Площадка</th>
             </tr>
           </thead>
@@ -159,7 +159,7 @@ export function TenderRegistry({ tenders, selectedStage }: Props) {
 
       {filtered.length === 0 && (
         <div className="text-center py-8 text-sm" style={{ color: 'var(--text-muted)' }}>
-          Нет тендеров по выбранному фильтру
+          Нет заказов по выбранному фильтру
         </div>
       )}
     </div>

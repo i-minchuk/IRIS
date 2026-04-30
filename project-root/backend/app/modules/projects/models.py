@@ -21,6 +21,12 @@ class Project(Base):
     status: Mapped[str] = mapped_column(String(50), default="draft")  # draft, active, completed, archived
     standard_template_id: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     variables: Mapped[Optional[dict]] = mapped_column(JSON, default=dict)
+    
+    # Task-related fields
+    planned_finish: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    forecast_finish: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    manager_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
+    
     created_by_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(
@@ -29,6 +35,9 @@ class Project(Base):
 
     stages: Mapped[list["Stage"]] = relationship(back_populates="project", cascade="all, delete-orphan")
     documents: Mapped[list["Document"]] = relationship(back_populates="project")
+    routes: Mapped[list["Route"]] = relationship(back_populates="project")
+    tasks: Mapped[list["Task"]] = relationship(back_populates="project")
+    manager: Mapped[Optional["User"]] = relationship(foreign_keys=[manager_id])
 
 
 class Stage(Base):

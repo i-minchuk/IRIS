@@ -37,7 +37,7 @@ export default function TenderPortfolioPage() {
         }
         setError(null);
       } catch (err) {
-        setError('Не удалось загрузить данные портфеля тендеров');
+        setError('Не удалось загрузить данные портфеля заказов');
         console.error(err);
       } finally {
         setLoading(false);
@@ -56,10 +56,10 @@ export default function TenderPortfolioPage() {
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
         <div>
           <h1 className="text-lg sm:text-xl lg:text-2xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
-            Портфель тендеров
+            Портфель заказов
           </h1>
           <p className="text-xs sm:text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-            Управление воронкой тендеров, аукционами и подготовкой заявок
+            Управление воронкой заказов, аукционами и подготовкой заявок
           </p>
         </div>
         <button
@@ -71,7 +71,7 @@ export default function TenderPortfolioPage() {
           }}
         >
           <Plus className="h-3.5 w-3.5" />
-          Новый тендер
+          Новый заказ
         </button>
       </div>
 

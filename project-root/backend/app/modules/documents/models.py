@@ -22,11 +22,16 @@ class Document(Base):
     number: Mapped[str] = mapped_column(String(100), index=True)
     name: Mapped[str] = mapped_column(String(255))
     doc_type: Mapped[str] = mapped_column(String(50))  # KM, PD, AK, EM, etc.
-    status: Mapped[str] = mapped_column(String(50), default="draft")  # draft, in_review, approved, crs_pending, crs_approved, archived
+    status: Mapped[str] = mapped_column(String(50), default="draft")  # draft, in_review, approved, crs_pending, crs_approved, archived, overdue
     crs_code: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)  # A, B, C
     crs_approved_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     crs_approved_by: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     current_revision_id: Mapped[Optional[int]] = mapped_column(nullable=True)
+
+    # Operation and task linking
+    operation_id: Mapped[Optional[int]] = mapped_column(ForeignKey("operations.id"), nullable=True)
+    planned_ready: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    actual_ready: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     author_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     checker_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
@@ -51,9 +56,11 @@ class Document(Base):
 
     project: Mapped["Project"] = relationship("Project", back_populates="documents")
     section: Mapped[Optional["Section"]] = relationship("Section", back_populates="documents")
+    operation: Mapped[Optional["Operation"]] = relationship("Operation", back_populates="documents")
     revisions: Mapped[list["Revision"]] = relationship(back_populates="document", cascade="all, delete-orphan")
     remarks: Mapped[list["Remark"]] = relationship(back_populates="document", cascade="all, delete-orphan")
     approval_workflows: Mapped[list["ApprovalWorkflow"]] = relationship(back_populates="document", cascade="all, delete-orphan")
+    tasks: Mapped[list["Task"]] = relationship(back_populates="document")
     locked_by: Mapped[Optional["User"]] = relationship("User", foreign_keys=[locked_by_id])
 
     __table_args__ = (
@@ -62,6 +69,7 @@ class Document(Base):
         Index("ix_doc_author_created", "author_id", "created_at"),
         Index("ix_doc_section", "section_id"),
         Index("ix_doc_status", "status"),
+        Index("idx_documents_operation", "operation_id"),
     )
 
 

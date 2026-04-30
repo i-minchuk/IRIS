@@ -25,7 +25,7 @@ export function TenderKPIHeader({ summary, loading }: Props) {
 
   const tiles = [
     {
-      label: 'Активные тендеры',
+      label: 'Активные заказы',
       value: String(summary.active_count),
       sub: formatMoney(summary.active_sum),
       icon: Target,
@@ -35,13 +35,13 @@ export function TenderKPIHeader({ summary, loading }: Props) {
     {
       label: 'Объём активных',
       value: formatMoney(summary.active_sum),
-      sub: 'НМЦ суммарно',
+      sub: 'Начальная цена суммарно',
       icon: TrendingUp,
       color: 'var(--iris-accent-blue)',
       glow: 'var(--iris-glow-blue)',
     },
     {
-      label: 'Win-rate',
+      label: 'Процент выигрыша',
       value: `${summary.win_rate}%`,
       sub: `${summary.won_count} выиграно`,
       icon: summary.win_rate >= 30 ? TrendingUp : summary.win_rate >= 15 ? Minus : TrendingDown,

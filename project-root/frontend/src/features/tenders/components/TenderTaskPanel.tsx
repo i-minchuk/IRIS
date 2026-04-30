@@ -29,7 +29,7 @@ export function TenderTaskPanel({ tasks }: Props) {
     <div className="rounded-2xl p-4 sm:p-6 neon-card">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-base sm:text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
-          Задачи по тендерам
+          Задачи по заказам
         </h3>
         <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
           {tasks.filter((t) => t.status !== 'done').length} активных

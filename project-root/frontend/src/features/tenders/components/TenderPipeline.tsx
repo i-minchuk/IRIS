@@ -48,10 +48,10 @@ export function TenderPipeline({ tenders, summary, onStageClick }: Props) {
     <div className="rounded-2xl p-4 sm:p-6 neon-card">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-base sm:text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
-          Воронка тендеров
+          Воронка заказов
         </h3>
         <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-          {tenders.length} тендеров всего
+          {tenders.length} заказов всего
         </span>
       </div>
 

@@ -35,18 +35,24 @@ const ProgressBar: React.FC<{ progress: number }> = ({ progress }) => (
 export const AnalyticsPage: React.FC = () => {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
+    setError(null);
     analyticsApi
       .getDashboard()
-      .then((res: { data: DashboardData }) => setData(res.data))
-      .catch(() => {})
+      .then((res) => setData(res.data as DashboardData))
+      .catch((err) => {
+        console.error('Ошибка загрузки дашборда:', err);
+        setError(err.message || 'Не удалось загрузить данные');
+      })
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="text-sm text-gray-500 dark:text-gray-400">Загрузка дашборда…</div>;
-  if (!data) return <div className="text-sm text-red-500">Ошибка загрузки дашборда</div>;
+  if (loading) return <div className="text-sm text-gray-500 dark:text-gray-400">Загрузка дашборда...</div>;
+  if (error) return <div className="text-sm text-red-500">Ошибка: {error}</div>;
+  if (!data) return <div className="text-sm text-gray-500">Нет данных для отображения</div>;
 
   const { kpis, scorecard, team } = data;
 
