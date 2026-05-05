@@ -48,3 +48,10 @@ from app.modules.operations.models import (  # noqa
 )
 from app.modules.routes.models import Route  # noqa
 from app.modules.tasks.models import Task  # noqa
+from app.modules.workflow.models import (  # noqa
+    WorkflowTemplate,
+    WorkflowInstance,
+    WorkflowStep,
+    WorkflowComment,
+    WorkflowAuditLog,
+)

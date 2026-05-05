@@ -152,17 +152,20 @@ class Remark(Base):
     )
     related_remark_ids: Mapped[List[uuid.UUID]] = mapped_column(
         ARRAY(UUID(as_uuid=True)),
-        default=list
+        default=list,
+        server_default='{}'
     )
 
     # JSONB поля
     attachments: Mapped[List[dict]] = mapped_column(
         JSONB,
-        default=list
+        default=list,
+        server_default='[]'
     )
     history: Mapped[List[dict]] = mapped_column(
         JSONB,
-        default=list
+        default=list,
+        server_default='[]'
     )
 
     # Timestamps (using String for SQLite compatibility)

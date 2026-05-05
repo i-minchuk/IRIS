@@ -73,12 +73,12 @@ async def seed_all():
         # =====================================================================
         print("\n📊 Creating projects...")
         projects_data = [
-            ("ЖК Солнечный", "SOL-2024-001", "Жилой комплекс бизнес-класса", "active", "ООО СтройИнвест"),
-            ("ТЦ Галерея", "GAL-2024-002", "Торговый центр в центре города", "planning", "ООО Галерея Групп"),
-            ("Склад Логистика", "LOG-2023-015", "Распределительный центр класса А", "completed", "ООО Логистика"),
+            ("ЖК Солнечный", "SOL-2024-001", "active", "ООО СтройИнвест", "design"),
+            ("ТЦ Галерея", "GAL-2024-002", "planning", "ООО Галерея Групп", "eskiz"),
+            ("Склад Логистика", "LOG-2023-015", "completed", "ООО Логистика", "completed"),
         ]
         project_ids = []
-        for name, code, desc, status, customer in projects_data:
+        for name, code, status, customer, stage in projects_data:
             existing = await db.execute(
                 text("SELECT id FROM projects WHERE code = :code"),
                 {"code": code},
@@ -91,18 +91,17 @@ async def seed_all():
 
             result = await db.execute(
                 text("""
-                    INSERT INTO projects (name, code, description, status, customer_name, created_by_id, stage, created_at, updated_at)
-                    VALUES (:name, :code, :desc, :status, :customer, :created_by, :stage, :now, :now)
+                    INSERT INTO projects (name, code, status, customer_name, created_by_id, stage, created_at, updated_at)
+                    VALUES (:name, :code, :status, :customer, :created_by, :stage, :now, :now)
                     RETURNING id
                 """),
                 {
                     "name": name,
                     "code": code,
-                    "desc": desc,
                     "status": status,
                     "customer": customer,
                     "created_by": user_ids[0],
-                    "stage": "design" if status != "completed" else "completed",
+                    "stage": stage,
                     "now": now,
                 },
             )
@@ -118,6 +117,7 @@ async def seed_all():
         # =====================================================================
         print("\n📝 Creating remarks...")
         if project_ids:
+            from app.modules.remarks.models import Remark
             remarks_data = [
                 (project_ids[0], "Несоответствие отметок высот", "Отметки на чертежах не совпадают с разрезом", "in_progress", "high", "design_error", "internal"),
                 (project_ids[0], "Ошибка в спецификации", "Неверно указан класс бетона", "new", "critical", "discrepancy", "internal"),
@@ -125,8 +125,8 @@ async def seed_all():
                 (project_ids[1] if len(project_ids) > 1 else project_ids[0], "Требуется актуализация чертежей", "Чертежи КР не соответствуют последним изменениям", "new", "medium", "incompleteness", "internal"),
                 (project_ids[1] if len(project_ids) > 1 else project_ids[0], "Замечания по безопасности", "Отсутствует ограждение на стройплощадке", "resolved", "critical", "norm_violation", "audit"),
             ]
+            created_count = 0
             for pid, title, desc, status, priority, category, source in remarks_data:
-                remark_id = uuid.uuid4()
                 existing = await db.execute(
                     text("SELECT id FROM remarks WHERE title = :title AND project_id = :pid"),
                     {"title": title, "pid": pid},
@@ -136,43 +136,54 @@ async def seed_all():
                     continue
 
                 try:
-                    await db.execute(
-                        text("""
-                            INSERT INTO remarks (id, project_id, title, description, status, priority, category, source, author_id, created_at, updated_at)
-                            VALUES (:id, :pid, :title, :desc, :status, :priority, :category, :source, :author, :now, :now)
-                        """),
-                        {
-                            "id": str(remark_id),
-                            "pid": pid,
-                            "title": title,
-                            "desc": desc,
-                            "status": status,
-                            "priority": priority,
-                            "category": category,
-                            "source": source,
-                            "author": user_ids[1] if len(user_ids) > 1 else user_ids[0],
-                            "now": now,
-                        },
+                    remark = Remark(
+                        project_id=pid,
+                        title=title,
+                        description=desc,
+                        status=status,
+                        priority=priority,
+                        category=category,
+                        source=source,
+                        author_id=user_ids[1] if len(user_ids) > 1 else user_ids[0],
                     )
+                    db.add(remark)
+                    await db.flush()
+                    created_count += 1
                     print(f"  ✅ Created remark: {title}")
                 except Exception as e:
                     print(f"  ⚠️ Remark skipped ({e})")
-
-        await db.commit()
+                    await db.rollback()
+                    # Re-create session after rollback
+                    break
+            
+            if created_count > 0:
+                await db.commit()
+                print(f"  Committed {created_count} remarks")
 
         # =====================================================================
         # 4. ARCHIVE ENTRIES (if table exists)
         # =====================================================================
         print("\n📦 Creating archive entries...")
         try:
-            # Check if table exists
-            result = await db.execute(
-                text("SELECT name FROM sqlite_master WHERE type='table' AND name='archive_entries'")
-            )
-            if not result.fetchone():
+            from uuid import uuid4 as uuid_gen
+
+            # Check if archive_entries table exists
+            # Use information_schema for PostgreSQL, sqlite_master for SQLite
+            table_exists = False
+            if "postgresql" in settings.DATABASE_URL:
+                result = await db.execute(
+                    text("SELECT 1 FROM information_schema.tables WHERE table_name = 'archive_entries'")
+                )
+                table_exists = result.fetchone() is not None
+            else:
+                result = await db.execute(
+                    text("SELECT name FROM sqlite_master WHERE type='table' AND name='archive_entries'")
+                )
+                table_exists = result.fetchone() is not None
+
+            if not table_exists:
                 print("  ⚠️ archive_entries table does not exist, skipping...")
             else:
-                from uuid import uuid4 as uuid_gen
                 archive_data = [
                     (project_ids[0], "milestone", "projects", "Старт проекта", now - timedelta(days=30)),
                     (project_ids[0], "document", "documents", "Утверждение ТЗ", now - timedelta(days=15)),

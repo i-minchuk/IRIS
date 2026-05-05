@@ -66,14 +66,7 @@ class Task(Base):
         Index("idx_tasks_due_date", "due_date", "status"),
         Index("idx_tasks_type_status", "type", "status"),
         Index("idx_tasks_priority", "priority"),
-        Index(
-            "idx_tasks_overdue_partial",
-            "due_date",
-            postgresql_where=and_(
-                due_date < func.now(),
-                status.notin_([TaskStatus.DONE.value, TaskStatus.CANCELLED.value])
-            ),
-        ),
+        Index("idx_tasks_due_date_status", "due_date", "status"),
     )
 
     # Relationships
