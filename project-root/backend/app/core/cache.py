@@ -83,9 +83,9 @@ class InMemoryCache:
     
     async def set(self, key: str, value: Any, expire: int = 300) -> None:
         """Set value in cache with expiration time (in seconds)."""
-        from datetime import datetime, timedelta
+        from datetime import datetime, timedelta, timezone
         self._cache[key] = value
-        self._timestamps[key] = datetime.utcnow() + timedelta(seconds=expire)
+        self._timestamps[key] = datetime.now(timezone.utc) + timedelta(seconds=expire)
     
     async def delete(self, key: str) -> None:
         """Delete key from cache."""
@@ -99,8 +99,8 @@ class InMemoryCache:
     
     def _is_valid(self, key: str) -> bool:
         """Check if cache entry is still valid."""
-        from datetime import datetime
-        return self._timestamps.get(key, datetime.utcnow()) > datetime.utcnow()
+        from datetime import datetime, timezone
+        return self._timestamps.get(key, datetime.now(timezone.utc)) > datetime.now(timezone.utc)
 
 
 # Fallback cache for development

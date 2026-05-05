@@ -1,6 +1,6 @@
 """Remark service - business logic for issue tracking."""
 from typing import Optional, List, Dict, Any, Tuple
-from datetime import datetime, date, timedelta
+from datetime import datetime, timezone, date, timedelta
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, or_
@@ -72,7 +72,7 @@ class RemarkService:
                 history=[{
                     "action": "created",
                     "user_id": author_id,
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
                     "old_status": None,
                     "new_status": RemarkStatus.NEW.value,
                     "comment": "Замечание создано"
@@ -215,7 +215,7 @@ class RemarkService:
             history_entry = {
                 "action": "status_change",
                 "user_id": updated_by,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "old_status": remark.status.value,
                 "new_status": update_dict['status'].value,
                 "comment": update_dict.get('comment')
@@ -227,7 +227,7 @@ class RemarkService:
                 history_entry = {
                     "action": "assignee_change",
                     "user_id": updated_by,
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
                     "old_value": str(remark.assignee_id),
                     "new_value": str(update_dict['assignee_id']),
                     "comment": update_dict.get('comment')
@@ -239,7 +239,7 @@ class RemarkService:
                 history_entry = {
                     "action": "priority_change",
                     "user_id": updated_by,
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
                     "old_value": remark.priority.value,
                     "new_value": update_dict['priority'].value,
                     "comment": update_dict.get('comment')
@@ -254,7 +254,7 @@ class RemarkService:
         if update_dict.get('status') == RemarkStatus.RESOLVED:
             remark.resolution = update_dict.get('resolution')
             remark.resolved_by = updated_by
-            remark.resolved_at = datetime.utcnow()
+            remark.resolved_at = datetime.now(timezone.utc)
         
         # Add history entry
         if history_entry:
@@ -332,9 +332,12 @@ class RemarkService:
         if not remark:
             return False
         
-        # TODO: Add admin check
-        if comment.author_id != deleted_by:
-            raise RemarkServiceError("Only comment author can delete")
+        # Admin or author can delete
+        from app.modules.auth.models import User
+        user = await self.db.get(User, deleted_by)
+        is_admin = user.is_superuser if user else False
+        if comment.author_id != deleted_by and not is_admin:
+            raise RemarkServiceError("Only comment author or admin can delete")
         
         try:
             await self.db.delete(comment)
@@ -360,7 +363,7 @@ class RemarkService:
         history_entry = {
             "action": action.action,
             "user_id": user_id,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "comment": action.comment,
             "metadata": action.payload
         }
@@ -374,7 +377,7 @@ class RemarkService:
             remark.status = RemarkStatus.RESOLVED
             remark.resolution = action.payload.get('resolution')
             remark.resolved_by = user_id
-            remark.resolved_at = datetime.utcnow()
+            remark.resolved_at = datetime.now(timezone.utc)
             history_entry['old_status'] = remark.status.value
             history_entry['new_status'] = RemarkStatus.RESOLVED.value
         
@@ -464,27 +467,27 @@ class RemarkService:
         today = date.today()
         
         for remark in remarks:
-            # By status
-            by_status[remark.status.value] = by_status.get(remark.status.value, 0) + 1
+            # By status (status is stored as string in the model)
+            by_status[remark.status] = by_status.get(remark.status, 0) + 1
             
-            # By priority
-            by_priority[remark.priority.value] = by_priority.get(remark.priority.value, 0) + 1
+            # By priority (priority is stored as string in the model)
+            by_priority[remark.priority] = by_priority.get(remark.priority, 0) + 1
             
-            # By category
-            by_category[remark.category.value] = by_category.get(remark.category.value, 0) + 1
+            # By category (category is stored as string in the model)
+            by_category[remark.category] = by_category.get(remark.category, 0) + 1
             
-            # By source
-            by_source[remark.source.value] = by_source.get(remark.source.value, 0) + 1
+            # By source (source is stored as string in the model)
+            by_source[remark.source] = by_source.get(remark.source, 0) + 1
             
-            # Overdue
-            if remark.due_date and remark.due_date < today and remark.status not in [
-                RemarkStatus.RESOLVED, RemarkStatus.CLOSED
+            # Overdue (compare strings)
+            if remark.due_date and remark.due_date < str(today) and remark.status not in [
+                'resolved', 'closed'
             ]:
                 overdue_count += 1
             
             # My open
             if assignee_id and remark.assignee_id == assignee_id and remark.status in [
-                RemarkStatus.NEW, RemarkStatus.IN_PROGRESS
+                'new', 'in_progress'
             ]:
                 my_open_count += 1
         

@@ -1,13 +1,63 @@
 // src/pages/PortfolioPage/components/RemarksPanel/index.tsx
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { Loader2 } from 'lucide-react';
 import { Document, Remark } from '../../types/portfolio';
-// import { AUTHOR_COLORS } from '../../constants/statusColors'; // TODO: использовать для цветов авторов
+import { AUTHOR_COLORS } from '../../constants/statusColors';
+import { getAllRemarks } from '@/api/documents';
 
 interface RemarksPanelProps {
   document: Document | null;
 }
 
 export const RemarksPanel: React.FC<RemarksPanelProps> = ({ document }) => {
+  const [remarks, setRemarks] = useState<Remark[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!document) {
+      setRemarks([]);
+      return;
+    }
+
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+
+    const doc = document;
+    async function fetchRemarks() {
+      try {
+        const data = await getAllRemarks({ project_id: Number(doc.projectId) });
+        if (cancelled) return;
+        // Filter remarks for this document if possible, otherwise show all
+        const filtered = data.filter((r: any) =>
+          (doc.documentId && r.document_id === doc.documentId) ||
+          (doc.code && r.document_number === doc.code)
+        );
+        setRemarks(filtered.map((r: any) => ({
+          id: String(r.id),
+          documentId: doc.id,
+          author: {
+            type: 'customer' as const,
+            name: r.created_by_name || 'Система',
+            color: AUTHOR_COLORS.customer,
+          },
+          text: r.description || r.title || '',
+          createdAt: r.created_at,
+          status: r.status === 'resolved' ? 'fixed' : r.status === 'rejected' ? 'rejected' : 'open',
+          replies: [],
+        })));
+      } catch (err) {
+        if (!cancelled) setError('Не удалось загрузить замечания');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    fetchRemarks();
+    return () => { cancelled = true; };
+  }, [document]);
+
   if (!document) {
     return (
       <div className="flex flex-col items-center justify-center h-full bg-[#0f172a] text-[#64748b]">
@@ -29,7 +79,24 @@ export const RemarksPanel: React.FC<RemarksPanelProps> = ({ document }) => {
     );
   }
 
-  if (!document.hasRemarks) {
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full bg-[#0f172a] text-[#94a3b8]">
+        <Loader2 className="animate-spin mb-2" size={20} />
+        <p className="text-sm">Загрузка замечаний...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full bg-[#0f172a] text-[#94a3b8]">
+        <p className="text-sm text-red-400">{error}</p>
+      </div>
+    );
+  }
+
+  if (remarks.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full bg-[#0f172a] text-[#64748b]">
         <svg
@@ -49,30 +116,6 @@ export const RemarksPanel: React.FC<RemarksPanelProps> = ({ document }) => {
       </div>
     );
   }
-
-  // Mock data - в реальности будет из API
-  const remarks: Remark[] = [
-    {
-      id: 'rem-1',
-      documentId: document.id,
-      author: {
-        type: 'customer',
-        name: 'Иванов А.С.',
-        color: '#ef4444',
-      },
-      text: 'Не соответствует ГОСТ 21.101-2020. Требуется исправить рамки и основные надписи.',
-      createdAt: '2026-04-25T11:00:00Z',
-      status: 'open',
-      replies: [
-        {
-          id: 'rep-1',
-          author: 'Петров В.М.',
-          text: 'Исправлю до конца дня',
-          date: '2026-04-25T12:30:00Z',
-        },
-      ],
-    },
-  ];
 
   return (
     <div className="flex flex-col h-full bg-[#0f172a]">

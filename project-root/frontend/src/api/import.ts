@@ -1,4 +1,4 @@
-import client from './client';
+import client from '@/shared/api/client';
 import type { ExcelPreview, TargetField } from '../types';
 
 export const previewExcel = async (file: File): Promise<ExcelPreview> => {

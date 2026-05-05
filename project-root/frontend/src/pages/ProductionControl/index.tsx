@@ -1,10 +1,9 @@
-import React, { useState } from 'react';
-import { ProductionProject } from './types/production';
+import React, { useState, useEffect } from 'react';
+import { ProductionProject, MTOItem } from './types/production';
 import { useProjects } from './hooks/useProjects';
 import { useOperations } from './hooks/useOperations';
 import { useWorkloads } from './hooks/useWorkloads';
 import { useDocuments } from './hooks/useDocuments';
-import { mockMTO } from './mocks/productionData';
 import { ProjectPipeline } from './components/ProjectPipeline';
 import { OperationBoard } from './components/OperationBoard';
 import { WorkloadHeatmap } from './components/WorkloadHeatmap';
@@ -19,7 +18,26 @@ export const ProductionControlPage: React.FC = () => {
   const { operations } = useOperations();
   const { workCenters } = useWorkloads();
   const { documents } = useDocuments();
-  const [mtoItems] = useState(mockMTO);
+  const [mtoItems, setMtoItems] = useState<MTOItem[]>([]);
+
+  // Load MTO data from documents API (documents with type 'spec' serve as MTO specs)
+  useEffect(() => {
+    if (documents.length > 0) {
+      // Transform spec documents into MTO items
+      const specs = documents.filter((d) => d.type === 'spec');
+      const items: MTOItem[] = specs.map((spec) => ({
+        id: `mto-${spec.id}`,
+        projectId: spec.projectId,
+        specificationId: spec.id,
+        itemName: spec.name,
+        quantity: 1,
+        status: spec.status === 'approved' ? 'spec_submitted' : spec.status === 'overdue' ? 'in_procurement' : 'spec_draft',
+        submittedToMTO: spec.actualReady,
+        plannedDelivery: spec.plannedReady,
+      }));
+      setMtoItems(items);
+    }
+  }, [documents]);
 
   const [activeTab, setActiveTab] = useState<TabId>('pipeline');
   const [selectedProject, setSelectedProject] = useState<ProductionProject | null>(null);

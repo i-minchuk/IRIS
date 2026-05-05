@@ -1,20 +1,107 @@
 // src/pages/ProjectPortfolioPage/index.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Loader2 } from 'lucide-react';
 import { ProjectPipeline } from './components/ProjectPipeline';
 import { ProjectList } from './components/ProjectList';
 import { ProjectDetail } from './components/ProjectDetail';
 import { ProjectForm } from './components/ProjectForm';
 import { ProjectAnalytics } from './components/ProjectAnalytics';
 import { Project, ProjectStats } from './types/project';
-import { mockProjects, mockStats } from './mocks/projectData';
+import { getProjects } from '@/api/projects';
 
 type ViewMode = 'pipeline' | 'list' | 'detail' | 'form' | 'analytics';
 
 export const ProjectPortfolioPage: React.FC = () => {
-  const [projects] = useState<Project[]>(mockProjects);
-  const [stats] = useState<ProjectStats>(mockStats);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [stats, setStats] = useState<ProjectStats>({
+    total: 0,
+    active: 0,
+    completed: 0,
+    totalSum: 0,
+    avgProgress: 0,
+    overdue: 0,
+    atRisk: 0,
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('pipeline');
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true);
+        const data = await getProjects();
+        const transformed: Project[] = data.map((p) => ({
+          id: String(p.id),
+          name: p.name,
+          customer: p.customer_name || '—',
+          description: '',
+          status: (p.status === 'active' ? 'production' : p.status === 'completed' ? 'completed' : 'design') as Project['status'],
+          priority: 'medium' as Project['priority'],
+          contractSum: 0,
+          spentBudget: 0,
+          plannedBudget: 0,
+          startDate: p.created_at || '',
+          deadline: p.created_at || '',
+          projectManager: '—',
+          engineers: [],
+          documents: [],
+          progressPercent: 0,
+          createdAt: p.created_at || '',
+          updatedAt: p.created_at || '',
+        }));
+        setProjects(transformed);
+
+        // Compute stats from real data
+        const active = transformed.filter((p) => p.status !== 'completed').length;
+        const completed = transformed.filter((p) => p.status === 'completed').length;
+        setStats({
+          total: transformed.length,
+          active,
+          completed,
+          totalSum: 0,
+          avgProgress: transformed.length > 0
+            ? Math.round(transformed.reduce((sum, p) => sum + p.progressPercent, 0) / transformed.length)
+            : 0,
+          overdue: 0,
+          atRisk: 0,
+        });
+      } catch (err) {
+        setError('Не удалось загрузить проекты');
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="h-screen bg-[#0f172a] text-[#e2e8f0] flex items-center justify-center">
+        <div className="flex items-center gap-2 text-[#94a3b8]">
+          <Loader2 className="animate-spin" size={20} />
+          <span>Загрузка проектов...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="h-screen bg-[#0f172a] text-[#e2e8f0] flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-400 mb-2">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-[#3b82f6] rounded-lg text-sm text-white hover:bg-[#2563eb]"
+          >
+            Попробовать снова
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen bg-[#0f172a] text-[#e2e8f0]">

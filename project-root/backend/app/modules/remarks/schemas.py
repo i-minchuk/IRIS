@@ -2,7 +2,7 @@
 from typing import Optional, List, Dict, Any
 from datetime import datetime, date
 from uuid import UUID
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, computed_field
 
 from app.modules.remarks.models import RemarkSource, RemarkStatus, RemarkPriority, RemarkCategory
 
@@ -139,9 +139,9 @@ class RemarkListItem(BaseModel):
     """Light remark item for list view."""
     id: UUID
     title: str
-    status: RemarkStatus
-    priority: RemarkPriority
-    category: RemarkCategory
+    status: str
+    priority: str
+    category: str
     
     project_id: Optional[int]
     project_name: Optional[str] = None
@@ -149,14 +149,14 @@ class RemarkListItem(BaseModel):
     document_name: Optional[str] = None
     
     author_id: int
-    author_name: str
+    author_name: Optional[str] = None
     assignee_id: Optional[int]
     assignee_name: Optional[str] = None
     
-    due_date: Optional[date]
+    due_date: Optional[str]
     
-    created_at: datetime
-    updated_at: datetime
+    created_at: str
+    updated_at: str
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -167,6 +167,11 @@ class RemarkListResponse(BaseModel):
     total: int
     page: int
     page_size: int
+
+    @computed_field
+    @property
+    def items(self) -> List[RemarkListItem]:
+        return self.remarks
 
 
 # ============== Filter Schema ==============

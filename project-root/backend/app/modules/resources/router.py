@@ -1,6 +1,6 @@
 """Resources and workload API."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends
 
 from app.modules.resources.service import WorkloadService
@@ -64,5 +64,5 @@ async def get_heatmap(
     
     return {
         "departments": departments,
-        "updated_at": datetime.utcnow().isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
     }

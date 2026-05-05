@@ -1,6 +1,6 @@
 """Resources service - business logic layer for workload analytics."""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -21,14 +21,14 @@ class WorkloadService:
         """Check if cache entry is still valid."""
         if key not in self._cache_timestamp:
             return False
-        age = (datetime.utcnow() - self._cache_timestamp[key]).total_seconds()
+        age = (datetime.now(timezone.utc) - self._cache_timestamp[key]).total_seconds()
         return age < self._CACHE_TTL
 
     @staticmethod
     def _generate_week_ranges(weeks_count: int = 4) -> List[Dict[str, str]]:
         """Generate ISO week ranges ending with the current week."""
         weeks = []
-        today = datetime.utcnow().date()
+        today = datetime.now(timezone.utc).date()
         # Align to Monday of current week
         monday = today - timedelta(days=today.weekday())
         for i in range(weeks_count - 1, -1, -1):
@@ -64,7 +64,7 @@ class WorkloadService:
         
         # Cache result
         self._cache[cache_key] = result
-        self._cache_timestamp[cache_key] = datetime.utcnow()
+        self._cache_timestamp[cache_key] = datetime.now(timezone.utc)
         
         return result
     
@@ -78,7 +78,7 @@ class WorkloadService:
         
         # Calculate stats for each user
         team = []
-        month_ago = datetime.utcnow() - timedelta(days=30)
+        month_ago = datetime.now(timezone.utc) - timedelta(days=30)
         
         for user in users:
             # Get user stats

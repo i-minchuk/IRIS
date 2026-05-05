@@ -6,15 +6,23 @@
 // 3. Add rules for React hooks and TypeScript best practices
 
 import tseslint from 'typescript-eslint'
+import reactHooks from 'eslint-plugin-react-hooks'
 
 export default tseslint.config(
   {
     ignores: ['dist/**/*', 'node_modules/**/*'],
+    linterOptions: {
+      reportUnusedDisableDirectives: 'off',
+    },
   },
   {
     files: ['**/*.{js,jsx,ts,tsx}'],
     languageOptions: {
       parser: tseslint.parser,
+    },
+    plugins: {
+      '@typescript-eslint': tseslint.plugin,
+      'react-hooks': reactHooks,
     },
     rules: {
       // Disabled for MVP speed

@@ -11,31 +11,6 @@ type PanelTab = 'history' | 'integrations' | 'settings';
 export default function BottomPanel({}: BottomPanelProps) {
   const [activeTab, setActiveTab] = useState<PanelTab>('history');
 
-  // Мок-данные для истории
-  const mockHistory = [
-    {
-      id: 1,
-      action: 'revision_created',
-      user: 'Иванов А.В.',
-      date: '2025-01-15 14:30',
-      details: 'Создана ревизия B02',
-    },
-    {
-      id: 2,
-      action: 'status_changed',
-      user: 'Петров С.К.',
-      date: '2025-01-14 10:15',
-      details: 'Статус изменён с "В работе" на "На проверке"',
-    },
-    {
-      id: 3,
-      action: 'document_created',
-      user: 'Сидоров В.М.',
-      date: '2025-01-10 09:00',
-      details: 'Документ создан',
-    },
-  ];
-
   const getTabLabel = (tab: PanelTab) => {
     switch (tab) {
       case 'history':
@@ -99,11 +74,11 @@ export default function BottomPanel({}: BottomPanelProps) {
       {/* Контент */}
       <div className="flex-1 overflow-y-auto p-2">
         {activeTab === 'history' && (
-          <HistoryContent history={mockHistory} />
+          <EmptyState message="Выберите документ для просмотра истории изменений" />
         )}
 
         {activeTab === 'integrations' && (
-          <IntegrationsContent />
+          <EmptyState message="Интеграции будут доступны после настройки" />
         )}
 
         {activeTab === 'settings' && (
@@ -114,162 +89,14 @@ export default function BottomPanel({}: BottomPanelProps) {
   );
 }
 
-interface HistoryItem {
-  id: number;
-  action: string;
-  user: string;
-  date: string;
-  details: string;
-}
-
-interface HistoryContentProps {
-  history: HistoryItem[];
-}
-
-function HistoryContent({ history }: HistoryContentProps) {
-  const getActionLabel = (action: string) => {
-    switch (action) {
-      case 'revision_created':
-        return 'Создана ревизия';
-      case 'status_changed':
-        return 'Изменён статус';
-      case 'document_created':
-        return 'Документ создан';
-      case 'document_updated':
-        return 'Документ обновлён';
-      case 'approved':
-        return 'Утверждено';
-      default:
-        return action;
-    }
-  };
-
+function EmptyState({ message }: { message: string }) {
   return (
-    <div>
-      <h4 className="text-xs font-semibold mb-1.5" style={{ color: 'var(--text-primary)' }}>
-        Журнал изменений
-      </h4>
-
-      <div className="space-y-1.5">
-        {history.map((item, index) => (
-          <div key={item.id} className="flex gap-2">
-            {/* Timeline marker */}
-            <div className="flex flex-col items-center">
-              <div
-                className="w-1.5 h-1.5 rounded-full"
-                style={{ backgroundColor: 'var(--accent-engineering)' }}
-              />
-              {index < history.length - 1 && (
-                <div
-                  className="w-0.5 flex-1 my-0.5"
-                  style={{ backgroundColor: 'var(--border-default)' }}
-                />
-              )}
-            </div>
-
-            {/* Content */}
-            <div className="flex-1 pb-1.5">
-              <div
-                className="text-xs font-medium mb-0.5"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                {getActionLabel(item.action)}
-              </div>
-              <div
-                className="text-xs mb-0.5"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                {item.details}
-              </div>
-              <div
-                className="text-[10px]"
-                style={{ color: 'var(--text-tertiary)' }}
-              >
-                {item.user} · {item.date}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function IntegrationsContent() {
-  const integrations = [
-    { name: '1C: ERP', status: 'synced', lastSync: '2025-01-15 14:30' },
-    { name: 'AutoCAD', status: 'pending', lastSync: '2025-01-15 12:00' },
-    { name: 'PDF Export', status: 'error', lastSync: '2025-01-14 18:00' },
-  ];
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'synced':
-        return 'var(--success)';
-      case 'pending':
-        return 'var(--warning)';
-      case 'error':
-        return 'var(--error)';
-      default:
-        return 'var(--text-tertiary)';
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'synced':
-        return 'Синхронизировано';
-      case 'pending':
-        return 'В очереди';
-      case 'error':
-        return 'Ошибка';
-      default:
-        return status;
-    }
-  };
-
-  return (
-    <div>
-      <h4 className="text-xs font-semibold mb-1.5" style={{ color: 'var(--text-primary)' }}>
-        Интеграции
-      </h4>
-
-      <div className="space-y-1.5">
-        {integrations.map((integration) => (
-          <div
-            key={integration.name}
-            className="flex items-center justify-between p-2 rounded-lg border"
-            style={{
-              borderColor: 'var(--border-default)',
-              backgroundColor: 'var(--bg-surface-2)',
-            }}
-          >
-            <div>
-              <div
-                className="text-xs font-medium"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                {integration.name}
-              </div>
-              <div
-                className="text-[10px]"
-                style={{ color: 'var(--text-tertiary)' }}
-              >
-                {integration.lastSync}
-              </div>
-            </div>
-
-            <div
-              className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-medium shrink-0"
-              style={{
-                backgroundColor: getStatusColor(integration.status),
-                color: 'var(--text-inverse)',
-              }}
-            >
-              {getStatusLabel(integration.status)}
-            </div>
-          </div>
-        ))}
+    <div className="flex flex-col items-center justify-center h-full text-center py-8">
+      <div
+        className="text-xs mb-2"
+        style={{ color: 'var(--text-tertiary)' }}
+      >
+        {message}
       </div>
     </div>
   );
@@ -310,4 +137,3 @@ function SettingsContent() {
     </div>
   );
 }
-

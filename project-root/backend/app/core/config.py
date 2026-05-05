@@ -49,7 +49,7 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
 
     DATABASE_URL: str = Field(
-        default="postgresql+asyncpg://postgres:Qwerty852@localhost:5432/iris"
+        default="postgresql+asyncpg://postgres@localhost:5432/iris"
     )
 
     SECRET_KEY: str = Field(
@@ -61,9 +61,13 @@ class Settings(BaseSettings):
 
     BACKEND_CORS_ORIGINS: list[str] = [
         "http://localhost:5173",
+        "http://localhost:5174",
         "http://127.0.0.1:5173",
+        "http://127.0.0.1:5174",
         "http://localhost:3000",
         "http://127.0.0.1:3000",
+        "http://localhost:80",
+        "http://127.0.0.1:80",
         "http://localhost:8000",
         "http://127.0.0.1:8000",
     ]
@@ -96,13 +100,14 @@ class Settings(BaseSettings):
 
     def model_post_init(self, __context) -> None:
         if not is_secure_secret_key(self.SECRET_KEY):
-            warnings.warn(
+            msg = (
                 "CRITICAL: SECRET_KEY is not secure for production! "
                 "Generate a secure key with: python -c \"import secrets; print(secrets.token_urlsafe(32))\" "
-                "and set it via SECRET_KEY environment variable.",
-                UserWarning,
-                stacklevel=2,
+                "and set it via SECRET_KEY environment variable."
             )
+            if not self.DEBUG:
+                raise ValueError(msg)
+            warnings.warn(msg, UserWarning, stacklevel=2)
 
         if not self.BACKEND_CORS_ORIGINS:
             warnings.warn(
@@ -114,10 +119,6 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
-
-
-def load_config() -> Settings:
-    return Settings()
 
 
 def load_config() -> Settings:

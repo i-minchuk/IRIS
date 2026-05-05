@@ -1,19 +1,19 @@
 """CRUD operations for Archive"""
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List, Tuple
 from uuid import UUID
 from sqlalchemy import select, func, text, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from sqlalchemy.dialects.postgresql import to_tsvector, ts_rank_cd, plainto_tsquery
+from sqlalchemy.dialects.postgresql import to_tsvector, plainto_tsquery
 
 from app.models.archive import (
     ArchiveEntry, ArchiveMaterial, ArchiveConstruction,
     ArchiveEntryType, ArchiveMaterialType, ArchiveConstructionType,
     ArchiveConstructionStatus
 )
-from app.models.project import Project
-from app.models.user import User
+from app.modules.projects.models import Project
+from app.modules.auth.models import User
 
 
 async def create_entry(
@@ -42,7 +42,7 @@ async def create_entry(
         description=description,
         content_snapshot=content_snapshot,
         author_id=author_id,
-        occurred_at=occurred_at or datetime.utcnow(),
+        occurred_at=occurred_at or datetime.now(timezone.utc),
         tags=tags or [],
         attachments=attachments or [],
         related_entry_ids=related_entry_ids or [],
@@ -155,7 +155,7 @@ async def search(
         entries_query = entries_query.where(ArchiveEntry.occurred_at <= date_to)
 
     # Ранжирование
-    rank = ts_rank_cd(ArchiveEntry.search_vector, search_query)
+    rank = func.ts_rank_cd(ArchiveEntry.search_vector, search_query)
     entries_query = entries_query.order_by(rank.desc()).limit(limit)
 
     entries_result = await db.execute(entries_query)
@@ -269,7 +269,7 @@ async def create_construction(
     location: Optional[str] = None,
     materials_used: List[UUID] = None,
     documents_related: List[UUID] = None,
-    status: ArchiveConstructionStatus = ArchiveConstructionStatus.PLANNED,
+    status: str = "planned",
     installed_at: datetime = None,
     tested_at: datetime = None,
     accepted_at: datetime = None,

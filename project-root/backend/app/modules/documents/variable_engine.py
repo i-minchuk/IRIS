@@ -1,6 +1,6 @@
 """Variable engine: substitution, cascade updates, computed variables."""
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -142,7 +142,7 @@ async def cascade_update(
         if doc.variables_snapshot is None:
             doc.variables_snapshot = {}
         doc.variables_snapshot["rendered"] = rendered
-        doc.variables_snapshot["last_rendered_at"] = datetime.utcnow().isoformat()
+        doc.variables_snapshot["last_rendered_at"] = datetime.now(timezone.utc).isoformat()
         snapshots[doc.id] = rendered
     await session.commit()
     return snapshots

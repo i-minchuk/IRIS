@@ -1,5 +1,6 @@
 // src/pages/PortfolioPage/components/ExcelImporter/index.tsx
 import React, { useCallback, useState } from 'react';
+import * as XLSX from 'xlsx';
 
 interface ExcelImporterProps {
   onImport: (data: any[]) => void;
@@ -11,33 +12,38 @@ export const ExcelImporter: React.FC<ExcelImporterProps> = ({
   acceptedTypes = ['.xlsx', '.xls'],
 }) => {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleFileSelect = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       const files = e.target.files;
-      if (files && files[0]) {
-        // const file = files[0];
-        setIsProcessing(true);
+      if (!files || !files[0]) return;
 
-        try {
-          // Здесь будет логика чтения Excel файла
-          // Для MVP используем mock-данные
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-          
-          const mockData = [
-            {
-              name: 'Импортированный документ 1',
-              type: 'pdf',
-              status: 'not_started',
-            },
-          ];
+      const file = files[0];
+      setIsProcessing(true);
+      setError(null);
 
-          onImport(mockData);
-        } catch (error) {
-          console.error('Error importing Excel:', error);
-        } finally {
-          setIsProcessing(false);
-        }
+      try {
+        const data = await file.arrayBuffer();
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json<unknown[]>(firstSheet, { header: 1 });
+
+        // Skip header row, map to objects
+        const headers = (jsonData[0] || []).map(String);
+        const rows = jsonData.slice(1).map((row) => {
+          const obj: Record<string, unknown> = {};
+          headers.forEach((h: string, i: number) => {
+            obj[h] = (row as unknown[])[i] ?? null;
+          });
+          return obj;
+        });
+
+        onImport(rows);
+      } catch (err) {
+        setError('Ошибка чтения файла. Убедитесь, что загружен корректный Excel-файл.');
+      } finally {
+        setIsProcessing(false);
       }
     },
     [onImport]
@@ -66,6 +72,12 @@ export const ExcelImporter: React.FC<ExcelImporterProps> = ({
         <div className="mt-4 flex items-center gap-2 text-[#94a3b8]">
           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#4F7A4C]" />
           <span>Обработка файла...</span>
+        </div>
+      )}
+
+      {error && (
+        <div className="mt-4 text-sm text-red-400">
+          {error}
         </div>
       )}
     </div>

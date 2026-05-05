@@ -1,6 +1,6 @@
 """Analytics dashboard for project managers."""
 from typing import Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import select, func, and_, or_, case
@@ -10,7 +10,7 @@ from app.db.session import get_db
 from app.modules.auth.deps import get_current_active_user
 from app.modules.auth.models import User
 from app.modules.projects.models import Project
-from app.modules.documents.models import Document, Remark
+from app.modules.documents.models import Document, DocumentRemark
 from app.modules.time_tracking.models import TimeSession
 from app.modules.tenders.models import Tender
 import hashlib
@@ -40,13 +40,13 @@ async def get_dashboard(
     approved_docs = approved_docs_result.scalar() or 0
 
     open_remarks_result = await db.execute(
-        select(func.count()).where(~Remark.status.in_(["closed", "resolved_confirmed"]))
+        select(func.count()).where(~DocumentRemark.status.in_(["closed", "resolved_confirmed"]))
     )
     open_remarks = open_remarks_result.scalar() or 0
 
     critical_remarks_result = await db.execute(
         select(func.count()).where(
-            and_(Remark.severity == "critical", ~Remark.status.in_(["closed", "resolved_confirmed"]))
+            and_(DocumentRemark.severity == "critical", ~DocumentRemark.status.in_(["closed", "resolved_confirmed"]))
         )
     )
     critical_remarks = critical_remarks_result.scalar() or 0
@@ -76,12 +76,12 @@ async def get_dashboard(
 
         rem_count = await db.execute(
             select(func.count())
-            .select_from(Remark)
+            .select_from(DocumentRemark)
             .join(Document)
             .where(
                 and_(
                     Document.project_id == project.id,
-                    ~Remark.status.in_(["closed", "resolved_confirmed"]),
+                    ~DocumentRemark.status.in_(["closed", "resolved_confirmed"]),
                 )
             )
         )
@@ -120,12 +120,12 @@ async def get_dashboard(
 
         user_remarks = await db.execute(
             select(func.count())
-            .select_from(Remark)
+            .select_from(DocumentRemark)
             .join(Document)
             .where(
                 and_(
                     Document.author_id == user.id,
-                    ~Remark.status.in_(["closed", "resolved_confirmed"]),
+                    ~DocumentRemark.status.in_(["closed", "resolved_confirmed"]),
                 )
             )
         )
@@ -220,7 +220,7 @@ async def get_kpi_tiles(
         select(func.count()).where(
             and_(
                 Document.status != "approved",
-                Document.created_at < datetime.utcnow() - timedelta(days=30),
+                Document.created_at < datetime.now(timezone.utc) - timedelta(days=30),
             )
         )
     )
@@ -357,7 +357,7 @@ async def get_portfolio(
     return {
         "projects": bubbles,
         "zones": zone_counts,
-        "updated_at": datetime.utcnow().isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
     }
 
 
@@ -369,7 +369,7 @@ async def get_shipments_calendar(
     """Return weekly shipment calendar with status pipeline."""
 
     # Mock shipment data — no shipment tables yet
-    today = datetime.utcnow().date()
+    today = datetime.now(timezone.utc).date()
     weekday = today.weekday()  # 0=Mon
     monday = today - timedelta(days=weekday)
 
@@ -406,7 +406,7 @@ async def get_shipments_calendar(
         "week": f"{monday.isoformat()} — {(monday + timedelta(days=6)).isoformat()}",
         "days": calendar,
         "pipeline": pipeline,
-        "updated_at": datetime.utcnow().isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
     }
 
 
@@ -469,7 +469,7 @@ async def get_sparklines(
                 "status": "green" if shipments[-1] >= 25 else "yellow" if shipments[-1] >= 15 else "red",
             },
         ],
-        "updated_at": datetime.utcnow().isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
     }
 
 
@@ -533,7 +533,7 @@ async def get_alerts(
         select(func.count()).where(
             and_(
                 Document.status != "approved",
-                Document.created_at < datetime.utcnow() - timedelta(days=30),
+                Document.created_at < datetime.now(timezone.utc) - timedelta(days=30),
             )
         )
     )
@@ -556,7 +556,7 @@ async def get_alerts(
     return {
         "alerts": alerts[:3],  # Top-3
         "total": len(alerts),
-        "updated_at": datetime.utcnow().isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
     }
 
 
@@ -614,7 +614,7 @@ async def get_tender_pipeline(
         select(func.count()).where(
             and_(
                 Tender.deadline.isnot(None),
-                Tender.deadline < datetime.utcnow(),
+                Tender.deadline < datetime.now(timezone.utc),
                 ~Tender.status.in_(["won", "lost", "archived"]),
             )
         )
@@ -627,7 +627,7 @@ async def get_tender_pipeline(
         "win_rate": win_rate,
         "avg_prep_days": int(avg_prep),
         "overdue_count": overdue_count,
-        "updated_at": datetime.utcnow().isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
     }
 
 
@@ -658,7 +658,7 @@ async def get_documents_by_project(
                 and_(
                     Document.project_id == project.id,
                     Document.status != "approved",
-                    Document.created_at < datetime.utcnow() - timedelta(days=30),
+                    Document.created_at < datetime.now(timezone.utc) - timedelta(days=30),
                 )
             )
         )
@@ -676,7 +676,7 @@ async def get_documents_by_project(
 
     return {
         "projects": data,
-        "updated_at": datetime.utcnow().isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
     }
 
 
@@ -769,5 +769,5 @@ async def get_production_sqcdp(
                 },
             },
         ],
-        "updated_at": datetime.utcnow().isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
     }

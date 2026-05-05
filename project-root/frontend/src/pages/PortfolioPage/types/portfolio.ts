@@ -32,6 +32,8 @@ export interface Document {
   hasRemarks: boolean;
   fileUrl?: string;
   projectId: string;
+  documentId?: number;
+  code?: string;
 }
 
 export interface Remark {

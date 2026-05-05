@@ -1,6 +1,6 @@
 """Time tracking API router."""
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -54,7 +54,7 @@ async def start_session(
         user_id=current_user.id,
         document_id=data.get("document_id"),
         project_id=data.get("project_id"),
-        started_at=datetime.utcnow(),
+        started_at=datetime.now(timezone.utc),
     )
     db.add(session)
     await db.commit()
@@ -77,7 +77,7 @@ async def stop_session(
     session = result.scalar_one_or_none()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
-    session.ended_at = datetime.utcnow()
+    session.ended_at = datetime.now(timezone.utc)
     session.total_duration = int((session.ended_at - session.started_at).total_seconds())
     session.active_time = data.get("active_time", session.total_duration)
     session.idle_time = session.total_duration - session.active_time

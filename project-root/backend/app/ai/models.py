@@ -44,3 +44,26 @@ class ChunkMetadata(BaseModel):
     section: Optional[str] = None
     page: Optional[int] = None
     score: Optional[float] = None
+
+
+class InlineSuggestionItem(BaseModel):
+    type: str = Field(..., pattern="^(completion|correction|reference)$")
+    text: str
+    display: str
+    confidence: float = Field(..., ge=0.0, le=1.0)
+    description: Optional[str] = None
+
+
+class InlineSuggestionRequest(BaseModel):
+    document_id: Optional[UUID] = None
+    document_type: Optional[str] = None
+    current_section: Optional[str] = None
+    preceding_text: str = Field(..., max_length=5000)
+    current_line: str = Field(..., max_length=1000)
+    cursor_position: int = Field(..., ge=0)
+
+
+class InlineSuggestionResponse(BaseModel):
+    suggestions: List[InlineSuggestionItem]
+    request_id: UUID
+    model: Optional[str] = None

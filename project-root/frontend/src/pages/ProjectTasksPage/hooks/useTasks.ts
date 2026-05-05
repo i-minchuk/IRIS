@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 import { Task, TaskFilters, TaskStatistics } from '../types';
 import { taskApi } from './taskApi';
 
@@ -51,5 +52,27 @@ export function useTasks(filters: TaskFilters, page: number, pageSize: number) {
     fetchTasks();
   }, [fetchTasks]);
 
-  return { tasks, statistics, loading, error, refetch };
+  const updateTaskStatus = useCallback(async (taskId: number, newStatus: string) => {
+    const previousTasks = tasks;
+    const previousStats = statistics;
+
+    // Optimistic update: update local state immediately
+    setTasks((prev) =>
+      prev.map((t) => (t.id === taskId ? { ...t, status: newStatus as Task['status'] } : t))
+    );
+
+    try {
+      await taskApi.updateTaskStatus(taskId, { status: newStatus as Task['status'] });
+      // Optional: refresh stats in background so counts stay accurate
+      const freshStats = await taskApi.getStatistics(filters.projectId || undefined);
+      setStatistics(freshStats);
+    } catch (err) {
+      // Rollback on error
+      setTasks(previousTasks);
+      setStatistics(previousStats);
+      toast.error('Не удалось изменить статус задачи');
+    }
+  }, [tasks, statistics, filters.projectId]);
+
+  return { tasks, statistics, loading, error, refetch, updateTaskStatus };
 }

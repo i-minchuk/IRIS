@@ -1,12 +1,17 @@
-import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useEffect, useState, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useWorkspaceStore } from '../workspace/store/workspaceStore';
+import { useCollaborationStore } from '../../features/collaboration/store/collaborationStore';
+import { useAuthStore } from '../../features/auth/store/authStore';
+import { lockDocument, unlockDocument } from '../../features/collaboration/api/lock';
+import { toast } from 'sonner';
 import DocumentViewerHost from '../viewers/DocumentViewerHost';
 import RemarksPanel from '../RemarksPanel';
 import ExplorerSidebar from '../workspace/ExplorerSidebar';
 import WorkspaceLayout from '../workspace/WorkspaceLayout';
-import { getDocument } from '../../api/documents';
-import { Plus, FileCheck, Eye } from 'lucide-react';
+import { getDocument, createRevision, submitForApproval, submitForReview } from '../../api/documents';
+import RevisionForm from '../RevisionForm';
+import { Plus, FileCheck, Eye, Lock } from 'lucide-react';
 
 /**
  * DocumentWorkspace - единый сценарий работы с документами
@@ -21,7 +26,15 @@ import { Plus, FileCheck, Eye } from 'lucide-react';
  */
 export default function DocumentWorkspace() {
   const { projectId } = useParams<{ projectId: string }>();
+  const navigate = useNavigate();
   const { selectedDocument, setSelectedDocument, activeExplorerNode, setActiveExplorerNode, bottomPanelCollapsed, toggleBottomPanel } = useWorkspaceStore();
+  const { user } = useAuthStore();
+  const { lockedDocuments, sendMessage } = useCollaborationStore();
+  
+  const currentLock = selectedDocument ? lockedDocuments.get(selectedDocument.id) : undefined;
+  const isLockedByAnotherUser = Boolean(currentLock && currentLock.locked_by_id !== user?.id);
+  
+  const previousDocIdRef = useRef<number | null>(null);
   
   // Гарантируем, что нижняя панель раскрыта при загрузке DocumentWorkspace
   useEffect(() => {
@@ -30,8 +43,33 @@ export default function DocumentWorkspace() {
     }
   }, []);
   
+  // Разблокировка при смене документа
+  useEffect(() => {
+    const prevId = previousDocIdRef.current;
+    const currentId = selectedDocument?.id ?? null;
+    
+    if (prevId && prevId !== currentId) {
+      unlockDocument(prevId).catch(() => {});
+      sendMessage({ type: 'unsubscribe_document', payload: { document_id: prevId } });
+    }
+    
+    previousDocIdRef.current = currentId;
+  }, [selectedDocument?.id]);
+  
+  // Разблокировка при размонтировании компонента
+  useEffect(() => {
+    return () => {
+      const prevId = previousDocIdRef.current;
+      if (prevId) {
+        unlockDocument(prevId).catch(() => {});
+        sendMessage({ type: 'unsubscribe_document', payload: { document_id: prevId } });
+      }
+    };
+  }, []);
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showRevisionModal, setShowRevisionModal] = useState(false);
 
   // Обработчик клика по узлу дерева
   const handleNodeClick = async (nodeId: string, nodeType: string, documentId?: number) => {
@@ -68,7 +106,21 @@ export default function DocumentWorkspace() {
           status: doc.status,
           doc_type: doc.doc_type,
           discipline: doc.discipline,
+          revision: currentRevision?.number || '—',
+          totalRemarks: doc.remarks?.length || 0,
         });
+        
+        // Попытка заблокировать документ
+        try {
+          await lockDocument(documentId);
+          sendMessage({ type: 'subscribe_document', payload: { document_id: documentId } });
+        } catch (lockErr: any) {
+          if (lockErr.response?.status === 409) {
+            const detail = lockErr.response?.data?.detail;
+            const lockedByName = typeof detail === 'object' ? detail?.locked_by : detail;
+            toast.warning(`Документ заблокирован пользователем ${lockedByName || 'другим пользователем'}`);
+          }
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Не удалось загрузить документ');
         setSelectedDocument(null);
@@ -81,24 +133,70 @@ export default function DocumentWorkspace() {
     }
   };
 
+  const refreshSelectedDocument = async () => {
+    if (!selectedDocument) return;
+    const doc = await getDocument(selectedDocument.id);
+    const currentRevision = doc.current_revision_id
+      ? doc.revisions?.find(r => r.id === doc.current_revision_id)
+      : null;
+    const fileUrl = currentRevision?.file_path
+      ? `/api/files/${currentRevision.file_path}`
+      : undefined;
+    setSelectedDocument({
+      id: doc.id,
+      code: doc.code || '',
+      title: doc.title || '',
+      fileUrl,
+      fileName: `${doc.code}${currentRevision?.file_path?.includes('.pdf') ? '.pdf' : ''}`,
+      project_id: doc.project_id,
+      status: doc.status,
+      doc_type: doc.doc_type,
+      discipline: doc.discipline,
+      revision: currentRevision?.number || '—',
+      totalRemarks: doc.remarks?.length || 0,
+    });
+  };
+
   const handleCreateRevision = () => {
-    // TODO: открыть модалку создания ревизии
-    console.log('Создать ревизию для документа', selectedDocument?.id);
+    setShowRevisionModal(true);
   };
 
-  const handleSubmitForApproval = () => {
-    // TODO: отправить на согласование
-    console.log('Отправить на согласование документ', selectedDocument?.id);
+  const handleRevisionSubmit = async (data: any) => {
+    if (!selectedDocument) return;
+    await createRevision(selectedDocument.id, {
+      number: data.revision_index,
+      status: 'draft',
+      trigger_type: 'design_change',
+      changes_summary: data.change_log,
+    });
+    await refreshSelectedDocument();
+    toast.success('Ревизия создана');
   };
 
-  const handleSubmitForReview = () => {
-    // TODO: отправить на проверку
-    console.log('Отправить на проверку документ', selectedDocument?.id);
+  const handleSubmitForApproval = async () => {
+    if (!selectedDocument) return;
+    try {
+      await submitForApproval(selectedDocument.id);
+      await refreshSelectedDocument();
+      toast.success('Документ отправлен на согласование');
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || 'Не удалось отправить на согласование');
+    }
+  };
+
+  const handleSubmitForReview = async () => {
+    if (!selectedDocument) return;
+    try {
+      await submitForReview(selectedDocument.id);
+      await refreshSelectedDocument();
+      toast.success('Документ отправлен на проверку');
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || 'Не удалось отправить на проверку');
+    }
   };
 
   const handleCreateDocument = () => {
-    // TODO: перейти на страницу создания
-    console.log('Создать документ в проекте', projectId);
+    navigate(`/documents/create/${projectId || ''}`);
   };
 
   return (
@@ -130,24 +228,39 @@ export default function DocumentWorkspace() {
       documentData={
         selectedDocument ? {
           code: selectedDocument.code,
-          revision: 'A.1', // TODO: get from current revision
+          revision: selectedDocument.revision || '—',
           status: selectedDocument.status || 'draft',
-          author: 'Иванов И.И.', // TODO: get from revision author
-          reviewer: 'Петров П.П.',
-          approver: 'Сидоров С.С.',
+          author: '—',
+          reviewer: '—',
+          approver: '—',
           releaseDate: new Date().toISOString(),
           nextDeadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
           dependencies: [],
-          totalRemarks: 0, // TODO: get from remarks count
+          totalRemarks: selectedDocument.totalRemarks || 0,
           openRemarks: 0,
         } : undefined
       }
       toolbarActions={
         selectedDocument && (
           <div className="flex items-center gap-2">
+            {isLockedByAnotherUser && (
+              <div
+                className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium"
+                style={{
+                  backgroundColor: 'var(--warning-bg, #fffbeb)',
+                  color: 'var(--warning-text, #b45309)',
+                  border: '1px solid var(--warning-border, #fcd34d)',
+                }}
+              >
+                <Lock size={12} />
+                Заблокировано: {currentLock?.locked_by_name || 'другим пользователем'}
+              </div>
+            )}
+            
             <button
               onClick={handleCreateRevision}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+              disabled={isLockedByAnotherUser}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
                 backgroundColor: 'var(--accent-engineering)',
                 color: 'var(--text-inverse)',
@@ -160,7 +273,8 @@ export default function DocumentWorkspace() {
             
             <button
               onClick={handleSubmitForApproval}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border"
+              disabled={isLockedByAnotherUser}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
                 backgroundColor: 'var(--bg-surface)',
                 borderColor: 'var(--border-default)',
@@ -174,7 +288,8 @@ export default function DocumentWorkspace() {
             
             <button
               onClick={handleSubmitForReview}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border"
+              disabled={isLockedByAnotherUser}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
                 backgroundColor: 'var(--bg-surface)',
                 borderColor: 'var(--border-default)',
@@ -199,6 +314,16 @@ export default function DocumentWorkspace() {
         <EmptyViewerState />
       )}
       </WorkspaceLayout>
+      
+      {selectedDocument && (
+        <RevisionForm
+          isOpen={showRevisionModal}
+          onClose={() => setShowRevisionModal(false)}
+          onSubmit={handleRevisionSubmit}
+          documentId={selectedDocument.id}
+          nextRevisionIndex={(!selectedDocument.revision || selectedDocument.revision === '—') ? 'A.1' : String.fromCharCode((selectedDocument.revision.charCodeAt(0) || 64) + 1) + '.1'}
+        />
+      )}
     </div>
   );
 }
@@ -335,11 +460,50 @@ interface DocumentBottomPanelProps {
     code: string;
     title: string;
     status?: string;
+    fileUrl?: string;
+    fileName?: string;
+    doc_type?: string;
+    discipline?: string;
+    revision?: string;
   };
 }
 
 function DocumentBottomPanel({ document }: DocumentBottomPanelProps) {
   const [activeTab, setActiveTab] = useState<'history' | 'connections' | 'versions' | 'metadata'>('history');
+  const [auditLogs, setAuditLogs] = useState<import('@/features/workflow/api/workflowApi').WorkflowAuditLog[]>([]);
+  const [instances, setInstances] = useState<import('@/features/workflow/api/workflowApi').WorkflowInstance[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch real data when history tab is selected
+  useEffect(() => {
+    if (activeTab !== 'history' && activeTab !== 'versions') return;
+
+    let cancelled = false;
+    setIsLoading(true);
+    setError(null);
+
+    async function fetchData() {
+      try {
+        const { workflowApi } = await import('@/features/workflow/api/workflowApi');
+        const insts = await workflowApi.getDocumentInstances(document.id).catch(() => []);
+        if (cancelled) return;
+        setInstances(insts);
+        // Try to get audit logs from first instance
+        if (insts.length > 0) {
+          const audit = await workflowApi.getAuditLog(insts[0].id).catch(() => ({ logs: [], total: 0 }));
+          if (!cancelled) setAuditLogs(audit.logs);
+        }
+      } catch (err: any) {
+        if (!cancelled) setError(err.message || 'Ошибка загрузки');
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    }
+
+    fetchData();
+    return () => { cancelled = true; };
+  }, [activeTab, document.id]);
 
   return (
     <div className="flex flex-col h-full" style={{ backgroundColor: 'var(--bg-surface)' }}>
@@ -371,11 +535,33 @@ function DocumentBottomPanel({ document }: DocumentBottomPanelProps) {
         {activeTab === 'history' && (
           <div className="space-y-3">
             <h4 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Журнал изменений</h4>
-            <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-              <p>• Ревизия A.1 создана 15.01.2026</p>
-              <p>• Отправлено на согласование 20.01.2026</p>
-              <p>• Утверждено 25.01.2026</p>
-            </div>
+            {isLoading ? (
+              <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>Загрузка...</div>
+            ) : error ? (
+              <div className="text-sm" style={{ color: 'var(--error)' }}>{error}</div>
+            ) : auditLogs.length > 0 ? (
+              <div className="space-y-2">
+                {auditLogs.map((log) => (
+                  <div key={log.id} className="text-sm flex items-start gap-2" style={{ color: 'var(--text-secondary)' }}>
+                    <span className="text-[var(--text-tertiary)] text-xs shrink-0">
+                      {new Date(log.timestamp).toLocaleString('ru-RU')}
+                    </span>
+                    <span>
+                      <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{log.user_name}</span>
+                      {' — '}{log.action}
+                      {log.new_status && (
+                        <span> → <span className="font-medium">{log.new_status}</span></span>
+                      )}
+                      {log.comment && <span className="italic">: {log.comment}</span>}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                Нет записей в журнале
+              </div>
+            )}
           </div>
         )}
 
@@ -392,10 +578,34 @@ function DocumentBottomPanel({ document }: DocumentBottomPanelProps) {
         {activeTab === 'versions' && (
           <div className="space-y-3">
             <h4 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>История версий</h4>
-            <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-              <p>Текущая версия: A.1</p>
-              <p>Предыдущие версии: нет</p>
-            </div>
+            {isLoading ? (
+              <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>Загрузка...</div>
+            ) : instances.length > 0 ? (
+              <div className="space-y-2">
+                {instances.map((inst) => (
+                  <div key={inst.id} className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                    <p>
+                      <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
+                        {inst.template_name}
+                      </span>
+                      {' — '}{inst.status}
+                      {inst.completed_at && (
+                        <span> (завершено {new Date(inst.completed_at).toLocaleDateString('ru-RU')})</span>
+                      )}
+                    </p>
+                    {inst.steps?.map((step) => (
+                      <p key={step.id} className="pl-4 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                        • {step.step_name}: {step.status}
+                      </p>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                Нет запущенных workflow
+              </div>
+            )}
           </div>
         )}
 
@@ -414,6 +624,22 @@ function DocumentBottomPanel({ document }: DocumentBottomPanelProps) {
               <div>
                 <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Статус</p>
                 <p style={{ color: 'var(--text-primary)' }}>{document.status || 'Черновик'}</p>
+              </div>
+              <div>
+                <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Тип документа</p>
+                <p style={{ color: 'var(--text-primary)' }}>{document.doc_type || '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Дисциплина</p>
+                <p style={{ color: 'var(--text-primary)' }}>{document.discipline || '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Ревизия</p>
+                <p style={{ color: 'var(--text-primary)' }}>{document.revision || '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Файл</p>
+                <p style={{ color: 'var(--text-primary)' }}>{document.fileName || '—'}</p>
               </div>
             </div>
           </div>

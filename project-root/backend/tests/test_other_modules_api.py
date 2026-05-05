@@ -58,7 +58,7 @@ class TestTimeTracking:
             sess.user_id = 1
             sess.document_id = None
             sess.project_id = None
-            sess.started_at = datetime.utcnow()
+            sess.started_at = datetime.now(timezone.utc)
             sess.ended_at = None
             sess.total_duration = 0
             sess.active_time = 0
@@ -104,7 +104,7 @@ class TestTimeTracking:
             sess.id = 1
             sess.user_id = 1
             from datetime import timedelta
-            sess.started_at = datetime.utcnow() - timedelta(seconds=60)
+            sess.started_at = datetime.now(timezone.utc) - timedelta(seconds=60)
             sess.ended_at = None
             sess.total_duration = 0
             sess.active_time = 0

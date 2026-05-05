@@ -195,13 +195,17 @@ class ImportChecker:
             "auth": set(),  # auth does not depend on other modules
             "core": set(),  # core utilities
             "db": set(),    # database layer
+            "operations": set(),  # production operations
+            "routes": set(),  # technological routes
             
             # Level 1 (business entities)
             "documents": {"auth", "projects", "variables"},  # Documents relate to projects and use variables
             "projects": {"auth"},  # Projects are independent
-            "tasks": {"auth", "projects"},  # Tasks belong to projects
-            "tenders": {"auth", "documents"},  # Tenders work with documents
+            "tasks": {"auth", "projects", "documents", "operations", "routes"},  # Tasks sync with production
+            "tenders": {"auth", "documents", "tasks"},  # Tenders work with documents and tasks
             "variables": {"auth"},  # Variables are independent
+            "remarks": {"auth"},  # Issue tracking
+            "workflow": {"auth"},  # Approval workflows
             
             # Level 2 (overlays)
             "collaboration": {"auth", "documents"},  # Collaboration on documents

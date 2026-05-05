@@ -1,8 +1,10 @@
 // frontend/src/app/router.tsx
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { LoginPage } from '@/features/auth/pages/LoginPage';
+import { ForgotPasswordPage } from '@/features/auth/pages/ForgotPasswordPage';
+import { ResetPasswordPage } from '@/features/auth/pages/ResetPasswordPage';
 import Dashboard from '@/pages/Dashboard';
-import { RemarksPage } from '@/features/remarks/pages/RemarksPage';
+import { RemarksPage } from '@/pages/RemarksPage';
 import { AnalyticsPage } from '@/features/analytics/pages/AnalyticsPage';
 import { ResourcesPage } from '@/pages/ResourcesPage';
 import { TendersPage } from '@/pages/TendersPage';
@@ -12,14 +14,25 @@ import { ProductionControlPage } from '@/pages/ProductionControl';
 import { ProjectTasksPage } from '@/pages/ProjectTasksPage';
 import { PackagePage } from '@/pages/PackagePage';
 import { WorkflowPage } from '@/pages/WorkflowPage';
+import { ProjectsPage } from '@/features/projects/pages/ProjectsPage';
 import TenderPortfolioPage from '@/pages/TenderPortfolioPage';
 import { Layout } from './Layout';
 import { ProtectedRoute } from './ProtectedRoute';
+import DocumentCreate from '@/pages/DocumentCreate';
+import DocumentWorkspace from '@/components/workspace/DocumentWorkspace';
 
 export const router = createBrowserRouter([
   {
     path: '/login',
     element: <LoginPage />,
+  },
+  {
+    path: '/forgot-password',
+    element: <ForgotPasswordPage />,
+  },
+  {
+    path: '/reset-password',
+    element: <ResetPasswordPage />,
   },
   {
     path: '/',
@@ -80,10 +93,18 @@ export const router = createBrowserRouter([
             path: 'archive',
             element: <ArchivePage />,
           },
-          /* Обратная совместимость: старый путь портфеля проектов перенаправляет на задачи */
+          {
+            path: 'documents/create/:projectId?',
+            element: <DocumentCreate />,
+          },
+          {
+            path: 'workspace/:projectId',
+            element: <DocumentWorkspace />,
+          },
+          /* Projects page */
           {
             path: 'projects',
-            element: <Navigate to="/tasks" replace />,
+            element: <ProjectsPage />,
           },
           /* Обратная совместимость: старый путь согласований перенаправляет на workflow */
           {

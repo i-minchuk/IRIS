@@ -1,6 +1,6 @@
 """Workflow service - business logic for approval routing."""
 from typing import Optional, List, Dict, Any, Tuple
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from sqlalchemy.exc import SQLAlchemyError
@@ -120,7 +120,7 @@ class WorkflowService:
         for key, value in update_dict.items():
             setattr(template, key, value)
         
-        template.updated_at = datetime.utcnow()
+        template.updated_at = datetime.now(timezone.utc)
         
         try:
             await self.db.commit()
@@ -166,7 +166,7 @@ class WorkflowService:
             launch_comment=instance_data.launch_comment,
             started_by=started_by,
             status=WorkflowStatus.RUNNING,
-            started_at=datetime.utcnow()
+            started_at=datetime.now(timezone.utc)
         )
         
         self.db.add(instance)
@@ -214,7 +214,7 @@ class WorkflowService:
                 old_status=None,
                 new_status=WorkflowStatus.RUNNING.value,
                 comment=instance_data.launch_comment,
-                timestamp=datetime.utcnow()
+                timestamp=datetime.now(timezone.utc)
             )
             self.db.add(audit)
             await self.db.commit()
@@ -249,6 +249,46 @@ class WorkflowService:
         
         return instance
 
+    async def get_instances(
+        self,
+        status: Optional[str] = None,
+        document_id: Optional[int] = None,
+        project_id: Optional[int] = None,
+        assigned_to: Optional[int] = None,
+        page: int = 1,
+        page_size: int = 20
+    ) -> Tuple[List[WorkflowInstance], int]:
+        """Get workflow instances with filters."""
+        query = select(WorkflowInstance)
+
+        if status:
+            query = query.where(WorkflowInstance.status == status)
+        if document_id:
+            query = query.where(WorkflowInstance.document_id == document_id)
+        if project_id:
+            query = query.where(WorkflowInstance.project_id == project_id)
+        if assigned_to:
+            query = (
+                query.join(WorkflowStep, WorkflowInstance.id == WorkflowStep.instance_id)
+                .join(workflow_step_assignees, WorkflowStep.id == workflow_step_assignees.c.step_id)
+                .where(
+                    WorkflowStep.status.in_([WorkflowStepStatus.PENDING, WorkflowStepStatus.IN_PROGRESS]),
+                    workflow_step_assignees.c.user_id == assigned_to
+                )
+                .distinct()
+            )
+
+        total_result = await self.db.execute(select(func.count()).select_from(query.subquery()))
+        total = total_result.scalar() or 0
+
+        query = query.order_by(WorkflowInstance.created_at.desc())
+        query = query.offset((page - 1) * page_size).limit(page_size)
+
+        result = await self.db.execute(query)
+        instances = result.scalars().all()
+
+        return list(instances), total
+
     async def get_instances_by_document(
         self,
         document_id: int,
@@ -259,7 +299,7 @@ class WorkflowService:
         
         if active_only:
             query = query.where(
-                WorkflowStatus.IN(WorkflowStatus.RUNNING, WorkflowStatus.PAUSED)
+                WorkflowInstance.status.in_([WorkflowStatus.RUNNING, WorkflowStatus.PAUSED])
             )
         
         result = await self.db.execute(query.order_by(WorkflowInstance.created_at.desc()))
@@ -284,7 +324,7 @@ class WorkflowService:
         # Update step
         step.status = WorkflowStepStatus.APPROVED
         step.completed_by = user_id
-        step.completed_at = datetime.utcnow()
+        step.completed_at = datetime.now(timezone.utc)
         
         instance = await self.db.get(WorkflowInstance, step.instance_id)
         
@@ -297,7 +337,7 @@ class WorkflowService:
             old_status=WorkflowStepStatus.IN_PROGRESS.value,
             new_status=WorkflowStepStatus.APPROVED.value,
             comment=action.comment,
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(timezone.utc)
         )
         self.db.add(audit)
         
@@ -330,7 +370,7 @@ class WorkflowService:
         # Update step
         step.status = WorkflowStepStatus.REJECTED
         step.completed_by = user_id
-        step.completed_at = datetime.utcnow()
+        step.completed_at = datetime.now(timezone.utc)
         
         # Create audit log
         audit = WorkflowAuditLog(
@@ -342,7 +382,7 @@ class WorkflowService:
             new_status=WorkflowStepStatus.REJECTED.value,
             comment=action.reason,
             audit_metadata={"return_to_author": action.return_to_author},
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(timezone.utc)
         )
         self.db.add(audit)
         
@@ -402,7 +442,7 @@ class WorkflowService:
             new_status=WorkflowStepStatus.DELEGATED.value,
             comment=action.reason,
             audit_metadata={"delegated_to": action.delegate_to},
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(timezone.utc)
         )
         self.db.add(audit)
         
@@ -431,7 +471,7 @@ class WorkflowService:
         if auto_transition.get('on_approve') == 'complete':
             # Complete the workflow
             instance.status = WorkflowStatus.COMPLETED
-            instance.completed_at = datetime.utcnow()
+            instance.completed_at = datetime.now(timezone.utc)
             return None
         
         # Find next step
@@ -448,7 +488,7 @@ class WorkflowService:
         if next_step:
             # Start next step
             next_step.status = WorkflowStepStatus.IN_PROGRESS
-            next_step.assigned_at = datetime.utcnow()
+            next_step.assigned_at = datetime.now(timezone.utc)
             instance.current_step_id = next_step.id
             
             # Create audit log for next step
@@ -459,13 +499,13 @@ class WorkflowService:
                 action='auto_assigned',
                 old_status=None,
                 new_status=WorkflowStepStatus.IN_PROGRESS.value,
-                timestamp=datetime.utcnow()
+                timestamp=datetime.now(timezone.utc)
             )
             self.db.add(audit)
         else:
             # No more steps - complete workflow
             instance.status = WorkflowStatus.COMPLETED
-            instance.completed_at = datetime.utcnow()
+            instance.completed_at = datetime.now(timezone.utc)
         
         return next_step
 
@@ -490,6 +530,15 @@ class WorkflowService:
         await self.db.commit()
         await self.db.refresh(comment)
         return comment
+
+    async def get_comments(self, step_id: int) -> List[WorkflowComment]:
+        """Get comments for a workflow step."""
+        result = await self.db.execute(
+            select(WorkflowComment)
+            .where(WorkflowComment.step_id == step_id)
+            .order_by(WorkflowComment.created_at.asc())
+        )
+        return result.scalars().all()
 
     async def get_audit_log(self, instance_id: int) -> List[WorkflowAuditLog]:
         """Get audit log for workflow instance."""

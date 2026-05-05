@@ -148,3 +148,18 @@ export interface TimelineEvent {
   author_name: string | null;
   data: Record<string, any>;
 }
+
+export interface ArchiveSearchQuery {
+  q: string;
+  project_id?: number;
+  entry_types?: string[];
+  date_from?: string;
+  date_to?: string;
+  limit?: number;
+}
+
+export interface ArchiveSearchResult {
+  results: ArchiveEntry[];
+  total: number;
+  query: string;
+}

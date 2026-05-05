@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Plus } from 'lucide-react';
 import type { Tender, TenderStage, TenderSummary, TenderTask } from '@/features/tenders/types/tender';
-import { getTenders, getTenderSummary } from '@/features/tenders/api/tenders';
-import { mockTenders, mockSummary, mockTasks } from '@/features/tenders/mocks/tenderData';
+import { getTenders, getTenderSummary, getTenderTasks } from '@/features/tenders/api/tenders';
+
 import { TenderKPIHeader } from '@/features/tenders/components/TenderKPIHeader';
 import { TenderPipeline } from '@/features/tenders/components/TenderPipeline';
 import { TenderAuctionPanel } from '@/features/tenders/components/TenderAuctionPanel';
@@ -13,7 +13,7 @@ import { TenderAnalytics } from '@/features/tenders/components/TenderAnalytics';
 export default function TenderPortfolioPage() {
   const [tenders, setTenders] = useState<Tender[]>([]);
   const [summary, setSummary] = useState<TenderSummary | null>(null);
-  const [tasks] = useState<TenderTask[]>(mockTasks);
+  const [tasks, setTasks] = useState<TenderTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedStage, setSelectedStage] = useState<TenderStage | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -22,18 +22,18 @@ export default function TenderPortfolioPage() {
     const load = async () => {
       try {
         setLoading(true);
-        // Try real API first, fallback to mocks
-        try {
-          const [tendersData, summaryData] = await Promise.all([
-            getTenders(),
-            getTenderSummary(),
-          ]);
-          setTenders(tendersData);
-          setSummary(summaryData);
-        } catch {
-          // Fallback to mocks for demo/development
-          setTenders(mockTenders);
-          setSummary(mockSummary);
+        // Load real data
+        const [tendersData, summaryData] = await Promise.all([
+          getTenders(),
+          getTenderSummary(),
+        ]);
+        setTenders(tendersData);
+        setSummary(summaryData);
+
+        // Load tasks from first tender if available
+        if (tendersData.length > 0) {
+          const tasksData = await getTenderTasks(tendersData[0].id).catch(() => []);
+          setTasks(tasksData);
         }
         setError(null);
       } catch (err) {

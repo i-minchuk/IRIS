@@ -1,4 +1,4 @@
-import client from './client';
+import client from '@/shared/api/client';
 import type { User, TokenResponse } from '../types';
 
 export const login = async (email: string, password: string): Promise<TokenResponse> => {

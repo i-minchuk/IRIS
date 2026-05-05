@@ -162,3 +162,75 @@ class TestAuthMe:
             data = response.json()
             assert data["email"] == mock_user.email
             assert data["id"] == mock_user.id
+
+
+class TestForgotPassword:
+    """Tests for POST /auth/forgot-password."""
+
+    def test_forgot_password_success(self, client_with_auth, mock_user):
+        with client_with_auth as client:
+            with patch.object(UserRepository, "get_by_email", return_value=mock_user), \
+                 patch("app.modules.auth.router.security.create_reset_token", return_value="reset_token_123"):
+                response = client.post(
+                    "/api/v1/auth/forgot-password",
+                    json={"email": "test@example.com"},
+                )
+                assert response.status_code == 200
+                data = response.json()
+                assert "token generated" in data["message"].lower() or "reset link" in data["message"].lower()
+                assert data["reset_token"] == "reset_token_123"
+
+    def test_forgot_password_nonexistent_email(self, client_with_auth):
+        with client_with_auth as client:
+            with patch.object(UserRepository, "get_by_email", return_value=None):
+                response = client.post(
+                    "/api/v1/auth/forgot-password",
+                    json={"email": "nobody@example.com"},
+                )
+                assert response.status_code == 200
+                # Не раскрываем, существует ли email
+                data = response.json()
+                assert "reset link has been sent" in data["message"]
+
+
+class TestResetPassword:
+    """Tests for POST /auth/reset-password."""
+
+    def test_reset_password_success(self, client_with_auth, mock_user):
+        with client_with_auth as client:
+            mock_user.reset_token = "valid_reset_token"
+            mock_user.reset_token_expires = None
+            with patch("app.modules.auth.router.security.verify_reset_token", return_value={"sub": "1"}), \
+                 patch.object(UserRepository, "get_by_id", return_value=mock_user), \
+                 patch("app.modules.auth.router.security.get_password_hash", return_value="new_hashed_pass"):
+                response = client.post(
+                    "/api/v1/auth/reset-password",
+                    json={"token": "valid_reset_token", "new_password": "newpass123"},
+                )
+                assert response.status_code == 200
+                data = response.json()
+                assert "successfully" in data["message"].lower()
+
+    def test_reset_password_invalid_token(self, client_with_auth):
+        with client_with_auth as client:
+            with patch("app.modules.auth.router.security.verify_reset_token", return_value=None):
+                response = client.post(
+                    "/api/v1/auth/reset-password",
+                    json={"token": "bad_token", "new_password": "newpass123"},
+                )
+                assert response.status_code == 400
+                assert "Invalid" in response.json()["detail"]
+
+    def test_reset_password_expired_token(self, client_with_auth, mock_user):
+        from datetime import datetime, timezone, timedelta
+        with client_with_auth as client:
+            mock_user.reset_token = "expired_token"
+            mock_user.reset_token_expires = datetime.now(timezone.utc) - timedelta(minutes=1)
+            with patch("app.modules.auth.router.security.verify_reset_token", return_value={"sub": "1"}), \
+                 patch.object(UserRepository, "get_by_id", return_value=mock_user):
+                response = client.post(
+                    "/api/v1/auth/reset-password",
+                    json={"token": "expired_token", "new_password": "newpass123"},
+                )
+                assert response.status_code == 400
+                assert "expired" in response.json()["detail"].lower()

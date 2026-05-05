@@ -26,7 +26,7 @@ from app.modules.remarks.schemas import (
     RemarkExportRow
 )
 
-router = APIRouter(prefix="/remarks", tags=["remarks"])
+router = APIRouter(tags=["remarks"])
 
 
 def get_service(db: AsyncSession) -> RemarkService:
@@ -76,6 +76,20 @@ async def list_remarks(
     from datetime import datetime
     from app.modules.remarks.models import RemarkStatus, RemarkPriority, RemarkCategory, RemarkSource
     
+    # Helper function to safely parse ISO format dates
+    def parse_date(date_str: str) -> datetime:
+        """Parse ISO format date string, handling microseconds."""
+        try:
+            return datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+        except (ValueError, AttributeError):
+            # Fallback for formats without microseconds
+            for fmt in ['%Y-%m-%dT%H:%M:%S.%f', '%Y-%m-%dT%H:%M:%S', '%Y-%m-%d']:
+                try:
+                    return datetime.strptime(date_str, fmt)
+                except ValueError:
+                    continue
+            raise ValueError(f"Invalid date format: {date_str}")
+    
     filters = RemarkFilter(
         project_id=project_id,
         document_id=document_id,
@@ -85,8 +99,8 @@ async def list_remarks(
         source=[RemarkSource(s) for s in source] if source else None,
         assignee_id=assignee_id,
         author_id=author_id,
-        date_from=datetime.fromisoformat(date_from) if date_from else None,
-        date_to=datetime.fromisoformat(date_to) if date_to else None,
+        date_from=parse_date(date_from) if date_from else None,
+        date_to=parse_date(date_to) if date_to else None,
         search_text=search_text,
         tag_ids=tag_ids,
         sort_by=sort_by,
@@ -103,164 +117,6 @@ async def list_remarks(
         page=page,
         page_size=page_size
     )
-
-
-@router.get("/{remark_id}", response_model=RemarkResponse)
-async def get_remark(
-    remark_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
-):
-    """Get remark by ID."""
-    service = get_service(db)
-    remark = await service.get_remark(remark_id)
-    
-    if not remark:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Remark not found"
-        )
-    
-    return remark
-
-
-@router.put("/{remark_id}", response_model=RemarkResponse)
-async def update_remark(
-    remark_id: UUID,
-    update_data: RemarkUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
-):
-    """Update remark."""
-    service = get_service(db)
-    remark = await service.update_remark(remark_id, update_data, current_user.id)
-    
-    if not remark:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Remark not found"
-        )
-    
-    return remark
-
-
-@router.delete("/{remark_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_remark(
-    remark_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
-):
-    """Delete remark."""
-    service = get_service(db)
-    success = await service.delete_remark(remark_id, current_user.id)
-    
-    if not success:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Remark not found"
-        )
-
-
-# ==================== Comment Endpoints ====================
-
-@router.post("/{remark_id}/comments", response_model=RemarkCommentResponse, status_code=status.HTTP_201_CREATED)
-async def add_comment(
-    remark_id: UUID,
-    comment_data: RemarkCommentCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
-):
-    """Add comment to remark."""
-    service = get_service(db)
-    comment = await service.add_comment(
-        remark_id,
-        comment_data.text,
-        current_user.id,
-        comment_data.is_internal
-    )
-    
-    return RemarkCommentResponse(
-        id=comment.id,
-        remark_id=comment.remark_id,
-        author_id=comment.author_id,
-        author_name=current_user.email,  # TODO: Get actual name
-        text=comment.text,
-        is_internal=comment.is_internal,
-        created_at=comment.created_at,
-        updated_at=comment.updated_at
-    )
-
-
-@router.delete("/{remark_id}/comments/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_comment(
-    remark_id: UUID,
-    comment_id: int,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
-):
-    """Delete comment."""
-    service = get_service(db)
-    success = await service.delete_comment(remark_id, comment_id, current_user.id)
-    
-    if not success:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Comment not found"
-        )
-
-
-# ==================== Action Endpoints ====================
-
-@router.post("/{remark_id}/actions", response_model=dict)
-async def perform_action(
-    remark_id: UUID,
-    action_data: RemarkAction,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
-):
-    """Perform action on remark."""
-    service = get_service(db)
-    
-    try:
-        remark = await service.perform_action(remark_id, action_data, current_user.id)
-        
-        if not remark:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Remark not found"
-            )
-        
-        return {
-            "success": True,
-            "action": action_data.action,
-            "remark_id": str(remark.id),
-            "new_status": remark.status.value
-        }
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
-
-
-@router.post("/{remark_id}/link/{related_id}", response_model=dict)
-async def link_remarks(
-    remark_id: UUID,
-    related_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
-):
-    """Link two remarks."""
-    service = get_service(db)
-    success = await service.link_remarks(remark_id, related_id)
-    
-    if not success:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Remark not found"
-        )
-    
-    return {"success": True, "linked": [str(remark_id), str(related_id)]}
 
 
 # ==================== Statistics Endpoint ====================
@@ -299,7 +155,7 @@ async def export_remarks(
     if document_id:
         query = query.where(Remark.document_id == document_id)
     
-    result = await self.db.execute(query)
+    result = await db.execute(query)
     remarks = result.scalars().all()
     
     # Create CSV
@@ -382,3 +238,163 @@ async def delete_tag(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Tag not found"
         )
+
+
+# ==================== Remark by ID Endpoints ====================
+
+@router.get("/{remark_id}", response_model=RemarkResponse)
+async def get_remark(
+    remark_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Get remark by ID."""
+    service = get_service(db)
+    remark = await service.get_remark(remark_id)
+    
+    if not remark:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Remark not found"
+        )
+    
+    return remark
+
+
+@router.put("/{remark_id}", response_model=RemarkResponse)
+async def update_remark(
+    remark_id: UUID,
+    update_data: RemarkUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Update remark."""
+    service = get_service(db)
+    remark = await service.update_remark(remark_id, update_data, current_user.id)
+    
+    if not remark:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Remark not found"
+        )
+    
+    return remark
+
+
+@router.delete("/{remark_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_remark(
+    remark_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Delete remark."""
+    service = get_service(db)
+    success = await service.delete_remark(remark_id, current_user.id)
+    
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Remark not found"
+        )
+
+
+# ==================== Comment Endpoints ====================
+
+@router.post("/{remark_id}/comments", response_model=RemarkCommentResponse, status_code=status.HTTP_201_CREATED)
+async def add_comment(
+    remark_id: UUID,
+    comment_data: RemarkCommentCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Add comment to remark."""
+    service = get_service(db)
+    comment = await service.add_comment(
+        remark_id,
+        comment_data.text,
+        current_user.id,
+        comment_data.is_internal
+    )
+    
+    return RemarkCommentResponse(
+        id=comment.id,
+        remark_id=comment.remark_id,
+        author_id=comment.author_id,
+        author_name=current_user.full_name or current_user.email,
+        text=comment.text,
+        is_internal=comment.is_internal,
+        created_at=comment.created_at,
+        updated_at=comment.updated_at
+    )
+
+
+@router.delete("/{remark_id}/comments/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_comment(
+    remark_id: UUID,
+    comment_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Delete comment."""
+    service = get_service(db)
+    success = await service.delete_comment(remark_id, comment_id, current_user.id)
+    
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Comment not found"
+        )
+
+
+# ==================== Action Endpoints ====================
+
+@router.post("/{remark_id}/actions", response_model=dict)
+async def perform_action(
+    remark_id: UUID,
+    action_data: RemarkAction,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Perform action on remark."""
+    service = get_service(db)
+    
+    try:
+        remark = await service.perform_action(remark_id, action_data, current_user.id)
+        
+        if not remark:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Remark not found"
+            )
+        
+        return {
+            "success": True,
+            "action": action_data.action,
+            "remark_id": str(remark.id),
+            "new_status": remark.status.value
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+
+
+@router.post("/{remark_id}/link/{related_id}", response_model=dict)
+async def link_remarks(
+    remark_id: UUID,
+    related_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Link two remarks."""
+    service = get_service(db)
+    success = await service.link_remarks(remark_id, related_id)
+    
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Remark not found"
+        )
+    
+    return {"success": True, "linked": [str(remark_id), str(related_id)]}

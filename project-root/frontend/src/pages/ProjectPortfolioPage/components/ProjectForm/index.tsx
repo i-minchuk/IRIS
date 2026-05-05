@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Project, ProjectStatus, ProjectPriority } from '../../types/project';
 import { PROJECT_STATUS_CONFIG } from '../../constants/projectStatuses';
 import { PROJECT_PRIORITY_CONFIG } from '../../constants/projectStatuses';
+import { createProject } from '@/api/projects';
 
 interface ProjectFormProps {
   project?: Project | null;
@@ -31,11 +32,23 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
     tenderManager: project?.tenderManager || '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Отправка данных на бэкенд
-    console.log('Form data:', formData);
-    onSave();
+    try {
+      if (!project) {
+        await createProject({
+          name: formData.name,
+          code: formData.name.slice(0, 3).toUpperCase() + '-' + Date.now(),
+          customer_name: formData.customer,
+          contract_number: '',
+          stage: 'draft',
+          status: 'draft',
+        });
+      }
+      onSave();
+    } catch (err) {
+      console.error('Failed to save project:', err);
+    }
   };
 
   return (

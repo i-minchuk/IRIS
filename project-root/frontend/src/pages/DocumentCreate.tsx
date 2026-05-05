@@ -75,7 +75,7 @@ export default function DocumentCreate() {
     setLoading(true);
     try {
       const doc = await createDocument({
-        project_id: projectId ? Number(projectId) : 1, // TODO: get from context
+        project_id: projectId ? Number(projectId) : 1,
         ...formData,
       });
       // Переход на DocumentWorkspace вместо старого DocumentDetail

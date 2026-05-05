@@ -1,4 +1,4 @@
-import client from './client';
+import client from '@/shared/api/client';
 import type { ProjectHealth, EngineerSPI } from '../types';
 
 export const getProjectHealth = async (id: number): Promise<ProjectHealth> => {

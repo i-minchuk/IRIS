@@ -19,10 +19,15 @@ from app.modules.documents.models import (  # noqa
     Document,
     Revision,
     ChangeSheet,
-    Remark,
+    DocumentRemark,
     ApprovalWorkflow,
     ApprovalStage,
     DocumentDependency,
+)
+from app.modules.remarks.models import (  # noqa
+    Remark,
+    RemarkComment,
+    RemarkTag,
 )
 from app.modules.variables.models import (  # noqa
     Variable,
@@ -36,3 +41,10 @@ from app.modules.tenders.models import (  # noqa
     Tender,
     TenderDocumentPreview,
 )
+from app.modules.operations.models import (  # noqa
+    Operation,
+    OperationAssignment,
+    WorkCenter,
+)
+from app.modules.routes.models import Route  # noqa
+from app.modules.tasks.models import Task  # noqa

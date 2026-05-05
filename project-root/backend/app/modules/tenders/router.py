@@ -11,6 +11,7 @@ from app.modules.auth.deps import get_current_active_user
 from app.modules.auth.models import User
 from app.modules.tenders.models import Tender, TenderDocumentPreview
 from app.modules.tenders.calculator import calculate_tender
+from app.modules.tasks.models import Task
 
 router = APIRouter(tags=["tenders"])
 
@@ -257,3 +258,38 @@ async def calculate_tender_endpoint(
         "name": tender.name,
         **calc,
     }
+
+
+@router.get("/{tender_id}/tasks", response_model=list)
+async def get_tender_tasks(
+    tender_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Get tasks linked to a tender via project_id."""
+    result = await db.execute(select(Tender).where(Tender.id == tender_id))
+    tender = result.scalar_one_or_none()
+    if not tender:
+        raise HTTPException(status_code=404, detail="Tender not found")
+
+    # Tasks linked to the same project as the tender
+    # Tenders don't have a direct project_id FK, so we return empty if no project context
+    # In a real scenario, tasks with matching project_id would be returned
+    # For now, return tasks that have task_data referencing this tender
+    tasks_result = await db.execute(
+        select(Task).where(Task.task_data.contains({"tender_id": tender_id}))
+    )
+    tasks = tasks_result.scalars().all()
+
+    return [
+        {
+            "id": t.id,
+            "tender_id": tender_id,
+            "title": t.title,
+            "assignee": t.assignee.full_name if t.assignee else None,
+            "due_date": t.due_date.isoformat() if t.due_date else None,
+            "status": t.status,
+            "priority": t.priority,
+        }
+        for t in tasks
+    ]

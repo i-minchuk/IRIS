@@ -1,4 +1,4 @@
-import client from './client';
+import client from '@/shared/api/client';
 import type { WorkloadResponse } from '../types';
 
 export const getWorkload = async (dateFrom?: string, dateTo?: string): Promise<WorkloadResponse> => {

@@ -62,7 +62,7 @@ class OperationAssignment(Base):
 
     # Relationships
     operation: Mapped["Operation"] = relationship(back_populates="assignments")
-    user: Mapped["User"] = relationship()
+    user: Mapped["User"] = relationship(foreign_keys=[user_id])
     assigned_by: Mapped["User"] = relationship(foreign_keys=[assigned_by_id])
 
 

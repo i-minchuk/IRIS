@@ -1,0 +1,474 @@
+﻿2026-05-03 13:03:10,179 | INFO     | dokpotok | Application logging initialized
+2026-05-03 13:03:10,289 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-05-03 13:03:10,289 | INFO     | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-05-03 13:03:10,349 INFO sqlalchemy.engine.Engine SELECT users.id, users.email, users.username, users.hashed_password, users.full_name, users.role, users.is_active, users.is_superuser, users.email_verified, users.reset_token, users.reset_token_expires, users.created_at 
+FROM users 
+WHERE users.email = ?
+2026-05-03 13:03:10,349 | INFO     | sqlalchemy.engine.Engine | SELECT users.id, users.email, users.username, users.hashed_password, users.full_name, users.role, users.is_active, users.is_superuser, users.email_verified, users.reset_token, users.reset_token_expires, users.created_at 
+FROM users 
+WHERE users.email = ?
+2026-05-03 13:03:10,349 INFO sqlalchemy.engine.Engine [generated in 0.00025s] ('admin@iris.local',)
+2026-05-03 13:03:10,349 | INFO     | sqlalchemy.engine.Engine | [generated in 0.00025s] ('admin@iris.local',)
+2026-05-03 13:03:10,361 | WARNING  | passlib.handlers.bcrypt | (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2026-05-03 13:03:10,579 INFO sqlalchemy.engine.Engine ROLLBACK
+2026-05-03 13:03:10,579 | INFO     | sqlalchemy.engine.Engine | ROLLBACK
+2026-05-03 13:03:10,582 | INFO     | httpx | HTTP Request: POST http://testserver/api/v1/auth/login "HTTP/1.1 200 OK"
+2026-05-03 13:03:10,582 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-05-03 13:03:10,582 | INFO     | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-05-03 13:03:10,582 INFO sqlalchemy.engine.Engine SELECT users.id, users.email, users.username, users.hashed_password, users.full_name, users.role, users.is_active, users.is_superuser, users.email_verified, users.reset_token, users.reset_token_expires, users.created_at 
+FROM users 
+WHERE users.id = ?
+2026-05-03 13:03:10,582 | INFO     | sqlalchemy.engine.Engine | SELECT users.id, users.email, users.username, users.hashed_password, users.full_name, users.role, users.is_active, users.is_superuser, users.email_verified, users.reset_token, users.reset_token_expires, users.created_at 
+FROM users 
+WHERE users.id = ?
+2026-05-03 13:03:10,582 INFO sqlalchemy.engine.Engine [generated in 0.00017s] (1,)
+2026-05-03 13:03:10,582 | INFO     | sqlalchemy.engine.Engine | [generated in 0.00017s] (1,)
+2026-05-03 13:03:10,589 INFO sqlalchemy.engine.Engine SELECT count(*) AS count_1 
+FROM (SELECT remarks.id AS id, remarks.project_id AS project_id, remarks.document_id AS document_id, remarks.revision_id AS revision_id, remarks.workflow_step_id AS workflow_step_id, remarks.source AS source, remarks.status AS status, remarks.priority AS priority, remarks.category AS category, remarks.title AS title, remarks.description AS description, remarks.location_ref AS location_ref, remarks.author_id AS author_id, remarks.assignee_id AS assignee_id, remarks.due_date AS due_date, remarks.resolution AS resolution, remarks.resolved_by AS resolved_by, remarks.resolved_at AS resolved_at, remarks.parent_id AS parent_id, remarks.related_remark_ids AS related_remark_ids, remarks.attachments AS attachments, remarks.history AS history, remarks.created_at AS created_at, remarks.updated_at AS updated_at 
+FROM remarks ORDER BY remarks.priority DESC) AS anon_1
+2026-05-03 13:03:10,589 | INFO     | sqlalchemy.engine.Engine | SELECT count(*) AS count_1 
+FROM (SELECT remarks.id AS id, remarks.project_id AS project_id, remarks.document_id AS document_id, remarks.revision_id AS revision_id, remarks.workflow_step_id AS workflow_step_id, remarks.source AS source, remarks.status AS status, remarks.priority AS priority, remarks.category AS category, remarks.title AS title, remarks.description AS description, remarks.location_ref AS location_ref, remarks.author_id AS author_id, remarks.assignee_id AS assignee_id, remarks.due_date AS due_date, remarks.resolution AS resolution, remarks.resolved_by AS resolved_by, remarks.resolved_at AS resolved_at, remarks.parent_id AS parent_id, remarks.related_remark_ids AS related_remark_ids, remarks.attachments AS attachments, remarks.history AS history, remarks.created_at AS created_at, remarks.updated_at AS updated_at 
+FROM remarks ORDER BY remarks.priority DESC) AS anon_1
+2026-05-03 13:03:10,591 INFO sqlalchemy.engine.Engine [generated in 0.00020s] ()
+2026-05-03 13:03:10,591 | INFO     | sqlalchemy.engine.Engine | [generated in 0.00020s] ()
+2026-05-03 13:03:10,591 INFO sqlalchemy.engine.Engine SELECT remarks.id, remarks.project_id, remarks.document_id, remarks.revision_id, remarks.workflow_step_id, remarks.source, remarks.status, remarks.priority, remarks.category, remarks.title, remarks.description, remarks.location_ref, remarks.author_id, remarks.assignee_id, remarks.due_date, remarks.resolution, remarks.resolved_by, remarks.resolved_at, remarks.parent_id, remarks.related_remark_ids, remarks.attachments, remarks.history, remarks.created_at, remarks.updated_at 
+FROM remarks ORDER BY remarks.priority DESC
+ LIMIT ? OFFSET ?
+2026-05-03 13:03:10,591 | INFO     | sqlalchemy.engine.Engine | SELECT remarks.id, remarks.project_id, remarks.document_id, remarks.revision_id, remarks.workflow_step_id, remarks.source, remarks.status, remarks.priority, remarks.category, remarks.title, remarks.description, remarks.location_ref, remarks.author_id, remarks.assignee_id, remarks.due_date, remarks.resolution, remarks.resolved_by, remarks.resolved_at, remarks.parent_id, remarks.related_remark_ids, remarks.attachments, remarks.history, remarks.created_at, remarks.updated_at 
+FROM remarks ORDER BY remarks.priority DESC
+ LIMIT ? OFFSET ?
+2026-05-03 13:03:10,591 INFO sqlalchemy.engine.Engine [generated in 0.00016s] (20, 0)
+2026-05-03 13:03:10,591 | INFO     | sqlalchemy.engine.Engine | [generated in 0.00016s] (20, 0)
+2026-05-03 13:03:10,591 INFO sqlalchemy.engine.Engine ROLLBACK
+2026-05-03 13:03:10,591 | INFO     | sqlalchemy.engine.Engine | ROLLBACK
+2026-05-03 13:03:10,594 | ERROR    | dokpotok | Unhandled error while processing GET /api/v1/remarks
+Traceback (most recent call last):
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\sql\sqltypes.py", line 1625, in _object_value_for_elem
+    return self._object_lookup[elem]
+           ~~~~~~~~~~~~~~~~~~~^^^^^^
+KeyError: 'internal'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Novikova\Desktop\�������� IRIS\project-root\backend\app\main.py", line 37, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\middleware\base.py", line 163, in call_next
+    raise app_exc
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\middleware\base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\middleware\exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\routing.py", line 715, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\routing.py", line 735, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\fastapi\routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\fastapi\routing.py", line 212, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\Desktop\�������� IRIS\project-root\backend\app\modules\remarks\router.py", line 98, in list_remarks
+    remarks, total = await service.list_remarks(filters, current_user.id)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\Desktop\�������� IRIS\project-root\backend\app\modules\remarks\service.py", line 194, in list_remarks
+    result = await self.db.execute(query)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\ext\asyncio\session.py", line 461, in execute
+    result = await greenlet_spawn(
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 203, in greenlet_spawn
+    result = context.switch(value)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\session.py", line 2362, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\session.py", line 2247, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\context.py", line 308, in orm_execute_statement
+    return cls.orm_setup_cursor_result(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\context.py", line 600, in orm_setup_cursor_result
+    return loading.instances(result, querycontext)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\loading.py", line 261, in instances
+    _prebuffered = list(chunks(None))
+                   ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\loading.py", line 219, in chunks
+    fetch = cursor._raw_all_rows()
+            ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\result.py", line 541, in _raw_all_rows
+    return [make_row(row) for row in rows]
+            ^^^^^^^^^^^^^
+  File "lib\\sqlalchemy\\cyextension\\resultproxy.pyx", line 22, in sqlalchemy.cyextension.resultproxy.BaseRow.__init__
+  File "lib\\sqlalchemy\\cyextension\\resultproxy.pyx", line 79, in sqlalchemy.cyextension.resultproxy._apply_processors
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\sql\sqltypes.py", line 1745, in process
+    value = self._object_value_for_elem(value)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\sql\sqltypes.py", line 1627, in _object_value_for_elem
+    raise LookupError(
+LookupError: 'internal' is not among the defined enum values. Enum name: remarksource. Possible values: INTERNAL, CUSTOMER, REGULATORY, ..., MANUAL
+2026-05-03 13:03:10,596 | ERROR    | dokpotok | Unhandled exception on GET /api/v1/remarks
+Traceback (most recent call last):
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\sql\sqltypes.py", line 1625, in _object_value_for_elem
+    return self._object_lookup[elem]
+           ~~~~~~~~~~~~~~~~~~~^^^^^^
+KeyError: 'internal'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\middleware\errors.py", line 165, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\middleware\cors.py", line 85, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\middleware\base.py", line 185, in __call__
+    with collapse_excgroups():
+         ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\contextlib.py", line 158, in __exit__
+    self.gen.throw(value)
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\_utils.py", line 82, in collapse_excgroups
+    raise exc
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\middleware\base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\Desktop\�������� IRIS\project-root\backend\app\core\middleware.py", line 23, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\middleware\base.py", line 163, in call_next
+    raise app_exc
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\middleware\base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\middleware\base.py", line 185, in __call__
+    with collapse_excgroups():
+         ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\contextlib.py", line 158, in __exit__
+    self.gen.throw(value)
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\_utils.py", line 82, in collapse_excgroups
+    raise exc
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\middleware\base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\Desktop\�������� IRIS\project-root\backend\app\main.py", line 37, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\middleware\base.py", line 163, in call_next
+    raise app_exc
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\middleware\base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\middleware\exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\routing.py", line 715, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\routing.py", line 735, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\fastapi\routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\fastapi\routing.py", line 212, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\Desktop\�������� IRIS\project-root\backend\app\modules\remarks\router.py", line 98, in list_remarks
+    remarks, total = await service.list_remarks(filters, current_user.id)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\Desktop\�������� IRIS\project-root\backend\app\modules\remarks\service.py", line 194, in list_remarks
+    result = await self.db.execute(query)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\ext\asyncio\session.py", line 461, in execute
+    result = await greenlet_spawn(
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 203, in greenlet_spawn
+    result = context.switch(value)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\session.py", line 2362, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\session.py", line 2247, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\context.py", line 308, in orm_execute_statement
+    return cls.orm_setup_cursor_result(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\context.py", line 600, in orm_setup_cursor_result
+    return loading.instances(result, querycontext)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\loading.py", line 261, in instances
+    _prebuffered = list(chunks(None))
+                   ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\loading.py", line 219, in chunks
+    fetch = cursor._raw_all_rows()
+            ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\result.py", line 541, in _raw_all_rows
+    return [make_row(row) for row in rows]
+            ^^^^^^^^^^^^^
+  File "lib\\sqlalchemy\\cyextension\\resultproxy.pyx", line 22, in sqlalchemy.cyextension.resultproxy.BaseRow.__init__
+  File "lib\\sqlalchemy\\cyextension\\resultproxy.pyx", line 79, in sqlalchemy.cyextension.resultproxy._apply_processors
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\sql\sqltypes.py", line 1745, in process
+    value = self._object_value_for_elem(value)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\sql\sqltypes.py", line 1627, in _object_value_for_elem
+    raise LookupError(
+LookupError: 'internal' is not among the defined enum values. Enum name: remarksource. Possible values: INTERNAL, CUSTOMER, REGULATORY, ..., MANUAL
+python : Traceback (most recent call last):
+строка:1 знак:47
++ ... /backend; $env:DEBUG = "True"; python check_endpoints.py 2>&1 | Out-F ...
++                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\sql\sqltypes.py", line 1
+625, in _object_value_for_elem
+    return self._object_lookup[elem]
+           ~~~~~~~~~~~~~~~~~~~^^^^^^
+KeyError: 'internal'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Novikova\Desktop\�������� IRIS\project-root\backend\check_endpoints.py", line 13, in <module>
+    remarks = client.get('/api/v1/remarks', headers=headers)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\testclient.py", line 514,
+ in get
+    return super().get(
+           ^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\httpx\_client.py", line 1053, in ge
+t
+    return self.request(
+           ^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\testclient.py", line 484,
+ in request
+    return super().request(
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\httpx\_client.py", line 825, in req
+uest
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\httpx\_client.py", line 914, in sen
+d
+    response = self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\httpx\_client.py", line 942, in _se
+nd_handling_auth
+    response = self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\httpx\_client.py", line 979, in _se
+nd_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\httpx\_client.py", line 1014, in _s
+end_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\testclient.py", line 377,
+ in handle_request
+    raise exc
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\testclient.py", line 374,
+ in handle_request
+    portal.call(self.app, scope, receive, send)
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\anyio\from_thread.py", line 334, in
+ call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\concurrent\futures\_base.py", line 456, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\concurrent\futures\_base.py", line 401, in __get_
+result
+    raise self._exception
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\anyio\from_thread.py", line 259, in
+ _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\fastapi\applications.py", line 1054
+, in __call__
+    await super().__call__(scope, receive, send)
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\applications.py", line 11
+3, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\middleware\errors.py", li
+ne 187, in __call__
+    raise exc
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\middleware\errors.py", li
+ne 165, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\middleware\cors.py", line
+ 85, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\middleware\base.py", line
+ 185, in __call__
+    with collapse_excgroups():
+         ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\contextlib.py", line 158, in __exit__
+    self.gen.throw(value)
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\_utils.py", line 82, in c
+ollapse_excgroups
+    raise exc
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\middleware\base.py", line
+ 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\Desktop\�������� IRIS\project-root\backend\app\core\middleware.py", line 23, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\middleware\base.py", line
+ 163, in call_next
+    raise app_exc
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\middleware\base.py", line
+ 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\middleware\base.py", line
+ 185, in __call__
+    with collapse_excgroups():
+         ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\contextlib.py", line 158, in __exit__
+    self.gen.throw(value)
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\_utils.py", line 82, in c
+ollapse_excgroups
+    raise exc
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\middleware\base.py", line
+ 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\Desktop\�������� IRIS\project-root\backend\app\main.py", line 37, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\middleware\base.py", line
+ 163, in call_next
+    raise app_exc
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\middleware\base.py", line
+ 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\middleware\exceptions.py"
+, line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\_exception_handler.py", l
+ine 53, in wrapped_app
+    raise exc
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\_exception_handler.py", l
+ine 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\routing.py", line 715, in
+ __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\routing.py", line 735, in
+ app
+    await route.handle(scope, receive, send)
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\routing.py", line 288, in
+ handle
+    await self.app(scope, receive, send)
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\routing.py", line 76, in 
+app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\_exception_handler.py", l
+ine 53, in wrapped_app
+    raise exc
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\_exception_handler.py", l
+ine 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\routing.py", line 73, in 
+app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\fastapi\routing.py", line 301, in a
+pp
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\fastapi\routing.py", line 212, in r
+un_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\Desktop\�������� IRIS\project-root\backend\app\modules\remarks\router.py", line 98, in list_r
+emarks
+    remarks, total = await service.list_remarks(filters, current_user.id)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\Desktop\�������� IRIS\project-root\backend\app\modules\remarks\service.py", line 194, in list
+_remarks
+    result = await self.db.execute(query)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\ext\asyncio\session.py",
+ line 461, in execute
+    result = await greenlet_spawn(
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.p
+y", line 203, in greenlet_spawn
+    result = context.switch(value)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\session.py", line 23
+62, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\session.py", line 22
+47, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\context.py", line 30
+8, in orm_execute_statement
+    return cls.orm_setup_cursor_result(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\context.py", line 60
+0, in orm_setup_cursor_result
+    return loading.instances(result, querycontext)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\loading.py", line 26
+1, in instances
+    _prebuffered = list(chunks(None))
+                   ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\loading.py", line 21
+9, in chunks
+    fetch = cursor._raw_all_rows()
+            ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\result.py", line 
+541, in _raw_all_rows
+    return [make_row(row) for row in rows]
+            ^^^^^^^^^^^^^
+  File "lib\\sqlalchemy\\cyextension\\resultproxy.pyx", line 22, in sqlalchemy.cyextension.resultproxy.BaseRow.__init__
+  File "lib\\sqlalchemy\\cyextension\\resultproxy.pyx", line 79, in sqlalchemy.cyextension.resultproxy._apply_processor
+s
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\sql\sqltypes.py", line 1
+745, in process
+    value = self._object_value_for_elem(value)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\sql\sqltypes.py", line 1
+627, in _object_value_for_elem
+    raise LookupError(
+LookupError: 'internal' is not among the defined enum values. Enum name: remarksource. Possible values: INTERNAL, CUSTO
+MER, REGULATORY, ..., MANUAL

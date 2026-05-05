@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Project, Document } from '../../types/package';
 import { DOC_STATUS_COLORS } from '../../constants/docStatusColors';
+import { ViewerContainer } from '@/components/viewers/ViewerContainer';
 
 interface Props {
   document: Document | null;
@@ -59,13 +60,13 @@ export const DocumentViewer: React.FC<Props> = ({ document, project }) => {
         </button>
       </div>
 
-      {/* Зона просмотра */}
-      <div className="flex-1 bg-[#1e293b] m-3 rounded-lg overflow-hidden flex items-center justify-center">
-        <div className="text-center text-[#475569]">
-          <div className="text-5xl mb-3">📄</div>
-          <div className="text-sm font-bold">{document.fileName}</div>
-          <div className="text-xs mt-1">Просмотрщик документа</div>
-        </div>
+      {/* Зона просмотра — реальный viewer */}
+      <div className="flex-1 overflow-hidden">
+        <ViewerContainer
+          fileName={document.fileName}
+          fileUrl={document.fileUrl}
+          mock={!document.fileUrl}
+        />
       </div>
 
       {/* Инструменты */}

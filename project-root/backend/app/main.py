@@ -2,7 +2,7 @@ import logging
 import time
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request, WebSocket, Query, Depends
+from fastapi import FastAPI, Request, WebSocket, Query, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -13,8 +13,13 @@ from app.core.config import settings
 from app.core.exceptions import register_exception_handlers
 from app.core.logging_config import setup_logging
 from app.core.middleware import PerformanceMiddleware
-from app.db.session import get_db
+from app.core.security_utils import limiter
+from app.db.session import get_db, AsyncSessionLocal
+from slowapi.errors import RateLimitExceeded
+from slowapi import _rate_limit_exceeded_handler
+from sqlalchemy import text
 from app.modules.collaboration import collaboration_websocket
+from app.modules.collaboration.ws_manager import manager as ws_manager
 
 
 setup_logging()
@@ -90,15 +95,14 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.state.limiter = limiter
+app.state.ws_manager = ws_manager
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 add_middlewares(app)
 register_exception_handlers(app)
 
-# Подключаем основные роуты
+# Подключаем основные роуты (включая все модули через api_router)
 app.include_router(api_router)
-
-# Подключаем AI роутеры
-from app.api.routes import ai
-app.include_router(ai.router)
 
 @app.websocket("/ws/ai/inline/{client_id}")
 async def ai_inline_ws(websocket: WebSocket, client_id: str):
@@ -127,20 +131,54 @@ async def root():
     }
 
 
+async def _check_db() -> dict:
+    try:
+        async with AsyncSessionLocal() as session:
+            await session.execute(text("SELECT 1"))
+        return {"status": "ok"}
+    except Exception as exc:
+        return {"status": "error", "detail": str(exc)}
+
+
 @app.get("/health")
 async def health_check():
+    db_check = await _check_db()
+    if db_check["status"] != "ok":
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "status": "error",
+                "service": settings.PROJECT_NAME,
+                "version": settings.VERSION,
+                "database": db_check,
+            },
+        )
     return {
         "status": "ok",
         "service": settings.PROJECT_NAME,
         "version": settings.VERSION,
+        "database": db_check,
     }
 
 
 @app.get(f"{settings.API_V1_STR}/health")
 async def api_health_check():
+    db_check = await _check_db()
+    if db_check["status"] != "ok":
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "status": "error",
+                "service": settings.PROJECT_NAME,
+                "version": settings.VERSION,
+                "api_base": settings.API_V1_STR,
+                "database": db_check,
+            },
+        )
     return {
         "status": "ok",
         "service": settings.PROJECT_NAME,
         "version": settings.VERSION,
         "api_base": settings.API_V1_STR,
+        "database": db_check,
     }

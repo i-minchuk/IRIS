@@ -1,7 +1,8 @@
 import { useWorkspaceStore } from './store/workspaceStore';
-import { Folder, FileText, CheckSquare, MessageSquare } from 'lucide-react';
-import { useEffect } from 'react';
+import { Folder, FileText, CheckSquare, MessageSquare, Loader2 } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
 import type { ExplorerNode } from './types/workspace.types';
+import { projectsApi, type ProjectTree, type ProjectTreeStage, type ProjectTreeKit, type ProjectTreeSection, type ProjectTreeDoc } from '@/features/projects/api/projects';
 
 interface ExplorerSidebarProps {
   projectId?: number;
@@ -10,148 +11,96 @@ interface ExplorerSidebarProps {
   onCreateDocument?: () => void;
 }
 
-// Мок-данные определены вне компонента, чтобы не пересоздавались
-const INITIAL_EXPLORER_DATA = [
-  {
-    id: 'project-1',
-    type: 'project' as const,
-    label: 'Завод "Альфа"',
-    code: 'PRJ-001',
+// Transform API tree response into ExplorerNode[]
+function transformProjectTree(tree: ProjectTree): ExplorerNode[] {
+  const projectNode: ExplorerNode = {
+    id: `project-${tree.id}`,
+    type: 'project',
+    label: tree.name,
+    code: tree.code,
     expanded: true,
-    children: [
-      {
-        id: 'stage-p',
-        type: 'stage' as const,
-        label: 'Стадия П',
-        expanded: true,
-        children: [
-          {
-            id: 'kit-km',
-            type: 'kit' as const,
-            label: 'Комплект КМ',
-            count: 142,
-            expanded: true,
-            children: [
-              {
-                id: 'section-km1',
-                type: 'section' as const,
-                label: 'Раздел КМ1',
-                status: 'in-progress',
-                expanded: true,
-                children: [
-                  {
-                    id: 'doc-km1-001',
-                    type: 'document' as const,
-                    label: 'КМ1-А01',
-                    code: 'КМ1-А01',
-                    status: 'approved',
-                    fileName: 'КМ1-А01.pdf',
-                    fileType: 'pdf',
-                    fileSize: 2456789,
-                    documentId: 1, // Ссылка на документ из БД
-                  },
-                  {
-                    id: 'doc-km1-002',
-                    type: 'document' as const,
-                    label: 'КМ1-А02',
-                    code: 'КМ1-А02',
-                    status: 'in-review',
-                    fileName: 'КМ1-А02.png',
-                    fileType: 'image',
-                    fileSize: 1234567,
-                    documentId: 2,
-                  },
-                  {
-                    id: 'doc-km1-003',
-                    type: 'document' as const,
-                    label: 'КМ1-А03',
-                    code: 'КМ1-А03',
-                    status: 'draft',
-                    fileName: 'КМ1-А03.xlsx',
-                    fileType: 'excel',
-                    fileSize: 456789,
-                    documentId: 3,
-                  },
-                ],
-              },
-              {
-                id: 'section-km2',
-                type: 'section' as const,
-                label: 'Раздел КМ2',
-                status: 'approval',
-                children: [
-                  {
-                    id: 'doc-km2-001',
-                    type: 'document' as const,
-                    label: 'КМ2-Б01',
-                    code: 'КМ2-Б01',
-                    status: 'in-progress',
-                    fileName: 'КМ2-Б01.dwg',
-                    fileType: 'dwg',
-                    fileSize: 8765432,
-                    documentId: 4,
-                  },
-                  {
-                    id: 'doc-km2-002',
-                    type: 'document' as const,
-                    label: 'КМ2-Б02',
-                    code: 'КМ2-Б02',
-                    status: 'draft',
-                    fileName: 'КМ2-Б02.docx',
-                    fileType: 'word',
-                    fileSize: 234567,
-                    documentId: 5,
-                  },
-                ],
-              },
-            ],
-          },
-          {
-            id: 'kit-kj',
-            type: 'kit' as const,
-            label: 'Комплект КЖ',
-            count: 89,
-            children: [
-              {
-                id: 'doc-kj-001',
-                type: 'document' as const,
-                label: 'КЖ-001',
-                code: 'КЖ-001',
-                status: 'approved',
-                fileName: 'КЖ-001.pdf',
-                fileType: 'pdf',
-                fileSize: 3456789,
-                documentId: 6,
-              },
-            ],
-          },
-        ],
-      },
-      {
-        id: 'stage-r',
-        type: 'stage' as const,
-        label: 'Стадия Р',
-        children: [
-          {
-            id: 'kit-kmd',
-            type: 'kit' as const,
-            label: 'Комплект КМД',
-            count: 56,
-          },
-        ],
-      },
-      {
-        id: 'tasks-group',
-        type: 'task' as const,
-        label: 'Задачи группы',
-        count: 12,
-      },
-    ],
-  },
-];
+    children: tree.stages.map(transformStage),
+  };
+  return [projectNode];
+}
+
+function transformStage(stage: ProjectTreeStage): ExplorerNode {
+  const docCount = stage.kits.reduce(
+    (sum, kit) => sum + kit.sections.reduce((s, sec) => s + sec.documents.length, 0),
+    0
+  );
+  return {
+    id: `stage-${stage.id}`,
+    type: 'stage',
+    label: stage.name,
+    code: stage.code,
+    count: docCount || undefined,
+    expanded: false,
+    children: stage.kits.map(transformKit),
+  };
+}
+
+function transformKit(kit: ProjectTreeKit): ExplorerNode {
+  const docCount = kit.sections.reduce((sum, sec) => sum + sec.documents.length, 0);
+  return {
+    id: `kit-${kit.id}`,
+    type: 'kit',
+    label: kit.name,
+    code: kit.code,
+    count: docCount || undefined,
+    expanded: false,
+    children: kit.sections.map(transformSection),
+  };
+}
+
+function transformSection(section: ProjectTreeSection): ExplorerNode {
+  return {
+    id: `section-${section.id}`,
+    type: 'section',
+    label: section.name,
+    code: section.code,
+    count: section.documents.length || undefined,
+    expanded: false,
+    children: section.documents.map(transformDocument),
+  };
+}
+
+function getFileTypeFromDocType(docType: string): string {
+  const type = docType.toLowerCase();
+  if (type.includes('pdf')) return 'pdf';
+  if (type.includes('dwg')) return 'dwg';
+  if (type.includes('doc')) return 'word';
+  if (type.includes('xls') || type.includes('excel')) return 'excel';
+  if (type.includes('image') || type.includes('png') || type.includes('jpg')) return 'image';
+  return 'unknown';
+}
+
+function countDocuments(nodes: ExplorerNode[]): number {
+  let count = 0;
+  for (const node of nodes) {
+    if (node.type === 'document') count++;
+    if (node.children) count += countDocuments(node.children);
+  }
+  return count;
+}
+
+function transformDocument(doc: ProjectTreeDoc): ExplorerNode {
+  const fileType = getFileTypeFromDocType(doc.doc_type);
+  const ext = fileType === 'pdf' ? '.pdf' : fileType === 'dwg' ? '.dwg' : fileType === 'word' ? '.docx' : fileType === 'excel' ? '.xlsx' : fileType === 'image' ? '.png' : '';
+  return {
+    id: `doc-${doc.id}`,
+    type: 'document',
+    label: doc.number || doc.name,
+    code: doc.crs_code,
+    status: doc.status,
+    documentId: doc.id,
+    fileName: doc.number ? `${doc.number}${ext}` : doc.name,
+    fileType,
+  };
+}
 
 export default function ExplorerSidebar({ 
-  projectId: _projectId, 
+  projectId, 
   onNodeClick, 
   activeNodeId,
   onCreateDocument,
@@ -159,12 +108,30 @@ export default function ExplorerSidebar({
   const { explorerData, activeExplorerNode, setActiveExplorerNode, toggleExplorerNode, addTab, setExplorerData } =
     useWorkspaceStore();
 
-  // Инициализация данных при первом рендере
-  useEffect(() => {
-    if (explorerData.length === 0) {
-      setExplorerData(INITIAL_EXPLORER_DATA);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  const fetchTree = useCallback(async (pid: number) => {
+    setIsLoading(true);
+    setLoadError(null);
+    try {
+      const response = await projectsApi.getTree(pid);
+      const data = transformProjectTree(response.data);
+      setExplorerData(data);
+    } catch (err: any) {
+      const message = err.response?.data?.detail || err.message || 'Ошибка загрузки дерева проекта';
+      setLoadError(message);
+    } finally {
+      setIsLoading(false);
     }
-  }, []);
+  }, [setExplorerData]);
+
+  // Fetch real data when projectId changes
+  useEffect(() => {
+    if (projectId) {
+      fetchTree(projectId);
+    }
+  }, [projectId, fetchTree]);
 
   const getStatusColor = (status?: string) => {
     switch (status) {
@@ -421,9 +388,19 @@ export default function ExplorerSidebar({
           backgroundColor: 'var(--bg-surface-2)',
         }}
       >
-        <div>Проектов: 1</div>
-        <div>Документов: 287</div>
-        <div>Задач: 12</div>
+        {isLoading ? (
+          <div className="flex items-center gap-1">
+            <Loader2 size={10} className="animate-spin" />
+            <span>Загрузка...</span>
+          </div>
+        ) : loadError ? (
+          <div className="text-[var(--error)]">{loadError}</div>
+        ) : (
+          <>
+            <div>Проектов: {explorerData.length}</div>
+            <div>Документов: {countDocuments(explorerData)}</div>
+          </>
+        )}
       </div>
     </aside>
   );

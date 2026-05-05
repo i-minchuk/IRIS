@@ -1,4 +1,4 @@
-import client from './client';
+import client from '@/shared/api/client';
 
 export interface TimeSession {
   id: number;

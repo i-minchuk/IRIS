@@ -10,28 +10,10 @@ interface SheetData {
   rows: Array<Array<string | number | boolean | null>>;
 }
 
-const MOCK_SHEETS: SheetData[] = [
-  {
-    name: 'Sheet1',
-    rows: [
-      ['№', 'Позиция', 'Кол-во', 'Ед.', 'Масса, кг'],
-      [1, 'Балка 20Б1', 12, 'шт', 248.4],
-      [2, 'Швеллер 16П', 8, 'шт', 164.0],
-      [3, 'Уголок 75×75×6', 24, 'шт', 98.7],
-      [4, 'Лист 10мм', 5, 'м²', 392.5],
-      [5, 'Труба круглая 108×4', 6, 'м', 61.6],
-    ],
-  },
-  {
-    name: 'Sheet2',
-    rows: [
-      ['Элемент', 'Марка', 'Стандарт'],
-      ['Балка', 'С245', 'ГОСТ 27772'],
-      ['Лист', 'С255', 'ГОСТ 27772'],
-      ['Сварка', 'Э46', 'ГОСТ 9467'],
-    ],
-  },
-];
+const EMPTY_SHEET: SheetData = {
+  name: 'Sheet1',
+  rows: [['Нет данных']],
+};
 
 async function fetchWorkbook(fileUrl: string): Promise<XLSX.WorkBook> {
   const response = await fetch(fileUrl);
@@ -56,8 +38,8 @@ function workbookToSheets(wb: XLSX.WorkBook): SheetData[] {
 
 export const ExcelViewer: React.FC<ViewerProps> = ({ fileUrl, fileName, mock = false }) => {
   const config = VIEWER_CONFIGS.excel;
-  const [sheets, setSheets] = useState<SheetData[]>(MOCK_SHEETS);
-  const [activeSheet, setActiveSheet] = useState<string>(MOCK_SHEETS[0].name);
+  const [sheets, setSheets] = useState<SheetData[]>([EMPTY_SHEET]);
+  const [activeSheet, setActiveSheet] = useState<string>(EMPTY_SHEET.name);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -65,8 +47,8 @@ export const ExcelViewer: React.FC<ViewerProps> = ({ fileUrl, fileName, mock = f
 
   useEffect(() => {
     if (isMockMode) {
-      setSheets(MOCK_SHEETS);
-      setActiveSheet(MOCK_SHEETS[0].name);
+      setSheets([EMPTY_SHEET]);
+      setActiveSheet(EMPTY_SHEET.name);
       return;
     }
 

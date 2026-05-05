@@ -1,16 +1,55 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Loader2 } from 'lucide-react';
 import { Project, Document, TimelineNode } from './types/package';
-import { mockProjects, mockRemarks } from './mocks/packageData';
 import { ProjectTree } from './components/ProjectTree';
 import { DocumentViewer } from './components/DocumentViewer';
 import { RemarksPanel } from './components/RemarksPanel';
 import { DocumentTimeline } from './components/DocumentTimeline';
+import { getProjects } from '@/api/projects';
 
 export const PackagePage: React.FC = () => {
-  const [projects] = useState<Project[]>(mockProjects);
-  const [selectedProject, setSelectedProject] = useState<Project | null>(mockProjects[0]);
-  const [selectedDocument, setSelectedDocument] = useState<Document | null>(mockProjects[0]?.documents[1] || null);
-  const [remarks] = useState(mockRemarks);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+  const [remarks, setRemarks] = useState<import('./types/package').Remark[]>([]);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true);
+        const data = await getProjects();
+        const transformed: Project[] = data.map((p) => ({
+          id: String(p.id),
+          name: p.name,
+          code: p.code,
+          customer: p.customer_name || '—',
+          documents: [],
+        }));
+        setProjects(transformed);
+        if (transformed.length > 0) {
+          setSelectedProject(transformed[0]);
+        }
+      } catch (err) {
+        setError('Не удалось загрузить проекты');
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
+
+  // Load remarks when document changes
+  useEffect(() => {
+    if (!selectedDocument) {
+      setRemarks([]);
+      return;
+    }
+    // In real implementation, fetch remarks from API
+    // For now, empty state since no document-specific remarks API exists yet
+    setRemarks([]);
+  }, [selectedDocument]);
 
   // Формируем timeline для выбранного проекта
   const timeline = useMemo<TimelineNode[]>(() => {
@@ -30,6 +69,33 @@ export const PackagePage: React.FC = () => {
       }) || false,
     }));
   }, [selectedProject]);
+
+  if (loading) {
+    return (
+      <div className="h-screen bg-[#0f172a] text-[#e2e8f0] flex items-center justify-center">
+        <div className="flex items-center gap-2 text-[#94a3b8]">
+          <Loader2 className="animate-spin" size={20} />
+          <span>Загрузка пакета документации...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="h-screen bg-[#0f172a] text-[#e2e8f0] flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-400 mb-2">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-[#3b82f6] rounded-lg text-sm text-white hover:bg-[#2563eb]"
+          >
+            Попробовать снова
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen bg-[#0f172a] text-[#e2e8f0] flex flex-col">

@@ -1,4 +1,4 @@
-import client from './client';
+import client from '@/shared/api/client';
 import type { LeaderboardEntry, GamificationProfile, Badge, DailyQuest } from '../types';
 
 export const getLeaderboard = async (): Promise<LeaderboardEntry[]> => {
@@ -15,6 +15,15 @@ export const getBadges = async (): Promise<Badge[]> => {
   const { data } = await client.get('/api/gamification/badges');
   return data;
 };
+
+export interface Notification {
+  id: number;
+  type: string;
+  title: string;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+}
 
 export const getNotifications = async (): Promise<Notification[]> => {
   const { data } = await client.get('/api/gamification/notifications');

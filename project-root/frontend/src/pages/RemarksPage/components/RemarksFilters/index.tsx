@@ -1,9 +1,22 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRemarksStore } from '@/stores/remarksStore';
 import { RemarkStatus, RemarkPriority, RemarkCategory, RemarkFilter } from '@/types/remarks';
+import { getProjects } from '@/api/projects';
+import { getUsers } from '@/api/users';
 
 export const RemarksFilters: React.FC = () => {
   const { filters, setFilters, resetFilters, tags } = useRemarksStore();
+  const [projects, setProjects] = useState<Array<{ id: number; name: string }>>([]);
+  const [users, setUsers] = useState<Array<{ id: number; full_name: string }>>([]);
+
+  useEffect(() => {
+    getProjects().then((data) =>
+      setProjects(data.map((p) => ({ id: p.id, name: p.name || p.code })))
+    );
+    getUsers().then((data) =>
+      setUsers(data.map((u) => ({ id: u.id, full_name: u.full_name || u.email })))
+    );
+  }, []);
 
   const statusOptions: { value: RemarkStatus; label: string; color: string }[] = [
     { value: 'new', label: 'Новые', color: 'bg-blue-500' },
@@ -73,9 +86,9 @@ export const RemarksFilters: React.FC = () => {
             className="w-full px-3 py-1.5 bg-[#0f172a] border border-[#334155] rounded text-xs text-[#e2e8f0] focus:border-[#3b82f6] focus:outline-none"
           >
             <option value="">Все проекты</option>
-            {/* TODO: Load projects from API */}
-            <option value="1">Проект №1</option>
-            <option value="2">Проект №2</option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
           </select>
         </div>
 
@@ -100,9 +113,9 @@ export const RemarksFilters: React.FC = () => {
             className="w-full px-3 py-1.5 bg-[#0f172a] border border-[#334155] rounded text-xs text-[#e2e8f0] focus:border-[#3b82f6] focus:outline-none"
           >
             <option value="">Все пользователи</option>
-            {/* TODO: Load users from API */}
-            <option value="1">Иванов И.И.</option>
-            <option value="2">Петров П.П.</option>
+            {users.map((u) => (
+              <option key={u.id} value={u.id}>{u.full_name}</option>
+            ))}
           </select>
         </div>
       </div>

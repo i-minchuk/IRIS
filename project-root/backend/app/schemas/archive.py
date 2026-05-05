@@ -96,7 +96,7 @@ class CertificateResponse(CertificateCreate):
 # Archive Entry schemas
 class ArchiveEntryCreate(BaseModel):
     """Создание архивной записи"""
-    project_id: UUID
+    project_id: int
     entry_type: ArchiveEntryType
     source_table: str
     source_id: UUID
@@ -124,7 +124,7 @@ class ArchiveEntryUpdate(BaseModel):
 class ArchiveEntryResponse(BaseModel):
     """Ответ архивной записи"""
     id: UUID
-    project_id: UUID
+    project_id: int
     entry_type: ArchiveEntryType
     source_table: str
     source_id: UUID
@@ -147,7 +147,7 @@ class ArchiveEntryResponse(BaseModel):
 # Archive Material schemas
 class ArchiveMaterialCreate(BaseModel):
     """Создание материала"""
-    project_id: UUID
+    project_id: int
     material_type: ArchiveMaterialType
     name: str = Field(..., max_length=255)
     specification: Optional[str] = Field(None, max_length=500)
@@ -175,7 +175,7 @@ class ArchiveMaterialUpdate(BaseModel):
 class ArchiveMaterialResponse(BaseModel):
     """Ответ материала"""
     id: UUID
-    project_id: UUID
+    project_id: int
     material_type: ArchiveMaterialType
     name: str
     specification: Optional[str]
@@ -195,7 +195,7 @@ class ArchiveMaterialResponse(BaseModel):
 # Archive Construction schemas
 class ArchiveConstructionCreate(BaseModel):
     """Создание конструкции"""
-    project_id: UUID
+    project_id: int
     name: str = Field(..., max_length=255)
     construction_type: ArchiveConstructionType
     designation: Optional[str] = Field(None, max_length=100)
@@ -228,7 +228,7 @@ class ArchiveConstructionUpdate(BaseModel):
 class ArchiveConstructionResponse(BaseModel):
     """Ответ конструкции"""
     id: UUID
-    project_id: UUID
+    project_id: int
     name: str
     construction_type: ArchiveConstructionType
     designation: Optional[str]
@@ -273,7 +273,7 @@ class ArchiveStatistics(BaseModel):
 class ArchiveSearchQuery(BaseModel):
     """Запрос поиска"""
     q: str
-    project_id: UUID
+    project_id: int
     filters: Optional[ArchiveFilter] = None
     limit: int = 20
     offset: int = 0

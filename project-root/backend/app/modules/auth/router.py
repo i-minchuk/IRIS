@@ -2,13 +2,17 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
-from datetime import timedelta
+from sqlalchemy import select
+from datetime import datetime, timedelta, timezone
 
 from app.core import security
 from app.core.config import settings
 from app.core.security_utils import limiter
 from app.db.session import get_db
-from app.modules.auth.schemas import User, UserCreate, Token, LoginRequest, RefreshTokenRequest
+from app.modules.auth.schemas import (
+    User, UserCreate, UserUpdate, Token, LoginRequest, RefreshTokenRequest,
+    ForgotPasswordRequest, ResetPasswordRequest, PasswordResetResponse,
+)
 from app.modules.auth.repository import UserRepository
 from app.modules.auth.deps import get_current_active_user
 
@@ -16,8 +20,10 @@ router = APIRouter()
 
 
 @router.post("/register", response_model=User)
+@limiter.limit("5/minute")
 async def register(
     *,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     user_in: UserCreate,
 ):
@@ -189,9 +195,125 @@ async def read_users_me(current_user: User = Depends(get_current_active_user)):
     return current_user
 
 
+@router.get("/users", response_model=list[User])
+async def list_users(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Список всех пользователей (только для админов)."""
+    if not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required",
+        )
+    repo = UserRepository(db)
+    users = await repo.get_all()
+    return users
+
+
+@router.patch("/users/{user_id}", response_model=User)
+async def update_user(
+    user_id: int,
+    updates: UserUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Обновить пользователя (только для админов)."""
+    if not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required",
+        )
+    repo = UserRepository(db)
+    user = await repo.get_by_id(user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+    update_data = updates.model_dump(exclude_unset=True)
+    if "password" in update_data:
+        from app.core.security import get_password_hash
+        update_data["hashed_password"] = get_password_hash(update_data.pop("password"))
+    await repo.update(user, **update_data)
+    return user
+
+
 @router.post("/logout")
 async def logout(response: Response = None):
     """Выйти из системы и очистить cookies."""
     from app.modules.auth.cookies import clear_auth_cookies
     clear_auth_cookies(response)
     return {"detail": "Successfully logged out"}
+
+
+@router.post("/forgot-password", response_model=PasswordResetResponse)
+@limiter.limit("5/minute")
+async def forgot_password(
+    *,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    data: ForgotPasswordRequest,
+):
+    """Запрос на сброс пароля. В демо-режиме возвращает токен в ответе."""
+    repo = UserRepository(db)
+    user = await repo.get_by_email(email=data.email)
+    if not user:
+        # Не раскрываем, существует ли email
+        return PasswordResetResponse(message="If the email exists, a reset link has been sent")
+
+    reset_token = security.create_reset_token(
+        data={"sub": str(user.id)},
+        expires_delta=timedelta(minutes=30),
+    )
+
+    user.reset_token = reset_token
+    user.reset_token_expires = datetime.now(timezone.utc) + timedelta(minutes=30)
+    await db.commit()
+
+    # TODO: отправить email с токеном через SMTP
+    # В демо-режиме возвращаем токен в ответе для удобства тестирования
+    return PasswordResetResponse(
+        message="Password reset token generated (demo mode: check response)",
+        reset_token=reset_token,
+    )
+
+
+@router.post("/reset-password", response_model=dict)
+@limiter.limit("5/minute")
+async def reset_password(
+    *,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    data: ResetPasswordRequest,
+):
+    """Сброс пароля по токену."""
+    payload = security.verify_reset_token(data.token)
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired reset token",
+        )
+
+    user_id = int(payload.get("sub", 0))
+    repo = UserRepository(db)
+    user = await repo.get_by_id(user_id)
+    if not user or user.reset_token != data.token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired reset token",
+        )
+
+    # Проверяем срок действия токена
+    if user.reset_token_expires and user.reset_token_expires < datetime.now(timezone.utc):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Reset token has expired",
+        )
+
+    user.hashed_password = security.get_password_hash(data.new_password)
+    user.reset_token = None
+    user.reset_token_expires = None
+    await db.commit()
+
+    return {"message": "Password has been reset successfully"}

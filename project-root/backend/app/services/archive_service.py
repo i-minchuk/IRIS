@@ -1,5 +1,5 @@
 """Service for automatic archiving of system events"""
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -44,7 +44,7 @@ async def archive_document_event(
         description=doc_data.get('description'),
         content_snapshot=doc_data,
         author_id=author_id,
-        occurred_at=datetime.utcnow(),
+        occurred_at=datetime.now(timezone.utc),
         tags=[doc_data.get('type', 'document'), doc_data.get('status', 'unknown')],
     )
 
@@ -75,7 +75,7 @@ async def archive_workflow_event(
         title=title_map.get(action, f"Событие workflow: {action}"),
         content_snapshot=workflow_data,
         author_id=author_id,
-        occurred_at=datetime.utcnow(),
+        occurred_at=datetime.now(timezone.utc),
         tags=["workflow", action],
         related_entry_ids=[step_id] if step_id else [],
     )
@@ -116,7 +116,7 @@ async def archive_remark_event(
         description=remark_data.get('text'),
         content_snapshot=remark_data,
         author_id=author_id,
-        occurred_at=datetime.utcnow(),
+        occurred_at=datetime.now(timezone.utc),
         tags=["remark", remark_data.get('status', 'unknown')],
     )
 
@@ -154,7 +154,7 @@ async def archive_project_event(
         title=title_map.get(event_type, f"Событие проекта: {event_type}"),
         content_snapshot=event_data,
         author_id=author_id,
-        occurred_at=datetime.utcnow(),
+        occurred_at=datetime.now(timezone.utc),
         tags=["project", event_type],
     )
 
@@ -178,7 +178,7 @@ async def archive_file_upload(
         title=f"Загружен файл: {file_data.get('filename', 'Без имени')}",
         content_snapshot=file_data,
         author_id=author_id,
-        occurred_at=datetime.utcnow(),
+        occurred_at=datetime.now(timezone.utc),
         tags=["file", file_data.get('type', 'unknown')],
         attachments=[{
             "filename": file_data.get('filename'),
@@ -206,7 +206,7 @@ async def archive_material_created(
         title=f"Добавлен материал: {material_data.get('name', 'Без названия')}",
         content_snapshot=material_data,
         author_id=author_id,
-        occurred_at=datetime.utcnow(),
+        occurred_at=datetime.now(timezone.utc),
         tags=["material", material_data.get('material_type', 'unknown')],
     )
 
@@ -231,7 +231,7 @@ async def archive_construction_created(
         title=f"Добавлена конструкция: {construction_data.get('name', 'Без названия')}",
         content_snapshot=construction_data,
         author_id=author_id,
-        occurred_at=datetime.utcnow(),
+        occurred_at=datetime.now(timezone.utc),
         tags=["construction", construction_data.get('construction_type', 'unknown')],
     )
 

@@ -64,7 +64,7 @@ def upgrade() -> None:
         
         sa.ForeignKeyConstraint(['project_id'], ['projects.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['document_id'], ['documents.id'], ondelete='CASCADE'),
-        sa.ForeignKeyConstraint(['revision_id'], ['document_revisions.id'], ondelete='CASCADE'),
+        sa.ForeignKeyConstraint(['revision_id'], ['revisions.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['workflow_step_id'], ['workflow_steps.id'], ondelete='SET NULL'),
         sa.ForeignKeyConstraint(['author_id'], ['users.id']),
         sa.ForeignKeyConstraint(['assignee_id'], ['users.id']),

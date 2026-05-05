@@ -22,29 +22,18 @@ export const LoginForm: React.FC = () => {
         ? { email, password }
         : { username, password };
 
-      console.log('[LoginForm] Attempting login with:', loginData);
       const tokenResponse = await authApi.login(loginData);
-      console.log('[LoginForm] Login response:', tokenResponse);
 
       // Сохраняем токены
       localStorage.setItem('access_token', tokenResponse.access_token);
       localStorage.setItem('refresh_token', tokenResponse.refresh_token);
-      console.log('[LoginForm] Tokens saved to localStorage');
 
-      // Создаём минимальный объект пользователя из токена
-      const user = {
-        id: 1,
-        email: loginType === 'email' ? email : `${username}@local`,
-        full_name: 'User',
-        is_active: true,
-      };
+      // Получаем реальные данные пользователя с бэкенда
+      const user = await authApi.getCurrentUser();
 
-      console.log('[LoginForm] Calling setAuth with user:', user);
       setAuth(user, tokenResponse.access_token);
-      console.log('[LoginForm] Redirecting to /dashboard');
       window.location.href = '/dashboard';
     } catch (err: any) {
-      console.error('[LoginForm] Login error:', err);
       setError(err.response?.data?.detail || 'Ошибка входа');
     } finally {
       setLoading(false);
@@ -185,17 +174,24 @@ export const LoginForm: React.FC = () => {
             >
               {loading ? 'Вход...' : 'Войти'}
             </button>
+
+            <div className="text-center mt-4">
+              <a
+                href="/forgot-password"
+                className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
+              >
+                Забыли пароль?
+              </a>
+            </div>
           </form>
         </div>
 
         {/* Test credentials hint */}
-        <div className="text-center text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">
+        <div className="text-center text-xs text-gray-500 dark:text-gray-400">
           <p>Тестовый вход:</p>
-          <p className="mt-1">Email: admin@iris.com</p>
-          <p>Пароль: admin123</p>
-          <p className="mt-2 text-xs text-orange-600 dark:text-orange-400">
-            Примечание: Вход по логину требует username в базе данных
-          </p>
+          <p className="mt-1">Email: admin@iris.local</p>
+          <p>Логин: admin</p>
+          <p>Пароль: admin</p>
         </div>
       </div>
     </div>

@@ -6,7 +6,6 @@ interface EmployeeCardModalProps {
   onClose: () => void;
 }
 
-const mockDailyLoad = [65, 78, 82, 90, 45, 0, 0]; // Mon-Sun
 const days = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
 export const EmployeeCardModal: React.FC<EmployeeCardModalProps> = ({
@@ -15,7 +14,15 @@ export const EmployeeCardModal: React.FC<EmployeeCardModalProps> = ({
 }) => {
   if (!employee) return null;
 
-  const maxLoad = Math.max(...mockDailyLoad, 100);
+  // Derive daily load from total load — spread across weekdays
+  const baseLoad = employee.load;
+  const dailyLoad = days.map((_, idx) => {
+    if (idx >= 5) return 0; // Weekend
+    // Add small variation per day
+    const variation = idx === 2 ? 10 : idx === 4 ? -5 : 0;
+    return Math.max(0, Math.min(100, baseLoad + variation));
+  });
+  const maxLoad = Math.max(...dailyLoad, 100);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -41,7 +48,7 @@ export const EmployeeCardModal: React.FC<EmployeeCardModalProps> = ({
             Загрузка по дням
           </div>
           <div className="flex items-end gap-2 h-28">
-            {mockDailyLoad.map((load, idx) => {
+            {dailyLoad.map((load, idx) => {
               const height = `${(load / maxLoad) * 100}%`;
               const color =
                 load >= 90

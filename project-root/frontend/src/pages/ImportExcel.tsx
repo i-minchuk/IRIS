@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Upload, FileSpreadsheet, CheckCircle2, ArrowRight, ArrowLeft, Plus, X } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 type ImportStep = 'upload' | 'mapping' | 'preview' | 'done';
 
@@ -31,65 +32,67 @@ const TARGET_FIELDS = [
   { key: 'status', label: 'Статус', required: false },
 ] as const;
 
-const MOCK_SHEETS: ExcelSheet[] = [
-  {
-    name: 'MDR',
-    columns: [
-      { key: 'A', header: 'Document Code', sample: 'NPP-KM-001' },
-      { key: 'B', header: 'Document Title', sample: 'Общий вид конструкций' },
-      { key: 'C', header: 'Discipline', sample: 'КМ' },
-      { key: 'D', header: 'Type', sample: 'Чертеж' },
-      { key: 'E', header: 'Revision', sample: 'B.1' },
-      { key: 'F', header: 'Status', sample: 'approved' },
-    ],
-    rows: [
-      {
-        A: 'NPP-KM-001',
-        B: 'Общий вид конструкций',
-        C: 'КМ',
-        D: 'Чертеж',
-        E: 'B.1',
-        F: 'approved',
-      },
-      {
-        A: 'NPP-AR-014',
-        B: 'План на отметке 0.000',
-        C: 'АР',
-        D: 'План',
-        E: 'A.2',
-        F: 'review',
-      },
-      {
-        A: 'NPP-KJ-122',
-        B: 'Схема армирования фундамента',
-        C: 'КЖ',
-        D: 'Схема',
-        E: 'A.1',
-        F: 'draft',
-      },
-    ],
-  },
-  {
-    name: 'Register',
-    columns: [
-      { key: 'A', header: 'Code', sample: 'PUMP-001' },
-      { key: 'B', header: 'Title', sample: 'Спецификация насосов' },
-      { key: 'C', header: 'Rev', sample: '0' },
-    ],
-    rows: [
-      { A: 'PUMP-001', B: 'Спецификация насосов', C: '0' },
-      { A: 'PIPE-010', B: 'Ведомость трубопроводов', C: '1' },
-    ],
-  },
-];
+
 
 async function parseExcelFile(file: File): Promise<{ sheets: ExcelSheet[] }> {
-  void file;
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
 
-    setTimeout(() => {
-      resolve({ sheets: MOCK_SHEETS });
-    }, 700);
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+
+        const sheets: ExcelSheet[] = workbook.SheetNames.map((sheetName) => {
+          const worksheet = workbook.Sheets[sheetName];
+          const jsonRows = XLSX.utils.sheet_to_json<unknown[]>(worksheet, { header: 1, defval: '' });
+
+          const headerRow = (jsonRows[0] || []).map(String);
+          const dataRows = jsonRows.slice(1);
+
+          // Build columns from header row
+          const columns: ExcelColumn[] = headerRow.map((header, index) => {
+            const key = String.fromCharCode(65 + index); // A, B, C...
+            // Find first non-empty sample value
+            const sample = dataRows.find((row) => row[index] !== undefined && row[index] !== '')?.[index];
+            return {
+              key,
+              header: String(header || `Col ${index + 1}`),
+              sample: sample !== undefined ? String(sample) : undefined,
+            };
+          });
+
+          // Build rows as Record<columnKey, value>
+          const rows: Record<string, string | number | null>[] = dataRows.map((row) => {
+            const record: Record<string, string | number | null> = {};
+            headerRow.forEach((_, index) => {
+              const key = String.fromCharCode(65 + index);
+              const value = row[index];
+              if (value === undefined || value === null || value === '') {
+                record[key] = null;
+              } else if (typeof value === 'number') {
+                record[key] = value;
+              } else {
+                record[key] = String(value);
+              }
+            });
+            return record;
+          });
+
+          return { name: sheetName, columns, rows };
+        });
+
+        resolve({ sheets });
+      } catch (err) {
+        reject(err instanceof Error ? err : new Error('Failed to parse Excel file'));
+      }
+    };
+
+    reader.onerror = () => {
+      reject(new Error('Failed to read file'));
+    };
+
+    reader.readAsArrayBuffer(file);
   });
 }
 
@@ -146,10 +149,10 @@ export default function ImportExcel() {
       setSheets(result.sheets);
       setSelectedSheet(result.sheets[0] ?? null);
       setStep('mapping');
-    } catch {
-      setSheets(MOCK_SHEETS);
-      setSelectedSheet(MOCK_SHEETS[0] ?? null);
-      setStep('mapping');
+    } catch (err) {
+      setSheets([]);
+      setSelectedSheet(null);
+      alert(err instanceof Error ? err.message : 'Ошибка чтения файла');
     } finally {
       setLoading(false);
     }
@@ -263,10 +266,11 @@ export default function ImportExcel() {
               type="button"
               className="mt-3 text-sm text-primary-600 hover:text-primary-700"
               onClick={() => {
-                setSheets(MOCK_SHEETS);
-                setSelectedSheet(MOCK_SHEETS[0]);
-                setFilename('MDR_GRS-5.xlsx');
-                setStep('mapping');
+                setSheets([]);
+                setSelectedSheet(null);
+                setFilename('');
+                setStep('upload');
+                alert('Демо-режим отключён. Загрузите реальный Excel-файл.');
               }}
             >
               Использовать демо-файл

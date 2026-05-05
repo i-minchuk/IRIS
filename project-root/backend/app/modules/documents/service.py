@@ -94,7 +94,7 @@ class DocumentService:
                     "remark_type": rm.remark_type,
                     "created_at": rm.created_at.isoformat() if rm.created_at else None,
                 }
-                for rm in doc.remarks
+                for rm in doc.document_remarks
             ],
         }
     
@@ -316,6 +316,75 @@ class DocumentService:
             "id": workflow.id,
             "status": workflow.status,
             "stages_count": len(data.get("stages", []))
+        }
+    
+    async def submit_for_approval(
+        self,
+        document_id: int,
+        user_id: int
+    ) -> Dict[str, Any]:
+        """Submit document for approval (CRS)."""
+        doc = await self.doc_repo.get_by_id(document_id)
+        if not doc:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Document not found"
+            )
+        
+        if doc.status in ("crs_pending", "crs_approved", "approved"):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Document already in status '{doc.status}'"
+            )
+        
+        # Create default approval workflow stages
+        default_stages = [
+            {"stage_id": "author_check", "name": "Проверка автора", "role": "author", "required": True},
+            {"stage_id": "peer_review", "name": "Рецензирование", "role": "reviewer", "required": True},
+            {"stage_id": "project_lead", "name": "Утверждение руководителем", "role": "project_lead", "required": True},
+        ]
+        
+        workflow = await self.workflow_repo.create(
+            {
+                "document_id": document_id,
+                "revision_id": doc.current_revision_id,
+                "route_type": doc.doc_type or "KM",
+            },
+            default_stages
+        )
+        
+        doc = await self.doc_repo.update(doc, {"status": "crs_pending"})
+        
+        return {
+            "document_id": doc.id,
+            "status": doc.status,
+            "workflow_id": workflow.id,
+        }
+    
+    async def submit_for_review(
+        self,
+        document_id: int,
+        user_id: int
+    ) -> Dict[str, Any]:
+        """Submit document for review."""
+        doc = await self.doc_repo.get_by_id(document_id)
+        if not doc:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Document not found"
+            )
+        
+        if doc.status not in ("draft", "in_review"):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Cannot submit for review from status '{doc.status}'"
+            )
+        
+        doc = await self.doc_repo.update(doc, {"status": "in_review"})
+        
+        return {
+            "document_id": doc.id,
+            "status": doc.status,
         }
     
     async def render_document(

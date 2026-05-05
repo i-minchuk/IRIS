@@ -1,7 +1,7 @@
 """Tests for documents API endpoints."""
 import pytest
 from datetime import datetime, timezone
-from unittest.mock import MagicMock, AsyncMock
+from unittest.mock import MagicMock, AsyncMock, patch
 
 from app.main import app
 from app.modules.auth.deps import get_current_active_user
@@ -269,3 +269,42 @@ class TestUnlockDocument:
                 assert response.status_code == 403
             finally:
                 app.dependency_overrides.pop(get_db, None)
+
+
+class TestSubmitForApproval:
+    def test_submit_for_approval_success(self, client_with_auth):
+        with client_with_auth as client:
+            with patch("app.modules.documents.service.DocumentService.submit_for_approval", new_callable=AsyncMock) as mock_submit:
+                mock_submit.return_value = {"document_id": 1, "status": "crs_pending", "workflow_id": 10}
+                response = client.post("/api/v1/documents/1/submit-for-approval")
+                assert response.status_code == 200
+                data = response.json()
+                assert data["status"] == "crs_pending"
+                assert data["workflow_id"] == 10
+
+    def test_submit_for_approval_conflict(self, client_with_auth):
+        with client_with_auth as client:
+            with patch("app.modules.documents.service.DocumentService.submit_for_approval", new_callable=AsyncMock) as mock_submit:
+                from fastapi import HTTPException
+                mock_submit.side_effect = HTTPException(status_code=409, detail="Document already in status 'crs_pending'")
+                response = client.post("/api/v1/documents/1/submit-for-approval")
+                assert response.status_code == 409
+
+
+class TestSubmitForReview:
+    def test_submit_for_review_success(self, client_with_auth):
+        with client_with_auth as client:
+            with patch("app.modules.documents.service.DocumentService.submit_for_review", new_callable=AsyncMock) as mock_submit:
+                mock_submit.return_value = {"document_id": 1, "status": "in_review"}
+                response = client.post("/api/v1/documents/1/submit-for-review")
+                assert response.status_code == 200
+                data = response.json()
+                assert data["status"] == "in_review"
+
+    def test_submit_for_review_conflict(self, client_with_auth):
+        with client_with_auth as client:
+            with patch("app.modules.documents.service.DocumentService.submit_for_review", new_callable=AsyncMock) as mock_submit:
+                from fastapi import HTTPException
+                mock_submit.side_effect = HTTPException(status_code=409, detail="Cannot submit for review from status 'approved'")
+                response = client.post("/api/v1/documents/1/submit-for-review")
+                assert response.status_code == 409

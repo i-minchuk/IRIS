@@ -3,73 +3,24 @@ from datetime import datetime, date
 from typing import Optional, List
 from uuid import UUID
 from decimal import Decimal
+from enum import Enum as PyEnum
 
 from sqlalchemy import (
-    Column, String, Text, DateTime, Date, Float, Boolean,
-    ForeignKey, Enum, Numeric, ARRAY, event
+    Column, String, Text, DateTime, Date, Float, Boolean, Integer,
+    ForeignKey, Numeric, ARRAY, event
 )
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID, JSONB, TSVECTOR
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID, JSONB
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.sql import func
 
-from app.database.base import Base
+from app.db.base import Base
 
 
-class ArchiveEntryType(str, Enum):
-    """Типы архивных записей"""
-    DOCUMENT = "document"
-    REVISION = "revision"
-    REMARK = "remark"
-    WORKFLOW = "workflow"
-    COMMENT = "comment"
-    FILE_UPLOAD = "file_upload"
-    PROJECT_EVENT = "project_event"
-    EXTERNAL_COMMUNICATION = "external_communication"
-    MEETING = "meeting"
-    DECISION = "decision"
-    MATERIAL = "material"
-    CONSTRUCTION = "construction"
-    PHOTO = "photo"
-    CALCULATION = "calculation"
-    CERTIFICATE = "certificate"
-    HANDOVER = "handover"
-
-
-class ArchiveMaterialType(str, Enum):
-    """Типы материалов"""
-    STEEL = "steel"
-    CONCRETE = "concrete"
-    REINFORCEMENT = "reinforcement"
-    INSULATION = "insulation"
-    FINISHING = "finishing"
-    EQUIPMENT = "equipment"
-    PIPE = "pipe"
-    CABLE = "cable"
-    OTHER = "other"
-
-
-class ArchiveConstructionType(str, Enum):
-    """Типы конструкций"""
-    FOUNDATION = "foundation"
-    COLUMN = "column"
-    BEAM = "beam"
-    SLAB = "slab"
-    WALL = "wall"
-    ROOF = "roof"
-    FRAME = "frame"
-    PIPELINE = "pipeline"
-    ELECTRICAL = "electrical"
-    OTHER = "other"
-
-
-class ArchiveConstructionStatus(str, Enum):
-    """Статусы конструкций"""
-    PLANNED = "planned"
-    IN_PRODUCTION = "in_production"
-    INSTALLED = "installed"
-    TESTED = "tested"
-    ACCEPTED = "accepted"
-    REJECTED = "rejected"
+# PostgreSQL enum types - defined as strings for now, will be created via migration
+ArchiveEntryType = "archive_entry_type"
+ArchiveMaterialType = "archive_material_type"
+ArchiveConstructionType = "archive_construction_type"
+ArchiveConstructionStatus = "archive_construction_status"
 
 
 class ArchiveEntry(Base):
@@ -81,14 +32,14 @@ class ArchiveEntry(Base):
         primary_key=True,
         default=func.gen_random_uuid()
     )
-    project_id: Mapped[UUID] = mapped_column(
-        PG_UUID(as_uuid=True),
+    project_id: Mapped[int] = mapped_column(
+        Integer,
         ForeignKey("projects.id", ondelete="CASCADE"),
         nullable=False,
         index=True
     )
-    entry_type: Mapped[ArchiveEntryType] = mapped_column(
-        Enum(ArchiveEntryType),
+    entry_type: Mapped[str] = mapped_column(
+        String(50),
         nullable=False,
         index=True
     )
@@ -112,7 +63,7 @@ class ArchiveEntry(Base):
         nullable=False,
         server_default="{}"
     )
-    search_vector = Column(TSVECTOR())
+    # search_vector will be created via database trigger
     attachments: Mapped[List[dict]] = mapped_column(
         JSONB,
         nullable=False,
@@ -169,14 +120,14 @@ class ArchiveMaterial(Base):
         primary_key=True,
         default=func.gen_random_uuid()
     )
-    project_id: Mapped[UUID] = mapped_column(
-        PG_UUID(as_uuid=True),
+    project_id: Mapped[int] = mapped_column(
+        Integer,
         ForeignKey("projects.id", ondelete="CASCADE"),
         nullable=False,
         index=True
     )
-    material_type: Mapped[ArchiveMaterialType] = mapped_column(
-        Enum(ArchiveMaterialType),
+    material_type: Mapped[str] = mapped_column(
+        String(50),
         nullable=False
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -232,15 +183,15 @@ class ArchiveConstruction(Base):
         primary_key=True,
         default=func.gen_random_uuid()
     )
-    project_id: Mapped[UUID] = mapped_column(
-        PG_UUID(as_uuid=True),
+    project_id: Mapped[int] = mapped_column(
+        Integer,
         ForeignKey("projects.id", ondelete="CASCADE"),
         nullable=False,
         index=True
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    construction_type: Mapped[ArchiveConstructionType] = mapped_column(
-        Enum(ArchiveConstructionType),
+    construction_type: Mapped[str] = mapped_column(
+        String(50),
         nullable=False
     )
     designation: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
@@ -255,10 +206,10 @@ class ArchiveConstruction(Base):
         nullable=False,
         server_default="{}"
     )
-    status: Mapped[ArchiveConstructionStatus] = mapped_column(
-        Enum(ArchiveConstructionStatus),
+    status: Mapped[str] = mapped_column(
+        String(50),
         nullable=False,
-        default=ArchiveConstructionStatus.PLANNED
+        server_default="planned"
     )
     installed_at: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     tested_at: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
@@ -301,8 +252,8 @@ class ArchiveSearchIndex(Base):
         primary_key=True,
         default=func.gen_random_uuid()
     )
-    project_id: Mapped[UUID] = mapped_column(
-        PG_UUID(as_uuid=True),
+    project_id: Mapped[int] = mapped_column(
+        Integer,
         ForeignKey("projects.id", ondelete="CASCADE"),
         nullable=False,
         index=True

@@ -84,7 +84,7 @@ class Remark(Base):
         nullable=True
     )
     revision_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey('document_revisions.id', ondelete='CASCADE'),
+        ForeignKey('revisions.id', ondelete='CASCADE'),
         nullable=True
     )
     workflow_step_id: Mapped[Optional[int]] = mapped_column(
@@ -93,25 +93,25 @@ class Remark(Base):
     )
 
     # Классификация
-    source: Mapped[RemarkSource] = mapped_column(
-        SQLEnum(RemarkSource),
+    source: Mapped[str] = mapped_column(
+        String(50),
         nullable=False,
-        default=RemarkSource.MANUAL
+        default='internal'
     )
-    status: Mapped[RemarkStatus] = mapped_column(
-        SQLEnum(RemarkStatus),
+    status: Mapped[str] = mapped_column(
+        String(50),
         nullable=False,
-        default=RemarkStatus.NEW
+        default='new'
     )
-    priority: Mapped[RemarkPriority] = mapped_column(
-        SQLEnum(RemarkPriority),
+    priority: Mapped[str] = mapped_column(
+        String(50),
         nullable=False,
-        default=RemarkPriority.MEDIUM
+        default='medium'
     )
-    category: Mapped[RemarkCategory] = mapped_column(
-        SQLEnum(RemarkCategory),
+    category: Mapped[str] = mapped_column(
+        String(50),
         nullable=False,
-        default=RemarkCategory.OTHER
+        default='other'
     )
 
     # Контент
@@ -133,7 +133,7 @@ class Remark(Base):
     )
 
     # Дедлайн и решение
-    due_date: Mapped[Optional[datetime]] = mapped_column(Date, nullable=True)
+    due_date: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     resolution: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     resolved_by: Mapped[Optional[int]] = mapped_column(
         ForeignKey('users.id'),
@@ -165,23 +165,23 @@ class Remark(Base):
         default=list
     )
 
-    # Timestamps
+    # Timestamps (using String for SQLite compatibility)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=datetime.utcnow,
+        String(35),
+        default=lambda: datetime.utcnow().isoformat(),
         nullable=False
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        String(35),
+        default=lambda: datetime.utcnow().isoformat(),
+        onupdate=lambda: datetime.utcnow().isoformat(),
         nullable=False
     )
 
     # Relationships
     project = relationship('Project', backref='remarks')
     document = relationship('Document', backref='remarks')
-    revision = relationship('DocumentRevision', backref='remarks')
+    revision = relationship('Revision', backref='remarks')
     workflow_step = relationship('WorkflowStep', backref='remarks')
     author = relationship('User', foreign_keys=[author_id], backref='authored_remarks')
     assignee = relationship('User', foreign_keys=[assignee_id], backref='assigned_remarks')

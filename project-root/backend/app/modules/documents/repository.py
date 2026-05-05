@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.modules.documents.models import (
-    Document, Revision, Remark, ApprovalWorkflow, ApprovalStage
+    Document, Revision, DocumentRemark, ApprovalWorkflow, ApprovalStage
 )
 from app.modules.projects.models import Project
 
@@ -24,7 +24,7 @@ class DocumentRepository:
             select(Document)
             .options(
                 selectinload(Document.revisions),
-                selectinload(Document.remarks),
+                selectinload(Document.document_remarks),
                 selectinload(Document.locked_by)
             )
             .where(Document.id == id)
@@ -96,23 +96,23 @@ class DocumentRepository:
         status: Optional[str] = None,
         remark_type: Optional[str] = None,
         category: Optional[str] = None,
-    ) -> List[Remark]:
+    ) -> List[DocumentRemark]:
         """Get all remarks with filters - uses joinedload to avoid N+1."""
         from sqlalchemy.orm import joinedload
         
-        query = select(Remark).options(joinedload(Remark.document))
+        query = select(DocumentRemark).options(joinedload(DocumentRemark.document))
         if project_id:
             query = query.join(Document).where(Document.project_id == project_id)
         if severity:
-            query = query.where(Remark.severity == severity)
+            query = query.where(DocumentRemark.severity == severity)
         if status:
-            query = query.where(Remark.status == status)
+            query = query.where(DocumentRemark.status == status)
         if remark_type:
-            query = query.where(Remark.remark_type == remark_type)
+            query = query.where(DocumentRemark.remark_type == remark_type)
         if category:
-            query = query.where(Remark.category == category)
+            query = query.where(DocumentRemark.category == category)
         
-        result = await self.db.execute(query.order_by(Remark.created_at.desc()))
+        result = await self.db.execute(query.order_by(DocumentRemark.created_at.desc()))
         return result.scalars().unique().all()
 
 
@@ -146,31 +146,31 @@ class RevisionRepository:
 
 
 class RemarkRepository:
-    """Repository for remark operations."""
+    """Repository for document remark operations (legacy)."""
     
     def __init__(self, db: AsyncSession):
         self.db = db
     
-    async def create(self, data: Dict[str, Any]) -> Remark:
+    async def create(self, data: Dict[str, Any]) -> DocumentRemark:
         """Create new remark."""
-        remark = Remark(**data)
+        remark = DocumentRemark(**data)
         self.db.add(remark)
         await self.db.commit()
         await self.db.refresh(remark)
         return remark
     
-    async def get_by_id(self, id: int) -> Optional[Remark]:
+    async def get_by_id(self, id: int) -> Optional[DocumentRemark]:
         """Get remark by ID."""
         result = await self.db.execute(
-            select(Remark).where(Remark.id == id)
+            select(DocumentRemark).where(DocumentRemark.id == id)
         )
         return result.scalar_one_or_none()
     
     async def update_status(
         self, 
-        remark: Remark, 
+        remark: DocumentRemark, 
         data: Dict[str, Any]
-    ) -> Remark:
+    ) -> DocumentRemark:
         """Update remark status."""
         if "status" in data:
             remark.status = data["status"]
@@ -180,7 +180,7 @@ class RemarkRepository:
             remark.response = data["response"]
         if "confirmed_by_customer" in data:
             remark.confirmed_by_customer = data["confirmed_by_customer"]
-            remark.confirmed_at = datetime.utcnow()
+            remark.confirmed_at = datetime.now(timezone.utc)
         
         await self.db.commit()
         await self.db.refresh(remark)

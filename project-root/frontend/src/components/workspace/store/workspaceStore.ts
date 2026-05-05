@@ -20,6 +20,8 @@ export interface SelectedDocument {
   status?: string;
   doc_type?: string;
   discipline?: string;
+  revision?: string;
+  totalRemarks?: number;
 }
 
 interface WorkspaceStore {

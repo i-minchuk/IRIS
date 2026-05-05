@@ -1,36 +1,75 @@
 // src/pages/PortfolioPage/index.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Loader2 } from 'lucide-react';
 import { ProjectTree } from './components/ProjectTree';
 import { DocumentViewer } from './components/DocumentViewer';
 import { RemarksPanel } from './components/RemarksPanel';
-// import { StatusBadge } from './components/StatusBadge'; // TODO: добавить в UI
-// import { FileUploader } from './components/FileUploader'; // TODO: добавить в UI
-// import { ExcelImporter } from './components/ExcelImporter'; // TODO: добавить в UI
 import { Project, Document } from './types/portfolio';
-import { mockProjects } from './mocks/data';
-// import { mockRemarks } from './mocks/data'; // TODO: использовать для замечаний
+import { getProjects } from '@/api/projects';
 
 export const PortfolioPage: React.FC = () => {
-  const [projects] = useState<Project[]>(mockProjects);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
-  // const [showUploader, setShowUploader] = useState(false); // TODO: добавить UI
 
-  // const handleFileUpload = (files: File[]) => {
-  //   console.log('Uploaded files:', files);
-  //   // TODO: Реализовать загрузку файлов
-  //   // setShowUploader(false);
-  // };
-
-  // const handleImport = (data: any[]) => {
-  //   console.log('Imported data:', data);
-  //   // TODO: Реализовать импорт из Excel
-  // };
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true);
+        const data = await getProjects();
+        // Transform API projects to PortfolioPage Project format
+        const transformed: Project[] = data.map((p) => ({
+          id: String(p.id),
+          name: p.name,
+          status: p.status === 'completed' ? 'completed' : p.status === 'on_hold' ? 'on_hold' : 'active',
+          documents: [], // Documents loaded separately or on demand
+        }));
+        setProjects(transformed);
+        if (transformed.length > 0 && !selectedProject) {
+          setSelectedProject(transformed[0]);
+        }
+      } catch (err) {
+        setError('Не удалось загрузить проекты');
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
 
   const handleSelectProject = (project: Project) => {
     setSelectedProject(project);
     setSelectedDocument(null);
   };
+
+  if (loading) {
+    return (
+      <div className="flex h-screen bg-[#0f172a] text-[#e2e8f0] items-center justify-center">
+        <div className="flex items-center gap-2 text-[#94a3b8]">
+          <Loader2 className="animate-spin" size={20} />
+          <span>Загрузка проектов...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex h-screen bg-[#0f172a] text-[#e2e8f0] items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-400 mb-2">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-[#4F7A4C] rounded-lg text-sm text-white hover:bg-[#3d6b41]"
+          >
+            Попробовать снова
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-[#0f172a] text-[#e2e8f0]">

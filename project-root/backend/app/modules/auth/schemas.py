@@ -1,20 +1,33 @@
 # app/modules/auth/schemas.py
-from pydantic import BaseModel, EmailStr, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 from typing import Optional
 from datetime import datetime
 
 
 class UserBase(BaseModel):
-    email: EmailStr
+    email: str
+    full_name: Optional[str] = None
+    username: Optional[str] = None
+
+    @field_validator('email')
+    @classmethod
+    def validate_email(cls, v: str) -> str:
+        if not v or '@' not in v:
+            raise ValueError('Invalid email address')
+        return v
+
+
+class UserCreate(BaseModel):
+    email: str
+    password: str
     full_name: Optional[str] = None
     username: Optional[str] = None
 
 
-class UserCreate(UserBase):
-    password: str
-
-
-class UserUpdate(UserBase):
+class UserUpdate(BaseModel):
+    email: Optional[str] = None
+    full_name: Optional[str] = None
+    username: Optional[str] = None
     password: Optional[str] = None
     is_active: Optional[bool] = None
     is_superuser: Optional[bool] = None
@@ -77,3 +90,18 @@ class LoginRequest(BaseModel):
 
 class RefreshTokenRequest(BaseModel):
     refresh_token: str
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+
+class PasswordResetResponse(BaseModel):
+    message: str
+    # В демо-режиме токен возвращается в ответе для удобства тестирования
+    reset_token: Optional[str] = None

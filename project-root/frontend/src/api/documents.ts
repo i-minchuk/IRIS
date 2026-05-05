@@ -1,4 +1,4 @@
-import client from './client';
+import client from '@/shared/api/client';
 
 export interface DocumentItem {
   id: number;
@@ -41,6 +41,7 @@ export interface Revision {
   trigger_type?: string;
   file_path?: string;
   created_at: string;
+  changes_summary?: string;
 }
 
 export interface Remark {
@@ -101,6 +102,16 @@ export interface RemarkFilter {
   remark_type?: string;
   category?: string;
 }
+
+export const submitForApproval = async (documentId: number): Promise<{ document_id: number; status: string; workflow_id: number }> => {
+  const { data } = await client.post(`/api/v1/documents/${documentId}/submit-for-approval`);
+  return data;
+};
+
+export const submitForReview = async (documentId: number): Promise<{ document_id: number; status: string }> => {
+  const { data } = await client.post(`/api/v1/documents/${documentId}/submit-for-review`);
+  return data;
+};
 
 export const getAllRemarks = async (filters?: RemarkFilter): Promise<Remark[]> => {
   const { data } = await client.get('/api/v1/documents/remarks/all', { params: filters });

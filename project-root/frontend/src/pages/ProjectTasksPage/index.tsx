@@ -25,7 +25,7 @@ export const ProjectTasksPage: React.FC = () => {
   const [page, setPage] = useState(1);
   const pageSize = 50;
 
-  const { tasks, loading, statistics, error, refetch } = useTasks(filters, page, pageSize);
+  const { tasks, loading, statistics, error, refetch, updateTaskStatus } = useTasks(filters, page, pageSize);
 
   const handleFilterChange = (newFilters: Partial<TaskFilters>) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
@@ -36,9 +36,8 @@ export const ProjectTasksPage: React.FC = () => {
     setSelectedTask(task);
   };
 
-  const handleStatusChange = (_taskId: number, _newStatus: string) => {
-    // Обновление статуса через API
-    refetch(); // Перезагрузка после изменения
+  const handleStatusChange = (taskId: number, newStatus: string) => {
+    updateTaskStatus(taskId, newStatus);
   };
 
   return (

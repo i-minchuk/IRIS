@@ -1,41 +1,41 @@
-import { useMemo, useState } from 'react';
-import { Bell } from 'lucide-react';
-
-type LocalNotification = {
-  id: number;
-  type: string;
-  message: string;
-  is_read: boolean;
-  created_at: string;
-};
-
-const MOCK_NOTIFICATIONS: LocalNotification[] = [
-  {
-    id: 1,
-    type: 'approval',
-    message: 'Документ DOC-001 ожидает согласования',
-    is_read: false,
-    created_at: '2026-04-15T09:00:00Z',
-  },
-  {
-    id: 2,
-    type: 'task',
-    message: 'Задача по проекту PRJ-001 просрочена',
-    is_read: false,
-    created_at: '2026-04-15T08:30:00Z',
-  },
-  {
-    id: 3,
-    type: 'system',
-    message: 'Импорт Excel завершён успешно',
-    is_read: true,
-    created_at: '2026-04-14T18:00:00Z',
-  },
-];
-
+import { useMemo, useState, useEffect, useCallback } from 'react';
+import { Bell, Loader2 } from 'lucide-react';
+import { getNotifications, markNotificationRead, type Notification } from '@/api/gamification';
 export default function NotificationBell() {
   const [open, setOpen] = useState(false);
-  const [notifications] = useState<LocalNotification[]>(MOCK_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchNotifications = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await getNotifications();
+      setNotifications(data);
+    } catch (err: any) {
+      setError(err.response?.data?.detail || err.message || 'Ошибка загрузки');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (open) {
+      fetchNotifications();
+    }
+  }, [open, fetchNotifications]);
+
+  const handleMarkRead = async (id: number) => {
+    try {
+      await markNotificationRead(id);
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
+      );
+    } catch {
+      // silently fail
+    }
+  };
 
   const unreadCount = useMemo(
     () => notifications.filter((n) => !n.is_read).length,
@@ -84,23 +84,43 @@ export default function NotificationBell() {
           </div>
 
           <div className="max-h-96 overflow-auto">
-            {notifications.map((n) => (
-              <div
-                key={n.id}
-                className="border-b px-4 py-3 last:border-b-0"
-                style={{
-                  borderColor: 'var(--border-light)',
-                  backgroundColor: n.is_read ? 'transparent' : 'var(--bg-hover)',
-                }}
-              >
-                <div className="text-sm" style={{ color: 'var(--text-primary)' }}>
-                  {n.message}
-                </div>
-                <div className="mt-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                  {new Date(n.created_at).toLocaleString('ru-RU')}
-                </div>
+            {isLoading ? (
+              <div className="flex items-center justify-center gap-2 px-4 py-6 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                <Loader2 size={14} className="animate-spin" />
+                Загрузка...
               </div>
-            ))}
+            ) : error ? (
+              <div className="px-4 py-6 text-sm text-center" style={{ color: 'var(--error)' }}>
+                {error}
+              </div>
+            ) : notifications.length === 0 ? (
+              <div className="px-4 py-6 text-sm text-center" style={{ color: 'var(--text-tertiary)' }}>
+                Нет уведомлений
+              </div>
+            ) : (
+              notifications.map((n) => (
+                <div
+                  key={n.id}
+                  className="border-b px-4 py-3 last:border-b-0 cursor-pointer"
+                  style={{
+                    borderColor: 'var(--border-light)',
+                    backgroundColor: n.is_read ? 'transparent' : 'var(--bg-hover)',
+                  }}
+                  onClick={() => !n.is_read && handleMarkRead(n.id)}
+                  title={n.is_read ? 'Прочитано' : 'Нажмите, чтобы отметить прочитанным'}
+                >
+                  <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                    {n.title}
+                  </div>
+                  <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                    {n.message}
+                  </div>
+                  <div className="mt-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                    {new Date(n.created_at).toLocaleString('ru-RU')}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       ) : null}

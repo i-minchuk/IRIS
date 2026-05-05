@@ -129,6 +129,30 @@ export const DocumentsPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [collab.isConnected, selectedDoc?.id]);
 
+  // Реактивное обновление блокировки из WebSocket
+  useEffect(() => {
+    if (!selectedDoc || !user) return;
+    const lock = collab.lockedDocuments.get(selectedDoc.id);
+    if (lock) {
+      if (lock.locked_by_id !== user.id) {
+        setEditorReadOnly(true);
+        setLockBanner(`🔒 Документ занят: ${lock.locked_by_name || 'другой пользователь'}`);
+      } else {
+        setEditorReadOnly(false);
+        setLockBanner(null);
+      }
+    } else {
+      if (selectedDoc.locked_by_user && selectedDoc.locked_by_user.id !== user.id) {
+        setEditorReadOnly(true);
+        setLockBanner(`🔒 Документ занят: ${selectedDoc.locked_by_user.full_name}`);
+      } else {
+        setEditorReadOnly(false);
+        setLockBanner(null);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [collab.lockedDocuments, selectedDoc?.id, user?.id]);
+
   const handleSelectDoc = async (doc: ProjectTreeDoc) => {
     // Unlock previous document if locked
     if (lockedDocRef.current && lockedDocRef.current !== doc.id) {

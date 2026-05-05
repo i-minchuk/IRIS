@@ -1,13 +1,16 @@
-import React from 'react';
+import React, { useRef, useCallback, useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import Underline from '@tiptap/extension-underline';
+import { useInlineAI, InlineSuggestionWidget, AIGhostText } from '@/features/ai';
 
 interface Props {
   content?: string;
   onChange?: (html: string) => void;
   readOnly?: boolean;
+  documentId?: string;
+  documentType?: string;
 }
 
 const ToolbarButton: React.FC<{
@@ -27,7 +30,30 @@ const ToolbarButton: React.FC<{
   </button>
 );
 
-export const DocumentEditor: React.FC<Props> = ({ content = '', onChange, readOnly = false }) => {
+export const DocumentEditor: React.FC<Props> = ({
+  content = '',
+  onChange,
+  readOnly = false,
+  documentId,
+  documentType,
+}) => {
+  const editorRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  const {
+    suggestions,
+    isLoading,
+    sendTextChange,
+    acceptSuggestion,
+    rejectSuggestion,
+    clearSuggestions,
+  } = useInlineAI({
+    enabled: !readOnly,
+    documentId,
+    documentType,
+    debounceMs: 500,
+  });
+
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -41,17 +67,101 @@ export const DocumentEditor: React.FC<Props> = ({ content = '', onChange, readOn
     },
   });
 
-  if (!editor) return null;
+  // Extract context from editor and send to AI
+  const handleTextChange = useCallback(() => {
+    if (!editor || readOnly) return;
+
+    const text = editor.getText();
+    const selection = editor.state.selection;
+    const cursorPos = selection.from;
+
+    // Get current line (paragraph)
+    const doc = editor.state.doc;
+    let currentLine = '';
+    let precedingText = '';
+
+    doc.nodesBetween(0, cursorPos, (node, pos) => {
+      if (node.isText) {
+        const textContent = node.text || '';
+        const endPos = Math.min(cursorPos - pos, textContent.length);
+        if (pos + endPos <= cursorPos) {
+          precedingText += textContent.slice(0, endPos);
+        }
+      }
+    });
+
+    // Get current line text
+    const lines = text.slice(0, cursorPos - 1).split('\n');
+    currentLine = lines[lines.length - 1] || '';
+
+    // Only send if there's meaningful text
+    if (currentLine.trim().length >= 2) {
+      sendTextChange({
+        preceding_text: precedingText.slice(-500),
+        current_line: currentLine,
+        cursor_position: cursorPos,
+      });
+    } else {
+      clearSuggestions();
+    }
+  }, [editor, readOnly, sendTextChange, clearSuggestions]);
+
+  // Debounced text change handler
+  useEffect(() => {
+    if (!editor || readOnly) return;
+
+    const handler = () => {
+      // Small delay to let cursor settle
+      setTimeout(handleTextChange, 50);
+    };
+
+    editor.on('update', handler);
+    editor.on('selectionUpdate', handler);
+
+    return () => {
+      editor.off('update', handler);
+      editor.off('selectionUpdate', handler);
+    };
+  }, [editor, readOnly, handleTextChange]);
+
+  // Dismiss suggestions on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (editorRef.current && !editorRef.current.contains(e.target as Node)) {
+        clearSuggestions();
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [clearSuggestions]);
+
+  const handleAccept = useCallback(
+    (suggestion: import('@/features/ai').InlineSuggestionItem) => {
+      if (!editor) return;
+      editor.chain().focus().insertContent(suggestion.text).run();
+      acceptSuggestion(suggestion);
+    },
+    [editor, acceptSuggestion]
+  );
+
+  const handleReject = useCallback(
+    (suggestion: import('@/features/ai').InlineSuggestionItem) => {
+      rejectSuggestion(suggestion);
+    },
+    [rejectSuggestion]
+  );
 
   const insertVariable = () => {
     const key = prompt('Введите имя переменной (например, material):');
     if (key) {
-      editor.chain().focus().insertContent(`<span class="variable-token" style="color:#2563eb;background:#dbeafe;padding:0 4px;border-radius:3px;font-family:monospace;font-size:0.9em;">{{${key}}}</span>`).run();
+      editor?.chain().focus().insertContent(`<span class="variable-token" style="color:#2563eb;background:#dbeafe;padding:0 4px;border-radius:3px;font-family:monospace;font-size:0.9em;">{{${key}}}</span>`).run();
     }
   };
 
+  if (!editor) return null;
+
   return (
-    <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-white dark:bg-gray-800 flex flex-col h-full">
+    <div ref={editorRef} className="relative border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-white dark:bg-gray-800 flex flex-col h-full">
       {!readOnly && (
         <div className="border-b border-gray-200 dark:border-gray-700 px-2 py-1.5 flex flex-wrap gap-1 bg-gray-50 dark:bg-gray-900 shrink-0">
           <ToolbarButton onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive('bold')} title="Жирный">
@@ -83,9 +193,32 @@ export const DocumentEditor: React.FC<Props> = ({ content = '', onChange, readOn
           </ToolbarButton>
         </div>
       )}
-      <div className="flex-1 overflow-auto p-4">
+      <div ref={contentRef} className="relative flex-1 overflow-auto p-4">
         <EditorContent editor={editor} className="prose prose-sm max-w-none focus:outline-none" />
+
+        {/* Ghost text overlay */}
+        <AIGhostText
+          editorElement={contentRef.current}
+          suggestions={suggestions}
+          isLoading={isLoading}
+          onAccept={handleAccept}
+          onReject={handleReject}
+          onDismiss={clearSuggestions}
+        />
       </div>
+
+      {/* Floating suggestion widget */}
+      {(suggestions.length > 0 || isLoading) && (
+        <div className="absolute bottom-4 right-4 z-50">
+          <InlineSuggestionWidget
+            suggestions={suggestions}
+            isLoading={isLoading}
+            onAccept={handleAccept}
+            onReject={handleReject}
+            onDismiss={clearSuggestions}
+          />
+        </div>
+      )}
     </div>
   );
 };

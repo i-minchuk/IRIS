@@ -188,13 +188,20 @@ async def list_instances(
     current_user: User = Depends(get_current_active_user)
 ):
     """List workflow instances with filters."""
-    # TODO: Implement filtering logic
     service = get_service(db)
     
-    # Placeholder - return empty list for now
+    instances, total = await service.get_instances(
+        status=status,
+        document_id=document_id,
+        project_id=project_id,
+        assigned_to=current_user.id if my_tasks else None,
+        page=page,
+        page_size=page_size,
+    )
+    
     return WorkflowInstanceListResponse(
-        instances=[],
-        total=0,
+        instances=[WorkflowInstanceResponse.model_validate(i) for i in instances],
+        total=total,
         page=page,
         page_size=page_size
     )
@@ -357,8 +364,8 @@ async def get_step_comments(
 ):
     """Get all comments for a workflow step."""
     service = get_service(db)
-    # TODO: Implement comment retrieval
-    return []
+    comments = await service.get_comments(step_id)
+    return [WorkflowCommentResponse.model_validate(c) for c in comments]
 
 
 # ==================== Audit Log Endpoints ====================

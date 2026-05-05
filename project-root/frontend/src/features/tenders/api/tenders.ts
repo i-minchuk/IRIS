@@ -1,4 +1,4 @@
-import client from '@/api/client';
+import client from '@/shared/api/client';
 import type { Tender, TenderStage, TenderSummary, TenderTask } from '../types/tender';
 
 export const getTenders = async (filters?: { status?: string; stage?: string }): Promise<Tender[]> => {
@@ -45,8 +45,7 @@ export const calculateTender = async (tenderId: number): Promise<{
   return data;
 };
 
-// Tasks (mock endpoint until backend implemented)
-export const getTenderTasks = async (): Promise<TenderTask[]> => {
-  // TODO: replace with real endpoint
-  return Promise.resolve([]);
+export const getTenderTasks = async (tenderId: number): Promise<TenderTask[]> => {
+  const { data } = await client.get(`/api/v1/tenders/${tenderId}/tasks`);
+  return data;
 };

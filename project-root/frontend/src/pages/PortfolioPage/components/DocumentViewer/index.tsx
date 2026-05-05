@@ -2,6 +2,7 @@
 import React from 'react';
 import { Document, Project } from '../../types/portfolio';
 import { StatusBadge } from '../StatusBadge';
+import { ViewerContainer } from '@/components/viewers/ViewerContainer';
 
 interface DocumentViewerProps {
   document: Document | null;
@@ -63,44 +64,23 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
         </div>
       </div>
 
-      {/* File Info */}
-      <div className="flex-1 p-6 overflow-y-auto">
-        <div className="bg-[#1e293b] rounded-lg p-4 mb-4">
-          <h3 className="text-sm font-medium text-[#94a3b8] mb-3">
-            Информация о файле
-          </h3>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-[#94a3b8]">Имя файла:</span>
-              <span className="text-[#e2e8f0]">{document.fileName}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-[#94a3b8]">Последнее обновление:</span>
-              <span className="text-[#e2e8f0]">
-                {new Date(document.lastUpdated).toLocaleString('ru-RU')}
-              </span>
-            </div>
-          </div>
+      {/* File Info + Real Viewer */}
+      <div className="flex-1 overflow-hidden flex flex-col">
+        <div className="bg-[#1e293b] px-4 py-2 text-xs text-[#94a3b8]">
+          <span>Имя файла: </span>
+          <span className="text-[#e2e8f0]">{document.fileName}</span>
+          <span className="mx-2">|</span>
+          <span>Обновлено: </span>
+          <span className="text-[#e2e8f0]">
+            {new Date(document.lastUpdated).toLocaleString('ru-RU')}
+          </span>
         </div>
-
-        {/* Preview placeholder */}
-        <div className="border-2 border-dashed border-[#334155] rounded-lg h-64 flex items-center justify-center text-[#64748b]">
-          <div className="text-center">
-            <svg
-              className="w-12 h-12 mx-auto mb-2"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-              />
-            </svg>
-            <p>Предпросмотр документа</p>
-          </div>
+        <div className="flex-1 overflow-hidden">
+          <ViewerContainer
+            fileName={document.fileName}
+            fileUrl={document.fileUrl}
+            mock={!document.fileUrl}
+          />
         </div>
       </div>
     </div>

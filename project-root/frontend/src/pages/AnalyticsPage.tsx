@@ -1,13 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { getEmployeeAnalytics, type EmployeeAnalytics } from '@/api/timeTracking';
+import { useAuthStore } from '@/features/auth/store/authStore';
 import Card from '@/components/ui/Card';
 
 export const AnalyticsPage: React.FC = () => {
   const [analytics, setAnalytics] = useState<EmployeeAnalytics | null>(null);
-  const userId = 1; // TODO: from auth
+  const user = useAuthStore((state) => state.user);
+  const userId = user?.id ?? 1;
 
   useEffect(() => {
-    getEmployeeAnalytics(userId).then(setAnalytics);
+    if (userId) {
+      getEmployeeAnalytics(userId).then(setAnalytics);
+    }
   }, [userId]);
 
   return (

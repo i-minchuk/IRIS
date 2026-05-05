@@ -1,9 +1,17 @@
 import React, { useEffect, useState } from 'react';
+import { Lock } from 'lucide-react';
 import { useCollaborationStore } from '@/features/collaboration/store/collaborationStore';
+import { useAuthStore } from '@/features/auth/store/authStore';
+import { useWorkspaceStore } from '@/components/workspace/store/workspaceStore';
 
 export const StatusBar: React.FC = () => {
   const [time, setTime] = useState(new Date());
-  const { onlineUsers, isConnected } = useCollaborationStore();
+  const { onlineUsers, isConnected, lockedDocuments } = useCollaborationStore();
+  const { user } = useAuthStore();
+  const { selectedDocument } = useWorkspaceStore();
+  
+  const currentLock = selectedDocument ? lockedDocuments.get(selectedDocument.id) : undefined;
+  const isDocLockedByMe = Boolean(currentLock && currentLock.locked_by_id === user?.id);
 
   useEffect(() => {
     const interval = setInterval(() => setTime(new Date()), 1000);
@@ -31,6 +39,15 @@ export const StatusBar: React.FC = () => {
             {isConnected ? 'подключён' : 'отключён'}
           </span>
         </span>
+        {selectedDocument && currentLock && (
+          <span className="flex items-center gap-1">
+            <Lock size={12} className={isDocLockedByMe ? 'text-green-500' : 'text-amber-500'} />
+            <span className={isDocLockedByMe ? 'text-green-600 font-medium' : 'text-amber-600 font-medium'}>
+              {isDocLockedByMe ? 'Вы редактируете документ' : `Заблокировано: ${currentLock.locked_by_name || 'другой пользователь'}`}
+            </span>
+          </span>
+        )}
+        
         {users.length > 0 && (
           <div className="flex items-center gap-1">
             <span className="text-gray-400 dark:text-gray-500 hidden sm:inline">👥</span>

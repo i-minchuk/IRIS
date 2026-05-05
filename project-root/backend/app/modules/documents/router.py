@@ -1,6 +1,6 @@
 """Documents, revisions, remarks and approval workflow API router."""
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from app.db.session import get_db
 from app.modules.auth.deps import get_current_active_user
@@ -109,19 +109,63 @@ async def cascade_update_endpoint(
 @router.post("/{document_id}/lock", response_model=dict)
 async def lock_document(
     document_id: int,
+    request: Request,
     current_user: User = Depends(get_current_active_user),
     service: DocumentService = Depends(get_document_service),
 ):
-    return await service.lock_document(document_id, current_user.id)
+    result = await service.lock_document(document_id, current_user.id)
+    ws_manager = request.app.state.ws_manager
+    await ws_manager.broadcast_to_document(
+        document_id,
+        {
+            "type": "document_locked",
+            "payload": {
+                "document_id": document_id,
+                "locked_by": current_user.id,
+                "locked_by_name": current_user.full_name or current_user.email,
+            },
+        },
+        exclude_user_id=current_user.id,
+    )
+    return result
 
 
 @router.post("/{document_id}/unlock", response_model=dict)
 async def unlock_document(
     document_id: int,
+    request: Request,
     current_user: User = Depends(get_current_active_user),
     service: DocumentService = Depends(get_document_service),
 ):
-    return await service.unlock_document(document_id, current_user.id)
+    result = await service.unlock_document(document_id, current_user.id)
+    ws_manager = request.app.state.ws_manager
+    await ws_manager.broadcast_to_document(
+        document_id,
+        {
+            "type": "document_unlocked",
+            "payload": {"document_id": document_id, "unlocked_by": current_user.id},
+        },
+        exclude_user_id=current_user.id,
+    )
+    return result
+
+
+@router.post("/{document_id}/submit-for-approval", response_model=dict)
+async def submit_for_approval(
+    document_id: int,
+    current_user: User = Depends(get_current_active_user),
+    service: DocumentService = Depends(get_document_service),
+):
+    return await service.submit_for_approval(document_id, current_user.id)
+
+
+@router.post("/{document_id}/submit-for-review", response_model=dict)
+async def submit_for_review(
+    document_id: int,
+    current_user: User = Depends(get_current_active_user),
+    service: DocumentService = Depends(get_document_service),
+):
+    return await service.submit_for_review(document_id, current_user.id)
 
 
 @router.get("/remarks/all", response_model=list)

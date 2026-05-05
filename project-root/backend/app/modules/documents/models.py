@@ -58,7 +58,7 @@ class Document(Base):
     section: Mapped[Optional["Section"]] = relationship("Section", back_populates="documents")
     operation: Mapped[Optional["Operation"]] = relationship("Operation", back_populates="documents")
     revisions: Mapped[list["Revision"]] = relationship(back_populates="document", cascade="all, delete-orphan")
-    remarks: Mapped[list["Remark"]] = relationship(back_populates="document", cascade="all, delete-orphan")
+    document_remarks: Mapped[list["DocumentRemark"]] = relationship(back_populates="document", cascade="all, delete-orphan")
     approval_workflows: Mapped[list["ApprovalWorkflow"]] = relationship(back_populates="document", cascade="all, delete-orphan")
     tasks: Mapped[list["Task"]] = relationship(back_populates="document")
     locked_by: Mapped[Optional["User"]] = relationship("User", foreign_keys=[locked_by_id])
@@ -119,8 +119,8 @@ class ChangeSheet(Base):
     revision: Mapped["Revision"] = relationship(back_populates="change_sheet")
 
 
-class Remark(Base):
-    __tablename__ = "remarks"
+class DocumentRemark(Base):
+    __tablename__ = "document_remarks"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     document_id: Mapped[int] = mapped_column(ForeignKey("documents.id"))
@@ -159,7 +159,7 @@ class Remark(Base):
         DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow
     )
 
-    document: Mapped["Document"] = relationship(back_populates="remarks")
+    document: Mapped["Document"] = relationship(back_populates="document_remarks")
 
     __table_args__ = (
         Index("ix_remark_document_status", "document_id", "status"),

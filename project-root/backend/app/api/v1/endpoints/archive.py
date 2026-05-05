@@ -3,11 +3,12 @@ from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends, Query, HTTPException, BackgroundTasks
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database.database import get_db
-from app.dependencies import get_current_active_user
-from app.models.user import User
+from app.db.session import get_db
+from app.modules.auth.deps import get_current_active_user
+from app.modules.auth.models import User
 from app.schemas.archive import (
     ArchiveEntryCreate, ArchiveEntryResponse, ArchiveEntryUpdate,
     ArchiveMaterialCreate, ArchiveMaterialResponse, ArchiveMaterialUpdate,
@@ -19,14 +20,14 @@ from app.crud import archive as archive_crud
 from app.models.archive import ArchiveEntryType, ArchiveConstructionStatus
 
 
-router = APIRouter(prefix="/archive", tags=["Archive"])
+router = APIRouter(tags=["Archive"])
 
 
 # ==================== Entry endpoints ====================
 
 @router.get("/entries", response_model=List[ArchiveEntryResponse])
 async def list_entries(
-    project_id: UUID = Query(..., description="ID проекта"),
+    project_id: Optional[int] = Query(..., description="ID проекта"),
     entry_types: List[ArchiveEntryType] = Query(None, description="Фильтр по типам"),
     date_from: Optional[datetime] = Query(None, description="Дата от"),
     date_to: Optional[datetime] = Query(None, description="Дата до"),
@@ -148,7 +149,7 @@ async def unpin_entry(
 @router.get("/search", response_model=ArchiveSearchResult)
 async def search_archive(
     q: str = Query(..., min_length=1, description="Поисковый запрос"),
-    project_id: UUID = Query(..., description="ID проекта"),
+    project_id: Optional[int] = Query(..., description="ID проекта"),
     entry_types: List[ArchiveEntryType] = Query(None, description="Фильтр по типам"),
     date_from: Optional[datetime] = Query(None, description="Дата от"),
     date_to: Optional[datetime] = Query(None, description="Дата до"),
@@ -227,7 +228,7 @@ async def create_material(
 
 @router.get("/materials", response_model=List[ArchiveMaterialResponse])
 async def list_materials(
-    project_id: UUID = Query(..., description="ID проекта"),
+    project_id: Optional[int] = Query(..., description="ID проекта"),
     material_type: Optional[ArchiveEntryType] = Query(None, description="Тип материала"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
@@ -309,7 +310,7 @@ async def create_construction(
 
 @router.get("/constructions", response_model=List[ArchiveConstructionResponse])
 async def list_constructions(
-    project_id: UUID = Query(..., description="ID проекта"),
+    project_id: Optional[int] = Query(..., description="ID проекта"),
     status: Optional[ArchiveConstructionStatus] = Query(None, description="Статус"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
@@ -369,7 +370,7 @@ async def delete_construction(
 
 @router.get("/statistics", response_model=ArchiveStatistics)
 async def get_statistics(
-    project_id: UUID = Query(..., description="ID проекта"),
+    project_id: Optional[int] = Query(..., description="ID проекта"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -380,7 +381,7 @@ async def get_statistics(
 
 @router.get("/export")
 async def export_archive(
-    project_id: UUID = Query(..., description="ID проекта"),
+    project_id: Optional[int] = Query(..., description="ID проекта"),
     format: str = Query(..., pattern="^(pdf|excel)$", description="Формат"),
     date_from: Optional[datetime] = Query(None, description="Дата от"),
     date_to: Optional[datetime] = Query(None, description="Дата до"),
@@ -389,15 +390,50 @@ async def export_archive(
     current_user: User = Depends(get_current_active_user),
 ):
     """Экспорт архива"""
-    # TODO: Реализовать генерацию PDF/Excel
-    raise HTTPException(status_code=501, detail="Экспорт пока не реализован")
+    if format == 'pdf':
+        raise HTTPException(status_code=501, detail="PDF экспорт пока не реализован")
+    
+    # Excel export
+    import io
+    from openpyxl import Workbook
+    
+    entries, _ = await archive_crud.list_entries(
+        db, project_id, date_from=date_from, date_to=date_to, limit=10000
+    )
+    
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Архив"
+    headers = ["ID", "Тип", "Название", "Описание", "Дата", "Теги"]
+    ws.append(headers)
+    
+    for entry in entries:
+        ws.append([
+            str(entry.id),
+            entry.entry_type.value,
+            entry.title,
+            entry.description or "",
+            entry.occurred_at.strftime("%Y-%m-%d %H:%M") if entry.occurred_at else "",
+            ", ".join(entry.tags) if entry.tags else "",
+        ])
+    
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    filename = f"archive_{project_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
 
 
 # ==================== Timeline ====================
 
 @router.get("/timeline", response_model=TimelineResponse)
 async def get_timeline(
-    project_id: UUID = Query(..., description="ID проекта"),
+    project_id: Optional[int] = Query(..., description="ID проекта"),
     date_from: Optional[datetime] = Query(None, description="Дата от"),
     date_to: Optional[datetime] = Query(None, description="Дата до"),
     limit: int = Query(50, ge=1, le=200, description="Лимит"),
@@ -422,13 +458,15 @@ async def get_timeline(
     
     events = []
     for entry in entries:
+        snapshot = entry.content_snapshot or {}
+        author_name = snapshot.get('author_name') or snapshot.get('author') or snapshot.get('created_by_name')
         events.append(TimelineEvent(
             id=entry.id,
-            type=entry.entry_type.value,
+            type=entry.entry_type,  # entry_type is now a string
             title=entry.title,
             occurred_at=entry.occurred_at,
-            author_name=None,  # TODO: загрузить имя автора
-            data=entry.content_snapshot or {},
+            author_name=author_name,
+            data=snapshot,
         ))
     
     return TimelineResponse(events=events, total=len(entries))

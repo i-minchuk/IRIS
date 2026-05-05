@@ -40,6 +40,14 @@ class UserRepository:
         await self.db.refresh(db_user)
         return db_user
 
+    async def update(self, user: User, **kwargs) -> User:
+        for key, value in kwargs.items():
+            if hasattr(user, key):
+                setattr(user, key, value)
+        await self.db.commit()
+        await self.db.refresh(user)
+        return user
+
 
 async def get_user_repository(db: AsyncSession) -> UserRepository:
     return UserRepository(db)
