@@ -1,12 +1,10 @@
-"""Document models - PostgreSQL version with UUID."""
+"""Document, revision, remark and approval workflow models."""
 from datetime import datetime
 from typing import Optional
-from uuid import UUID, uuid4
 
 from sqlalchemy import (
-    String, DateTime, ForeignKey, func, Index, Text, JSON, Integer
+    String, Text, ForeignKey, DateTime, Integer, Float, JSON, Enum, Boolean, Index
 )
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -16,55 +14,63 @@ class Document(Base):
     __tablename__ = "documents"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    project_id: Mapped[int] = mapped_column(
-        ForeignKey("projects.id", ondelete="CASCADE"), 
-        nullable=False
-    )
-    title: Mapped[str] = mapped_column(String(255), nullable=False)
-    document_type: Mapped[str] = mapped_column(
-        String(50), 
-        nullable=False, 
-        default="specification"
-    )
-    status: Mapped[str] = mapped_column(
-        String(50), 
-        nullable=False, 
-        default="draft"
-    )
-    file_path: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
-    version: Mapped[str] = mapped_column(String(20), nullable=False, default="1.0")
-    created_by_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("users.id", ondelete="SET NULL"), 
-        nullable=True
-    )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), 
-        nullable=False, 
-        server_default=func.now()
-    )
+    project_id: Mapped[int] = mapped_column(ForeignKey("projects.id"))
+    stage_id: Mapped[Optional[int]] = mapped_column(ForeignKey("stages.id"), nullable=True)
+    kit_id: Mapped[Optional[int]] = mapped_column(ForeignKey("kits.id"), nullable=True)
+    section_id: Mapped[Optional[int]] = mapped_column(ForeignKey("sections.id"), nullable=True)
+
+    number: Mapped[str] = mapped_column(String(100), index=True)
+    name: Mapped[str] = mapped_column(String(255))
+    doc_type: Mapped[str] = mapped_column(String(50))  # KM, PD, AK, EM, etc.
+    status: Mapped[str] = mapped_column(String(50), default="draft")  # draft, in_review, approved, crs_pending, crs_approved, archived, overdue
+    crs_code: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)  # A, B, C
+    crs_approved_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    crs_approved_by: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    current_revision_id: Mapped[Optional[int]] = mapped_column(nullable=True)
+
+    # Operation and task linking
+    operation_id: Mapped[Optional[int]] = mapped_column(ForeignKey("operations.id"), nullable=True)
+    planned_ready: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    actual_ready: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    author_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    checker_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
+    approver_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
+
+    locked_by_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
+    locked_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    content: Mapped[Optional[dict]] = mapped_column(JSON, default=dict)
+    variables_snapshot: Mapped[Optional[dict]] = mapped_column(JSON, default=dict)
+
+    planned_start: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    planned_end: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    actual_start: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    actual_end: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    duration_hours: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), 
-        nullable=False, 
-        server_default=func.now(), 
-        onupdate=func.now()
+        DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow
     )
 
-    # Relationships
-    project: Mapped["Project"] = relationship(back_populates="documents")
-    author: Mapped["User"] = relationship(backref="documents", foreign_keys=[created_by_id])
-    revisions: Mapped[list["Revision"]] = relationship(back_populates="document")
-    document_remarks: Mapped[list["DocumentRemark"]] = relationship(back_populates="document")
-    approval_workflows: Mapped[list["ApprovalWorkflow"]] = relationship(back_populates="document")
+    project: Mapped["Project"] = relationship("Project", back_populates="documents")
+    section: Mapped[Optional["Section"]] = relationship("Section", back_populates="documents")
+    operation: Mapped[Optional["Operation"]] = relationship("Operation", back_populates="documents")
+    revisions: Mapped[list["Revision"]] = relationship(back_populates="document", cascade="all, delete-orphan")
+    document_remarks: Mapped[list["DocumentRemark"]] = relationship(back_populates="document", cascade="all, delete-orphan")
+    approval_workflows: Mapped[list["ApprovalWorkflow"]] = relationship(back_populates="document", cascade="all, delete-orphan")
     tasks: Mapped[list["Task"]] = relationship(back_populates="document")
+    locked_by: Mapped[Optional["User"]] = relationship("User", foreign_keys=[locked_by_id])
 
     __table_args__ = (
-        Index("ix_documents_project_id", "project_id"),
-        Index("ix_documents_status", "status"),
-        Index("ix_documents_document_type", "document_type"),
+        Index("ix_doc_project_type", "project_id", "doc_type"),
+        Index("ix_doc_project_status", "project_id", "status"),
+        Index("ix_doc_author_created", "author_id", "created_at"),
+        Index("ix_doc_section", "section_id"),
+        Index("ix_doc_status", "status"),
+        Index("idx_documents_operation", "operation_id"),
     )
-
-    def __repr__(self) -> str:
-        return f"<Document(id={self.id}, title='{self.title}', status={self.status})>"
 
 
 class Revision(Base):

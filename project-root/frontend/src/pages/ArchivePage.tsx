@@ -1,28 +1,17 @@
-import React, { useState } from 'react';
-
-// Mock data for ArchivePage (API not fully functional with SQLite)
-const mockTimeline = [
-  { id: '1', type: 'project_event', title: 'Проект создан', occurred_at: '2026-05-04 10:00:00', author_name: 'Admin' },
-  { id: '2', type: 'milestone', title: 'Утверждение ТЗ', occurred_at: '2026-04-29 14:30:00', author_name: 'Admin' },
-  { id: '3', type: 'document', title: 'Создание документа КМ', occurred_at: '2026-04-14 09:15:00', author_name: 'Admin' },
-  { id: '4', type: 'remark', title: 'Замечание к КМ', occurred_at: '2026-04-19 16:45:00', author_name: 'Admin' },
-  { id: '5', type: 'workflow', title: 'Запуск согласования', occurred_at: '2026-04-24 11:00:00', author_name: 'Admin' },
-];
-
-const mockMaterials = [
-  { id: '1', name: 'Арматура A500C', material_type: 'steel', quantity: 500, unit: 'кг' },
-  { id: '2', name: 'Бетон B25', material_type: 'concrete', quantity: 100, unit: 'м3' },
-  { id: '3', name: 'Профиль ГОСТ', material_type: 'steel', quantity: 200, unit: 'м' },
-];
-
-const mockConstructions = [
-  { id: '1', name: 'Колонна К1', construction_type: 'column', designation: 'К1-1', status: 'in_production' },
-  { id: '2', name: 'Балка Б1', construction_type: 'beam', designation: 'Б1-1', status: 'planned' },
-  { id: '3', name: 'Плита П1', construction_type: 'slab', designation: 'П1-1', status: 'planned' },
-];
+import React from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { useArchiveStore } from '@/stores/archiveStore';
 
 export const ArchivePage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'timeline' | 'materials' | 'constructions'>('timeline');
+  const [searchParams] = useSearchParams();
+  const projectId = searchParams.get('project_id') || undefined;
+  
+  const { entries, materials, constructions, activeTab, setActiveTab, fetchArchive, isLoading } = useArchiveStore();
+
+  // Fetch data on mount
+  React.useEffect(() => {
+    fetchArchive(projectId);
+  }, [fetchArchive, projectId]);
 
   return (
     <div className="h-screen bg-[#0f172a] text-[#e2e8f0] flex flex-col">
@@ -37,6 +26,12 @@ export const ArchivePage: React.FC = () => {
             </p>
           </div>
         </div>
+        <button
+          onClick={() => fetchArchive(projectId)}
+          className="px-3 py-1.5 bg-[#334155] rounded text-xs text-[#e2e8f0] hover:bg-[#475569] transition-colors"
+        >
+          Обновить
+        </button>
       </div>
 
       {/* Tabs */}
@@ -75,65 +70,89 @@ export const ArchivePage: React.FC = () => {
 
       {/* Content */}
       <div className="flex-1 overflow-auto p-4">
-        {activeTab === 'timeline' && (
-          <div className="space-y-3">
-            {mockTimeline.map((event) => (
-              <div
-                key={event.id}
-                className="bg-[#1e293b] border border-[#334155] rounded-lg p-4"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="mt-1">
-                    <EventIcon type={event.type} />
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-medium text-[#e2e8f0]">{event.title}</div>
-                    <div className="text-xs text-[#64748b] mt-1">
-                      {new Date(event.occurred_at).toLocaleString('ru-RU')}
-                      {event.author_name && ` • ${event.author_name}`}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
+        {isLoading && (
+          <div className="flex items-center justify-center h-full">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#3b82f6]"></div>
           </div>
         )}
 
-        {activeTab === 'materials' && (
+        {!isLoading && activeTab === 'timeline' && (
           <div className="space-y-3">
-            {mockMaterials.map((material) => (
-              <div
-                key={material.id}
-                className="bg-[#1e293b] border border-[#334155] rounded-lg p-4"
-              >
-                <div className="font-medium text-[#e2e8f0]">{material.name}</div>
-                <div className="text-xs text-[#64748b] mt-1">
-                  Тип: {material.material_type}
-                  {material.quantity && ` • ${material.quantity} ${material.unit || ''}`}
-                </div>
+            {entries.length === 0 ? (
+              <div className="text-center text-[#64748b] py-12">
+                Нет данных в хронологии (API может быть недоступен на SQLite)
               </div>
-            ))}
+            ) : (
+              entries.map((event) => (
+                <div
+                  key={event.id}
+                  className="bg-[#1e293b] border border-[#334155] rounded-lg p-4"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="mt-1">
+                      <EventIcon type={event.type} />
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-medium text-[#e2e8f0]">{event.title}</div>
+                      <div className="text-xs text-[#64748b] mt-1">
+                        {event.occurred_at && new Date(event.occurred_at).toLocaleString('ru-RU')}
+                        {event.author_name && ` • ${event.author_name}`}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         )}
 
-        {activeTab === 'constructions' && (
+        {!isLoading && activeTab === 'materials' && (
           <div className="space-y-3">
-            {mockConstructions.map((construction) => (
-              <div
-                key={construction.id}
-                className="bg-[#1e293b] border border-[#334155] rounded-lg p-4"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium text-[#e2e8f0]">{construction.name}</div>
-                    <div className="text-xs text-[#64748b] mt-1">
-                      {construction.construction_type} • {construction.designation || 'Без обозначения'}
-                    </div>
-                  </div>
-                  <StatusBadge status={construction.status} />
-                </div>
+            {materials.length === 0 ? (
+              <div className="text-center text-[#64748b] py-12">
+                Нет данных о материалах (API может быть недоступен на SQLite)
               </div>
-            ))}
+            ) : (
+              materials.map((material) => (
+                <div
+                  key={material.id}
+                  className="bg-[#1e293b] border border-[#334155] rounded-lg p-4"
+                >
+                  <div className="font-medium text-[#e2e8f0]">{material.name}</div>
+                  <div className="text-xs text-[#64748b] mt-1">
+                    Тип: {material.material_type}
+                    {material.quantity && ` • ${material.quantity} ${material.unit || ''}`}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {!isLoading && activeTab === 'constructions' && (
+          <div className="space-y-3">
+            {constructions.length === 0 ? (
+              <div className="text-center text-[#64748b] py-12">
+                Нет данных о конструкциях (API может быть недоступен на SQLite)
+              </div>
+            ) : (
+              constructions.map((construction) => (
+                <div
+                  key={construction.id}
+                  className="bg-[#1e293b] border border-[#334155] rounded-lg p-4"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-medium text-[#e2e8f0]">{construction.name}</div>
+                      <div className="text-xs text-[#64748b] mt-1">
+                        {construction.construction_type} • {construction.designation || 'Без обозначения'}
+                      </div>
+                    </div>
+                    <StatusBadge status={construction.status} />
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         )}
       </div>

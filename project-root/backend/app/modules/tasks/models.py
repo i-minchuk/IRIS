@@ -4,7 +4,7 @@ from typing import Optional
 
 from sqlalchemy import (
     String, Text, ForeignKey, DateTime, Integer, Float,
-    Enum as SQLEnum, Boolean, Index, JSON, func, and_
+    Enum as SQLEnum, Boolean, Index, JSON, func, and_, text
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -66,14 +66,7 @@ class Task(Base):
         Index("idx_tasks_due_date", "due_date", "status"),
         Index("idx_tasks_type_status", "type", "status"),
         Index("idx_tasks_priority", "priority"),
-        Index(
-            "idx_tasks_overdue_partial",
-            "due_date",
-            postgresql_where=and_(
-                due_date < func.now(),
-                status.notin_([TaskStatus.DONE.value, TaskStatus.CANCELLED.value])
-            ),
-        ),
+        # Note: partial index with CURRENT_TIMESTAMP removed — PostgreSQL requires IMMUTABLE expressions
     )
 
     # Relationships

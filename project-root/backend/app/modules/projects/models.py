@@ -79,4 +79,4 @@ class Section(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
 
     kit: Mapped["Kit"] = relationship(back_populates="sections")
-    documents: Mapped[list["Document"]] = relationship(back_populates="section")
+    # documents relationship removed — Document model has no section_id

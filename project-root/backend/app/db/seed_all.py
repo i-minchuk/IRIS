@@ -16,7 +16,7 @@ from app.core.security import get_password_hash
 
 async def seed_all():
     async with AsyncSessionLocal() as db:
-        print(f"🌱 Seeding database: {settings.DATABASE_URL[:50]}...")
+        print(f"Seeding database: {settings.DATABASE_URL[:50]}...")
 
         now = datetime.utcnow()
         admin_hash = get_password_hash("admin123")
@@ -25,7 +25,7 @@ async def seed_all():
         # =====================================================================
         # 1. USERS
         # =====================================================================
-        print("\n👤 Creating users...")
+        print("\nCreating users...")
         users_data = [
             ("admin@iris.local", "admin", "Администратор", "admin", True),
             ("engineer@iris.local", "engineer", "Инженер Иванов", "engineer", True),
@@ -40,7 +40,7 @@ async def seed_all():
             row = existing.fetchone()
             if row:
                 user_ids.append(row[0])
-                print(f"  ✅ User exists: {email}")
+                print(f"  User exists: {email}")
                 continue
 
             result = await db.execute(
@@ -63,7 +63,7 @@ async def seed_all():
             )
             uid = result.scalar()
             user_ids.append(uid)
-            print(f"  ✅ Created: {email}")
+            print(f"  Created: {email}")
 
         await db.commit()
         print(f"  Users in DB: {len(user_ids)}")
@@ -71,7 +71,7 @@ async def seed_all():
         # =====================================================================
         # 2. PROJECTS
         # =====================================================================
-        print("\n📊 Creating projects...")
+        print("\nCreating projects...")
         projects_data = [
             ("ЖК Солнечный", "SOL-2024-001", "Жилой комплекс бизнес-класса", "active", "ООО СтройИнвест"),
             ("ТЦ Галерея", "GAL-2024-002", "Торговый центр в центре города", "planning", "ООО Галерея Групп"),
@@ -86,7 +86,7 @@ async def seed_all():
             row = existing.fetchone()
             if row:
                 project_ids.append(row[0])
-                print(f"  ✅ Project exists: {code}")
+                print(f"  Project exists: {code}")
                 continue
 
             result = await db.execute(
@@ -108,15 +108,90 @@ async def seed_all():
             )
             pid = result.scalar()
             project_ids.append(pid)
-            print(f"  ✅ Created: {code}")
+            print(f"  Created: {code}")
 
         await db.commit()
         print(f"  Projects in DB: {len(project_ids)}")
 
         # =====================================================================
-        # 3. REMARKS
+        # 3. DOCUMENTS
         # =====================================================================
-        print("\n📝 Creating remarks...")
+        print("\n📄 Creating documents...")
+        if project_ids:
+            documents_data = [
+                ("Техническое задание", "specification", "approved", "1.0"),
+                ("Проектная документация", "drawing", "draft", "0.5"),
+                ("Отчет по изысканиям", "report", "approved", "2.0"),
+                ("Спецификация оборудования", "specification", "in_review", "1.1"),
+                ("Исполнительная схема", "drawing", "draft", "1.0"),
+            ]
+            for title, doc_type, status, version in documents_data:
+                doc_id = str(uuid.uuid4())
+                try:
+                    await db.execute(
+                        text("""
+                            INSERT INTO documents (id, project_id, title, document_type, status, version, created_at, updated_at)
+                            VALUES (:id, :pid, :title, :type, :status, :ver, :now, :now)
+                            ON CONFLICT DO NOTHING
+                        """),
+                        {
+                            "id": doc_id,
+                            "pid": project_ids[0],
+                            "title": title,
+                            "type": doc_type,
+                            "status": status,
+                            "ver": version,
+                            "now": now,
+                        },
+                    )
+                    print(f"  Created document: {title}")
+                except Exception as e:
+                    print(f"  ⚠️ Document skipped ({e})")
+            await db.commit()
+        else:
+            print("  No projects found, skipping documents...")
+
+        # =====================================================================
+        # 4. ARCHIVE ENTRIES
+        # =====================================================================
+        print("\nCreating archive entries...")
+        if project_ids:
+            archive_data = [
+                ("milestone", "projects", project_ids[0], "Старт проекта"),
+                ("document", "documents", str(uuid.uuid4()), "Утверждение ТЗ"),
+                ("remark", "remarks", str(uuid.uuid4()), "Выявлено замечание"),
+                ("milestone", "projects", project_ids[0], "Завершение этапа 1"),
+            ]
+            for entry_type, source_table, source_id, title in archive_data:
+                entry_id = str(uuid.uuid4())
+                try:
+                    await db.execute(
+                        text("""
+                            INSERT INTO archive_entries (id, project_id, entry_type, source_table, source_id, title, occurred_at, created_at, updated_at)
+                            VALUES (:id, :pid, :etype, :src_table, :src_id, :title, :now, :now, :now)
+                            ON CONFLICT DO NOTHING
+                        """),
+                        {
+                            "id": entry_id,
+                            "pid": project_ids[0],
+                            "etype": entry_type,
+                            "src_table": source_table,
+                            "src_id": source_id,
+                            "title": title,
+                            "now": now,
+                        },
+                    )
+                    print(f"  Created archive: {title}")
+                except Exception as e:
+                    print(f"  Archive skipped ({e})")
+            await db.commit()
+        else:
+            print("  No projects found, skipping archive...")
+
+        # =====================================================================
+        # 5. REMARKS
+        # =====================================================================
+        print("\nCreating remarks...")
         if project_ids:
             remarks_data = [
                 (project_ids[0], "Несоответствие отметок высот", "Отметки на чертежах не совпадают с разрезом", "in_progress", "high", "design_error", "internal"),
@@ -132,7 +207,7 @@ async def seed_all():
                     {"title": title, "pid": pid},
                 )
                 if existing.fetchone():
-                    print(f"  ✅ Remark exists: {title}")
+                    print(f"  Remark exists: {title}")
                     continue
 
                 try:
@@ -154,7 +229,7 @@ async def seed_all():
                             "now": now,
                         },
                     )
-                    print(f"  ✅ Created remark: {title}")
+                    print(f"  Created remark: {title}")
                 except Exception as e:
                     print(f"  ⚠️ Remark skipped ({e})")
 
@@ -163,7 +238,7 @@ async def seed_all():
         # =====================================================================
         # 4. ARCHIVE ENTRIES (if table exists)
         # =====================================================================
-        print("\n📦 Creating archive entries...")
+        print("\nCreating archive entries...")
         try:
             # Check if table exists
             result = await db.execute(
@@ -184,7 +259,7 @@ async def seed_all():
                         {"title": title, "pid": pid},
                     )
                     if existing.fetchone():
-                        print(f"  ✅ Archive entry exists: {title}")
+                        print(f"  Archive entry exists: {title}")
                         continue
 
                     await db.execute(
@@ -203,7 +278,7 @@ async def seed_all():
                             "now": now,
                         },
                     )
-                    print(f"  ✅ Created archive: {title}")
+                    print(f"  Created archive: {title}")
                 await db.commit()
         except Exception as e:
             print(f"  ⚠️ Archive seed skipped: {e}")
@@ -212,7 +287,7 @@ async def seed_all():
         # SUMMARY
         # =====================================================================
         print("\n" + "=" * 50)
-        print("✅ Seed completed successfully!")
+        print("Seed completed successfully!")
         print("=" * 50)
 
         # Count and report
@@ -225,9 +300,9 @@ async def seed_all():
                 pass
 
         print()
-        print("  🔑 Admin login:  admin@iris.local / admin123")
-        print("  🔑 Engineer:     engineer@iris.local / password123")
-        print("  🔑 Manager:      manager@iris.local / password123")
+        print("  Admin login:  admin@iris.local / admin123")
+        print("  Engineer:     engineer@iris.local / password123")
+        print("  Manager:      manager@iris.local / password123")
 
 
 if __name__ == "__main__":

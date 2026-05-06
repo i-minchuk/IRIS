@@ -1,49 +1,38 @@
 from datetime import datetime
 from typing import Optional, List
+from uuid import UUID
 from pydantic import BaseModel, ConfigDict
 
 
 class DocumentBase(BaseModel):
-    number: str
-    name: str
-    doc_type: str
+    title: str
+    document_type: str = "specification"
     status: str = "draft"
-    crs_code: Optional[str] = None
+    version: str = "1.0"
+    file_path: Optional[str] = None
 
 
 class DocumentCreate(DocumentBase):
-    project_id: int
-    stage_id: Optional[int] = None
-    kit_id: Optional[int] = None
-    section_id: Optional[int] = None
-    author_id: int
-    content: Optional[dict] = None
-    variables_snapshot: Optional[dict] = None
+    project_id: UUID
+    created_by_id: Optional[UUID] = None
 
 
 class DocumentUpdate(BaseModel):
-    name: Optional[str] = None
+    title: Optional[str] = None
+    document_type: Optional[str] = None
     status: Optional[str] = None
-    crs_code: Optional[str] = None
-    content: Optional[dict] = None
-    variables_snapshot: Optional[dict] = None
-    stage_id: Optional[int] = None
-    kit_id: Optional[int] = None
-    section_id: Optional[int] = None
+    version: Optional[str] = None
+    file_path: Optional[str] = None
 
 
-class DocumentOut(DocumentBase):
+class DocumentResponse(DocumentBase):
+    id: UUID
+    project_id: UUID
+    created_by_id: Optional[UUID]
+    created_at: datetime
+    updated_at: datetime
+
     model_config = ConfigDict(from_attributes=True)
-    id: int
-    project_id: int
-    stage_id: Optional[int] = None
-    kit_id: Optional[int] = None
-    section_id: Optional[int] = None
-    author_id: int
-    content: Optional[dict] = None
-    variables_snapshot: Optional[dict] = None
-    crs_approved_date: Optional[datetime] = None
-    created_at: Optional[datetime] = None
 
 
 # Document Dependency schemas
