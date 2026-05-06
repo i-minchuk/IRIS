@@ -16,7 +16,7 @@ router = APIRouter(tags=["Documents"])
 
 @router.get("/", response_model=List[DocumentResponse])
 async def list_documents(
-    project_id: Optional[UUID] = Query(None, description="Filter by project ID"),
+    project_id: Optional[int] = Query(None, description="Filter by project ID"),
     status: Optional[str] = Query(None, description="Filter by status"),
     document_type: Optional[str] = Query(None, description="Filter by document type"),
     skip: int = Query(0, ge=0),
@@ -38,7 +38,7 @@ async def list_documents(
 
 @router.get("/{document_id}", response_model=DocumentResponse)
 async def get_document(
-    document_id: UUID,
+    document_id: int,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -65,7 +65,7 @@ async def create_document(
 
 @router.patch("/{document_id}", response_model=DocumentResponse)
 async def update_document(
-    document_id: UUID,
+    document_id: int,
     data: DocumentUpdate,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
@@ -81,7 +81,7 @@ async def update_document(
 
 @router.delete("/{document_id}", status_code=204)
 async def delete_document(
-    document_id: UUID,
+    document_id: int,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):

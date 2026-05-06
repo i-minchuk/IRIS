@@ -13,8 +13,8 @@ class DocumentBase(BaseModel):
 
 
 class DocumentCreate(DocumentBase):
-    project_id: UUID
-    created_by_id: Optional[UUID] = None
+    project_id: int
+    created_by_id: Optional[int] = None
 
 
 class DocumentUpdate(BaseModel):
@@ -26,9 +26,9 @@ class DocumentUpdate(BaseModel):
 
 
 class DocumentResponse(DocumentBase):
-    id: UUID
-    project_id: UUID
-    created_by_id: Optional[UUID]
+    id: int
+    project_id: int
+    created_by_id: Optional[int]
     created_at: datetime
     updated_at: datetime
 

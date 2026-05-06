@@ -10,7 +10,7 @@ from app.modules.documents.models import Document
 
 async def get_documents(
     db: AsyncSession,
-    project_id: Optional[UUID] = None,
+    project_id: Optional[int] = None,
     status: Optional[str] = None,
     document_type: Optional[str] = None,
     skip: int = 0,
@@ -35,7 +35,7 @@ async def get_documents(
     return result.scalars().all()
 
 
-async def get_document(db: AsyncSession, document_id: UUID) -> Optional[Document]:
+async def get_document(db: AsyncSession, document_id: int) -> Optional[Document]:
     """Get a single document by ID."""
     result = await db.execute(select(Document).where(Document.id == document_id))
     return result.scalar_one_or_none()
@@ -50,7 +50,7 @@ async def create_document(db: AsyncSession, **kwargs) -> Document:
     return document
 
 
-async def update_document(db: AsyncSession, document_id: UUID, **kwargs) -> Optional[Document]:
+async def update_document(db: AsyncSession, document_id: int, **kwargs) -> Optional[Document]:
     """Update a document."""
     document = await get_document(db, document_id)
     if not document:
@@ -65,7 +65,7 @@ async def update_document(db: AsyncSession, document_id: UUID, **kwargs) -> Opti
     return document
 
 
-async def delete_document(db: AsyncSession, document_id: UUID) -> bool:
+async def delete_document(db: AsyncSession, document_id: int) -> bool:
     """Delete a document."""
     document = await get_document(db, document_id)
     if not document:
