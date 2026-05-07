@@ -1,20 +1,22 @@
 // frontend/src/app/Layout.tsx
-import React, { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import React from 'react';
+import { Outlet, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import { StatusBar } from '@/components/StatusBar';
 import { CollaborationProvider } from '@/features/collaboration/components/CollaborationProvider';
 import { useTheme } from '@/providers/ThemeProvider';
-import { Moon, Sun, Menu, X } from 'lucide-react';
+import { Moon, Sun, ArrowLeft } from 'lucide-react';
 import { FolderTabs } from '@/components/FolderTabs';
-import { ZoomControl } from '@/features/zoom/components/ZoomControl';
 
 export const Layout: React.FC = () => {
   const { user, logout } = useAuthStore();
   const { theme, toggleTheme } = useTheme();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
+  const navigate = useNavigate();
   const isDark = theme === 'dark';
+
+  const initials = user?.full_name
+    ? user.full_name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+    : user?.email?.slice(0, 2).toUpperCase() || 'АД';
 
   return (
     <div
@@ -29,133 +31,51 @@ export const Layout: React.FC = () => {
         <div className="mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-14">
             {/* Логотип */}
-            <div className="flex items-center space-x-2">
-              <img
-                src="/icons/logo-light.svg"
-                alt="ДокПоток IRIS"
-                className="h-8 w-8 dark:hidden"
-              />
-              <img
-                src="/icons/logo-dark.svg"
-                alt="ДокПоток IRIS"
-                className="h-8 w-8 hidden dark:block"
-              />
-              <h1
-                className="text-lg font-bold tracking-tight transition-colors duration-200"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                ДокПоток <span style={{ color: 'var(--iris-accent-cyan)' }}>IRIS</span>
-              </h1>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-[#1e3a8a] rounded-lg flex items-center justify-center">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <rect x="4" y="3" width="12" height="14" rx="2" fill="white"/>
+                  <path d="M7 8H13M7 11H11M7 14H10" stroke="#1e3a8a" strokeWidth="1.2" strokeLinecap="round"/>
+                </svg>
+              </div>
+              <span className="text-lg font-bold text-[#1e2230] dark:text-white">ДокПоток</span>
+              <span className="text-xs font-bold px-2 py-0.5 rounded bg-[#3b82f6] text-white">IRIS</span>
             </div>
 
-            {/* Гамбургер меню (только mobile) */}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 rounded-lg transition-colors duration-200"
-              style={{ color: 'var(--text-secondary)' }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--hover-bg)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-              }}
-            >
-              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
+            {/* Правая панель */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => { logout(); navigate('/login'); }}
+                className="flex items-center gap-1 text-sm text-[#64748b] hover:text-[#1e2230] dark:text-[#94a3b8] dark:hover:text-white transition-colors"
+              >
+                <ArrowLeft size={16} />
+                Выход
+              </button>
 
-            {/* Десктоп панель */}
-            <div className="hidden lg:flex items-center space-x-3">
-              <ZoomControl />
-
-              <span className="text-sm transition-colors duration-200" style={{ color: 'var(--text-secondary)' }}>
-                {user?.full_name || user?.email}
-              </span>
-
-              {/* Кнопка переключения темы */}
               <button
                 onClick={toggleTheme}
-                className="p-2 rounded-lg transition-colors duration-200"
-                style={{
-                  backgroundColor: 'var(--button-bg)',
-                  color: 'var(--text-secondary)',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'var(--button-hover-bg)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'var(--button-bg)';
-                }}
-                title={isDark ? 'Переключить на светлую тему' : 'Переключить на тёмную тему'}
+                className="p-2 rounded-lg text-[#64748b] hover:text-[#1e2230] dark:text-[#94a3b8] dark:hover:text-white transition-colors"
+                title={isDark ? 'Светлая тема' : 'Тёмная тема'}
               >
                 {isDark ? <Sun size={18} /> : <Moon size={18} />}
               </button>
 
-              <button
-                onClick={logout}
-                className="px-3 py-1.5 text-sm rounded-md transition-colors"
-                style={{
-                  border: '1px solid var(--iris-accent-coral)',
-                  color: 'var(--iris-accent-coral)',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'var(--iris-status-bg-coral)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                }}
-              >
-                Выйти
-              </button>
+              <div className="w-8 h-8 rounded-full bg-[#e2e8f0] dark:bg-[#334155] flex items-center justify-center text-xs font-bold text-[#1e2230] dark:text-white">
+                {initials}
+              </div>
             </div>
           </div>
         </div>
-
-        {/* Mobile меню */}
-        {mobileMenuOpen && (
-          <div
-            className="lg:hidden border-t transition-colors duration-200"
-            style={{ borderColor: 'var(--header-border)', backgroundColor: 'var(--header-bg)' }}
-          >
-            <div className="px-4 py-3 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  {user?.full_name || user?.email}
-                </span>
-                <div className="flex items-center gap-2">
-                  <ZoomControl />
-                  <button
-                    onClick={toggleTheme}
-                    className="p-2 rounded-lg"
-                    style={{ backgroundColor: 'var(--button-bg)', color: 'var(--text-secondary)' }}
-                  >
-                    {isDark ? <Sun size={18} /> : <Moon size={18} />}
-                  </button>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  logout();
-                  setMobileMenuOpen(false);
-                }}
-                className="w-full px-3 py-2 text-sm rounded-md transition-colors"
-                style={{
-                  border: '1px solid var(--iris-accent-coral)',
-                  color: 'var(--iris-accent-coral)',
-                }}
-              >
-                Выйти
-              </button>
-            </div>
-          </div>
-        )}
       </header>
 
-      {/* Контентная область (папка + вкладки) */}
+      {/* Табы */}
+      <FolderTabs />
+
+      {/* Контентная область */}
       <main className="flex-1 w-full">
         <div className="mx-auto w-full px-4 sm:px-6 lg:px-8">
-          <FolderTabs />
           <div
-            className="rounded-b-2xl rounded-tr-2xl rounded-tl-none shadow-2xl border border-t-0 -mt-px min-h-[calc(100vh-var(--iris-header-height)-80px)] p-4 sm:p-6 transition-colors duration-300"
+            className="rounded-b-2xl shadow-2xl border border-t-0 min-h-[calc(100vh-var(--iris-header-height)-80px)] p-4 sm:p-6 transition-colors duration-300"
             style={{
               background: 'linear-gradient(180deg, var(--content-bg) 0%, var(--layout-bg) 100%)',
               borderColor: 'var(--content-border)',

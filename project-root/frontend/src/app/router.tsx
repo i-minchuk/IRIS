@@ -1,6 +1,7 @@
 // frontend/src/app/router.tsx
 import { createBrowserRouter, Navigate } from 'react-router-dom';
-import { LandingLoginPage } from '@/pages/LandingLoginPage';
+import { LandingPage } from '@/pages/LandingPage';
+import { LoginPage } from '@/pages/LoginPage';
 import { ForgotPasswordPage } from '@/features/auth/pages/ForgotPasswordPage';
 import { ResetPasswordPage } from '@/features/auth/pages/ResetPasswordPage';
 import Dashboard from '@/pages/Dashboard';
@@ -16,8 +17,12 @@ import DocumentWorkspace from '@/components/workspace/DocumentWorkspace';
 
 export const router = createBrowserRouter([
   {
+    path: '/',
+    element: <LandingPage />,
+  },
+  {
     path: '/login',
-    element: <LandingLoginPage />,
+    element: <LoginPage />,
   },
   {
     path: '/forgot-password',
@@ -62,7 +67,6 @@ export const router = createBrowserRouter([
             path: 'workspace/:projectId',
             element: <DocumentWorkspace />,
           },
-          /* Projects page */
           {
             path: 'projects',
             element: <ProjectsPage />,
@@ -71,12 +75,10 @@ export const router = createBrowserRouter([
             path: 'documents',
             element: <DocumentsPage />,
           },
-          /* Обратная совместимость: старый путь согласований перенаправляет на workflow */
           {
             path: 'approval',
             element: <Navigate to="/workflow" replace />,
           },
-          /* Обратная совместимость: старый путь перенаправляет на workflow */
           {
             path: 'dependencies',
             element: <Navigate to="/workflow" replace />,
