@@ -1,21 +1,14 @@
 // frontend/src/app/router.tsx
 import { createBrowserRouter, Navigate } from 'react-router-dom';
-import { LoginPage } from '@/features/auth/pages/LoginPage';
+import { LandingLoginPage } from '@/pages/LandingLoginPage';
 import { ForgotPasswordPage } from '@/features/auth/pages/ForgotPasswordPage';
 import { ResetPasswordPage } from '@/features/auth/pages/ResetPasswordPage';
 import Dashboard from '@/pages/Dashboard';
-import { RemarksPage } from '@/pages/RemarksPage';
 import { AnalyticsPage } from '@/features/analytics/pages/AnalyticsPage';
-import { ResourcesPage } from '@/pages/ResourcesPage';
-import { TendersPage } from '@/pages/TendersPage';
-import { AdminPage } from '@/pages/AdminPage';
 import { ArchivePage } from '@/pages/ArchivePage';
-import { ProductionControlPage } from '@/pages/ProductionControl';
-import { ProjectTasksPage } from '@/pages/ProjectTasksPage';
-import { PackagePage } from '@/pages/PackagePage';
 import { WorkflowPage } from '@/pages/WorkflowPage';
 import { ProjectsPage } from '@/features/projects/pages/ProjectsPage';
-import TenderPortfolioPage from '@/pages/TenderPortfolioPage';
+import { DocumentsPage } from '@/features/documents/pages/DocumentsPage';
 import { Layout } from './Layout';
 import { ProtectedRoute } from './ProtectedRoute';
 import DocumentCreate from '@/pages/DocumentCreate';
@@ -24,7 +17,7 @@ import DocumentWorkspace from '@/components/workspace/DocumentWorkspace';
 export const router = createBrowserRouter([
   {
     path: '/login',
-    element: <LoginPage />,
+    element: <LandingLoginPage />,
   },
   {
     path: '/forgot-password',
@@ -50,44 +43,12 @@ export const router = createBrowserRouter([
             element: <Dashboard />,
           },
           {
-            path: 'portfolio',
-            element: <TenderPortfolioPage />,
-          },
-          {
-            path: 'production',
-            element: <ProductionControlPage />,
-          },
-          {
-            path: 'tasks',
-            element: <ProjectTasksPage />,
-          },
-          {
-            path: 'packages',
-            element: <PackagePage />,
-          },
-          {
             path: 'workflow',
             element: <WorkflowPage />,
           },
           {
-            path: 'remarks',
-            element: <RemarksPage />,
-          },
-          {
             path: 'analytics',
             element: <AnalyticsPage />,
-          },
-          {
-            path: 'resources',
-            element: <ResourcesPage />,
-          },
-          {
-            path: 'tenders',
-            element: <TendersPage />,
-          },
-          {
-            path: 'admin',
-            element: <AdminPage />,
           },
           {
             path: 'archive',
@@ -105,6 +66,10 @@ export const router = createBrowserRouter([
           {
             path: 'projects',
             element: <ProjectsPage />,
+          },
+          {
+            path: 'documents',
+            element: <DocumentsPage />,
           },
           /* Обратная совместимость: старый путь согласований перенаправляет на workflow */
           {

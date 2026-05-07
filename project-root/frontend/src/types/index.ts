@@ -68,9 +68,16 @@ export interface Task {
   id: number;
   project_id: number;
   document_id: number | null;
-  task_type: string | null;
+  type: string | null;
   title: string;
+  description?: string | null;
   status: string;
+  priority: string;
+  due_date: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  assignee_id: number | null;
+  creator_id: number;
   planned_start: string | null;
   planned_finish: string | null;
   planned_hours: number;
