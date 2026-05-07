@@ -1,17 +1,15 @@
 import { useState, useEffect } from 'react';
-
 import { getTasks } from '@/api/tasks';
 import { getRemarks } from '@/api/remarks';
 import type { Task } from '@/types';
 import type { RemarkListItem } from '@/types/remarks';
-import { Loader2, CheckCircle2, Circle, AlertCircle } from 'lucide-react';
+import { Loader2, CheckCircle2, Circle, AlertCircle, ArrowRight, Upload, Search, FileCheck, Archive } from 'lucide-react';
 
 export function WorkflowPage() {
   const [tab, setTab] = useState<'tasks' | 'remarks'>('tasks');
   const [tasks, setTasks] = useState<Task[]>([]);
   const [remarks, setRemarks] = useState<RemarkListItem[]>([]);
   const [loading, setLoading] = useState(true);
-
 
   useEffect(() => {
     loadData();
@@ -51,15 +49,37 @@ export function WorkflowPage() {
     }
   };
 
+  // Процессные карточки (как на промо)
+  const processCards = [
+    { icon: <Upload size={20} />, count: tasks.filter(t => t.status === 'NEW').length, label: 'Загрузка', color: '#3B82F6' },
+    { icon: <Search size={20} />, count: tasks.filter(t => t.status === 'IN_PROGRESS').length, label: 'Проверка', color: '#8B5CF6' },
+    { icon: <FileCheck size={20} />, count: remarks.filter(r => r.status === 'in_progress').length, label: 'Согласование', color: '#F59E0B' },
+    { icon: <Archive size={20} />, count: tasks.filter(t => t.status === 'DONE').length, label: 'Архив', color: '#6B7280' },
+  ];
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Документооборот</h1>
-        <button onClick={loadData} className="px-3 py-1.5 text-xs rounded-lg transition-colors" style={{ backgroundColor: 'var(--bg-surface-2)', color: 'var(--text-secondary)' }}>
-          Обновить
-        </button>
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Документооборот</h1>
+
+      {/* 4 карточки-процесса */}
+      <div className="flex flex-wrap items-center gap-3">
+        {processCards.map((card, idx) => (
+          <div key={card.label} className="flex items-center gap-3">
+            <div className="flex items-center gap-3 px-4 py-3 rounded-xl text-white" style={{ backgroundColor: card.color }}>
+              {card.icon}
+              <div>
+                <div className="text-lg font-bold">{card.count}</div>
+                <div className="text-xs opacity-90">{card.label}</div>
+              </div>
+            </div>
+            {idx < processCards.length - 1 && (
+              <ArrowRight size={20} className="text-[#94a3b8]" />
+            )}
+          </div>
+        ))}
       </div>
 
+      {/* Табы */}
       <div className="flex gap-1 border-b" style={{ borderColor: 'var(--border-default)' }}>
         <button onClick={() => setTab('tasks')}
           className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${tab === 'tasks' ? 'text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}`}

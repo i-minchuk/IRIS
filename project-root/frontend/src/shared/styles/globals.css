@@ -96,11 +96,11 @@
   .theme-dark,
   .dark {
     /* Backgrounds */
-    --iris-bg-app: #0B0E14;
-    --iris-bg-surface: #111420;
-    --iris-bg-surface-elevated: #131625;
-    --iris-bg-header: #0D1018;
-    --iris-bg-card: #131625;
+    --iris-bg-app: #0f172a;
+    --iris-bg-surface: #1e293b;
+    --iris-bg-surface-elevated: #1e293b;
+    --iris-bg-header: #0f172a;
+    --iris-bg-card: #1e293b;
     --iris-bg-hover: rgba(0, 240, 255, 0.05);
     --iris-bg-active: rgba(0, 240, 255, 0.08);
     --iris-bg-subtle: rgba(255, 255, 255, 0.04);
@@ -214,9 +214,10 @@
 
   .theme-dark .neon-card,
   .dark .neon-card {
-    background: linear-gradient(145deg, rgba(26, 29, 45, 0.90), rgba(17, 20, 32, 0.95));
+    background: #1e293b;
     border-color: rgba(255, 255, 255, 0.06);
     box-shadow:
+      0 0 20px rgba(59, 130, 246, 0.15),
       0 4px 24px rgba(0, 0, 0, 0.40),
       inset 0 1px 0 rgba(255, 255, 255, 0.04);
   }

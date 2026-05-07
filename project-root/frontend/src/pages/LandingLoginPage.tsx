@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { authApi } from '@/features/auth/api/authApi';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import { FlowIcon, ApprovalIcon, VersionIcon, SpeedIcon } from '@/shared/components/icons/LandingIcons';
-import { LogIn, ChevronDown, Eye, EyeOff } from 'lucide-react';
+import { LogIn, Eye, EyeOff, ArrowRight } from 'lucide-react';
 
 export function LandingLoginPage() {
   const navigate = useNavigate();
@@ -42,56 +42,56 @@ export function LandingLoginPage() {
     <div className="min-h-screen w-full" style={{
       background: 'linear-gradient(135deg, #1E2230 0%, #2D3748 25%, #4F7A4C 60%, #8B9DAF 100%)'
     }}>
-      {/* HERO */}
-      <div className="min-h-screen flex flex-col items-center justify-center px-4 relative">
-        <div className="mb-8 text-center">
-          <div className="w-20 h-20 mx-auto mb-6 bg-white/10 backdrop-blur-lg rounded-2xl flex items-center justify-center border border-white/20">
-            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-              <rect x="8" y="8" width="32" height="32" rx="8" fill="#4F7A4C" opacity="0.9"/>
-              <path d="M16 20H32M16 26H28M16 32H24" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
-              <circle cx="34" cy="34" r="8" fill="#1E2230" stroke="white" strokeWidth="2"/>
-              <path d="M31 34L33 36L37 32" stroke="#4F7A4C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      {/* HERO — полная ширина */}
+      <div className="w-full px-6 pt-8 pb-16">
+        {/* Логотип */}
+        <div className="flex items-center gap-3 mb-12">
+          <div className="w-10 h-10 bg-white/10 backdrop-blur-lg rounded-xl flex items-center justify-center border border-white/20">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <rect x="4" y="4" width="16" height="16" rx="4" fill="#4F7A4C"/>
+              <path d="M7 10H17M7 13H15M7 16H12" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
           </div>
-          <h1 className="text-4xl md:text-6xl font-bold text-white mb-4 tracking-tight">
-            ДокПоток <span className="text-[#8B9DAF]">IRIS</span>
+          <span className="text-xl font-bold text-white tracking-tight">ДокПоток</span>
+          <span className="text-xs font-bold px-2 py-0.5 rounded bg-[#3B82F6] text-white">IRIS</span>
+        </div>
+
+        {/* Заголовок */}
+        <div className="max-w-4xl mx-auto text-center mb-16">
+          <h1 className="text-4xl md:text-6xl font-bold text-white mb-2 tracking-tight">
+            От чертежа до согласования
           </h1>
-          <p className="text-xl text-white/80 max-w-2xl mx-auto mb-2">
-            От чертежа до согласования за один поток
+          <p className="text-4xl md:text-6xl font-bold text-[#3B82F6] mb-6">
+            за один поток
           </p>
-          <p className="text-sm text-white/60 mb-8">
+          <p className="text-lg text-white/70 max-w-2xl mx-auto">
             Система управления инженерной документацией
           </p>
+        </div>
 
+        {/* 4 карточки фич */}
+        <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-16">
+          <FeatureCard icon={<FlowIcon />} title="Единый поток" description="Все документы проекта в одном месте. Чертежи, спецификации, отчеты." />
+          <FeatureCard icon={<ApprovalIcon />} title="Согласования" description="Прозрачные маршруты согласования. Всегда видно, кто проверяет документ." />
+          <FeatureCard icon={<VersionIcon />} title="Контроль версий" description="Ничего не теряется. Полная история изменений каждого документа." />
+          <FeatureCard icon={<SpeedIcon />} title="Скорость" description="От чертежа до подписи. Автоматические уведомления и напоминания." />
+        </div>
+
+        {/* Кнопка входа */}
+        <div className="text-center mb-20">
           <button
             onClick={scrollToLogin}
-            className="px-8 py-3 bg-[#4F7A4C] hover:bg-[#3d6139] text-white rounded-xl font-medium transition-all duration-300 shadow-lg hover:shadow-xl flex items-center gap-2 mx-auto"
+            className="px-8 py-3 bg-[#3B82F6] hover:bg-[#2563EB] text-white rounded-xl font-medium transition-all duration-300 shadow-lg hover:shadow-xl flex items-center gap-2 mx-auto"
           >
-            <LogIn size={20} />
             Войти в систему
+            <ArrowRight size={20} />
           </button>
-        </div>
-        <div className="absolute bottom-8 animate-bounce text-white/50">
-          <ChevronDown size={32} />
-        </div>
-      </div>
-
-      {/* FEATURES */}
-      <div className="py-20 px-4">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl font-bold text-white text-center mb-12">Возможности системы</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <FeatureCard icon={<FlowIcon />} title="Единый поток" description="Все документы проекта в одном месте. Чертежи, спецификации, отчеты." />
-            <FeatureCard icon={<ApprovalIcon />} title="Согласования" description="Прозрачные маршруты согласования. Всегда видно, кто проверяет документ." />
-            <FeatureCard icon={<VersionIcon />} title="Контроль версий" description="Ничего не теряется. Полная история изменений каждого документа." />
-            <FeatureCard icon={<SpeedIcon />} title="Скорость" description="От чертежа до подписи. Автоматические уведомления и напоминания." />
-          </div>
         </div>
       </div>
 
       {/* LOGIN FORM */}
-      <div ref={loginRef} className="min-h-screen flex items-center justify-center px-4 py-20">
-        <div className="w-full max-w-md">
+      <div ref={loginRef} className="w-full px-4 py-20">
+        <div className="max-w-md mx-auto">
           <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20">
             <div className="text-center mb-6">
               <h2 className="text-2xl font-bold text-[#1E2230]">Вход в систему</h2>
@@ -106,20 +106,20 @@ export function LandingLoginPage() {
               <div>
                 <label className="block text-sm font-medium text-[#1E2230] mb-1.5">Email адрес</label>
                 <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4F7A4C] text-[#1E2230]" />
+                  className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3B82F6] text-[#1E2230]" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-[#1E2230] mb-1.5">Пароль</label>
                 <div className="relative">
                   <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4F7A4C] text-[#1E2230] pr-10" />
+                    className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3B82F6] text-[#1E2230] pr-10" />
                   <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94A3B8]">
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
               </div>
               <button type="submit" disabled={loading}
-                className="w-full py-2.5 bg-[#4F7A4C] hover:bg-[#3d6139] text-white rounded-xl font-medium transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                className="w-full py-2.5 bg-[#3B82F6] hover:bg-[#2563EB] text-white rounded-xl font-medium transition-all disabled:opacity-50 flex items-center justify-center gap-2">
                 {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><LogIn size={18} /> Войти</>}
               </button>
             </form>
@@ -140,10 +140,10 @@ export function LandingLoginPage() {
 
 function FeatureCard({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
   return (
-    <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-white/20 hover:scale-105 transition-transform duration-300">
-      <div className="w-14 h-14 bg-gradient-to-br from-[#4F7A4C]/20 to-[#8B9DAF]/20 rounded-xl flex items-center justify-center mb-4">{icon}</div>
-      <h3 className="text-lg font-bold text-[#1E2230] mb-2">{title}</h3>
-      <p className="text-sm text-[#64748B] leading-relaxed">{description}</p>
+    <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 hover:bg-white/20 transition-all duration-300">
+      <div className="w-14 h-14 bg-white/10 rounded-xl flex items-center justify-center mb-4">{icon}</div>
+      <h3 className="text-lg font-bold text-white mb-2">{title}</h3>
+      <p className="text-sm text-white/70 leading-relaxed">{description}</p>
     </div>
   );
 }
