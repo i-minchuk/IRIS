@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authApi } from '@/features/auth/api/authApi';
 import { useAuthStore } from '@/features/auth/store/authStore';
-import { LogIn, Eye, EyeOff } from 'lucide-react';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -10,7 +9,6 @@ export function LoginPage() {
 
   const [email, setEmail] = useState('admin@iris.local');
   const [password, setPassword] = useState('admin123');
-  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -33,49 +31,95 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center px-4" style={{
-      background: 'linear-gradient(135deg, #1E2230 0%, #2D3748 25%, #4F7A4C 60%, #8B9DAF 100%)'
-    }}>
-      <div className="w-full max-w-md">
-        <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20">
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold text-[#1E2230]">Вход в систему</h2>
-            <p className="text-sm text-[#64748B] mt-1">ДокПоток IRIS</p>
+    <div className="min-h-screen w-full flex flex-col items-center justify-center px-4 etalon-bg">
+      {/* SVG Логотип */}
+      <svg
+        width="140"
+        height="170"
+        viewBox="0 0 200 240"
+        fill="none"
+        style={{ filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.3))', marginBottom: '1.5rem' }}
+      >
+        <rect x="25" y="10" width="150" height="190" rx="14" fill="#FFFFFF" />
+        <path d="M135 10 L175 10 L175 50 Q175 10 135 10 Z" fill="#9B8EC7" />
+        <path d="M135 10 L175 50 Q140 50 135 10 Z" fill="#6B5B95" />
+        <rect x="50" y="70" width="100" height="10" rx="5" fill="#D4AF37" />
+        <rect x="50" y="95" width="80" height="10" rx="5" fill="#D4AF37" />
+        <rect x="50" y="120" width="90" height="10" rx="5" fill="#D4AF37" />
+        <circle cx="55" cy="195" r="28" fill="#6B5B95" />
+        <circle cx="55" cy="195" r="18" fill="#D4AF37" />
+        <circle cx="55" cy="195" r="8" fill="#FFFFFF" opacity="0.3" />
+      </svg>
+
+      {/* Слоган */}
+      <h1 className="text-center text-2xl sm:text-3xl font-semibold text-white mb-2">
+        От чертежа до согласования
+        <br />
+        за один поток
+      </h1>
+
+      {/* Авторизация */}
+      <h2 className="text-center text-lg mb-1" style={{ color: '#94A3B8' }}>
+        Авторизация
+      </h2>
+      <p className="text-center text-sm mb-8" style={{ color: '#64748B' }}>
+        Войдите в систему ДокПоток IRIS
+      </p>
+
+      {/* Стеклянная форма */}
+      <div className="w-full max-w-sm p-8 etalon-glass">
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div>
+            <label className="block text-sm mb-1.5" style={{ color: '#E2E8F0' }}>
+              Логин
+            </label>
+            <input
+              type="text"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Введите логин"
+              className="etalon-input"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm mb-1.5" style={{ color: '#E2E8F0' }}>
+              Пароль
+            </label>
+            <input
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Введите пароль"
+              className="etalon-input"
+            />
           </div>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">{error}</div>
+            <div
+              className="rounded-lg px-4 py-2.5 text-sm"
+              style={{
+                background: 'rgba(215, 58, 58, 0.15)',
+                border: '1px solid rgba(215, 58, 58, 0.3)',
+                color: '#FF6B6B',
+              }}
+            >
+              {error}
+            </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-[#1E2230] mb-1.5">Email адрес</label>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4F7A4C] text-[#1E2230]" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-[#1E2230] mb-1.5">Пароль</label>
-              <div className="relative">
-                <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4F7A4C] text-[#1E2230] pr-10" />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94A3B8]">
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-            </div>
-            <button type="submit" disabled={loading}
-              className="w-full py-2.5 bg-[#4F7A4C] hover:bg-[#3d6139] text-white rounded-xl font-medium transition-all disabled:opacity-50 flex items-center justify-center gap-2">
-              {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><LogIn size={18} /> Войти</>}
-            </button>
-          </form>
-
-          <div className="mt-6 pt-4 border-t border-[#E2E8F0] text-center">
-            <p className="text-xs text-[#94A3B8] mb-1">Тестовый вход:</p>
-            <p className="text-xs text-[#64748B]">Email: admin@iris.local</p>
-            <p className="text-xs text-[#64748B]">Пароль: admin123</p>
-          </div>
-        </div>
+          <button type="submit" disabled={loading} className="etalon-btn">
+            {loading ? 'Вход...' : 'Войти'}
+          </button>
+        </form>
       </div>
+
+      {/* Демо-примечание */}
+      <p className="mt-6 text-center text-xs" style={{ color: '#64748B' }}>
+        Демо: любой логин и пароль
+      </p>
     </div>
   );
 }

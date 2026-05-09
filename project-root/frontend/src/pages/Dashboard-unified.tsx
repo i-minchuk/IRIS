@@ -5,7 +5,6 @@ import {
   FileCheck, Clock, AlertTriangle, TrendingUp,
   TrendingDown, Minus
 } from 'lucide-react';
-import TeamLoadSection from './TeamLoadSection';
 
 /* ── Types ── */
 interface KPIData {
@@ -246,11 +245,6 @@ export default function Dashboard() {
               </table>
             </div>
           </div>
-        </div>
-
-        {/* ── Загрузка команды ── */}
-        <div className="mt-4">
-          <TeamLoadSection />
         </div>
 
         {/* ── Quick Navigation (карточки разделов) ── */}

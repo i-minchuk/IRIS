@@ -69,7 +69,40 @@ export default {
           success: '#16A34A',
           warning: '#F59E0B',
           info: '#3B82F6',
-        }
+        },
+
+        /* ── Etalon page colors (hhg4oan5xuxoi.kimi.page) ── */
+        page: {
+          DEFAULT: '#1a1f3c',
+          mid: '#2d3561',
+          end: '#1e2749',
+        },
+        card: {
+          DEFAULT: '#2A3042',
+          glass: 'rgba(30, 34, 48, 0.6)',
+        },
+        elevated: '#2F3654',
+        primary: {
+          DEFAULT: '#4F7A4C',
+          dark: '#3D6340',
+        },
+        secondary: {
+          DEFAULT: '#6B5B95',
+          light: '#9B8EC7',
+        },
+        accent: '#D4AF37',
+        error: {
+          DEFAULT: '#D73A3A',
+          light: '#FF6B6B',
+        },
+        'text-primary': '#FFFFFF',
+        'text-secondary': '#94A3B8',
+        'text-muted': '#64748B',
+        'text-label': '#E2E8F0',
+        border: {
+          DEFAULT: 'rgba(255, 255, 255, 0.2)',
+          focus: 'rgba(255, 255, 255, 0.5)',
+        },
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
@@ -84,6 +117,13 @@ export default {
         'iris-card': 'var(--iris-shadow-card)',
         'iris-tooltip': 'var(--iris-shadow-tooltip)',
         'iris-inset': 'var(--iris-shadow-inset)',
+        'neon-green': '0 0 6px rgba(79, 122, 76, 0.4), 0 0 12px rgba(79, 122, 76, 0.2)',
+        'neon-purple': '0 0 6px rgba(107, 91, 149, 0.4), 0 0 12px rgba(107, 91, 149, 0.2)',
+        'neon-yellow': '0 0 6px rgba(212, 175, 55, 0.4), 0 0 12px rgba(212, 175, 55, 0.2)',
+        'neon-blue': '0 0 6px rgba(59, 130, 246, 0.4), 0 0 12px rgba(59, 130, 246, 0.2)',
+        'neon-gray': '0 0 6px rgba(107, 114, 128, 0.4), 0 0 12px rgba(107, 114, 128, 0.2)',
+        'neon-red': '0 0 6px rgba(255, 107, 107, 0.4), 0 0 12px rgba(255, 107, 107, 0.2)',
+        'glass': '0 8px 32px rgba(0, 0, 0, 0.3)',
       },
       borderRadius: {
         'iris': '1rem',
@@ -91,7 +131,10 @@ export default {
         'iris-md': '0.75rem',
         'iris-lg': '1rem',
         'iris-xl': '1.5rem',
-      }
+      },
+      backgroundImage: {
+        'brand-gradient': 'linear-gradient(135deg, #1a1f3c 0%, #2d3561 50%, #1e2749 100%)',
+      },
     },
   },
   plugins: [],
