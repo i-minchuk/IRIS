@@ -1,6 +1,8 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import * as path from 'path';
+import path from 'path';
+import { readFileSync } from 'fs';
+var packageJson = JSON.parse(readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8'));
 export default defineConfig({
     plugins: [react()],
     server: {
@@ -17,9 +19,13 @@ export default defineConfig({
             '@': path.resolve(__dirname, './src'),
         },
     },
+    // ← define ДОЛЖЕН БЫТЬ ЗДЕСЬ, на уровне с resolve и server
+    define: {
+        __APP_VERSION__: JSON.stringify(packageJson.version),
+        __BUILD_DATE__: JSON.stringify(new Date().toISOString().split('T')[0]),
+    },
     css: {
         modules: {
-            // kebab-case в *.module.css => camelCase в JS (styles.pdfContainer -> .pdf-container)
             localsConvention: 'camelCaseOnly',
         },
     },
@@ -66,5 +72,5 @@ export default defineConfig({
                 },
             },
         },
-    },
+    }
 });
