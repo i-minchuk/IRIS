@@ -5,6 +5,7 @@ import { RouterProvider } from 'react-router-dom';
 import { ErrorBoundary, type FallbackProps } from 'react-error-boundary';
 import { router } from './app/router';
 import { ThemeProvider } from './providers/ThemeProvider';
+import { LanguageProvider } from "./features/profile/i18n/LanguageContext";
 import { useAuthStore } from './features/auth/store/authStore';
 import { useZoomStore } from './features/zoom/store/zoomStore';
 import { Toaster } from 'sonner';
@@ -92,12 +93,14 @@ function ErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <ThemeProvider>
-      <ErrorBoundary FallbackComponent={ErrorFallback}>
-        <App />
-      </ErrorBoundary>
-    </ThemeProvider>
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <ThemeProvider>
+        <LanguageProvider>
+          <App />  {/* ← ИСПРАВЛЕНО: используем App вместо прямого RouterProvider */}
+        </LanguageProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   </React.StrictMode>
 );

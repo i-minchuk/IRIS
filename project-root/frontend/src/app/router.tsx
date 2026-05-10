@@ -3,6 +3,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { LoginPage } from '@/pages/LoginPage';
 import { ForgotPasswordPage } from '@/features/auth/pages/ForgotPasswordPage';
 import { ResetPasswordPage } from '@/features/auth/pages/ResetPasswordPage';
+import { ProfilePage } from "@/features/profile/pages/ProfilePage";
 import Dashboard from '@/pages/Dashboard';
 import ArchivePage from '@/pages/ArchivePage';
 import DocumentsPage from '@/pages/DocumentsPage';
@@ -19,6 +20,7 @@ export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
   { path: '/forgot-password', element: <ForgotPasswordPage /> },
   { path: '/reset-password', element: <ResetPasswordPage /> },
+
 
   // Защищённые страницы
   {
@@ -41,6 +43,7 @@ export const router = createBrowserRouter([
           // Дополнительные
           { path: 'remarks', element: <RemarksPage /> },
           { path: 'admin', element: <AdminPage /> },
+          { path: 'profile', element: <ProfilePage /> },
 
           // 404
           { path: '*', element: <NotFound /> },
