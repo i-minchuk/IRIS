@@ -1,7 +1,106 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+/* Адаптивная сетка профиля */
+@media (max-width: 768px) {
+  #profile-container {
+    transform-origin: top left !important;
+    padding: 0.5rem !important;
+  }
+  
+  #profile-container .grid {
+    grid-template-columns: 1fr !important;
+  }
+}
 
+@media (min-width: 769px) and (max-width: 1280px) {
+  #profile-container .grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+@media (min-width: 1281px) {
+  #profile-container .grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+}
+
+/* Адаптивность для телевизоров и проекторов */
+@media (min-width: 1920px) {
+  #profile-scale-container {
+    max-width: 100% !important;
+  }
+  
+  .glass-card {
+    padding: 2rem !important;
+  }
+  
+  .glass-card h3 {
+    font-size: 1.5rem !important;
+  }
+  
+  .glass-card p,
+  .glass-card span,
+  .glass-card button {
+    font-size: 1.1rem !important;
+  }
+}
+
+/* Для 4K экранов */
+@media (min-width: 2560px) {
+  .glass-card {
+    padding: 2.5rem !important;
+  }
+  
+  .glass-card h3 {
+    font-size: 1.75rem !important;
+  }
+  
+  .glass-card p,
+  .glass-card span,
+  .glass-card button {
+    font-size: 1.25rem !important;
+  }
+}
+
+/* Скрыть скроллбар при презентации */
+@media (min-width: 1920px) {
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+  }
+}
+/* Фиксированная панель масштаба — игнорирует transform родителя */
+.fixed-zoom-panel {
+  position: fixed !important;
+  bottom: 24px !important;
+  right: 24px !important;
+  z-index: 9999 !important;
+  transform: none !important;
+  transform-origin: center !important;
+}
+
+/* Игнорируем zoom от родителя */
+.fixed-zoom-panel * {
+  transform: none !important;
+}
+
+/* Анимация при наведении */
+.fixed .glass-card {
+  transition: all 0.2s ease;
+}
+
+.fixed .glass-card:hover {
+  box-shadow: 0 8px 32px rgba(107, 91, 149, 0.3);
+}
 /* ================================================================
    IRIS DESIGN SYSTEM — Unified Token Architecture
    Supports: .theme-light / .theme-dark on <html>

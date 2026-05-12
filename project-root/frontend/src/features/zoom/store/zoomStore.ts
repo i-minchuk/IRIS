@@ -17,7 +17,15 @@ export const useZoomStore = create<ZoomState>()(
     (set) => ({
       scale: DEFAULT_SCALE,
       setScale: (scale) =>
-        set({ scale: Math.min(MAX_SCALE, Math.max(MIN_SCALE, Math.round(scale / STEP) * STEP)) }),
+        set({ 
+          scale: Math.min(
+            MAX_SCALE, 
+            Math.max(
+              MIN_SCALE, 
+              Math.round(scale / STEP) * STEP
+            )
+          ) 
+        }),
       reset: () => set({ scale: DEFAULT_SCALE }),
     }),
     {
