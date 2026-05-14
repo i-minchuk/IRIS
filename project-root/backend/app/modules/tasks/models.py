@@ -4,7 +4,7 @@ from typing import Optional
 
 from sqlalchemy import (
     String, Text, ForeignKey, DateTime, Integer, Float,
-    Enum as SQLEnum, Boolean, Index, JSON, func, and_
+    Enum as SQLEnum, Boolean, Index, JSON, func, and_, text
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -66,7 +66,11 @@ class Task(Base):
         Index("idx_tasks_due_date", "due_date", "status"),
         Index("idx_tasks_type_status", "type", "status"),
         Index("idx_tasks_priority", "priority"),
+<<<<<<< HEAD
         Index("idx_tasks_due_date_status", "due_date", "status"),
+=======
+        # Note: partial index with CURRENT_TIMESTAMP removed — PostgreSQL requires IMMUTABLE expressions
+>>>>>>> mvp-sqlite-stable
     )
 
     # Relationships

@@ -5,7 +5,7 @@ from app.core.config import settings
 from app.modules.analytics import router as analytics_router
 from app.modules.auth import router as auth_router
 from app.modules.collaboration import router as collaboration_router
-from app.modules.documents import router as documents_router
+from app.modules.documents.router_simple import router as documents_router
 from app.modules.gamification import router as gamification_router
 from app.modules.projects import router as projects_router
 from app.modules.resources import router as resources_router
@@ -19,17 +19,17 @@ from app.api.v1.endpoints import archive as archive_router
 
 api_router = APIRouter()
 
-api_router.include_router(auth_router, prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
-api_router.include_router(gamification_router, prefix=f"{settings.API_V1_STR}/gamification", tags=["gamification"])
-api_router.include_router(projects_router, prefix=f"{settings.API_V1_STR}/projects", tags=["projects"])
-api_router.include_router(tasks_router, prefix=f"{settings.API_V1_STR}/tasks", tags=["tasks"])
-api_router.include_router(documents_router, prefix=f"{settings.API_V1_STR}/documents", tags=["documents"])
-api_router.include_router(variables_router, prefix=f"{settings.API_V1_STR}/variables", tags=["variables"])
-api_router.include_router(time_tracking_router, prefix=f"{settings.API_V1_STR}/time-tracking", tags=["time-tracking"])
-api_router.include_router(tenders_router, prefix=f"{settings.API_V1_STR}/tenders", tags=["tenders"])
-api_router.include_router(analytics_router, prefix=f"{settings.API_V1_STR}/analytics", tags=["analytics"])
-api_router.include_router(resources_router, prefix=f"{settings.API_V1_STR}/resources", tags=["resources"])
-api_router.include_router(collaboration_router, prefix=f"{settings.API_V1_STR}/collaboration", tags=["collaboration"])
-api_router.include_router(archive_router.router, prefix=f"{settings.API_V1_STR}/archive", tags=["archive"])
-api_router.include_router(workflow_router, prefix=f"{settings.API_V1_STR}/workflows", tags=["workflows"])
-api_router.include_router(remarks_router, prefix=f"{settings.API_V1_STR}/remarks", tags=["remarks"])
+api_router.include_router(auth_router, prefix=f"{settings.API_V1_STR}/auth", tags=["Auth"])
+api_router.include_router(gamification_router, prefix=f"{settings.API_V1_STR}/gamification", tags=["Gamification"])
+api_router.include_router(projects_router, prefix=f"{settings.API_V1_STR}/projects", tags=["Projects"])
+api_router.include_router(tasks_router, prefix=f"{settings.API_V1_STR}/tasks", tags=["Tasks"])
+api_router.include_router(documents_router, prefix=f"{settings.API_V1_STR}/documents", tags=["Documents"])
+api_router.include_router(variables_router, prefix=f"{settings.API_V1_STR}/variables", tags=["Variables"])
+api_router.include_router(time_tracking_router, prefix=f"{settings.API_V1_STR}/time-tracking", tags=["Time Tracking"])
+api_router.include_router(tenders_router, prefix=f"{settings.API_V1_STR}/tenders", tags=["Tenders"])
+api_router.include_router(analytics_router, prefix=f"{settings.API_V1_STR}/analytics", tags=["Analytics"])
+api_router.include_router(resources_router, prefix=f"{settings.API_V1_STR}/resources", tags=["Resources"])
+api_router.include_router(collaboration_router, prefix=f"{settings.API_V1_STR}/collaboration", tags=["Collaboration"])
+api_router.include_router(archive_router.router, prefix=f"{settings.API_V1_STR}/archive", tags=["Archive"])
+api_router.include_router(workflow_router, prefix=f"{settings.API_V1_STR}/workflows", tags=["Workflows"])
+api_router.include_router(remarks_router, prefix=f"{settings.API_V1_STR}/remarks", tags=["Remarks"])

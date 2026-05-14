@@ -1,6 +1,6 @@
 // frontend/src/features/auth/store/authStore.ts
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { authApi } from '../api/authApi';
 
 interface User {
   id: number;
@@ -19,40 +19,44 @@ interface AuthState {
   logout: () => void;
   setLoading: (loading: boolean) => void;
   setHasHydrated: (hydrated: boolean) => void;
+  checkAuth: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
-      user: null,
-      token: null,
-      isAuthenticated: false,
-      isLoading: true,
-      hasHydrated: false,
-      setAuth: (user, token) => {
-        localStorage.setItem('access_token', token);
-        set({ user, token, isAuthenticated: true, isLoading: false });
-      },
-      logout: () => {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        set({ user: null, token: null, isAuthenticated: false, isLoading: false });
-      },
-      setLoading: (isLoading) => set({ isLoading }),
-      setHasHydrated: (hasHydrated) => set({ hasHydrated }),
-    }),
-    {
-      name: 'auth-storage',
-      partialize: (state) => ({
-        user: state.user,
-        token: state.token,
-        isAuthenticated: state.isAuthenticated,
-      }),
-      onRehydrateStorage: () => (state) => {
-        if (state) {
-          state.setHasHydrated(true);
-        }
-      },
+export const useAuthStore = create<AuthState>((set) => ({
+  user: null,
+  token: null,
+  isAuthenticated: false,
+  isLoading: true,
+  hasHydrated: true, // сразу true, т.к. нет persist
+
+  setAuth: (user, token) => {
+    localStorage.setItem('access_token', token);
+    set({ user, token, isAuthenticated: true, isLoading: false });
+  },
+
+  logout: () => {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    set({ user: null, token: null, isAuthenticated: false, isLoading: false });
+  },
+
+  setLoading: (isLoading) => set({ isLoading }),
+
+  setHasHydrated: (hasHydrated) => set({ hasHydrated }),
+
+  checkAuth: async () => {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      set({ isLoading: false });
+      return;
     }
-  )
-);
+    try {
+      const user = await authApi.getCurrentUser();
+      set({ user, token, isAuthenticated: true, isLoading: false });
+    } catch {
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      set({ user: null, token: null, isAuthenticated: false, isLoading: false });
+    }
+  },
+}));

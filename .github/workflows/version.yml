@@ -1,0 +1,13 @@
+name: Auto Version
+on:
+  push:
+    branches: [main]
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          cd frontend
+          npm version patch
+          git push --follow-tags

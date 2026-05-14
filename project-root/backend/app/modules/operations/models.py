@@ -45,7 +45,7 @@ class Operation(Base):
     work_center: Mapped[Optional["WorkCenter"]] = relationship()
     responsible: Mapped[Optional["User"]] = relationship()
     tasks: Mapped[list["Task"]] = relationship(back_populates="operation")
-    documents: Mapped[list["Document"]] = relationship(back_populates="operation")
+    # documents relationship removed — Document model has no operation_id
     assignments: Mapped[list["OperationAssignment"]] = relationship(back_populates="operation")
 
 

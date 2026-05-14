@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 version: '3.8'
+=======
+version: '4.0.0'
+>>>>>>> mvp-sqlite-stable
 
 services:
   db:
@@ -28,4 +32,8 @@ services:
 
 volumes:
   postgres_dev_data:
+<<<<<<< HEAD
   qdrant_dev_data:
+=======
+  qdrant_dev_data:
+>>>>>>> mvp-sqlite-stable

@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="ДокПоток IRIS — платформа инженерного документооборота с версиями, маршрутами согласования, CPM, план-фактом и управленческим контролем." />
+  <meta name="theme-color" content="#6f4bff" />
+  <title>ДокПоток IRIS — инженерный документооборот, версии, CPM, согласования</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #faf8ff;
+      --surface: rgba(255,255,255,0.78);
+      --surface-strong: rgba(255,255,255,0.95);
+      --surface-soft: rgba(244,239,255,0.78);
+      --border: rgba(53,32,107,0.10);
+      --text: #1f1736;
+      --muted: #6d6787;
+      --muted-2: #8a84a4;
+      --purple: #6f4bff;
+      --purple-dark: #35206b;
+      --purple-soft: #d9cfff;
+      --yellow: #ffc93c;
+      --yellow-soft: #fff0bf;
+      --success: #416f33;
+      --error: #a13a6a;
+      --radius-sm: 16px;
+      --radius-md: 22px;
+      --radius-lg: 30px;
+      --radius-xl: 38px;
+      --shadow-xs: 0 10px 24px rgba(53,32,107,0.05);
+      --shadow-sm: 0 18px 42px rgba(53,32,107,0.08);
+      --shadow-lg: 0 32px 90px rgba(53,32,107,0.14);
+      --content: 1240px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: 'Manrope', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 0% 0%, rgba(111,75,255,0.10), transparent 20%),
+        radial-gradient(circle at 100% 0%, rgba(255,201,60,0.12), transparent 16%),
+        linear-gradient(180deg, #faf8ff 0%, #f6f2ff 36%, #faf8ff 100%);
+      letter-spacing: -0.01em;
+    }
+    a { color: inherit; text-decoration: none; }
+    img, svg { display: block; max-width: 100%; }
+    .container { width: min(var(--content), calc(100% - 40px)); margin: 0 auto; }
+    .site-header {
+      position: sticky; top: 0; z-index: 50; backdrop-filter: blur(18px);
+      background: rgba(250,248,255,0.78); border-bottom: 1px solid rgba(53,32,107,0.05);
+    }
+    .nav {
+      display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 16px 0;
+    }
+    .brand {
+      display: flex; align-items: center; gap: 12px; font-weight: 800; font-size: 15px; color: var(--purple-dark);
+    }
+    .brand-mark {
+      width: 46px; height: 46px; border-radius: 15px; display: grid; place-items: center; color: #fff;
+      background: linear-gradient(135deg, var(--purple), var(--purple-dark)); box-shadow: 0 14px 30px rgba(111,75,255,0.26);
+    }
+    .nav-links {
+      display: flex; align-items: center; gap: 22px; color: var(--muted); font-size: 14px; font-weight: 600;
+    }
+    .nav-actions { display: flex; gap: 12px; align-items: center; }
+    .btn {
+      border: 0; border-radius: 999px; padding: 13px 18px; font-size: 14px; font-weight: 800;
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;
+      transition: transform 180ms ease, box-shadow 180ms ease;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn.primary { background: linear-gradient(135deg, var(--purple), #5637df); color: #fff; box-shadow: 0 18px 30px rgba(111,75,255,0.26); }
+    .btn.secondary { background: rgba(111,75,255,0.08); color: var(--purple-dark); }
+    .btn.gold { background: var(--yellow); color: var(--purple-dark); }
+    .hero { padding: 52px 0 40px; }
+    .hero-grid { display: grid; grid-template-columns: 1.02fr 0.98fr; gap: 34px; align-items: center; }
+    .eyebrow {
+      display: inline-flex; align-items: center; gap: 9px; padding: 10px 14px; border-radius: 999px;
+      background: rgba(111,75,255,0.08); color: var(--purple-dark); font-size: 12px; font-weight: 800;
+      text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 18px;
+    }
+    .eyebrow::before {
+      content: ""; width: 8px; height: 8px; border-radius: 999px; background: var(--yellow);
+      box-shadow: 0 0 0 4px rgba(255,201,60,0.16);
+    }
+    h1 {
+      margin: 0 0 18px; font-size: clamp(42px, 6vw, 84px); line-height: 0.93; letter-spacing: -0.07em; max-width: 11ch;
+    }
+    h2 {
+      margin: 0 0 14px; font-size: clamp(30px, 4vw, 58px); line-height: 0.98; letter-spacing: -0.06em; max-width: 12ch;
+    }
+    h3 { margin: 0 0 8px; font-size: 20px; line-height: 1.12; color: var(--purple-dark); }
+    .accent-serif { font-family: 'Instrument Serif', serif; font-style: italic; font-weight: 400; color: var(--purple-dark); }
+    .hero p, .section p, .band-head p, .card p, .legal-grid p {
+      margin: 0 0 16px; max-width: 60ch; color: var(--muted); font-size: 17px; line-height: 1.78;
+    }
+    .micro-proof, .hero-note, .form-help {
+      color: var(--muted); font-size: 13px; line-height: 1.6;
+    }
+    .micro-proof { margin: 0 0 20px; color: var(--muted-2); }
+    .hero-note { margin: 0 0 24px; }
+    .cta-row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+    .trust-row { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; }
+    .trust-item {
+      background: rgba(255,255,255,0.58); border: 1px solid rgba(53,32,107,0.06); border-radius: var(--radius-md);
+      padding: 16px; box-shadow: var(--shadow-xs);
+    }
+    .trust-item strong { display:block; margin-bottom: 4px; font-size: 14px; color: var(--purple-dark); }
+    .trust-item span { color: var(--muted); font-size: 13px; line-height: 1.55; }
+    .visual-frame {
+      position: relative; min-height: 650px; border-radius: var(--radius-xl); overflow: hidden; border: 1px solid rgba(53,32,107,0.08);
+      background: radial-gradient(circle at 16% 16%, rgba(111,75,255,0.12), transparent 18%), radial-gradient(circle at 84% 16%, rgba(255,201,60,0.16), transparent 14%), linear-gradient(180deg, rgba(244,239,255,0.88), rgba(255,255,255,0.92));
+      box-shadow: var(--shadow-lg); isolation: isolate;
+    }
+    .visual-frame::before {
+      content: ""; position:absolute; inset:18px; border-radius: calc(var(--radius-xl) - 18px); border:1px solid rgba(255,255,255,0.52); z-index:1;
+    }
+    .visual-frame::after {
+      content: ""; position:absolute; right:42px; bottom:38px; width:180px; height:180px; border-radius:999px; background: radial-gradient(circle, rgba(255,201,60,0.40), transparent 66%); filter: blur(16px); z-index:0;
+    }
+    .visual-frame svg { width:100%; height:100%; position:relative; z-index:2; }
+    .strip { padding: 24px 0 66px; }
+    .strip-inner { display:grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap:14px; }
+    .strip-pill {
+      padding: 16px 18px; text-align:center; border-radius:999px; background: rgba(255,255,255,0.58); border:1px solid rgba(53,32,107,0.06);
+      color: var(--muted-2); font-size: 13px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em;
+    }
+    .section { padding: 26px 0 84px; }
+    .split { display:grid; grid-template-columns: 1fr 1fr; gap:30px; align-items:center; }
+    .panel, .card, .contact-card, .legal-card {
+      background: rgba(255,255,255,0.74); border:1px solid rgba(53,32,107,0.07); border-radius: var(--radius-xl); box-shadow: var(--shadow-sm);
+    }
+    .panel { overflow: hidden; }
+    .panel-body, .contact-card, .legal-card { padding: 30px; }
+    .feature-stack, .faq-list { display:grid; gap:12px; margin-top:24px; }
+    .feature, .faq-item {
+      padding:18px; border-radius:20px; background: rgba(111,75,255,0.05); border:1px solid rgba(53,32,107,0.05);
+    }
+    .feature strong, .faq-item strong { display:block; margin-bottom:4px; font-size:15px; color: var(--purple-dark); }
+    .feature span, .faq-item span { color: var(--muted); font-size:14px; line-height:1.6; }
+    .band { padding: 0 0 84px; }
+    .band-head { display:grid; grid-template-columns: 1fr auto; gap:24px; align-items:end; margin-bottom:22px; }
+    .metric {
+      display:inline-flex; align-items:center; gap:10px; margin-bottom:14px; padding:10px 12px; border-radius:999px; background: rgba(255,201,60,0.16);
+      color: var(--purple-dark); font-weight:800; font-size:12px; text-transform:uppercase; letter-spacing:0.07em;
+    }
+    .grid-3 { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:18px; }
+    .card { padding:22px; }
+    .case-meta {
+      display:inline-flex; margin-bottom:12px; padding:8px 10px; border-radius:999px; background: rgba(111,75,255,0.08); color: var(--purple-dark); font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:0.06em;
+    }
+    .contact-grid { display:grid; grid-template-columns: 0.92fr 1.08fr; gap:24px; align-items:start; }
+    .contact-list { display:grid; gap:14px; margin-top:18px; }
+    .contact-item {
+      padding:16px; border-radius:18px; background: rgba(111,75,255,0.05); border:1px solid rgba(53,32,107,0.05);
+    }
+    .contact-item strong { display:block; margin-bottom:4px; color: var(--purple-dark); font-size:14px; }
+    .contact-item span, .contact-item a { color: var(--muted); font-size:14px; line-height:1.6; }
+    form { display:grid; gap:14px; }
+    .form-grid { display:grid; grid-template-columns: 1fr 1fr; gap:14px; }
+    .field { display:grid; gap:8px; }
+    .field label { font-size: 13px; font-weight: 700; color: var(--purple-dark); }
+    .field input, .field select, .field textarea {
+      width:100%; border:1px solid rgba(53,32,107,0.14); background: rgba(255,255,255,0.96); border-radius:16px; padding:14px 14px; font: inherit; color: var(--text);
+      outline:none; transition: border-color 160ms ease, box-shadow 160ms ease;
+    }
+    .field textarea { min-height: 132px; resize: vertical; }
+    .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--purple); box-shadow: 0 0 0 4px rgba(111,75,255,0.12); }
+    .checkbox-row {
+      display:flex; align-items:flex-start; gap:10px; padding:14px 16px; border-radius:18px; background: rgba(255,255,255,0.72); border:1px solid rgba(53,32,107,0.07);
+    }
+    .checkbox-row input { margin-top: 3px; accent-color: var(--purple); }
+    .checkbox-row label { margin:0; color: var(--muted); font-size: 13px; line-height: 1.6; }
+    .checkbox-row label a { color: var(--purple-dark); text-decoration: underline; }
+    .error { color: var(--error); font-size: 12px; display:none; }
+    .field.invalid .error, .checkbox-row.invalid + .error { display:block; }
+    .field.invalid input, .field.invalid select, .field.invalid textarea, .checkbox-row.invalid { border-color: var(--error); box-shadow: 0 0 0 4px rgba(161,58,106,0.10); }
+    .success-box {
+      display:none; padding:16px 18px; border-radius:18px; background: rgba(65,111,51,0.10); color: #24441b; font-size:14px; line-height:1.6; border:1px solid rgba(65,111,51,0.18);
+    }
+    .success-box.show { display:block; }
+    .backend-box {
+      margin-top: 18px; padding: 18px; border-radius: 20px; background: rgba(111,75,255,0.06); border: 1px solid rgba(53,32,107,0.06);
+    }
+    .backend-box code {
+      display:block; margin-top:10px; padding:12px 14px; border-radius:14px; background:#231942; color:#fff; font-size:12px; line-height:1.5; overflow:auto;
+    }
+    .legal-grid { display:grid; grid-template-columns: 1fr 1fr; gap:18px; }
+    .legal-card ul { margin: 12px 0 0; padding-left: 18px; color: var(--muted); }
+    .legal-card li { margin-bottom: 8px; line-height: 1.65; }
+    .cta-banner {
+      margin: 0 auto 96px; padding:34px; border-radius: var(--radius-xl); background: linear-gradient(135deg, rgba(53,32,107,0.98), rgba(111,75,255,0.96));
+      color:#fff; box-shadow: var(--shadow-lg); display:grid; grid-template-columns: 1.2fr auto; gap:22px; align-items:center; position:relative; overflow:hidden;
+    }
+    .cta-banner::after {
+      content:""; position:absolute; right:-20px; top:-20px; width:180px; height:180px; border-radius:999px; background: radial-gradient(circle, rgba(255,201,60,0.30), transparent 64%); filter: blur(10px);
+    }
+    .cta-banner h3 { margin:0; font-size: clamp(28px, 3vw, 46px); line-height:1.02; letter-spacing:-0.05em; max-width:12ch; position:relative; z-index:1; color:#fff; }
+    .cta-banner p { margin:12px 0 0; max-width:60ch; color: rgba(255,255,255,0.76); line-height:1.75; position:relative; z-index:1; }
+    footer { padding:0 0 52px; color: var(--muted); font-size:14px; }
+    .cap { font-family:'Manrope',sans-serif; font-size:12px; fill: var(--purple-dark); font-weight:700; }
+    .small { font-family:'Manrope',sans-serif; font-size:11px; fill: rgba(53,32,107,0.78); font-weight:600; }
+    .card-ui { fill: rgba(255,255,255,0.96); stroke: rgba(53,32,107,0.12); stroke-width:1.2; }
+    .chip { fill: rgba(111,75,255,0.10); }
+    .gold-chip { fill: rgba(255,201,60,0.22); }
+    .flow { stroke: var(--purple); stroke-width:3; fill:none; stroke-linecap:round; stroke-linejoin:round; }
+    .flow-soft { stroke: rgba(111,75,255,0.35); stroke-width:2.6; fill:none; stroke-linecap:round; stroke-linejoin:round; }
+    .node { fill: var(--yellow); }
+    .node-soft { fill: var(--yellow-soft); stroke: rgba(53,32,107,0.08); }
+    @media (max-width: 1100px) {
+      .hero-grid, .split, .band-head, .contact-grid, .legal-grid, .cta-banner { grid-template-columns:1fr; }
+      .grid-3, .trust-row, .strip-inner { grid-template-columns:1fr; }
+      .nav-links { display:none; }
+      .visual-frame { min-height: 540px; }
+    }
+    @media (max-width: 720px) {
+      .container { width:min(var(--content), calc(100% - 24px)); }
+      .hero { padding-top:34px; }
+      .panel-body, .contact-card, .legal-card, .cta-banner { padding:24px; }
+      .visual-frame { min-height:430px; }
+      .form-grid { grid-template-columns:1fr; }
+      h1, h2 { max-width:none; }
+      .hero p, .section p, .band-head p, .card p, .legal-grid p { font-size:16px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M5 12h6M13 12h6M12 5v14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <span>ДокПоток IRIS</span>
+      </div>
+      <nav class="nav-links">
+        <a href="#about">О платформе</a>
+        <a href="#cases">Кейсы</a>
+        <a href="#contacts">Контакты</a>
+        <a href="#legal">Реквизиты</a>
+      </nav>
+      <div class="nav-actions">
+        <a class="btn secondary" href="#contacts">Связаться</a>
+        <a class="btn primary" href="#demo">Запросить демо</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <div class="eyebrow">Production‑ready enterprise landing</div>
+          <h1>ДокПоток IRIS — <span class="accent-serif">единый рабочий контур</span> для инженерной документации</h1>
+          <p>Платформа объединяет документы, версии, маршруты согласования, CPM, план‑факт, трудозатраты и управленческие действия в одном процессе. На B2B‑странице важно ясно показать основной оффер, повторяющийся CTA и минимальный путь до запроса демо. [cite:130][web:107][web:139]</p>
+          <div class="micro-proof">Для конверсионных форм рекомендуют собирать только необходимые поля, объяснять следующий шаг и сопровождать сбор данных заметным privacy notice. [web:134][web:151][web:154]</div>
+          <div class="cta-row">
+            <a class="btn primary" href="#contacts">Запросить персональное демо</a>
+            <a class="btn secondary" href="#legal">Смотреть реквизиты</a>
+          </div>
+          <div class="hero-note">Форма ниже уже подготовлена под backend‑интеграцию: есть метод POST, action‑endpoint, privacy notice, чекбокс согласия и клиентская валидация. [web:151][web:152][web:158]</div>
+          <div class="trust-row">
+            <div class="trust-item"><strong>Версии и ревизии</strong><span>История документа и контроль изменений. [cite:130]</span></div>
+            <div class="trust-item"><strong>CPM и сроки</strong><span>Связь документации с зависимостями и критическим путём. [cite:130]</span></div>
+            <div class="trust-item"><strong>Согласования</strong><span>Быстрые маршруты review / approval внутри процесса. [cite:131]</span></div>
+          </div>
+        </div>
+        <div class="visual-frame" aria-hidden="true">
+          <svg viewBox="0 0 700 740" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="shadowHero" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="0" dy="20" stdDeviation="20" flood-color="rgba(53,32,107,0.12)"/>
+              </filter>
+              <marker id="arrowHero" markerWidth="12" markerHeight="12" refX="9" refY="6" orient="auto">
+                <path d="M0 0L12 6L0 12Z" fill="#6f4bff"/>
+              </marker>
+            </defs>
+            <g filter="url(#shadowHero)">
+              <rect x="68" y="126" width="166" height="88" rx="28" class="card-ui"/>
+              <rect x="68" y="244" width="166" height="88" rx="28" class="card-ui"/>
+              <rect x="68" y="362" width="166" height="88" rx="28" class="card-ui"/>
+              <rect x="274" y="162" width="190" height="292" rx="38" fill="#35206b"/>
+              <rect x="504" y="138" width="156" height="92" rx="28" class="card-ui"/>
+              <rect x="504" y="276" width="156" height="92" rx="28" class="card-ui"/>
+              <rect x="504" y="414" width="156" height="92" rx="28" class="card-ui"/>
+            </g>
+            <rect x="96" y="150" width="62" height="12" rx="6" class="chip"/>
+            <rect x="96" y="174" width="92" height="9" rx="4.5" fill="#ded6ff"/>
+            <text x="96" y="200" class="cap">Документы</text>
+            <rect x="96" y="268" width="54" height="12" rx="6" class="gold-chip"/>
+            <rect x="96" y="292" width="86" height="9" rx="4.5" fill="#f0e7b8"/>
+            <text x="96" y="318" class="cap">Ревизии</text>
+            <rect x="96" y="386" width="66" height="12" rx="6" class="chip"/>
+            <rect x="96" y="410" width="102" height="9" rx="4.5" fill="#ded6ff"/>
+            <text x="96" y="436" class="cap">Этапы и сроки</text>
+            <rect x="308" y="206" width="88" height="14" rx="7" fill="#c8baff"/>
+            <rect x="308" y="236" width="118" height="12" rx="6" fill="#ffffff" opacity="0.88"/>
+            <rect x="308" y="262" width="124" height="12" rx="6" fill="#ffffff" opacity="0.62"/>
+            <rect x="304" y="298" width="126" height="74" rx="18" fill="#ffffff" opacity="0.08"/>
+            <circle cx="334" cy="334" r="14" class="node"/>
+            <circle cx="368" cy="334" r="14" fill="#ffffff" opacity="0.26"/>
+            <circle cx="402" cy="334" r="14" class="node-soft"/>
+            <text x="300" y="138" class="cap" fill="#ffffff">Ядро ДокПоток IRIS</text>
+            <text x="306" y="398" class="small" fill="#ffffff">Маршруты · CPM · план/факт · статусы</text>
+            <rect x="530" y="162" width="62" height="12" rx="6" class="chip"/>
+            <rect x="530" y="186" width="88" height="9" rx="4.5" fill="#ded6ff"/>
+            <text x="530" y="212" class="cap">Согласование</text>
+            <rect x="530" y="300" width="66" height="12" rx="6" class="gold-chip"/>
+            <rect x="530" y="324" width="96" height="9" rx="4.5" fill="#f0e7b8"/>
+            <text x="530" y="350" class="cap">Контроль хода</text>
+            <rect x="530" y="438" width="70" height="12" rx="6" class="chip"/>
+            <rect x="530" y="462" width="104" height="9" rx="4.5" fill="#ded6ff"/>
+            <text x="530" y="488" class="cap">Следующее действие</text>
+            <path d="M234 170 C262 170, 266 194, 274 210" class="flow" marker-end="url(#arrowHero)"/>
+            <path d="M234 288 C262 288, 266 292, 274 294" class="flow-soft" marker-end="url(#arrowHero)"/>
+            <path d="M234 406 C262 406, 266 382, 274 366" class="flow" marker-end="url(#arrowHero)"/>
+            <path d="M464 222 C484 220, 492 202, 504 194" class="flow" marker-end="url(#arrowHero)"/>
+            <path d="M464 308 C486 312, 492 324, 504 334" class="flow-soft" marker-end="url(#arrowHero)"/>
+            <path d="M464 380 C488 392, 494 442, 504 458" class="flow" marker-end="url(#arrowHero)"/>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <section class="strip">
+      <div class="container strip-inner">
+        <div class="strip-pill">Документы</div>
+        <div class="strip-pill">Ревизии</div>
+        <div class="strip-pill">CPM</div>
+        <div class="strip-pill">План / факт</div>
+        <div class="strip-pill">Согласования</div>
+      </div>
+    </section>
+
+    <section id="about" class="section">
+      <div class="container split">
+        <div class="panel">
+          <div class="panel-body">
+            <div class="eyebrow">О платформе</div>
+            <h2>ДокПоток IRIS связывает документ, процесс и <span class="accent-serif">управленческое решение</span></h2>
+            <p>Платформа помогает перейти от ручного контроля к единой логике прохождения: загрузка списков документации, контроль полей, ревизий, сроков, трудозатрат и готовности команды становятся частью одной рабочей среды. [cite:130]</p>
+            <div class="feature-stack">
+              <div class="feature"><strong>Версионность без хаоса</strong><span>Изменения и ревизии фиксируются в управляемой системе. [cite:130]</span></div>
+              <div class="feature"><strong>Контекстные действия</strong><span>Согласование, проверка и создание документов должны быть доступны без лишних переходов. [cite:131]</span></div>
+              <div class="feature"><strong>Связь с проектом</strong><span>Документы работают вместе со сроками, зависимостями и CPM. [cite:130]</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-body">
+            <div class="metric">Privacy + conversion</div>
+            <h3>Форма лида должна быть короткой, понятной и прозрачной</h3>
+            <p>Хорошая форма запрашивает только необходимые данные, показывает privacy notice простым языком и использует явное согласие без предустановленных галочек, если это требуется выбранной моделью обработки. [web:151][web:154][web:155][web:158]</p>
+            <p>Также рекомендуют использовать HTTPS, описывать цель обработки данных, срок хранения и путь связи после заявки, чтобы укреплять доверие и соответствовать требованиям к privacy‑коммуникации. [web:151][web:152][web:159]</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="cases" class="band">
+      <div class="container">
+        <div class="band-head">
+          <div>
+            <div class="metric">Кейсы</div>
+            <h2>Где ДокПоток IRIS даёт максимальную <span class="accent-serif">управляемость</span></h2>
+          </div>
+          <p>Кейсы снижают риск для покупателя и помогают быстрее соотнести продукт со своей ситуацией. [web:140]</p>
+        </div>
+        <div class="grid-3">
+          <div class="card"><div class="case-meta">Кейс 01 · EPC / проектный офис</div><h3>Контроль комплектов документации</h3><p>Платформа помогает вести перечни, статусы, ревизии и сроки выдачи комплектов документации по проекту. [cite:130]</p></div>
+          <div class="card"><div class="case-meta">Кейс 02 · Инженерный отдел</div><h3>Маршруты review / approval</h3><p>Система сокращает хаос в почте и делает прохождение документа по этапам считываемым и управляемым. [cite:131]</p></div>
+          <div class="card"><div class="case-meta">Кейс 03 · Руководство / тендеры</div><h3>Загрузка команды и готовность к новым работам</h3><p>Руководитель видит трудозатраты, доступность и окно для новых задач или тендеров. [cite:130]</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="contacts" class="band">
+      <div class="container">
+        <div class="band-head">
+          <div>
+            <div class="metric">Контакты и форма</div>
+            <h2>Запросить демо и передать минимум данных <span class="accent-serif">без лишнего трения</span></h2>
+          </div>
+          <p>Для контактных и demo‑форм рекомендуют показывать несколько способов связи, использовать короткие поля и явно объяснять, зачем собираются данные и что произойдёт после отправки. [web:151][web:154][web:161]</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <h3>Контакты</h3>
+            <p>Ниже оставлен production‑ready блок. Замени значения на реальные реквизиты и контакты компании перед публикацией. Несколько каналов связи усиливают доверие к странице. [web:151]</p>
+            <div class="contact-list">
+              <div class="contact-item"><strong>Email отдела продаж</strong><a href="mailto:sales@dokpotok-iris.ru">sales@dokpotok-iris.ru</a></div>
+              <div class="contact-item"><strong>Телефон</strong><a href="tel:+74950000000">+7 (495) 000‑00‑00</a></div>
+              <div class="contact-item"><strong>Telegram</strong><a href="https://t.me/dokpotok_iris" target="_blank" rel="noopener noreferrer">@dokpotok_iris</a></div>
+              <div class="contact-item"><strong>Адрес</strong><span>Россия, Москва, ул. Примерная, д. 10, офис 402</span></div>
+            </div>
+            <div class="backend-box">
+              <strong style="display:block; color:var(--purple-dark); font-size:14px;">Подготовка под backend</strong>
+              <div class="form-help">Форма ниже уже размечена под POST‑отправку на backend‑endpoint. Для production подключи свой API и CSRF/anti‑spam слой. HTTPS и безопасная доставка формы — базовые требования для защиты данных. [web:151][web:152]</div>
+              <code>POST /api/demo-request
+Content-Type: application/json
+{
+  "name": "...",
+  "company": "...",
+  "email": "...",
+  "phone": "...",
+  "role": "...",
+  "team_size": "...",
+  "message": "...",
+  "consent": true,
+  "source": "landing-docpotok-iris"
+}</code>
+            </div>
+          </div>
+          <div class="contact-card">
+            <form id="demoForm" method="POST" action="/api/demo-request" novalidate>
+              <div class="form-grid">
+                <div class="field">
+                  <label for="name">Имя *</label>
+                  <input id="name" name="name" type="text" autocomplete="name" placeholder="Например, Ирина Новикова" required />
+                  <div class="error">Укажите имя.</div>
+                </div>
+                <div class="field">
+                  <label for="company">Компания *</label>
+                  <input id="company" name="company" type="text" autocomplete="organization" placeholder="Название компании" required />
+                  <div class="error">Укажите компанию.</div>
+                </div>
+              </div>
+              <div class="form-grid">
+                <div class="field">
+                  <label for="email">Рабочий email *</label>
+                  <input id="email" name="email" type="email" autocomplete="email" placeholder="name@company.com" required />
+                  <div class="error">Введите корректный рабочий email.</div>
+                </div>
+                <div class="field">
+                  <label for="phone">Телефон</label>
+                  <input id="phone" name="phone" type="tel" autocomplete="tel" placeholder="+7 (___) ___‑__‑__" />
+                </div>
+              </div>
+              <div class="form-grid">
+                <div class="field">
+                  <label for="role">Роль</label>
+                  <select id="role" name="role">
+                    <option value="">Выберите роль</option>
+                    <option>Руководитель проекта</option>
+                    <option>Главный инженер проекта</option>
+                    <option>Руководитель отдела</option>
+                    <option>PMO / Project Office</option>
+                    <option>Тендерная команда</option>
+                    <option>Другое</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="team_size">Размер команды</label>
+                  <select id="team_size" name="team_size">
+                    <option value="">Выберите диапазон</option>
+                    <option>1–10 человек</option>
+                    <option>11–50 человек</option>
+                    <option>51–200 человек</option>
+                    <option>200+ человек</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field">
+                <label for="message">Что показать на демо? *</label>
+                <textarea id="message" name="message" placeholder="Например: контроль ревизий, маршруты согласования, CPM, план‑факт, загрузка сотрудников, отчётность для руководства" required></textarea>
+                <div class="error">Коротко опишите задачу.</div>
+              </div>
+
+              <div class="checkbox-row" id="consentRow">
+                <input id="consent" name="consent" type="checkbox" value="true" required />
+                <label for="consent">Я согласен(на) на обработку персональных данных для ответа на запрос и проведения демонстрации. Подробности — в <a href="#privacy-notice">privacy notice</a>. Непредустановленная галочка и ясный текст согласия считаются хорошей практикой, когда согласие нужно фиксировать явно. [web:151][web:154][web:158]</label>
+              </div>
+              <div class="error" id="consentError">Нужно подтвердить согласие на обработку данных.</div>
+
+              <input type="hidden" name="source" value="landing-docpotok-iris" />
+              <input type="hidden" name="csrf_token" value="REPLACE_ON_SERVER" />
+
+              <div class="form-help" id="privacy-notice">Мы используем введённые данные только для обработки запроса, связи с вами и подготовки релевантного демо. В production‑версии стоит отдельно указать срок хранения, оператора данных, процессоров и ссылку на полную политику конфиденциальности. Privacy notice должен быть простым, понятным и легко доступным. [web:152][web:153][web:155][web:159]</div>
+              <button class="btn primary" type="submit">Отправить заявку на демо</button>
+              <div class="form-help">После отправки заявка уходит в backend‑endpoint. Если JavaScript отключён, форма всё равно сможет отправиться стандартным POST‑запросом на серверный action. Для production‑интеграции рекомендуется SMTP/TLS или CRM‑обработчик. [web:152]</div>
+              <div id="successBox" class="success-box">Спасибо! Форма прошла клиентскую проверку и готова к отправке на backend. Для production замени action, включи серверную валидацию, логирование согласия и защиту от спама. [web:158]</div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="legal" class="band">
+      <div class="container">
+        <div class="band-head">
+          <div>
+            <div class="metric">Реквизиты и legal readiness</div>
+            <h2>Блок реквизитов и <span class="accent-serif">privacy‑готовность</span> для production</h2>
+          </div>
+          <p>Полезно вынести реквизиты, оператора данных и базовые legal‑disclosures в отдельный читаемый блок рядом с формой или перед footer. Privacy notice должен объяснять, какие данные собираются, зачем, кто их обрабатывает и как человек может реализовать свои права. [web:151][web:153][web:159]</p>
+        </div>
+        <div class="legal-grid">
+          <div class="legal-card">
+            <h3>Реквизиты компании</h3>
+            <p><strong>ООО «ДокПоток IRIS»</strong><br/>ИНН: 7700000000<br/>КПП: 770001001<br/>ОГРН: 1207700000000<br/>Юридический адрес: 125000, г. Москва, ул. Примерная, д. 10, офис 402<br/>Email: legal@dokpotok-iris.ru<br/>Телефон: +7 (495) 000‑00‑00</p>
+            <p>Этот блок нужно заменить на реальные реквизиты юридического лица перед публикацией. Подробные и достоверные контакты повышают доверие к contact‑странице. [web:151]</p>
+          </div>
+          <div class="legal-card">
+            <h3>Что включить в privacy notice</h3>
+            <ul>
+              <li>Какие данные собираются: имя, компания, рабочий email, телефон, контекст запроса. [web:154]</li>
+              <li>Зачем данные собираются: ответ на запрос, организация демо, дальнейшая деловая коммуникация. [web:152][web:153]</li>
+              <li>Кто обрабатывает данные: оператор и привлечённые процессоры, включая хостинг, email, CRM. [web:152][web:159]</li>
+              <li>Срок хранения и права субъекта данных, включая право отозвать согласие, если оно используется как основание. [web:152][web:159]</li>
+              <li>Если нужен маркетинг, требуется отдельное опциональное согласие без pre‑checked box. [web:151][web:156][web:158]</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div id="demo" class="container">
+      <section class="cta-banner">
+        <div>
+          <h3>Лендинг готов к передаче в разработку и подключению backend</h3>
+          <p>В production‑ready версии уже есть CTA, кейсы, реквизиты, privacy notice, чекбокс согласия и форма с action/method для серверной обработки. Дальше остаётся заменить реальные данные компании, подключить endpoint и включить серверную валидацию, хранение согласий и антиспам‑защиту. [web:151][web:152][web:158]</p>
+        </div>
+        <div>
+          <a class="btn gold" href="#contacts">Проверить форму</a>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    <div class="container">ДокПоток IRIS — production‑ready лендинг с формой запроса демо, реквизитами и privacy‑готовностью для backend‑подключения. [cite:130][web:151][web:152]</div>
+  </footer>
+
+  <script>
+    const form = document.getElementById('demoForm');
+    const successBox = document.getElementById('successBox');
+    const consentRow = document.getElementById('consentRow');
+    const consentError = document.getElementById('consentError');
+
+    function validateEmail(email) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+
+    function setInvalid(fieldEl, isInvalid) {
+      fieldEl.classList.toggle('invalid', isInvalid);
+    }
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      successBox.classList.remove('show');
+
+      const nameField = form.querySelector('#name').closest('.field');
+      const companyField = form.querySelector('#company').closest('.field');
+      const emailField = form.querySelector('#email').closest('.field');
+      const messageField = form.querySelector('#message').closest('.field');
+
+      const name = form.name.value.trim();
+      const company = form.company.value.trim();
+      const email = form.email.value.trim();
+      const message = form.message.value.trim();
+      const consent = form.consent.checked;
+
+      const nameInvalid = !name;
+      const companyInvalid = !company;
+      const emailInvalid = !validateEmail(email);
+      const messageInvalid = message.length < 10;
+      const consentInvalid = !consent;
+
+      setInvalid(nameField, nameInvalid);
+      setInvalid(companyField, companyInvalid);
+      setInvalid(emailField, emailInvalid);
+      setInvalid(messageField, messageInvalid);
+      consentRow.classList.toggle('invalid', consentInvalid);
+      consentError.style.display = consentInvalid ? 'block' : 'none';
+
+      if (nameInvalid || companyInvalid || emailInvalid || messageInvalid || consentInvalid) return;
+
+      successBox.classList.add('show');
+
+      const payload = {
+        name,
+        company,
+        email,
+        phone: form.phone.value.trim(),
+        role: form.role.value,
+        team_size: form.team_size.value,
+        message,
+        consent,
+        source: form.source.value
+      };
+
+      console.log('Demo request payload for backend:', payload);
+      successBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+  </script>
+</body>
+</html>
