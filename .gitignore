@@ -1,56 +1,177 @@
-# Python
-__pycache__/
-*.py[cod]
-*.pyo
-*.pyd
-*.egg-info/
-.eggs/
-*.egg
-build/
-dist/
+# ═══════════════════════════════════════════
+# DokPotok IRIS — Unified .gitignore
+# Python (FastAPI) + Node (React/Vite) 
+# ═══════════════════════════════════════════
 
-# Virtual envs
+# ─── OS & IDE ─────────────────────────────
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# VS Code (личные настройки )
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+.history/
+
+# JetBrains
+.idea/
+*.iml
+*.iws
+out/
+
+# ─── AI-AGENTS ─────────────────
+
+
+
+
+# ─── BACKEND: PYTHON / FASTAPI ────────────
+# Virtual environments
 .venv/
 venv/
+ENV/
 env/
+env.bak/
+venv.bak/
 
-# Test / coverage
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Pytest / Coverage
 .pytest_cache/
-htmlcov/
 .coverage
 .coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
 
-# IDE / editor
-.idea/
-.vscode/
-*.swp
-*.swo
+# MyPy / Ruff / Bandit
+.mypy_cache/
+.ruff_cache/
+.dmypy.json
+.pyre/
 
-# Node
-node_modules/
-frontend/node_modules/
-frontend/dist/
+# Alembic (оставляем versions/, игнорим кэш)
+alembic/__pycache__/
 
-# Local config / secrets
-.env
-.env.local
-.env.*
-
-# Local data / storage
-data/
-storage/
+# SQLite / локальные БД
 *.db
+*.sqlite
 *.sqlite3
 
+# ─── FRONTEND: NODE / REACT / VITE ────────
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# Build outputs
+dist/
+dist-ssr/
+build/
+*.local
+
+# Vite
+.vite/
+*.vite
+tsconfig.tsbuildinfo
+tsconfig.node.tsbuildinfo
+vite.config.d.ts
+vite.config.js
+!vite.config.ts          # оставляем исходник
+
 # Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ESLint / Prettier cache
+.eslintcache
+.prettiercache
+
+# ─── DOCKER ───────────────────────────────
+*.env
+.env.local
+.env.*.local
+!.env.example
+docker-compose.override.yml
+
+# ─── PROJECT-SPECIFIC: DOKPOTOK IRIS ──────
+# Логи приложения
 logs/
 *.log
+app_*.log
+error_*.log
 
-# OS
-.DS_Store
-Thumbs.db
+# Загрузки / временные файлы
+uploads/
+temp/
+tmp/
+*.tmp
 
-# Local AI / tooling
-.claude/
-.mcp.json
-CLAUDE.md
+# Старые дубли брендбука (оставлено только .md)
+design/*.docx
+design/*.pdf
+design/*.doc
+design/*.pptx
+
+# Скриншоты и артефакты дизайна 
+design/production-*.png
+design/portfolio-screenshot.png
+design/панель аналитики*.png
+design/портфель заказов.png
+design/АРХИВ.png
+design/документация.png
+design/ДОКУМЕНТООБОРОТ.png
+
+# Иконки — оставляем, но если нужно исключить:
+# design/Иконка*.png
+# design/лого*.png
+
+# ─── SECURITY ─────────────────────────────
+# Никогда не коммитить секреты
+*.pem
+*.key
+*.crt
+*.p12
+secrets.json
+credentials.json
+service-account*.json
+
+# ─── MISC ─────────────────────────────────
+*.bak
+*.swp
+*.swo
+*~
+.cache/
