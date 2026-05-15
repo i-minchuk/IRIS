@@ -1,18 +1,20 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '@/providers/ThemeProvider';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, FileText, FolderKanban, Gavel, Archive, ShieldCheck, Zap } from 'lucide-react';
 import { Crystal } from '@/components/Crystal';
+import { useZoomStore } from '@/features/zoom/store/zoomStore';
 
 const FeatureCard = ({ icon, title, lines }: { icon: React.ReactNode; title: string; lines: string[] }) => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   return (
     <div 
-      className="p-5 rounded-xl text-center transition-all duration-200"
+      className="p-5 rounded-xl text-center transition-all duration-200 relative z-[2]"
       style={{
         border: `1px solid ${isDark ? '#3D4554' : '#CED2DD'}`,
-        background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.5)',
+        background: isDark ? 'rgba(13,17,23,0.72)' : 'rgba(255,255,255,0.72)',
+        backdropFilter: 'blur(8px)',
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.transform = 'translateY(-2px)';
@@ -34,25 +36,19 @@ const FeatureCard = ({ icon, title, lines }: { icon: React.ReactNode; title: str
       >
         {icon}
       </div>
-      <div className="text-[13px] font-semibold mb-1" style={{ color: isDark ? '#E2E5EC' : '#1E2230' }}>
-        {title}
-      </div>
+      <div className="text-[13px] font-semibold mb-1" style={{ color: isDark ? '#E2E5EC' : '#1E2230' }}>{title}</div>
       <div className="text-[11px] leading-relaxed" style={{ color: isDark ? '#8B92A8' : '#6B7280' }}>
-        {lines.map((line, i) => (
-          <span key={i}>
-            {line}
-            {i < lines.length - 1 && <br />}
-          </span>
-        ))}
+        {lines.map((line, i) => (<span key={i}>{line}{i < lines.length - 1 && <br />}</span>))}
       </div>
     </div>
   );
 };
 
-const FloatingCrystal = ({ color, darkColor, size, top, left, right, rotate, delay, duration }: any) => {
+const FloatingCrystal = ({ color, darkColor, size, top, left, right, rotate, delay, duration, opacity = 0.6 }: any) => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   const [mounted, setMounted] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setMounted(true), delay);
@@ -61,30 +57,43 @@ const FloatingCrystal = ({ color, darkColor, size, top, left, right, rotate, del
 
   const crystalColor = isDark ? darkColor : color;
 
+  // Параметры hover — меняй здесь
+  const hoverRotate = isHovered ? 75 : 0;   // ← УГОЛ ПОВОРОТА
+  const hoverScale  = isHovered ? 1.15 : 1; // ← МАСШТАБ
+  const hoverOpacity = isHovered ? Math.min(opacity * 1.6, 0.95) : opacity; // ← ЯРКОСТЬ
+
+  // Свечение при наведении
+  const glowRadius = isHovered ? 28 : (isDark ? 12 : 8);
+  const glowAlpha  = isHovered ? 'FF' : (isDark ? 'C0' : 'A0');
+
   return (
     <div
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       style={{
         position: 'absolute',
         top,
         left,
         right,
-        transform: `rotate(${rotate}deg)`,
+        transform: `rotate(${rotate + hoverRotate}deg) scale(${hoverScale})`,
+        transition: 'transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease',
         animationName: mounted ? 'floatCrystal' : 'none',
         animationDuration: mounted ? `${duration}s` : '0s',
         animationTimingFunction: 'ease-in-out',
         animationIterationCount: 'infinite',
         animationDelay: `${delay}ms`,
-        zIndex: 0,
-        pointerEvents: 'none',
+        zIndex: 1,
+        cursor: 'pointer',
+        opacity: hoverOpacity,
+        willChange: 'transform',
       }}
     >
       <Crystal
         color={crystalColor}
         size={size}
         style={{
-          filter: isDark 
-            ? `drop-shadow(0 0 12px ${crystalColor}80)` 
-            : `drop-shadow(0 0 8px ${crystalColor}60)`,
+          filter: `drop-shadow(0 0 ${glowRadius}px ${crystalColor}${glowAlpha})`,
+          transition: 'filter 0.3s ease',
         }}
       />
     </div>
@@ -95,18 +104,58 @@ export default function LandingPage() {
   const { theme, toggleTheme } = useTheme();
   const isDark = theme === 'dark';
 
+  // ← ВСТАВЬ ЭТО:
+  const { setHidden } = useZoomStore();
+  useEffect(() => {
+    setHidden(true);              // скрыть зум на лендинге
+    return () => setHidden(false); // показать при уходе
+  }, [setHidden]);
+  // ==========
+
+
   const crystals = [
-    { id: 'c1', color: '#8D79C7', darkColor: '#A898D9', size: 55, top: '8%', left: '8%', rotate: -15, delay: 0, duration: 5.5 },
-    { id: 'c2', color: '#3B4FA8', darkColor: '#5C75E0', size: 50, top: '6%', left: '45%', rotate: 10, delay: 200, duration: 6.2 },
-    { id: 'c3', color: '#D4A62A', darkColor: '#E8C44A', size: 52, top: '10%', right: '8%', rotate: 20, delay: 400, duration: 5.8 },
-    { id: 'c4', color: '#3B4FA8', darkColor: '#5C75E0', size: 48, top: '55%', left: '6%', rotate: -8, delay: 600, duration: 6.5 },
-    { id: 'c5', color: '#8D79C7', darkColor: '#A898D9', size: 50, top: '60%', left: '48%', rotate: 12, delay: 800, duration: 5.2 },
-    { id: 'c6', color: '#222B5C', darkColor: '#5C75E0', size: 52, top: '58%', right: '6%', rotate: 18, delay: 1000, duration: 6.0 },
+    { id: 'c1', color: '#8D79C7', darkColor: '#A898D9', size: 48, top: '8%', left: '4%', rotate: -22, delay: 0, duration: 5.8, opacity: 0.75 },
+    { id: 'c2', color: '#3B4FA8', darkColor: '#5C75E0', size: 36, top: '3%', left: '18%', rotate: 15, delay: 300, duration: 6.5, opacity: 0.75 },
+    { id: 'c3', color: '#D4A62A', darkColor: '#E8C44A', size: 28, top: '14%', left: '30%', rotate: 42, delay: 150, duration: 5.2, opacity: 0.75 },
+    { id: 'c4', color: '#8D79C7', darkColor: '#A898D9', size: 52, top: '2%', left: '55%', rotate: -10, delay: 600, duration: 7.0, opacity: 0.75 },
+    { id: 'c5', color: '#3B4FA8', darkColor: '#5C75E0', size: 32, top: '10%', left: '72%', rotate: 25, delay: 450, duration: 6.2, opacity: 0.75 },
+    { id: 'c6', color: '#D4A62A', darkColor: '#E8C44A', size: 44, top: '6%', right: '6%', rotate: 35, delay: 200, duration: 6.8, opacity: 0.75 },
+    { id: 'c7', color: '#222B5C', darkColor: '#5C75E0', size: 38, top: '16%', right: '18%', rotate: -18, delay: 800, duration: 5.5, opacity: 0.75 },
+    { id: 'c8', color: '#3B4FA8', darkColor: '#5C75E0', size: 64, top: '30%', left: '8%', rotate: 8, delay: 100, duration: 6.2, opacity: 0.75 },
+    { id: 'c9', color: '#8D79C7', darkColor: '#A898D9', size: 44, top: '34%', left: '26%', rotate: -30, delay: 500, duration: 5.0, opacity: 0.75 },
+    { id: 'c10', color: '#D4A62A', darkColor: '#E8C44A', size: 56, top: '28%', left: '45%', rotate: 12, delay: 250, duration: 6.5, opacity: 0.75 },
+    { id: 'c11', color: '#8D79C7', darkColor: '#A898D9', size: 34, top: '36%', left: '62%', rotate: -8, delay: 700, duration: 5.3, opacity: 0.75 },
+    { id: 'c12', color: '#3B4FA8', darkColor: '#5C75E0', size: 48, top: '32%', right: '12%', rotate: 20, delay: 350, duration: 6.0, opacity: 0.75 },
+    { id: 'c13', color: '#D4A62A', darkColor: '#E8C44A', size: 30, top: '40%', right: '28%', rotate: -22, delay: 900, duration: 5.7, opacity: 0.75 },
+    { id: 'c14', color: '#222B5C', darkColor: '#5C75E0', size: 42, top: '38%', right: '45%', rotate: 33, delay: 150, duration: 6.4, opacity: 0.75 },
+    { id: 'c15', color: '#8D79C7', darkColor: '#A898D9', size: 50, top: '52%', left: '5%', rotate: -14, delay: 400, duration: 5.9, opacity: 0.75 },
+    { id: 'c16', color: '#3B4FA8', darkColor: '#5C75E0', size: 36, top: '58%', left: '20%', rotate: 18, delay: 600, duration: 6.3, opacity: 0.75 },
+    { id: 'c17', color: '#D4A62A', darkColor: '#E8C44A', size: 40, top: '54%', left: '38%', rotate: -5, delay: 200, duration: 5.4, opacity: 0.75 },
+    { id: 'c18', color: '#8D79C7', darkColor: '#A898D9', size: 28, top: '60%', left: '52%', rotate: 28, delay: 750, duration: 6.6, opacity: 0.75 },
+    { id: 'c19', color: '#3B4FA8', darkColor: '#5C75E0', size: 46, top: '56%', right: '22%', rotate: -25, delay: 300, duration: 5.1, opacity: 0.75 },
+    { id: 'c20', color: '#D4A62A', darkColor: '#E8C44A', size: 32, top: '62%', right: '8%', rotate: 14, delay: 500, duration: 6.0, opacity: 0.75 },
+    { id: 'c21', color: '#8D79C7', darkColor: '#A898D9', size: 44, top: '74%', left: '12%', rotate: -20, delay: 100, duration: 5.6, opacity: 0.75 },
+    { id: 'c22', color: '#3B4FA8', darkColor: '#5C75E0', size: 38, top: '78%', left: '35%', rotate: 10, delay: 450, duration: 6.2, opacity: 0.75 },
+    { id: 'c23', color: '#D4A62A', darkColor: '#E8C44A', size: 52, top: '72%', left: '58%', rotate: -12, delay: 250, duration: 5.8, opacity: 0.75 },
+    { id: 'c24', color: '#222B5C', darkColor: '#5C75E0', size: 34, top: '80%', left: '75%', rotate: 22, delay: 800, duration: 6.5, opacity: 0.75 },
+    { id: 'c25', color: '#8D79C7', darkColor: '#A898D9', size: 48, top: '76%', right: '14%', rotate: -8, delay: 350, duration: 5.3, opacity: 0.75 },
+    { id: 'c26', color: '#3B4FA8', darkColor: '#5C75E0', size: 30, top: '86%', right: '32%', rotate: 16, delay: 600, duration: 6.1, opacity: 0.75 },
+    { id: 'c27', color: '#D4A62A', darkColor: '#E8C44A', size: 42, top: '88%', right: '8%', rotate: -28, delay: 150, duration: 5.5, opacity: 0.75 },
+    { id: 'c28', color: '#8D79C7', darkColor: '#A898D9', size: 26, top: '92%', left: '48%', rotate: 5, delay: 900, duration: 6.8, opacity: 0.75 },
+  ];
+
+  const features = [
+    { icon: <FileText size={20} />, title: 'Документооборот', lines: ['Единое пространство', 'для ИТД и ИИД'] },
+    { icon: <FolderKanban size={20} />, title: 'Управление проектами', lines: ['Контроль сроков,', 'ресурсов и рисков'] },
+    { icon: <Gavel size={20} />, title: 'Тендерный отдел', lines: ['Подготовка КД', 'и спецификаций'] },
+    { icon: <Archive size={20} />, title: 'Архив и шаблоны', lines: ['Типовые решения', 'и ревизии'] },
+    { icon: <ShieldCheck size={20} />, title: 'Замечания и согласования', lines: ['Workflow', 'внутри компании'] },
+    { icon: <Zap size={20} />, title: 'AI-ассистент', lines: ['Проверка документов', 'и рекомендации'] },
   ];
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden" style={{ background: isDark ? '#0D1117' : '#F5F6FA' }}>
-      
+
       {/* Theme toggle */}
       <div className="fixed top-4 right-4 z-[100]">
         <button
@@ -150,7 +199,7 @@ export default function LandingPage() {
           background: isDark 
             ? 'radial-gradient(ellipse at center, rgba(92,117,224,0.1) 0%, transparent 60%)'
             : 'radial-gradient(ellipse at center, rgba(59,79,168,0.08) 0%, transparent 60%)',
-          zIndex: -1,
+          zIndex: 0,
         }}
       />
 
@@ -167,13 +216,14 @@ export default function LandingPage() {
           rotate={c.rotate}
           delay={c.delay}
           duration={c.duration}
+          opacity={c.opacity}
         />
       ))}
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col items-center justify-center px-5 py-10 relative z-[2]">
-        
-        {/* Brand */}
+
+        {/* Brand Block */}
         <div className="flex items-center justify-center gap-4 mb-2 relative z-[2]">
           <div
             className="w-20 h-20 rounded-2xl flex items-center justify-center"
@@ -218,112 +268,78 @@ export default function LandingPage() {
               className="w-[180px] h-1 rounded-full mt-2"
               style={{ 
                 background: isDark ? '#E8C44A' : '#D4A62A',
-                boxShadow: isDark ? '0 0 10px rgba(232,196,74,0.4)' : 'none',
+                boxShadow: isDark ? '0 0 12px rgba(232,196,74,0.5)' : 'none',
               }}
             />
           </div>
         </div>
 
-        {/* Title */}
-        <h1 
-          className="text-center text-4xl font-bold mt-6 mb-2 relative z-[2]"
-          style={{ 
-            fontFamily: "'Montserrat', sans-serif",
-            color: isDark ? '#E2E5EC' : '#1E2230',
-          }}
-        >
-          От чертежа до согласования
-          <br />
-          <span style={{ color: isDark ? '#5C75E0' : '#3B4FA8' }}>
-            за один поток
-          </span>
-        </h1>
-
         {/* Subtitle */}
-        <p 
-          className="text-center text-[15px] mb-10 max-w-[480px] relative z-[2]"
+        <div 
+          className="text-center mt-4 mb-10 max-w-md relative z-[2]"
           style={{ color: isDark ? '#8B92A8' : '#6B7280' }}
         >
-          Система управления инженерной документацией для проектных и строительных компаний
-        </p>
-
-        {/* Features */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10 max-w-[720px] w-full relative z-[2]">
-          <FeatureCard
-            icon={
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <polyline points="14 2 14 8 20 8" />
-                <line x1="16" y1="13" x2="8" y2="13" />
-                <line x1="16" y1="17" x2="8" y2="17" />
-              </svg>
-            }
-            title="Единый поток"
-            lines={['Все документы', 'в одном месте']}
-          />
-          <FeatureCard
-            icon={
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="6" y1="3" x2="6" y2="15" />
-                <circle cx="18" cy="6" r="3" />
-                <circle cx="6" cy="18" r="3" />
-                <path d="M18 9a9 9 0 0 1-9 9" />
-              </svg>
-            }
-            title="Согласования"
-            lines={['Прозрачные', 'маршруты']}
-          />
-          <FeatureCard
-            icon={
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-              </svg>
-            }
-            title="Контроль версий"
-            lines={['Ничего', 'не теряется']}
-          />
-          <FeatureCard
-            icon={
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-              </svg>
-            }
-            title="Скорость"
-            lines={['От чертежа', 'до подписи']}
-          />
+          <p className="text-[15px] leading-relaxed">
+            Интеллектуальная система управления инженерной документацией, 
+            проектами и тендерными процессами
+          </p>
         </div>
 
-        {/* CTA */}
-        <Link
+        {/* Features Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 w-full max-w-[640px] mb-10 relative z-[2]">
+          {features.map((f, idx) => (
+            <FeatureCard key={idx} icon={f.icon} title={f.title} lines={f.lines} />
+          ))}
+        </div>
+
+        {/* CTA Button */}
+        <Link 
           to="/login"
-          className="inline-flex items-center gap-2.5 px-8 py-3.5 rounded-xl font-semibold text-[15px] text-white transition-all duration-200 relative z-[100]"
+          className="group relative z-[2] inline-flex items-center gap-2 px-8 py-3.5 rounded-xl text-[14px] font-semibold transition-all duration-200"
           style={{
             background: isDark ? '#5C75E0' : '#3B4FA8',
+            color: '#fff',
             boxShadow: isDark 
-              ? '0 0 20px rgba(92,117,224,0.3), 0 4px 12px rgba(0,0,0,0.3)' 
-              : '0 0 20px rgba(59,79,168,0.25), 0 4px 12px rgba(0,0,0,0.1)',
+              ? '0 4px 24px rgba(92,117,224,0.4)' 
+              : '0 4px 16px rgba(59,79,168,0.25)',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = isDark ? '#6B85F0' : '#4A5EC0';
-            e.currentTarget.style.transform = 'scale(1.02)';
+            e.currentTarget.style.transform = 'translateY(-1px)';
+            e.currentTarget.style.boxShadow = isDark 
+              ? '0 8px 32px rgba(92,117,224,0.5)' 
+              : '0 8px 24px rgba(59,79,168,0.35)';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.background = isDark ? '#5C75E0' : '#3B4FA8';
-            e.currentTarget.style.transform = 'scale(1)';
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = isDark 
+              ? '0 4px 24px rgba(92,117,224,0.4)' 
+              : '0 4px 16px rgba(59,79,168,0.25)';
           }}
         >
           Войти в систему
-          <ArrowRight size={18} />
+          <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
         </Link>
+
+        {/* Footer hint */}
+        <div 
+          className="mt-8 text-[11px] relative z-[2]"
+          style={{ color: isDark ? 'rgba(139,146,168,0.5)' : 'rgba(107,114,128,0.6)' }}
+        >
+          © {new Date().getFullYear()} ДокПоток IRIS — инженерный документооборот
+        </div>
       </div>
 
-      {/* Footer */}
-      <div 
-        className="text-center py-4 text-xs relative z-[2]"
-        style={{ color: isDark ? '#8B92A8' : '#6B7280' }}
-      >
-        ДокПоток IRIS © 2026
-      </div>
+      {/* Global animations */}
+      <style>{`
+        @keyframes floatCrystal {
+          0%, 100% { transform: translateY(0px) rotate(var(--rotate, 0deg)); }
+          50% { transform: translateY(-20px) rotate(calc(var(--rotate, 0deg) + 3deg)); }
+        }
+        @keyframes iconGlow {
+          0%, 100% { box-shadow: 0 4px 30px rgba(92,117,224,0.3), 0 0 60px rgba(141,121,199,0.15); }
+          50% { box-shadow: 0 4px 40px rgba(92,117,224,0.45), 0 0 80px rgba(141,121,199,0.25); }
+        }
+      `}</style>
     </div>
   );
 }

@@ -3,9 +3,12 @@ import { useZoomStore, MIN_SCALE, MAX_SCALE } from "../store/zoomStore";
 import { useTheme } from "@/providers/ThemeProvider";
 
 export function FloatingZoom() {
-  const { scale, setScale, reset } = useZoomStore();
+  const { scale, setScale, reset, hidden } = useZoomStore();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+
+  // НЕ показываем кнопку зума, если страница попросила скрыться
+  if (hidden) return null;
 
   const lightColors = {
     bg: 'rgba(243, 244, 246, 0.95)',
@@ -40,7 +43,6 @@ export function FloatingZoom() {
         WebkitBackdropFilter: 'blur(12px)',
         borderColor: c.border,
         boxShadow: c.shadow,
-        // НЕТ transform — кнопка вне масштабируемого контейнера!
       }}
     >
       <button

@@ -3,8 +3,10 @@ import { persist } from 'zustand/middleware';
 
 interface ZoomState {
   scale: number;
+  hidden: boolean;
   setScale: (scale: number) => void;
   reset: () => void;
+  setHidden: (hidden: boolean) => void;
 }
 
 const MIN_SCALE = 0.75;
@@ -16,6 +18,7 @@ export const useZoomStore = create<ZoomState>()(
   persist(
     (set) => ({
       scale: DEFAULT_SCALE,
+      hidden: false,
       setScale: (scale) =>
         set({ 
           scale: Math.min(
@@ -27,9 +30,11 @@ export const useZoomStore = create<ZoomState>()(
           ) 
         }),
       reset: () => set({ scale: DEFAULT_SCALE }),
+      setHidden: (hidden) => set({ hidden }),
     }),
     {
       name: 'zoom-storage',
+      partialize: (state) => ({ scale: state.scale }), // hidden НЕ сохраняем в localStorage
     }
   )
 );

@@ -1,11 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTheme } from '@/providers/ThemeProvider';
 import { Eye, EyeOff, ArrowLeft, LogIn, User, Lock } from 'lucide-react';
+import { useZoomStore } from '@/features/zoom/store/zoomStore';
 
 export default function LoginPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  const { setHidden } = useZoomStore();
+  useEffect(() => {
+    setHidden(true);              // скрыть зум на странице логина
+    return () => setHidden(false); // показать зум при уходе
+  }, [setHidden]);
   const navigate = useNavigate();
   const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
