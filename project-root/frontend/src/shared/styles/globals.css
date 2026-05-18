@@ -1,6 +1,11 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Prevent horizontal scroll when zoom is applied */
+body {
+  overflow-x: hidden;
+}
 /* Адаптивная сетка профиля */
 @media (max-width: 768px) {
   #profile-container {
@@ -77,20 +82,6 @@
     background: var(--border-color);
     border-radius: 4px;
   }
-}
-/* Фиксированная панель масштаба — игнорирует transform родителя */
-.fixed-zoom-panel {
-  position: fixed !important;
-  bottom: 24px !important;
-  right: 24px !important;
-  z-index: 9999 !important;
-  transform: none !important;
-  transform-origin: center !important;
-}
-
-/* Игнорируем zoom от родителя */
-.fixed-zoom-panel * {
-  transform: none !important;
 }
 
 /* Анимация при наведении */
@@ -553,6 +544,8 @@
   --iris-accent-cyan: #06B6D4;
   --iris-accent-coral: #F87171;
   --iris-text-inverse: #FFFFFF;
+  --iris-accent-green: #4F7A4C;
+  --iris-accent-yellow: #D4A62A;
 }
 
 /* Light theme */
@@ -582,6 +575,8 @@
   --iris-accent-cyan: #0891B2;
   --iris-accent-coral: #DC2626;
   --iris-text-inverse: #FFFFFF;
+  --iris-accent-green: #0c7205;
+  --iris-accent-yellow: #D4AF37;
 }
 
 /* === Neon cards for DARK theme === */

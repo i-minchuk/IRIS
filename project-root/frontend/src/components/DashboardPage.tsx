@@ -6,8 +6,8 @@ import {
   ArrowRight, Users, ChevronRight, ChevronDown,
   Search, Bell, Gift, Filter, CheckCircle, MessageSquare, UserPlus, FileWarning, Link as LinkIcon
 } from 'lucide-react';
-import TeamLoadSection from './TeamLoadSection';
-import { DepartmentLoad } from './DashboardWidgets';
+import TeamLoadSection from '@/pages/TeamLoadSection';
+import { DepartmentLoad } from './DepartmentLoad';
 
 /* ── Types ── */
 interface ProjectDoc {
@@ -70,7 +70,7 @@ const projectData: ProjectItem[] = [
   },
 ];
 
-/* ── Inline компактная воронка ── */
+/* ── Компактная воронка ── */
 function CompactFunnel() {
   const [hover, setHover] = useState(false);
   const { theme } = useTheme();
@@ -102,14 +102,14 @@ function CompactFunnel() {
         <h3 className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>
           Воронка документооборота
         </h3>
-        <button className="text-[10px] flex items-center gap-0.5" style={{ color: 'var(--text-muted)' }}>
+        <button className="text-[10px] flex items-center gap-1" style={{ color: 'var(--text-muted)' }}>
           Все <ArrowRight size={10} />
         </button>
       </div>
 
       <div className="flex items-center justify-between">
         {steps.map((step, i) => (
-          <div key={i} className="flex items-center gap-0.5">
+          <div key={i} className="flex items-center gap-1">
             <div className="flex flex-col items-center text-center min-w-[60px]">
               <span className="text-[9px] leading-none mb-0.5" style={{ color: 'var(--text-muted)' }}>
                 {step.label}
@@ -144,7 +144,7 @@ function CompactHeatmap() {
     { label: '→',   days: [25, 26, 27, 28, 29, 30, 31] },
   ];
 
-  // Массив значений, параллельный weeks
+// Массив значений, параллельный weeks
   const loadData = [
     [10, 25, 15, 55, 20, 35, 10],   // ←3н
     [15, 45, 60, 85, 50, 30, 15],   // ←2н
@@ -154,12 +154,12 @@ function CompactHeatmap() {
   ];
 
   const getBg = (val: number) => {
-    if (val <= 20) return isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)';
-    if (val <= 45) return isDark ? 'rgba(59,130,246,0.22)' : 'rgba(59,130,246,0.14)';
-    if (val <= 70) return isDark ? 'rgba(212,175,55,0.28)' : 'rgba(212,175,55,0.18)';
-    if (val <= 85) return isDark ? 'rgba(251,146,60,0.32)' : 'rgba(251,146,60,0.22)';
-    return isDark ? 'rgba(239,68,68,0.38)' : 'rgba(239,68,68,0.22)';
-  };
+      if (val <= 20) return isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)';
+      if (val <= 45) return isDark ? 'rgba(59,130,246,0.22)' : 'rgba(59,130,246,0.14)';
+      if (val <= 70) return isDark ? 'rgba(212,175,55,0.28)' : 'rgba(212,175,55,0.18)';
+      if (val <= 85) return isDark ? 'rgba(251,146,60,0.32)' : 'rgba(251,146,60,0.22)';
+      return isDark ? 'rgba(239,68,68,0.38)' : 'rgba(239,68,68,0.22)';
+    };
 
   const getText = (val: number) => {
     if (val <= 20) return 'var(--text-muted)';
@@ -178,51 +178,32 @@ function CompactHeatmap() {
         </span>
       </div>
 
-      <div className="grid grid-cols-[1.75rem_repeat(7,1fr)] gap-1 mb-1">
-        <div />
-        {['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map(d => (
-          <div key={d} className="text-center text-[9px] font-medium" style={{ color: 'var(--text-muted)' }}>
-            {d}
-          </div>
-        ))}
-      </div>
-
-      <div className="flex flex-col gap-1">
-        {weeks.map((w, wi) => (
-          <div key={wi} className="grid grid-cols-[1.75rem_repeat(7,1fr)] gap-1 items-center">
-            <div className="text-[9px] text-right leading-none pr-1" style={{ color: 'var(--text-muted)' }}>
-              {w.label}
+      <div className="space-y-1">
+        {weeks.map((week, weekIdx) => (
+          <div key={week.label} className="flex items-center gap-1">
+            <span className="text-[10px] w-6 shrink-0" style={{ color: 'var(--text-muted)' }}>
+              {week.label}
+            </span>
+            <div className="flex gap-1 flex-1">
+              {week.days.map((day, dayIdx) => {
+                const val = loadData[weekIdx][dayIdx];
+                return (
+                  <div
+                    key={`${week.label}-${day}`}
+                    className="h-5 flex-1 rounded-sm flex items-center justify-center text-[9px] font-medium transition-colors"
+                    style={{
+                      backgroundColor: getBg(val),
+                      color: getText(val),
+                    }}
+                    title={`${day}: ${val}%`}
+                  >
+                    {day}
+                  </div>
+                );
+              })}
             </div>
-            {w.days.map((day, di) => {
-              const val = loadData[wi][di] ?? 0;
-              const isWeekend = di >= 5;
-              return (
-                <div
-                  key={di}
-                  className="h-6 rounded-md flex items-center justify-center text-[9px] font-medium select-none"
-                  style={{
-                    background: getBg(val),
-                    color: isWeekend && val <= 20 ? 'var(--text-muted)' : getText(val),
-                    opacity: isWeekend && val <= 20 ? 0.5 : 1,
-                  }}
-                  title={`${day}: загрузка ${val}%`}
-                >
-                  {day}
-                </div>
-              );
-            })}
           </div>
         ))}
-      </div>
-
-      <div className="flex items-center gap-2 mt-1.5">
-        <span className="text-[9px]" style={{ color: 'var(--text-muted)' }}>Низкая</span>
-        <div className="flex gap-0.5">
-          {[15, 35, 60, 90].map(v => (
-            <div key={v} className="w-2.5 h-2.5 rounded-sm" style={{ background: getBg(v) }} />
-          ))}
-        </div>
-        <span className="text-[9px]" style={{ color: 'var(--text-muted)' }}>Критическая</span>
       </div>
     </div>
   );
@@ -281,33 +262,25 @@ export default function Dashboard() {
   return (
     <div 
       className="min-h-screen w-full overflow-x-hidden" 
-      style={{ background: 'var(--layout-bg)', color: 'var(--text-primary)', padding: '1.5rem' }}
+      style={{ background: 'var(--layout-bg)', color: 'var(--text-primary)', padding: '1rem' }}
     >
-      {/* ═══ ГЛАВНЫЙ GRID: левая основная + правая sidebar (260px) ═══ */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-5 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-4 items-start">
 
         {/* ═══ ЛЕВАЯ КОЛОНКА ═══ */}
         <div className="space-y-4 min-w-0">
 
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <div>
-              <h1 className="text-xl md:text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                Панель управления
-              </h1>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
-                Аналитика по проектам и документообороту
-              </p>
-            </div>
-            <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>
-              <span>Проектов: <strong style={{ color: 'var(--text-primary)' }}>{stats.projects}</strong></span>
-              <span className="mx-1">|</span>
-              <span>Замечаний: <strong style={{ color: 'var(--text-primary)' }}>{stats.remarks}</strong></span>
-            </div>
+          {/* Header — только заголовок, без статистики */}
+          <div>
+            <h1 className="text-xl md:text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+              Панель управления
+            </h1>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+              Аналитика по проектам и документообороту
+            </p>
           </div>
 
-          {/* Быстрые действия (CTA) */}
-          <div className="flex flex-wrap gap-2">
+          {/* CTA + статистика в одной строке */}
+          <div className="flex flex-wrap items-center gap-1">
             <button 
               onClick={() => alert('Массовое согласование — в разработке')}
               className="text-xs px-2 py-1 rounded-md transition-all hover:brightness-105"
@@ -336,6 +309,41 @@ export default function Dashboard() {
             >
               📊 Экспорт отчёта
             </button>
+
+            {/* Статистика — рядом с кнопками */}
+            <div className="flex items-center gap-1 text-xs px-2 py-1 rounded-md ml-auto" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
+              <span>Проектов: <strong style={{ color: 'var(--text-primary)' }}>{stats.projects}</strong></span>
+              <span>|</span>
+              <span>Замечаний: <strong style={{ color: 'var(--text-primary)' }}>{stats.remarks}</strong></span>
+            </div>
+          </div>
+
+          {/* Глобальный поиск — в левой колонке над KPI */}
+          <div className="p-3 rounded-xl flex flex-col gap-1" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>Глобальный поиск</h3>
+              <Search size={14} style={{ color: 'var(--text-muted)' }} />
+            </div>
+            <div className="relative">
+              <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
+              <input
+                type="text"
+                placeholder="Поиск по проектам, документам..."
+                className="w-full pl-8 pr-2 py-1.5 rounded-md text-xs outline-none"
+                style={{
+                  background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border-color)',
+                }}
+              />
+            </div>
+            <div className="flex items-center gap-1">
+              {['По проекту', 'По типу', 'По автору', 'По дате'].map((f) => (
+                <button key={f} className="text-[9px] px-1.5 py-1 rounded flex items-center gap-0.5 shrink-0" style={{ background: 'var(--card-elevated)', color: 'var(--text-secondary)', border: '1px solid var(--border-color)' }}>
+                  <Filter size={8} /> {f}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* 3 KPI */}
@@ -389,17 +397,17 @@ export default function Dashboard() {
             <CompactHeatmap />
           </div>
 
-          {/* ═══ ТРИ БЛОКА В ОДИН РЯД — равные широкие колонки ═══ */}
+          {/* Три блока в один ряд */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
-            {/* 1. Прогресс проектов */}
+            {/* Прогресс проектов */}
             <div className="p-3 rounded-xl min-w-0" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>Прогресс проектов</h3>
+                <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Прогресс проектов</h3>
                 <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>По риску ↓</span>
               </div>
 
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-1">
                 {sortedProjects.map((project) => {
                   const color = getProjectColor(project.status);
                   const isExpanded = expandedProject === project.id;
@@ -503,12 +511,12 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* 2. Загрузка по отделам */}
+            {/* Загрузка по отделам */}
             <div className="p-3 rounded-xl min-w-0" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
               <DepartmentLoad />
             </div>
 
-            {/* 3. Загрузка команды */}
+            {/* Загрузка команды */}
             <div className="p-3 rounded-xl min-w-0" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
               <TeamLoadSection />
             </div>
@@ -517,39 +525,11 @@ export default function Dashboard() {
 
         </div>
 
-        {/* ═══ ПРАВАЯ SIDEBAR (260px) ═══ */}
+        {/* ═══ ПРАВАЯ SIDEBAR — начинается сразу с «Что нового» ═══ */}
         <div className="space-y-4 lg:sticky lg:top-5">
 
-          {/* Глобальный поиск */}
-          <div className="p-3 rounded-xl flex flex-col gap-2" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>Глобальный поиск</h3>
-              <Search size={14} style={{ color: 'var(--text-muted)' }} />
-            </div>
-            <div className="relative">
-              <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
-              <input
-                type="text"
-                placeholder="Поиск по проектам, документам..."
-                className="w-full pl-8 pr-2 py-1.5 rounded-md text-xs outline-none"
-                style={{
-                  background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
-                  color: 'var(--text-primary)',
-                  border: '1px solid var(--border-color)',
-                }}
-              />
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {['По проекту', 'По типу', 'По автору', 'По дате'].map((f) => (
-                <button key={f} className="text-[9px] px-1.5 py-0.5 rounded flex items-center gap-0.5" style={{ background: 'var(--card-elevated)', color: 'var(--text-secondary)', border: '1px solid var(--border-color)' }}>
-                  <Filter size={8} /> {f}
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* Что нового */}
-          <div className="p-3 rounded-xl flex flex-col gap-2" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+          <div className="p-3 rounded-xl flex flex-col gap-1" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>Что нового</h3>
               <div className="flex items-center gap-1">
@@ -590,7 +570,7 @@ export default function Dashboard() {
           </div>
 
           {/* Команда */}
-          <div className="p-3 rounded-xl flex flex-col gap-2" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+          <div className="p-3 rounded-xl flex flex-col gap-1" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>Команда</h3>
               <Gift size={14} style={{ color: 'var(--text-muted)' }} />
@@ -602,7 +582,7 @@ export default function Dashboard() {
                 { name: 'Елена Волкова', role: 'Архитектор', date: '18 мая', avatar: 'ЕВ', highlight: false },
                 { name: 'Иван Кузнецов', role: 'ОВиК', date: '22 мая', avatar: 'ИК', highlight: false },
               ].map((person, i) => (
-                <div key={i} className="flex items-center gap-2 p-1.5 rounded-md" style={{ background: person.highlight ? (isDark ? 'rgba(212,175,55,0.08)' : 'rgba(212,175,55,0.06)') : 'transparent' }}>
+                <div key={i} className="flex items-center gap-1 p-1.5 rounded-md" style={{ background: person.highlight ? (isDark ? 'rgba(212,175,55,0.08)' : 'rgba(212,175,55,0.06)') : 'transparent' }}>
                   <div className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0" style={{ background: person.highlight ? 'rgba(212,175,55,0.2)' : 'var(--card-elevated)', color: person.highlight ? '#D4AF37' : 'var(--text-secondary)', border: `1px solid ${person.highlight ? '#D4AF3740' : 'var(--border-color)'}` }}>
                     {person.avatar}
                   </div>
@@ -623,12 +603,12 @@ export default function Dashboard() {
           </div>
 
           {/* Риски */}
-          <div className="p-3 rounded-xl flex flex-col gap-2" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+          <div className="p-3 rounded-xl flex flex-col gap-1" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>Риски и требования внимания</h3>
               <AlertTriangle size={14} style={{ color: 'var(--text-muted)' }} />
             </div>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-1">
               {visibleRisks.map((risk) => (
                 <div 
                   key={risk.id} 
