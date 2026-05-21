@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  FileText, Search, Filter, Plus, Upload, CheckCircle2, Clock, AlertTriangle,
-  Eye, Download, Trash2, ChevronDown, Star, Trophy, Flame, Award, ArrowUpRight,
+  FileText, Search, Upload, CheckCircle2, Clock,
+  Eye, Download, Trash2, Star, Trophy, Flame, Award,
   FolderKanban, User, Calendar, Hash
 } from 'lucide-react';
 
@@ -83,16 +82,14 @@ function StatusBadge({ status }: { status: DocStatus }) {
 
 /* ── Main Page ── */
 export default function DocumentsPage() {
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const search = searchParams.get('code') || '';
+  const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<DocType | 'all'>('all');
   const [filterStatus, setFilterStatus] = useState<DocStatus | 'all'>('all');
   const [filterProject, setFilterProject] = useState('all');
   const [showGamification, setShowGamification] = useState(true);
 
   const filtered = docsData.filter(d => {
-    const matchSearch = d.name.toLowerCase().includes(search.toLowerCase()) || d.code.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = d.name.toLowerCase().includes(searchQuery.toLowerCase()) || d.code.toLowerCase().includes(searchQuery.toLowerCase());
     const matchType = filterType === 'all' || d.type === filterType;
     const matchStatus = filterStatus === 'all' || d.status === filterStatus;
     const matchProject = filterProject === 'all' || d.project === filterProject;
@@ -195,7 +192,7 @@ export default function DocumentsPage() {
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-default)' }}>
           <Search size={16} style={{ color: 'var(--text-muted)' }} />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Поиск по коду или названию..." className="bg-transparent outline-none text-sm w-48 md:w-64" style={{ color: 'var(--text-primary)' }} />
+          <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Поиск по коду или названию..." className="bg-transparent outline-none text-sm w-48 md:w-64" style={{ color: 'var(--text-primary)' }} />
         </div>
         <select value={filterProject} onChange={e => setFilterProject(e.target.value)} className="px-3 py-2 rounded-lg text-sm outline-none" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-default)', color: 'var(--text-primary)' }}>
           <option value="all">Все проекты</option>

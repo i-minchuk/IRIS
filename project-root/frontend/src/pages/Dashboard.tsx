@@ -1,667 +1,604 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/providers/ThemeProvider';
 import {
-  FolderKanban, FileCheck, Clock, AlertTriangle,
-  ArrowRight, Users, ChevronRight, ChevronDown,
-  Search, Bell, Gift, Filter, CheckCircle, MessageSquare, UserPlus, FileWarning, Link as LinkIcon
+  TrendingUp, TrendingDown, AlertTriangle,
+  Award, DollarSign, Briefcase, Users, Clock,
+  ChevronRight, Zap, Sparkles, ArrowDown
 } from 'lucide-react';
-import TeamLoadSection from './TeamLoadSection';
-import { DepartmentLoad } from './DashboardWidgets';
 
-/* ── Types ── */
-interface ProjectDoc {
-  name: string;
-  status: string;
-  date: string;
+/* ═══════════════════════════════════════════
+   COUNT-UP HOOK
+   ═══════════════════════════════════════════ */
+function useCountUp(target: number, duration = 1500, decimals = 1) {
+  const [val, setVal] = useState(0);
+  useEffect(() => {
+    const startTime = performance.now();
+    const tick = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const ease = 1 - Math.pow(1 - progress, 3);
+      const raw = target * ease;
+      const factor = Math.pow(10, decimals);
+      setVal(Math.round(raw * factor) / factor);
+      if (progress < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }, [target, duration, decimals]);
+  return val;
 }
 
-interface ProjectItem {
-  id: string;
-  name: string;
-  percent: number;
-  status: 'active' | 'review' | 'approved' | 'overdue';
-  route: string;
-  docs: ProjectDoc[];
-  deadline: string;
-  daysLeft: number;
-  riskLevel: 'high' | 'medium' | 'low';
-  blockedBy?: string;
-}
+/* ═══════════════════════════════════════════
+   DATA
+   ═══════════════════════════════════════════ */
+const finance = {
+  revenue: { current: 124.7, plan: 150.0, unit: 'млн ₽', trend: '+12%' },
+  profit: { current: 18.3, plan: 22.0, unit: 'млн ₽', trend: '+8%' },
+  receivables: { current: 34.2, unit: 'млн ₽', trend: '-5%', risk: true },
+  avgMargin: { current: 14.7, unit: '%', trend: '+1.2пп' },
+};
 
-const projectData: ProjectItem[] = [
-  { 
-    id: 'gamma', name: 'Офис «Гамма»', percent: 23, status: 'overdue', route: '/projects?filter=overdue',
-    deadline: '18.05.2026', daysLeft: 2, riskLevel: 'high', blockedBy: 'ТЭЦ-5',
-    docs: [
-      { name: 'ЭОМ-05-003.dwg', status: 'Просрочен', date: '01.05.2026' },
-      { name: 'КЖ-02-014.dwg', status: 'На проверке', date: '10.05.2026' },
-    ]
-  },
-  { 
-    id: 'meridian', name: 'ТЦ «Меридиан»', percent: 45, status: 'review', route: '/projects?filter=review',
-    deadline: '25.05.2026', daysLeft: 9, riskLevel: 'medium',
-    docs: [
-      { name: 'АР-03-015.pdf', status: 'Согласован', date: '08.05.2026' },
-      { name: 'ОВиК-01-005.docx', status: 'На согласовании', date: '12.05.2026' },
-    ]
-  },
-  { 
-    id: 'severny', name: 'ЖК «Северный»', percent: 78, status: 'active', route: '/projects?filter=active',
-    deadline: '10.05.2026', daysLeft: 5, riskLevel: 'high',
-    docs: [
-      { name: 'КЖ-01-001.dwg', status: 'На проверке', date: '09.05.2026' },
-      { name: 'ЭМ-04-002.pdf', status: 'В работе', date: '11.05.2026' },
-    ]
-  },
-  { 
-    id: 'tec5', name: 'ТЭЦ-5', percent: 61, status: 'active', route: '/projects?filter=active',
-    deadline: '30.05.2026', daysLeft: 25, riskLevel: 'low',
-    docs: [
-      { name: 'КР-01-002.pdf', status: 'На согласовании', date: '06.05.2026' },
-    ]
-  },
-  { 
-    id: 'sklad', name: 'Склад А-12', percent: 92, status: 'approved', route: '/projects?filter=approved',
-    deadline: '05.05.2026', daysLeft: 0, riskLevel: 'low', blockedBy: 'Склад А-12',
-    docs: [
-      { name: 'ОВиК-02-008.docx', status: 'Утверждён', date: '07.05.2026' },
-    ]
-  },
+const tenderFunnel = [
+  { stage: 'Поступило', value: 47, color: '#3B82F6' },
+  { stage: 'В работе', value: 12, color: '#0EA5E9' },
+  { stage: 'Выиграно', value: 8, color: '#0C7205' },
+  { stage: 'Проиграно', value: 3, color: '#DC2626' },
+  { stage: 'Отменено', value: 2, color: '#6B7280' },
+];
+const funnelConversion = [26, 67, 38, 67];
+
+const trendData = [42, 45, 48, 44, 52, 58, 55, 61, 68, 72, 70, 78];
+const trendLabels = ['Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек', 'Янв', 'Фев', 'Мар', 'Апр'];
+
+const actionItems = [
+  { id: 'act1', text: 'Утвердить смету ТЭЦ-5', deadline: 'Сегодня', color: '#DC2626', action: 'Подписать' },
+  { id: 'act2', text: 'Согласовать КП «Меридиан»', deadline: 'Завтра', color: '#D4AF37', action: 'Открыть' },
+  { id: 'act3', text: 'Подписать доп. №4 к договору', deadline: '25.05', color: '#2563EB', action: 'Перейти' },
 ];
 
-/* ── Inline компактная воронка ── */
-function CompactFunnel() {
-  const [hover, setHover] = useState(false);
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
-  
-  const steps = [
-    { label: 'Поступило', value: '1247', sub: 'всего', color: '#2563EB' },
-    { label: 'В работе', value: '156', sub: 'активно', color: '#0EA5E9' },
-    { label: 'На согласовании', value: '84', sub: '2.3 дня', color: '#D4AF37' },
-    { label: 'Утверждено', value: '892', sub: 'за месяц', color: '#0C7205' },
-    { label: 'Просрочено', value: '7', sub: 'внимание', color: '#DC2626' },
-  ];
+const criticalAlerts = [
+  { id: 'a1', level: 'high', title: 'ДЗО превышен на 8 млн ₽', action: 'Финансовый отчёт', color: '#DC2626' },
+  { id: 'a2', level: 'high', title: 'Офис «Гамма» — просрочка 2 дня', action: 'В Workflow', color: '#DC2626' },
+  { id: 'a3', level: 'medium', title: 'Тендерный отдел — перегруз 85%', action: 'Перераспределить', color: '#D4AF37' },
+];
 
+const topProjects = [
+  { name: 'ЖК «Северный»', percent: 78, status: 'active', revenue: '45.2 млн ₽', deadline: '10.05.2026' },
+  { name: 'ТЦ «Меридиан»', percent: 45, status: 'review', revenue: '28.7 млн ₽', deadline: '25.05.2026' },
+  { name: 'ТЭЦ-5', percent: 61, status: 'active', revenue: '19.1 млн ₽', deadline: '30.05.2026' },
+];
+
+const kpiSparkData = {
+  approval: [3.1, 2.8, 2.9, 2.5, 2.4, 2.3, 2.3],
+  winRate:  [58, 60, 62, 63, 65, 66, 68],
+  overdue:  [15, 14, 12, 11, 9, 8, 7],
+  load:     [78, 80, 82, 83, 84, 85, 84],
+};
+
+/* ═══════════════════════════════════════════
+   IRIS AVATAR — финальные цвета
+   ═══════════════════════════════════════════ */
+function IrisAvatar({ isDark, className = 'w-10 h-10' }: { isDark: boolean; className?: string }) {
+  if (isDark) {
+    return (
+      <svg className={className} viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ filter: 'drop-shadow(0 0 8px rgba(6, 64, 3, 0.4))' }}>
+        <defs>
+          <radialGradient id="irisFaceDark" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#8bc34a" />
+            <stop offset="60%" stopColor="#4caf50" />
+            <stop offset="100%" stopColor="#2e7d32" />
+          </radialGradient>
+          <radialGradient id="irisGlowDark" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="rgba(67, 27, 177, 0.4)" />
+            <stop offset="100%" stopColor="rgba(56, 104, 236, 0)" />
+          </radialGradient>
+        </defs>
+        <circle cx="32" cy="32" r="30" fill="url(#irisGlowDark)" opacity="0.5">
+          <animate attributeName="r" values="28;32;28" dur="3s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0.4;0.6;0.4" dur="3s" repeatCount="indefinite" />
+        </circle>
+        <g>
+          <animateTransform attributeName="transform" type="translate" values="0,-2; 0,2; 0,-2" dur="2.5s" repeatCount="indefinite" calcMode="spline" keySplines="0.45 0 0.55 1; 0.45 0 0.55 1" />
+          <circle cx="32" cy="32" r="26" stroke="#eeff02" strokeWidth="1" strokeOpacity="0.5" fill="none">
+            <animateTransform attributeName="transform" type="rotate" from="0 32 32" to="360 32 32" dur="8s" repeatCount="indefinite" />
+          </circle>
+          <circle cx="32" cy="32" r="22" stroke="#00fc15" strokeWidth="0.5" strokeOpacity="0.35" strokeDasharray="4 4" fill="none">
+            <animateTransform attributeName="transform" type="rotate" from="360 32 32" to="0 32 32" dur="12s" repeatCount="indefinite" />
+          </circle>
+          <circle cx="32" cy="32" r="20" fill="url(#irisFaceDark)" stroke="#064003" strokeWidth="1.5" />
+          <g>
+            <ellipse cx="25" cy="28" rx="3.5" ry="4.5" fill="#e8f5e9">
+              <animate attributeName="ry" values="4.5;0.5;4.5" dur="4s" repeatCount="indefinite" keyTimes="0;0.05;0.1" />
+            </ellipse>
+            <ellipse cx="39" cy="28" rx="3.5" ry="4.5" fill="#e8f5e9">
+              <animate attributeName="ry" values="4.5;0.5;4.5" dur="4s" repeatCount="indefinite" keyTimes="0;0.05;0.1" />
+            </ellipse>
+            <circle cx="25" cy="28" r="1.5" fill="#064003">
+              <animate attributeName="cx" values="25;26;24;25" dur="6s" repeatCount="indefinite" />
+            </circle>
+            <circle cx="39" cy="28" r="1.5" fill="#064003">
+              <animate attributeName="cx" values="39;40;38;39" dur="6s" repeatCount="indefinite" />
+            </circle>
+          </g>
+          <path d="M26 38 Q32 42 38 38" stroke="#c8e6c9" strokeWidth="1.5" strokeLinecap="round" fill="none">
+            <animate attributeName="d" values="M26 38 Q32 42 38 38;M26 39 Q32 40 38 39;M26 38 Q32 42 38 38" dur="3s" repeatCount="indefinite" />
+          </path>
+          <circle cx="32" cy="10" r="2" fill="#2e7d32">
+            <animate attributeName="r" values="1.5;3;1.5" dur="2s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="1;0.6;1" dur="2s" repeatCount="indefinite" />
+          </circle>
+        </g>
+      </svg>
+    );
+  }
+
+  /* ═══ СВЕТЛАЯ ТЕМА — ярче, контрастнее ═══ */
   return (
-    <div 
-      className="neon-blue p-3 rounded-xl cursor-pointer"
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      style={{
-        background: 'var(--card-bg)',
-        transform: hover ? 'scale(1.01) translateY(-2px)' : 'scale(1)',
-        boxShadow: hover 
-          ? (isDark ? '0 8px 24px rgba(0,0,0,0.35)' : '0 8px 24px rgba(0,0,0,0.08)') 
-          : 'none',
-        transition: 'transform 0.25s ease, box-shadow 0.25s ease',
-      }}
-    >
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>
-          Воронка документооборота
-        </h3>
-        <button className="text-[10px] flex items-center gap-0.5" style={{ color: 'var(--text-muted)' }}>
-          Все <ArrowRight size={10} />
-        </button>
-      </div>
-
-      <div className="flex items-center justify-between">
-        {steps.map((step, i) => (
-          <div key={i} className="flex items-center gap-0.5">
-            <div className="flex flex-col items-center text-center min-w-[60px]">
-              <span className="text-[9px] leading-none mb-0.5" style={{ color: 'var(--text-muted)' }}>
-                {step.label}
-              </span>
-              <span className="text-base font-bold leading-tight" style={{ color: step.color }}>
-                {step.value}
-              </span>
-              <span className="text-[8px] leading-none mt-0.5" style={{ color: 'var(--text-muted)' }}>
-                {step.sub}
-              </span>
-            </div>
-            {i < steps.length - 1 && (
-              <ChevronRight size={10} className="mx-0.5 shrink-0" style={{ color: 'var(--text-muted)', opacity: 0.35 }} />
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
+    <svg className={className} viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ filter: 'drop-shadow(0 0 6px rgba(34, 197, 94, 0.35))' }}>
+      <defs>
+        <radialGradient id="irisFaceLight" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#dcfce7" />   {/* ярко-мятный */}
+          <stop offset="50%" stopColor="#86efac" />  {/* насыщенный зелёный */}
+          <stop offset="100%" stopColor="#22c55e" /> {/* травяной */}
+        </radialGradient>
+        <radialGradient id="irisGlowLight" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="rgba(34, 197, 94, 0.2)" />
+          <stop offset="100%" stopColor="rgba(34, 197, 94, 0)" />
+        </radialGradient>
+      </defs>
+      <circle cx="32" cy="32" r="30" fill="url(#irisGlowLight)" opacity="0.7">
+        <animate attributeName="r" values="28;31;28" dur="3s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0.5;0.8;0.5" dur="3s" repeatCount="indefinite" />
+      </circle>
+      <g>
+        <animateTransform attributeName="transform" type="translate" values="0,-2; 0,2; 0,-2" dur="2.5s" repeatCount="indefinite" calcMode="spline" keySplines="0.45 0 0.55 1; 0.45 0 0.55 1" />
+        <circle cx="32" cy="32" r="26" stroke="#4ade80" strokeWidth="1.2" strokeOpacity="0.7" fill="none">
+          <animateTransform attributeName="transform" type="rotate" from="0 32 32" to="360 32 32" dur="8s" repeatCount="indefinite" />
+        </circle>
+        <circle cx="32" cy="32" r="22" stroke="#86efac" strokeWidth="0.6" strokeOpacity="0.6" strokeDasharray="4 4" fill="none">
+          <animateTransform attributeName="transform" type="rotate" from="360 32 32" to="0 32 32" dur="12s" repeatCount="indefinite" />
+        </circle>
+        <circle cx="32" cy="32" r="20" fill="url(#irisFaceLight)" stroke="#15803d" strokeWidth="1.5" />
+        <g>
+          <ellipse cx="25" cy="28" rx="3.5" ry="4.5" fill="#ffffff">
+            <animate attributeName="ry" values="4.5;0.5;4.5" dur="4s" repeatCount="indefinite" keyTimes="0;0.05;0.1" />
+          </ellipse>
+          <ellipse cx="39" cy="28" rx="3.5" ry="4.5" fill="#ffffff">
+            <animate attributeName="ry" values="4.5;0.5;4.5" dur="4s" repeatCount="indefinite" keyTimes="0;0.05;0.1" />
+          </ellipse>
+          <circle cx="25" cy="28" r="1.5" fill="#14532d">
+            <animate attributeName="cx" values="25;26;24;25" dur="6s" repeatCount="indefinite" />
+          </circle>
+          <circle cx="39" cy="28" r="1.5" fill="#14532d">
+            <animate attributeName="cx" values="39;40;38;39" dur="6s" repeatCount="indefinite" />
+          </circle>
+        </g>
+        <path d="M26 38 Q32 42 38 38" stroke="#4ade80" strokeWidth="1.5" strokeLinecap="round" fill="none">
+          <animate attributeName="d" values="M26 38 Q32 42 38 38;M26 39 Q32 40 38 39;M26 38 Q32 42 38 38" dur="3s" repeatCount="indefinite" />
+        </path>
+        <circle cx="32" cy="10" r="2" fill="#22c55e">
+          <animate attributeName="r" values="1.5;3;1.5" dur="2s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="1;0.5;1" dur="2s" repeatCount="indefinite" />
+        </circle>
+      </g>
+    </svg>
   );
 }
 
-/* ── Компактная загруженность по дням ── */
-function CompactHeatmap() {
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
-
-  const weeks = [
-    { label: '←3н', days: [27, 28, 29, 30, 1, 2, 3] },
-    { label: '←2н', days: [4, 5, 6, 7, 8, 9, 10] },
-    { label: '←1н', days: [11, 12, 13, 14, 15, 16, 17] },
-    { label: 'Тек', days: [18, 19, 20, 21, 22, 23, 24] },
-    { label: '→',   days: [25, 26, 27, 28, 29, 30, 31] },
-  ];
-
-  // Массив значений, параллельный weeks
-  const loadData = [
-    [10, 25, 15, 55, 20, 35, 10],   // ←3н
-    [15, 45, 60, 85, 50, 30, 15],   // ←2н
-    [20, 40, 75, 90, 65, 35, 20],   // ←1н
-    [25, 50, 70, 95, 80, 45, 30],   // Тек
-    [20, 35, 60, 40, 25, 15, 10],   // →
-  ];
-
-  const getBg = (val: number) => {
-    if (val <= 20) return isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)';
-    if (val <= 45) return isDark ? 'rgba(59,130,246,0.22)' : 'rgba(59,130,246,0.14)';
-    if (val <= 70) return isDark ? 'rgba(212,175,55,0.28)' : 'rgba(212,175,55,0.18)';
-    if (val <= 85) return isDark ? 'rgba(251,146,60,0.32)' : 'rgba(251,146,60,0.22)';
-    return isDark ? 'rgba(239,68,68,0.38)' : 'rgba(239,68,68,0.22)';
-  };
-
-  const getText = (val: number) => {
-    if (val <= 20) return 'var(--text-muted)';
-    if (val >= 85) return isDark ? '#fecaca' : '#991b1b';
-    return isDark ? '#e2e8f0' : '#475569';
-  };
+/* ── Sparkline с tooltip ── */
+function Sparkline({ data, labels, color }: { data: number[]; labels: string[]; color: string }) {
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+  const width = 200;
+  const height = 40;
+  const points = data.map((v, i) => {
+    const x = (i / (data.length - 1)) * width;
+    const y = height - ((v - min) / range) * height;
+    return `${x},${y}`;
+  }).join(' ');
 
   return (
-    <div className="w-full">
-      <div className="flex items-center justify-between mb-1.5">
-        <h3 className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>
-          Загруженность по дням
-        </h3>
-        <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
-          Последние 30 дней
-        </span>
-      </div>
-
-      <div className="grid grid-cols-[1.75rem_repeat(7,1fr)] gap-1 mb-1">
-        <div />
-        {['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map(d => (
-          <div key={d} className="text-center text-[9px] font-medium" style={{ color: 'var(--text-muted)' }}>
-            {d}
-          </div>
-        ))}
-      </div>
-
-      <div className="flex flex-col gap-1">
-        {weeks.map((w, wi) => (
-          <div key={wi} className="grid grid-cols-[1.75rem_repeat(7,1fr)] gap-1 items-center">
-            <div className="text-[9px] text-right leading-none pr-1" style={{ color: 'var(--text-muted)' }}>
-              {w.label}
-            </div>
-            {w.days.map((day, di) => {
-              const val = loadData[wi][di] ?? 0;
-              const isWeekend = di >= 5;
-              return (
-                <div
-                  key={di}
-                  className="h-6 rounded-md flex items-center justify-center text-[9px] font-medium select-none"
-                  style={{
-                    background: getBg(val),
-                    color: isWeekend && val <= 20 ? 'var(--text-muted)' : getText(val),
-                    opacity: isWeekend && val <= 20 ? 0.5 : 1,
-                  }}
-                  title={`${day}: загрузка ${val}%`}
-                >
-                  {day}
-                </div>
-              );
-            })}
-          </div>
-        ))}
-      </div>
-
-      <div className="flex items-center gap-2 mt-1.5">
-        <span className="text-[9px]" style={{ color: 'var(--text-muted)' }}>Низкая</span>
-        <div className="flex gap-0.5">
-          {[15, 35, 60, 90].map(v => (
-            <div key={v} className="w-2.5 h-2.5 rounded-sm" style={{ background: getBg(v) }} />
-          ))}
-        </div>
-        <span className="text-[9px]" style={{ color: 'var(--text-muted)' }}>Критическая</span>
-      </div>
-    </div>
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible">
+      <polyline fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" points={points} />
+      {data.map((v, i) => {
+        const x = (i / (data.length - 1)) * width;
+        const y = height - ((v - min) / range) * height;
+        return (
+          <g key={i}>
+            <circle cx={x} cy={y} r="4" fill="transparent" cursor="pointer">
+              <title>{`${labels[i]}: ${v} млн ₽`}</title>
+            </circle>
+            <circle cx={x} cy={y} r="2" fill={color} opacity="0" className="hover:opacity-100 transition-opacity" />
+          </g>
+        );
+      })}
+      <circle cx={width} cy={height - ((data[data.length - 1] - min) / range) * height} r="3" fill={color} />
+    </svg>
   );
 }
 
-/* ── Component ── */
+/* ── Мини sparkline ── */
+function MiniSparkline({ data, color }: { data: number[]; color: string }) {
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+  const width = 48;
+  const height = 18;
+  const points = data.map((v, i) => {
+    const x = (i / (data.length - 1)) * width;
+    const y = height - ((v - min) / range) * height;
+    return `${x},${y}`;
+  }).join(' ');
+
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible">
+      <polyline fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" points={points} opacity="0.6" />
+    </svg>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   COMPONENT
+   ═══════════════════════════════════════════ */
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [stats] = useState({ projects: 12, remarks: 7 });
-  const [expandedProject, setExpandedProject] = useState<string | null>(null);
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  const [period, setPeriod] = useState<'today' | 'week' | 'month' | 'quarter'>('today');
 
-  const statusWeight = { overdue: 0, review: 1, active: 2, approved: 3 };
-  const sortedProjects = [...projectData].sort((a, b) => statusWeight[a.status] - statusWeight[b.status]);
-
-  const getProjectColor = (status: string) => {
-    if (status === 'overdue') return '#EF4444';
-    if (status === 'review') return '#D4AF37';
-    if (status === 'approved') return '#0C7205';
-    return '#2563EB';
-  };
-
-  const getProjectLabel = (status: string) => {
-    if (status === 'overdue') return 'Просрочен';
-    if (status === 'review') return 'На проверке';
-    if (status === 'approved') return 'Завершён';
-    return 'В работе';
-  };
-
-  const getProjectIcon = (status: string) => {
-    if (status === 'overdue') return <AlertTriangle size={14} />;
-    if (status === 'review') return <Clock size={14} />;
-    if (status === 'approved') return <FileCheck size={14} />;
-    return <FolderKanban size={14} />;
-  };
-
-  const riskItems = [
-    { 
-      id: 'r1', level: 'high' as const, title: 'Офис «Гамма»', desc: 'Просрочка + нет согласования заказчика', 
-      action: 'Перейти в Workflow', color: '#DC2626' 
-    },
-    { 
-      id: 'r2', level: 'medium' as const, title: 'ТЭЦ-5', desc: 'Зависимость от подрядчика (блокирует Склад А-12)', 
-      action: 'Посмотреть замечания', color: '#D4AF37' 
-    },
-    { 
-      id: 'r3', level: 'medium' as const, title: 'Тендерный отдел', desc: 'Перегруз 85% (план 75%)', 
-      action: 'Перераспределить', color: '#D4AF37' 
-    },
+  const periods = [
+    { key: 'today' as const, label: 'Сегодня' },
+    { key: 'week' as const, label: 'Неделя' },
+    { key: 'month' as const, label: 'Месяц' },
+    { key: 'quarter' as const, label: 'Квартал' },
   ];
 
-  const [showAllRisks, setShowAllRisks] = useState(false);
-  const visibleRisks = showAllRisks ? riskItems : riskItems.slice(0, 3);
+  const revVal = useCountUp(finance.revenue.current, 1500, 1);
+  const profVal = useCountUp(finance.profit.current, 1500, 1);
+  const dzVal = useCountUp(finance.receivables.current, 1500, 1);
+  const margVal = useCountUp(finance.avgMargin.current, 1500, 1);
+
+  const kpiVals = [
+    useCountUp(2.3, 1200, 1),
+    useCountUp(68, 1200, 0),
+    useCountUp(7, 1200, 0),
+    useCountUp(84, 1200, 0),
+  ];
 
   return (
-    <div 
-      className="min-h-screen w-full overflow-x-hidden" 
-      style={{ background: 'var(--layout-bg)', color: 'var(--text-primary)', padding: '1.5rem' }}
-    >
-      {/* ═══ ГЛАВНЫЙ GRID: левая основная + правая sidebar (260px) ═══ */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-5 items-start">
+    /* Убран min-h-screen — контент занимает ровно столько, сколько нужно */
+    <div className="w-full overflow-x-hidden px-3 md:px-6 py-4 md:py-6" style={{ background: 'var(--layout-bg)', color: 'var(--text-primary)' }}>
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-4 md:gap-5 items-start">
 
         {/* ═══ ЛЕВАЯ КОЛОНКА ═══ */}
-        <div className="space-y-4 min-w-0">
+        <div className="space-y-4 md:space-y-5 min-w-0">
 
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          {/* Header + фильтр */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <h1 className="text-xl md:text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                Панель управления
-              </h1>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
-                Аналитика по проектам и документообороту
-              </p>
+              <h1 className="text-lg md:text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Панель управления</h1>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>Стратегическая сводка по финансам, тендерам и проектам</p>
             </div>
-            <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>
-              <span>Проектов: <strong style={{ color: 'var(--text-primary)' }}>{stats.projects}</strong></span>
-              <span className="mx-1">|</span>
-              <span>Замечаний: <strong style={{ color: 'var(--text-primary)' }}>{stats.remarks}</strong></span>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center rounded-lg p-0.5" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+                {periods.map((p) => (
+                  <button
+                    key={p.key}
+                    onClick={() => setPeriod(p.key)}
+                    className="text-[11px] px-2 md:px-2.5 py-1 rounded-md font-medium transition-all"
+                    style={{
+                      color: period === p.key ? '#fff' : 'var(--text-secondary)',
+                      background: period === p.key ? '#3B82F6' : 'transparent',
+                    }}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+              <span className="text-xs hidden sm:inline" style={{ color: 'var(--text-muted)' }}>09:00</span>
             </div>
           </div>
 
-          {/* Быстрые действия (CTA) */}
-          <div className="flex flex-wrap gap-2">
-            <button 
-              onClick={() => alert('Массовое согласование — в разработке')}
-              className="text-xs px-2 py-1 rounded-md transition-all hover:brightness-105"
-              style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
-            >
-              ⚡ Утвердить 84 документа
-            </button>
-            <button 
-              onClick={() => navigate('/team')}
-              className="text-xs px-2 py-1 rounded-md transition-all hover:brightness-105"
-              style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
-            >
-              👤 Назначить ресурс
-            </button>
-            <button 
-              disabled
-              className="text-xs px-2 py-1 rounded-md opacity-50 cursor-not-allowed"
-              style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}
-            >
-              📋 Созвон по рискам
-            </button>
-            <button 
-              disabled
-              className="text-xs px-2 py-1 rounded-md opacity-50 cursor-not-allowed"
-              style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}
-            >
-              📊 Экспорт отчёта
-            </button>
+          {/* Action items */}
+          {actionItems.length > 0 && (
+            <div className="flex flex-col gap-2">
+              {actionItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all hover:translate-x-1"
+                  style={{ background: item.color + '08', borderLeft: '4px solid', borderColor: item.color }}
+                  onClick={() => navigate('/workflow')}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Zap size={16} style={{ color: item.color }} />
+                    <span className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>{item.text}</span>
+                    <span className="text-xs shrink-0" style={{ color: 'var(--text-muted)' }}>{item.deadline}</span>
+                  </div>
+                  <button className="text-xs px-2 py-1 rounded transition-colors shrink-0" style={{ color: item.color, background: item.color + '15' }}>
+                    {item.action}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Financial metrics — count-up */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] md:text-xs" style={{ color: 'var(--text-secondary)' }}>Выручка (план)</span>
+                <DollarSign size={14} style={{ color: '#3B82F6' }} />
+              </div>
+              <div className="text-xl md:text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                {revVal}<span className="text-xs md:text-sm font-normal" style={{ color: 'var(--text-muted)' }}> / {finance.revenue.plan} {finance.revenue.unit}</span>
+              </div>
+              <div className="flex items-center gap-1 mt-1 text-[10px] md:text-xs" style={{ color: '#0C7205' }}><TrendingUp size={12} /> {finance.revenue.trend}</div>
+            </div>
+
+            <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] md:text-xs" style={{ color: 'var(--text-secondary)' }}>Прибыль (план)</span>
+                <Award size={14} style={{ color: '#D4AF37' }} />
+              </div>
+              <div className="text-xl md:text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                {profVal}<span className="text-xs md:text-sm font-normal" style={{ color: 'var(--text-muted)' }}> / {finance.profit.plan} {finance.profit.unit}</span>
+              </div>
+              <div className="flex items-center gap-1 mt-1 text-[10px] md:text-xs" style={{ color: '#0C7205' }}><TrendingUp size={12} /> {finance.profit.trend}</div>
+            </div>
+
+            <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: finance.receivables.risk ? '1px solid rgba(220,38,38,0.4)' : '1px solid var(--border-color)' }}>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] md:text-xs" style={{ color: 'var(--text-secondary)' }}>ДЗО (дебиторка)</span>
+                <Clock size={14} style={{ color: finance.receivables.risk ? '#DC2626' : '#6B7280' }} />
+              </div>
+              <div className="text-xl md:text-2xl font-bold" style={{ color: finance.receivables.risk ? '#DC2626' : 'var(--text-primary)' }}>
+                {dzVal} <span className="text-xs md:text-sm font-normal" style={{ color: 'var(--text-muted)' }}>{finance.receivables.unit}</span>
+              </div>
+              <div className="flex items-center gap-1 mt-1 text-[10px] md:text-xs" style={{ color: '#0C7205' }}><TrendingDown size={12} /> {finance.receivables.trend}</div>
+            </div>
+
+            <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] md:text-xs" style={{ color: 'var(--text-secondary)' }}>Средняя маржа</span>
+                <Briefcase size={14} style={{ color: '#8B5CF6' }} />
+              </div>
+              <div className="text-xl md:text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                {margVal}<span className="text-xs md:text-sm font-normal" style={{ color: 'var(--text-muted)' }}>{finance.avgMargin.unit}</span>
+              </div>
+              <div className="flex items-center gap-1 mt-1 text-[10px] md:text-xs" style={{ color: '#0C7205' }}><TrendingUp size={12} /> {finance.avgMargin.trend}</div>
+            </div>
           </div>
 
-          {/* 3 KPI */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <button onClick={() => navigate('/workflow?filter=overdue')} className="group p-3 rounded-lg text-left transition-all hover:scale-[1.02] flex flex-col gap-1" style={{ background: 'var(--card-bg)', border: '1px solid rgba(220,38,38,0.35)' }}>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Требуют внимания</span>
-                <span className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: 'rgba(220,38,38,0.12)', color: '#DC2626' }}>
-                  <AlertTriangle size={12} />
-                </span>
-              </div>
-              <div className="text-xl font-bold" style={{ color: '#DC2626' }}>7</div>
-              <div className="text-[10px] flex items-center gap-1 font-medium" style={{ color: '#DC2626' }}>
-                <ArrowRight size={10} className="transition-transform group-hover:translate-x-1" />
-                Срочно в Workflow
-              </div>
-            </button>
-            <button onClick={() => navigate('/workflow')} className="group p-3 rounded-lg text-left transition-all hover:scale-[1.02] flex flex-col gap-1" style={{ background: 'var(--card-bg)', border: '1px solid rgba(212,175,55,0.35)' }}>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>На согласовании</span>
-                <span className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: 'rgba(212,175,55,0.12)', color: '#D4AF37' }}>
-                  <Clock size={12} />
-                </span>
-              </div>
-              <div className="text-xl font-bold" style={{ color: '#D4AF37' }}>84</div>
-              <div className="text-[10px] flex items-center gap-1" style={{ color: 'var(--text-muted)' }}>
-                <ArrowRight size={10} className="transition-transform group-hover:translate-x-1" />
-                Среднее время: 2.3 дня
-              </div>
-            </button>
-            <button onClick={() => navigate('/documents?dept=tender')} className="group p-3 rounded-lg text-left transition-all hover:scale-[1.02] flex flex-col gap-1" style={{ background: 'var(--card-bg)', border: '1px solid rgba(37,99,235,0.35)' }}>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Перегруженный отдел</span>
-                <span className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: 'rgba(37,99,235,0.12)', color: '#2563EB' }}>
-                  <Users size={12} />
-                </span>
-              </div>
-              <div className="text-xl font-bold" style={{ color: '#2563EB' }}>34/40</div>
-              <div className="text-[10px] flex items-center gap-1" style={{ color: 'var(--text-muted)' }}>
-                <ArrowRight size={10} className="transition-transform group-hover:translate-x-1" />
-                Тендерный отдел — 85%
-              </div>
-            </button>
+          {/* Tender funnel — min-width защита от сжатия */}
+          <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Тендерная воронка</h3>
+              <button onClick={() => navigate('/projects')} className="text-xs flex items-center gap-1 transition-colors" style={{ color: 'var(--text-muted)' }}>Все тендеры <ChevronRight size={12} /></button>
+            </div>
+            <div className="flex items-end justify-between gap-1 overflow-x-auto pb-1">
+              {tenderFunnel.map((step, i) => (
+                <div key={i} className="flex items-end gap-1 shrink-0">
+                  <div className="flex flex-col items-center gap-1 min-w-[60px] md:min-w-[72px]">
+                    <div className="w-full rounded-t-md transition-all hover:opacity-80 cursor-pointer"
+                      style={{ height: `${Math.max((step.value / 47) * 120, 24)}px`, background: step.color + '20', borderTop: `3px solid ${step.color}` }}
+                      onClick={() => navigate('/projects')}
+                    />
+                    <span className="text-base md:text-lg font-bold" style={{ color: step.color }}>{step.value}</span>
+                    <span className="text-[9px] md:text-[10px] text-center leading-tight" style={{ color: 'var(--text-muted)' }}>{step.stage}</span>
+                  </div>
+                  {i < tenderFunnel.length - 1 && (
+                    <div className="flex flex-col items-center justify-end pb-5 px-0.5">
+                      <ArrowDown size={12} style={{ color: 'var(--text-muted)', opacity: 0.5 }} />
+                      <span className="text-[9px] md:text-[10px] font-bold mt-0.5" style={{ color: step.color }}>{funnelConversion[i]}%</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* Воронка */}
-          <CompactFunnel />
-
-          {/* Загруженность по дням — компактная */}
-          <div className="p-3 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
-            <CompactHeatmap />
+          {/* KPI + sparklines + count-up */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {[
+              { label: 'Ср. срок согласования', valueRaw: 2.3, suffix: ' дня', trend: '-0.5 дн', good: true, icon: <Clock size={14} />, color: '#0C7205', spark: kpiSparkData.approval, decimals: 1 },
+              { label: '% победы в тендерах', valueRaw: 68, suffix: '%', trend: '+4%', good: true, icon: <Award size={14} />, color: '#3B82F6', spark: kpiSparkData.winRate, decimals: 0 },
+              { label: 'Просроченные документы', valueRaw: 7, suffix: '', trend: '-3', good: true, icon: <AlertTriangle size={14} />, color: '#DC2626', spark: kpiSparkData.overdue, decimals: 0 },
+              { label: 'Средняя загрузка', valueRaw: 84, suffix: '%', trend: '+2%', good: false, icon: <Users size={14} />, color: '#D4AF37', spark: kpiSparkData.load, decimals: 0 },
+            ].map((kpi, i) => (
+              <div key={i} className="p-3 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{kpi.label}</span>
+                  <span style={{ color: kpi.color }}>{kpi.icon}</span>
+                </div>
+                <div className="flex items-end justify-between">
+                  <div>
+                    <div className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+                      {kpi.decimals === 0 ? Math.round(kpiVals[i]) : kpiVals[i]}{kpi.suffix}
+                    </div>
+                    <div className="text-[10px] mt-0.5" style={{ color: kpi.good ? '#0C7205' : '#D4AF37' }}>
+                      {kpi.good ? <TrendingUp size={10} className="inline mr-0.5" /> : <TrendingDown size={10} className="inline mr-0.5" />}{kpi.trend}
+                    </div>
+                  </div>
+                  <MiniSparkline data={kpi.spark} color={kpi.color} />
+                </div>
+              </div>
+            ))}
           </div>
 
-          {/* ═══ ТРИ БЛОКА В ОДИН РЯД — равные широкие колонки ═══ */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Portfolio */}
+          <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Структура портфеля по типам объектов</h3>
+              <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Выручка, млн ₽</span>
+            </div>
+            <div className="flex flex-col gap-2.5">
+              {[
+                { type: 'Жилые комплексы', share: 45, revenue: 56.1, color: '#3B82F6' },
+                { type: 'Торговые центры', share: 28, revenue: 34.9, color: '#D4AF37' },
+                { type: 'Промышленность', share: 18, revenue: 22.4, color: '#0C7205' },
+                { type: 'Инфраструктура', share: 9, revenue: 11.2, color: '#8B5CF6' },
+              ].map((seg, i) => (
+                <div key={i}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs" style={{ color: 'var(--text-primary)' }}>{seg.type}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold" style={{ color: seg.color }}>{seg.share}%</span>
+                      <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{seg.revenue} млн ₽</span>
+                    </div>
+                  </div>
+                  <div className="h-2 w-full rounded-full overflow-hidden" style={{ background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }}>
+                    <div className="h-full rounded-full" style={{ width: `${seg.share}%`, background: seg.color, opacity: 0.8 }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
 
-            {/* 1. Прогресс проектов */}
-            <div className="p-3 rounded-xl min-w-0" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+          {/* Trend + Top projects */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>Прогресс проектов</h3>
-                <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>По риску ↓</span>
+                <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Динамика выручки (12 мес)</h3>
+                <span className="text-xs" style={{ color: '#0C7205' }}>+18% YoY</span>
               </div>
+              <div className="flex items-end gap-3">
+                <Sparkline data={trendData} labels={trendLabels} color={isDark ? '#60A5FA' : '#3B82F6'} />
+                <div className="text-right">
+                  <div className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>78</div>
+                  <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>млн ₽ (дек)</div>
+                </div>
+              </div>
+            </div>
 
+            <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Топ-проекты по выручке</h3>
+                <button onClick={() => navigate('/projects')} className="text-xs flex items-center gap-1 transition-colors" style={{ color: 'var(--text-muted)' }}>Все <ChevronRight size={12} /></button>
+              </div>
               <div className="flex flex-col gap-2">
-                {sortedProjects.map((project) => {
-                  const color = getProjectColor(project.status);
-                  const isExpanded = expandedProject === project.id;
-                  const label = getProjectLabel(project.status);
-
+                {topProjects.map((proj, i) => {
+                  const color = proj.status === 'active' ? '#2563EB' : proj.status === 'review' ? '#D4AF37' : '#0C7205';
                   return (
-                    <div 
-                      key={project.id}
-                      className="rounded-lg overflow-hidden transition-all"
-                      style={{ 
-                        background: 'var(--card-bg)', 
-                        border: `1px solid ${isExpanded ? color + '40' : 'var(--border-color)'}`,
-                      }}
+                    <div key={i} onClick={() => navigate('/projects')} className="flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors"
+                      style={{ background: 'transparent' }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                     >
-                      <button
-                        onClick={() => setExpandedProject(isExpanded ? null : project.id)}
-                        className="w-full text-left p-2.5 transition-colors hover:brightness-105"
-                        style={{ cursor: 'pointer', background: 'none', border: 'none' }}
-                      >
-                        <div className="flex items-center justify-between mb-1.5">
-                          <div className="flex items-center gap-1.5 min-w-0">
-                            <span style={{ color }}>{getProjectIcon(project.status)}</span>
-                            <span className="text-xs font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
-                              {project.name}
-                            </span>
-                            <span 
-                              className="text-[9px] px-1 py-0.5 rounded-full font-medium shrink-0"
-                              style={{ background: color + '20', color, border: `1px solid ${color}40` }}
-                            >
-                              {label}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1.5 shrink-0 ml-1.5">
-                            <span className="text-xs font-bold" style={{ color }}>{project.percent}%</span>
-                            {isExpanded ? <ChevronDown size={12} style={{ color: 'var(--text-muted)' }} /> : <ChevronRight size={12} style={{ color: 'var(--text-muted)' }} />}
-                          </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-1 h-8 rounded-full" style={{ background: color }} />
+                        <div>
+                          <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{proj.name}</div>
+                          <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Дедлайн: {proj.deadline}</div>
                         </div>
-
-                        <div className="h-1.5 w-full rounded-full overflow-hidden" style={{ background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }}>
-                          <div className="h-full rounded-full transition-all duration-500" style={{ width: `${project.percent}%`, background: color, opacity: 0.8 }} />
-                        </div>
-
-                        <div className="mt-1.5 flex items-center justify-between">
-                          <span 
-                            className="text-[10px]"
-                            style={{ 
-                              color: project.daysLeft <= 3 ? '#DC2626' : 
-                                     project.daysLeft <= 7 ? '#D4AF37' : 
-                                     'var(--text-muted)'
-                            }}
-                          >
-                            📅 Дедлайн: {project.deadline} ({project.daysLeft} дн.)
-                          </span>
-                          {project.blockedBy && (
-                            <span className="text-[9px] flex items-center gap-0.5 shrink-0 ml-1.5" style={{ color: '#FF6B6B' }}>
-                              <LinkIcon size={9} /> Блокирует: {project.blockedBy}
-                            </span>
-                          )}
-                        </div>
-                      </button>
-
-                      {isExpanded && (
-                        <div className="px-2.5 pb-2.5 pt-0">
-                          <div className="border-t pt-2 mt-0.5" style={{ borderColor: 'var(--border-color)' }}>
-                            <div className="flex items-center justify-between mb-1.5">
-                              <span className="text-[10px] font-medium" style={{ color: 'var(--text-secondary)' }}>Документы</span>
-                              <button 
-                                onClick={(e) => { e.stopPropagation(); navigate(project.route); }}
-                                className="text-[9px] flex items-center gap-0.5 px-1.5 py-0.5 rounded transition-colors"
-                                style={{ color: '#2563EB', background: 'rgba(37,99,235,0.1)' }}
-                              >
-                                Все <ArrowRight size={8} />
-                              </button>
-                            </div>
-                            <div className="flex flex-col gap-1.5">
-                              {project.docs.map((doc, di) => (
-                                <div key={di} className="flex items-center justify-between">
-                                  <span className="text-[11px] truncate" style={{ color: 'var(--text-primary)' }}>{doc.name}</span>
-                                  <div className="flex items-center gap-1.5 shrink-0 ml-1.5">
-                                    <span 
-                                      className="text-[9px] px-1 py-0.5 rounded-full"
-                                      style={{ 
-                                        background: doc.status === 'Просрочен' ? 'rgba(239,68,68,0.15)' : 'rgba(37,99,235,0.15)', 
-                                        color: doc.status === 'Просрочен' ? '#EF4444' : '#2563EB',
-                                        border: `1px solid ${doc.status === 'Просрочен' ? 'rgba(239,68,68,0.3)' : 'rgba(37,99,235,0.3)'}`
-                                      }}
-                                    >
-                                      {doc.status}
-                                    </span>
-                                    <span className="text-[9px]" style={{ color: 'var(--text-muted)' }}>{doc.date}</span>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      )}
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{proj.revenue}</div>
+                        <div className="text-[10px]" style={{ color: color }}>{proj.percent}%</div>
+                      </div>
                     </div>
                   );
                 })}
               </div>
             </div>
+          </div>
 
-            {/* 2. Загрузка по отделам */}
-            <div className="p-3 rounded-xl min-w-0" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
-              <DepartmentLoad />
+          {/* Deadlines */}
+          <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Ближайшие дедлайны</h3>
+              <button onClick={() => navigate('/projects')} className="text-xs flex items-center gap-1 transition-colors" style={{ color: 'var(--text-muted)' }}>Календарь <ChevronRight size={12} /></button>
             </div>
-
-            {/* 3. Загрузка команды */}
-            <div className="p-3 rounded-xl min-w-0" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
-              <TeamLoadSection />
+            <div className="flex items-center gap-1 overflow-x-auto pb-1">
+              {[
+                { day: 'Сегодня', date: '20.05', projects: ['КЖ-02-014'], color: '#DC2626', urgent: true },
+                { day: 'Завтра', date: '21.05', projects: ['АР-03-015'], color: '#D4AF37', urgent: false },
+                { day: 'Пн', date: '25.05', projects: ['ТЦ «Меридиан»'], color: '#3B82F6', urgent: false },
+                { day: 'Чт', date: '28.05', projects: ['ОВиК-02-008'], color: '#3B82F6', urgent: false },
+                { day: 'Пн', date: '02.06', projects: ['ТЭЦ-5'], color: '#0C7205', urgent: false },
+              ].map((item, i) => (
+                <div key={i} className="flex-1 flex flex-col items-center min-w-[64px]">
+                  <div className="w-full py-2 rounded-lg text-center cursor-pointer transition-all hover:scale-105"
+                    style={{ background: item.urgent ? item.color + '15' : 'var(--card-elevated)', border: `1px solid ${item.urgent ? item.color + '40' : 'var(--border-color)'}` }}
+                    onClick={() => navigate('/projects')}
+                  >
+                    <div className="text-[10px] font-medium" style={{ color: item.urgent ? item.color : 'var(--text-muted)' }}>{item.day}</div>
+                    <div className="text-xs font-bold" style={{ color: 'var(--text-primary)' }}>{item.date}</div>
+                    <div className="text-[9px] mt-0.5 truncate px-1" style={{ color: 'var(--text-muted)' }}>{item.projects[0]}</div>
+                  </div>
+                  {i < 4 && <div className="w-4 h-px mt-1" style={{ background: 'var(--border-color)' }} />}
+                </div>
+              ))}
             </div>
-
           </div>
 
         </div>
 
-        {/* ═══ ПРАВАЯ SIDEBAR (260px) ═══ */}
-        <div className="space-y-4 lg:sticky lg:top-5">
+        {/* ═══ ПРАВАЯ КОЛОНКА — 340px, без пустоты ═══ */}
+        <div className="space-y-4 xl:sticky xl:top-5">
 
-          {/* Глобальный поиск */}
-          <div className="p-3 rounded-xl flex flex-col gap-2" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>Глобальный поиск</h3>
-              <Search size={14} style={{ color: 'var(--text-muted)' }} />
-            </div>
-            <div className="relative">
-              <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
-              <input
-                type="text"
-                placeholder="Поиск по проектам, документам..."
-                className="w-full pl-8 pr-2 py-1.5 rounded-md text-xs outline-none"
-                style={{
-                  background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
-                  color: 'var(--text-primary)',
-                  border: '1px solid var(--border-color)',
-                }}
-              />
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {['По проекту', 'По типу', 'По автору', 'По дате'].map((f) => (
-                <button key={f} className="text-[9px] px-1.5 py-0.5 rounded flex items-center gap-0.5" style={{ background: 'var(--card-elevated)', color: 'var(--text-secondary)', border: '1px solid var(--border-color)' }}>
-                  <Filter size={8} /> {f}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Что нового */}
-          <div className="p-3 rounded-xl flex flex-col gap-2" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>Что нового</h3>
-              <div className="flex items-center gap-1">
-                <span className="text-[9px] px-1 py-0.5 rounded-full font-medium" style={{ background: 'rgba(220,38,38,0.15)', color: '#DC2626' }}>3</span>
-                <Bell size={14} style={{ color: 'var(--text-muted)' }} />
+          {/* Риски — текст больше не ломается */}
+          <div className="p-3 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Риски и требования внимания</h3>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ background: 'rgba(220,38,38,0.12)', color: '#DC2626' }}>{criticalAlerts.length}</span>
+                <AlertTriangle size={14} style={{ color: 'var(--text-muted)' }} />
               </div>
             </div>
-            <div className="flex flex-col gap-1.5">
-              {[
-                { icon: <FileWarning size={12} />, text: 'Новое замечание по КЖ-02-014', badge: 'Критично', badgeColor: '#DC2626', time: '10 мин' },
-                { icon: <CheckCircle size={12} />, text: 'АР-03-015 согласован', badge: 'Согласование', badgeColor: '#D4AF37', time: '1 ч' },
-                { icon: <MessageSquare size={12} />, text: 'Упоминание в ТЭЦ-5', badge: 'Новое', badgeColor: '#2563EB', time: '2 ч' },
-                { icon: <UserPlus size={12} />, text: 'Назначен по Склад А-12', badge: 'Назначение', badgeColor: '#0C7205', time: '3 ч' },
-              ].map((note, i) => (
-                <button
-                  key={i}
-                  className="w-full text-left p-2 rounded-md transition-colors flex items-start gap-1.5"
-                  style={{ background: 'none', border: 'none', cursor: 'pointer' }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+            <div className="flex flex-col gap-1">
+              {criticalAlerts.map((risk) => (
+                <div key={risk.id}
+                  onClick={() => navigate('/workflow')}
+                  className="flex items-start gap-2.5 p-2 rounded-lg cursor-pointer transition-colors"
+                  style={{ background: 'transparent' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                 >
-                  <span style={{ color: 'var(--text-muted)', marginTop: '1px' }}>{note.icon}</span>
+                  <div className="w-1 h-8 rounded-full shrink-0 mt-0.5" style={{ background: risk.color }} />
                   <div className="flex-1 min-w-0">
-                    <div className="text-[11px] leading-snug" style={{ color: 'var(--text-primary)' }}>{note.text}</div>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="text-[9px] px-1 py-0.5 rounded-full font-medium" style={{ background: note.badgeColor + '18', color: note.badgeColor, border: `1px solid ${note.badgeColor}30` }}>
-                        {note.badge}
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="text-xs font-medium leading-tight break-words" style={{ color: 'var(--text-primary)' }}>{risk.title}</span>
+                      <span onClick={(e) => { e.stopPropagation(); navigate('/workflow'); }} className="text-[10px] shrink-0 cursor-pointer hover:underline mt-0.5" style={{ color: risk.color }}>
+                        {risk.action} →
                       </span>
-                      <span className="text-[9px]" style={{ color: 'var(--text-muted)' }}>{note.time}</span>
+                    </div>
+                    <div className="text-[10px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                      {risk.level === 'high' ? 'Высокий приоритет' : 'Средний приоритет'}
                     </div>
                   </div>
-                </button>
-              ))}
-            </div>
-            <button className="w-full text-center text-[10px] py-1 rounded-md" style={{ color: 'var(--text-secondary)', background: 'var(--card-elevated)', border: '1px solid var(--border-color)' }}>
-              Показать все
-            </button>
-          </div>
-
-          {/* Команда */}
-          <div className="p-3 rounded-xl flex flex-col gap-2" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>Команда</h3>
-              <Gift size={14} style={{ color: 'var(--text-muted)' }} />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              {[
-                { name: 'Анна Петрова', role: 'ГИП', date: 'Сегодня', avatar: 'АП', highlight: true },
-                { name: 'Дмитрий Соколов', role: 'Конструктор', date: 'Завтра', avatar: 'ДС', highlight: true },
-                { name: 'Елена Волкова', role: 'Архитектор', date: '18 мая', avatar: 'ЕВ', highlight: false },
-                { name: 'Иван Кузнецов', role: 'ОВиК', date: '22 мая', avatar: 'ИК', highlight: false },
-              ].map((person, i) => (
-                <div key={i} className="flex items-center gap-2 p-1.5 rounded-md" style={{ background: person.highlight ? (isDark ? 'rgba(212,175,55,0.08)' : 'rgba(212,175,55,0.06)') : 'transparent' }}>
-                  <div className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0" style={{ background: person.highlight ? 'rgba(212,175,55,0.2)' : 'var(--card-elevated)', color: person.highlight ? '#D4AF37' : 'var(--text-secondary)', border: `1px solid ${person.highlight ? '#D4AF3740' : 'var(--border-color)'}` }}>
-                    {person.avatar}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[11px] font-medium truncate" style={{ color: 'var(--text-primary)' }}>{person.name}</div>
-                    <div className="text-[9px]" style={{ color: 'var(--text-muted)' }}>{person.role}</div>
-                  </div>
-                  <div className="text-[9px] font-medium shrink-0" style={{ color: person.highlight ? '#D4AF37' : 'var(--text-muted)' }}>
-                    {person.highlight && <Gift size={8} className="inline mr-0.5" />}
-                    {person.date}
-                  </div>
                 </div>
               ))}
             </div>
-            <button onClick={() => navigate('/team')} className="w-full text-center text-[10px] py-1 rounded-md" style={{ color: 'var(--text-secondary)', background: 'var(--card-elevated)', border: '1px solid var(--border-color)' }}>
-              Вся команда
-            </button>
           </div>
 
-          {/* Риски */}
-          <div className="p-3 rounded-xl flex flex-col gap-2" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>Риски и требования внимания</h3>
-              <AlertTriangle size={14} style={{ color: 'var(--text-muted)' }} />
+          {/* IRIS — финальные цвета, яркий для светлой темы */}
+          <div className="p-3 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+            <div className="flex items-center gap-3 mb-2">
+              <IrisAvatar isDark={isDark} className="w-10 h-10" />
+              <div>
+                <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Рекомендации IRIS</h3>
+                <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>AI-ассистент</span>
+              </div>
             </div>
-            <div className="flex flex-col gap-2">
-              {visibleRisks.map((risk) => (
-                <div 
-                  key={risk.id} 
-                  className="p-2 rounded-md"
-                  style={{ 
-                    borderLeft: '4px solid',
-                    borderColor: risk.color,
-                    background: risk.color + '08'
-                  }}
-                >
-                  <div className="text-[10px] font-semibold mb-0.5" style={{ color: risk.color }}>
-                    {risk.level === 'high' ? '🔴 Высокий' : '🟡 Средний'}: {risk.title}
+            <div className="p-2.5 rounded-lg" style={{ background: isDark ? 'rgba(12,114,5,0.08)' : 'rgba(12,114,5,0.06)', border: '1px solid rgba(12,114,5,0.2)' }}>
+              <div className="flex items-start gap-2">
+                <Sparkles size={14} className="shrink-0 mt-0.5" style={{ color: '#0C7205' }} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs leading-relaxed" style={{ color: 'var(--text-primary)' }}>
+                    Перегруз тендерного отдела: <strong>85%</strong>. Переложить <strong>КЖ-02-014</strong> на проектный?
+                  </p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <button onClick={() => navigate('/team')} className="text-[10px] px-2 py-1 rounded-md font-medium transition-colors hover:brightness-110" style={{ background: '#0C7205', color: '#fff' }}>
+                      Применить
+                    </button>
+                    <button onClick={() => navigate('/workflow')} className="text-[10px] px-2 py-1 rounded-md transition-colors" style={{ color: 'var(--text-secondary)', border: '1px solid var(--border-color)' }}>
+                      Подробнее
+                    </button>
                   </div>
-                  <div className="text-[10px] mb-1.5" style={{ color: 'var(--text-primary)' }}>{risk.desc}</div>
-                  <button 
-                    onClick={() => navigate('/workflow')}
-                    className="text-[9px] px-1.5 py-0.5 rounded transition-colors"
-                    style={{ color: risk.color, background: risk.color + '15' }}
-                  >
-                    {risk.action}
-                  </button>
                 </div>
-              ))}
+              </div>
             </div>
-            {riskItems.length > 3 && (
-              <button 
-                onClick={() => setShowAllRisks(!showAllRisks)}
-                className="w-full text-center text-[10px] py-1 rounded-md" 
-                style={{ color: 'var(--text-secondary)', background: 'var(--card-elevated)', border: '1px solid var(--border-color)' }}
-              >
-                {showAllRisks ? 'Скрыть' : 'Показать все риски'}
-              </button>
-            )}
           </div>
 
         </div>

@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Фоновый градиент -->
+    <radialGradient id="bgGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1a1a2e"/>
+      <stop offset="100%" stop-color="#0f0f1a"/>
+    </radialGradient>
+
+    <!-- Неоновое свечение -->
+    <filter id="neonGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="blur1"/>
+      <feGaussianBlur stdDeviation="16" result="blur2"/>
+      <feMerge>
+        <feMergeNode in="blur2"/>
+        <feMergeNode in="blur1"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Градиенты для лепестков -->
+    <linearGradient id="petalPurple" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#4a148c"/>
+      <stop offset="50%" stop-color="#7c4dff"/>
+      <stop offset="100%" stop-color="#b388ff"/>
+    </linearGradient>
+
+    <linearGradient id="petalBlue" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#1a237e"/>
+      <stop offset="50%" stop-color="#536dfe"/>
+      <stop offset="100%" stop-color="#8c9eff"/>
+    </linearGradient>
+
+    <linearGradient id="petalGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffd600"/>
+      <stop offset="100%" stop-color="#ffab00"/>
+    </linearGradient>
+
+    <!-- Градиент для стебля и листьев -->
+    <linearGradient id="stemGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1b5e20"/>
+      <stop offset="50%" stop-color="#4caf50"/>
+      <stop offset="100%" stop-color="#81c784"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Фон -->
+  <circle cx="256" cy="256" r="240" fill="url(#bgGrad)" stroke="#00e676" stroke-width="2" opacity="0.6" filter="url(#neonGlow)"/>
+  <circle cx="256" cy="256" r="232" fill="none" stroke="#00e676" stroke-width="1" opacity="0.3"/>
+
+  <!-- Стебель -->
+  <path d="M 256 420 Q 256 350 256 280" stroke="url(#stemGrad)" stroke-width="12" fill="none" stroke-linecap="round" filter="url(#softGlow)"/>
+
+  <!-- Листья -->
+  <path d="M 256 380 Q 200 340 180 300 Q 220 320 256 350" fill="#2e7d32" opacity="0.9" filter="url(#softGlow)"/>
+  <path d="M 256 360 Q 320 330 340 290 Q 290 310 256 340" fill="#388e3c" opacity="0.9" filter="url(#softGlow)"/>
+
+  <!-- Нижние лепестки (опущенные) — 3 шт -->
+  <!-- Левый нижний -->
+  <path d="M 256 280 Q 200 320 160 360 Q 180 300 220 260 Z" fill="url(#petalPurple)" filter="url(#neonGlow)" opacity="0.95"/>
+  <path d="M 256 280 Q 200 320 160 360 Q 180 300 220 260 Z" fill="none" stroke="#b388ff" stroke-width="1.5" opacity="0.8"/>
+
+  <!-- Правый нижний -->
+  <path d="M 256 280 Q 312 320 352 360 Q 332 300 292 260 Z" fill="url(#petalPurple)" filter="url(#neonGlow)" opacity="0.95"/>
+  <path d="M 256 280 Q 312 320 352 360 Q 332 300 292 260 Z" fill="none" stroke="#b388ff" stroke-width="1.5" opacity="0.8"/>
+
+  <!-- Центральный нижний -->
+  <path d="M 256 280 Q 256 340 256 390 Q 270 330 280 270 Z" fill="url(#petalBlue)" filter="url(#neonGlow)" opacity="0.9"/>
+  <path d="M 256 280 Q 256 340 256 390 Q 270 330 280 270 Z" fill="none" stroke="#8c9eff" stroke-width="1.5" opacity="0.8"/>
+
+  <!-- Верхние лепестки (стоячие) — 3 шт -->
+  <!-- Левый верхний -->
+  <path d="M 256 280 Q 210 220 190 160 Q 230 200 250 240 Z" fill="url(#petalBlue)" filter="url(#neonGlow)" opacity="0.95"/>
+  <path d="M 256 280 Q 210 220 190 160 Q 230 200 250 240 Z" fill="none" stroke="#8c9eff" stroke-width="1.5" opacity="0.8"/>
+
+  <!-- Правый верхний -->
+  <path d="M 256 280 Q 302 220 322 160 Q 282 200 262 240 Z" fill="url(#petalBlue)" filter="url(#neonGlow)" opacity="0.95"/>
+  <path d="M 256 280 Q 302 220 322 160 Q 282 200 262 240 Z" fill="none" stroke="#8c9eff" stroke-width="1.5" opacity="0.8"/>
+
+  <!-- Центральный верхний -->
+  <path d="M 256 280 Q 256 200 256 140 Q 240 190 235 250 Z" fill="url(#petalPurple)" filter="url(#neonGlow)" opacity="0.95"/>
+  <path d="M 256 280 Q 256 200 256 140 Q 240 190 235 250 Z" fill="none" stroke="#b388ff" stroke-width="1.5" opacity="0.8"/>
+
+  <!-- Бородка (жёлтая с пурпурными прожилками) -->
+  <path d="M 256 280 Q 240 300 230 330 Q 250 310 256 290 Q 262 310 282 330 Q 272 300 256 280" fill="url(#petalGold)" filter="url(#softGlow)"/>
+
+  <!-- Пурпурные полосы на бородке -->
+  <path d="M 248 285 Q 242 300 238 315" stroke="#7b1fa2" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.7"/>
+  <path d="M 256 288 Q 256 305 256 320" stroke="#7b1fa2" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.7"/>
+  <path d="M 264 285 Q 270 300 274 315" stroke="#7b1fa2" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.7"/>
+
+  <!-- Центр цветка -->
+  <ellipse cx="256" cy="275" rx="12" ry="8" fill="#fff9c4" filter="url(#softGlow)"/>
+
+  <!-- Техно-элемент: кольцо вокруг цветка (как у AI-ассистента) -->
+  <ellipse cx="256" cy="256" rx="180" ry="180" fill="none" stroke="#00e676" stroke-width="1" stroke-dasharray="12 8" opacity="0.4" filter="url(#neonGlow)"/>
+  <ellipse cx="256" cy="256" rx="190" ry="190" fill="none" stroke="#00e676" stroke-width="0.5" stroke-dasharray="4 12" opacity="0.3"/>
+
+  <!-- Точки на орбите (как индикаторы статуса) -->
+  <circle cx="256" cy="76" r="4" fill="#00e676" filter="url(#softGlow)"/>
+  <circle cx="436" cy="256" r="4" fill="#00e676" filter="url(#softGlow)"/>
+  <circle cx="256" cy="436" r="4" fill="#00e676" filter="url(#softGlow)"/>
+  <circle cx="76" cy="256" r="4" fill="#00e676" filter="url(#softGlow)"/>
+</svg>

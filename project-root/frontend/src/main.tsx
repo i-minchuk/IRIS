@@ -1,4 +1,3 @@
-// frontend/src/main.tsx
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';
@@ -8,7 +7,6 @@ import { ThemeProvider } from './providers/ThemeProvider';
 import { LanguageProvider } from "./features/profile/i18n/LanguageContext";
 import { useAuthStore } from './features/auth/store/authStore';
 import { Toaster } from 'sonner';
-import { FloatingZoom } from './features/zoom/components/FloatingZoom';
 import './shared/styles/globals.css';
 
 function App() {
@@ -30,7 +28,7 @@ function App() {
   );
 }
 
-function ErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
+function ErrorFallback({ error: _error, resetErrorBoundary }: FallbackProps) {
   return (
     <div className="min-h-screen flex items-center justify-center p-6" style={{ backgroundColor: 'var(--bg-app, #f8fafc)' }}>
       <div className="max-w-md w-full rounded-2xl border p-8 text-center shadow-sm" style={{ backgroundColor: 'var(--bg-surface, #ffffff)', borderColor: 'var(--border-default, #e2e8f0)' }}>
@@ -50,7 +48,6 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <ThemeProvider>
         <LanguageProvider>
           <App />
-          <FloatingZoom />  {/* ← ВНЕ App, вне масштаба */}
         </LanguageProvider>
       </ThemeProvider>
     </ErrorBoundary>
