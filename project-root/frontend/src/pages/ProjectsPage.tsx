@@ -4,12 +4,15 @@ import { useTheme } from '@/providers/ThemeProvider';
 import {
   FolderKanban, FileCheck, Clock, AlertTriangle,
   ArrowRight, Users, ChevronRight, ChevronDown,
-  Bell, Gift, CheckCircle, MessageSquare, UserPlus, FileWarning, Link as LinkIcon
+  Link as LinkIcon, Gavel, Search,
+  Calendar, DollarSign, TrendingUp, TrendingDown,
+  CheckCircle2, XCircle, Clock3, Send
 } from 'lucide-react';
-import { TeamLoadSection } from './TeamLoadSection';
 import { DepartmentLoad } from './DashboardWidgets';
 
-/* ── Types ── */
+/* ═══════════════════════════════════════════════════════════
+   TYPES
+   ═══════════════════════════════════════════════════════════ */
 interface ProjectDoc {
   name: string;
   status: string;
@@ -29,6 +32,21 @@ interface ProjectItem {
   blockedBy?: string;
 }
 
+interface TenderItem {
+  id: string;
+  number: string;
+  name: string;
+  customer: string;
+  status: 'preparation' | 'submitted' | 'review' | 'won' | 'lost';
+  deadline: string;
+  budget: string;
+  daysLeft: number;
+  winChance: number;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DATA
+   ═══════════════════════════════════════════════════════════ */
 const projectData: ProjectItem[] = [
   { 
     id: 'gamma', name: 'Офис «Гамма»', percent: 23, status: 'overdue', route: '/projects?filter=overdue',
@@ -70,177 +88,274 @@ const projectData: ProjectItem[] = [
   },
 ];
 
-/* ── Inline компактная воронка ── */
-function CompactFunnel() {
-  const navigate = useNavigate();
-  const [hover, setHover] = useState(false);
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
+const tenderData: TenderItem[] = [
+  { id: 't1', number: 'Т-2026-044', name: 'Строительство ЖК «Северный»', customer: 'ООО «СеверСтрой»', status: 'review', deadline: '25.05.2026', budget: '₽ 420 млн', daysLeft: 4, winChance: 65 },
+  { id: 't2', number: 'Т-2026-045', name: 'Реконструкция ТЭЦ-5', customer: 'ПАО «МосЭнерго»', status: 'preparation', deadline: '30.06.2026', budget: '₽ 180 млн', daysLeft: 40, winChance: 45 },
+  { id: 't3', number: 'Т-2026-046', name: 'Офисный комплекс «Гамма»', customer: 'ООО «ГаммаДев»', status: 'submitted', deadline: '15.05.2026', budget: '₽ 95 млн', daysLeft: -6, winChance: 30 },
+  { id: 't4', number: 'Т-2026-042', name: 'Склад А-12 — электрика', customer: 'ООО «ЛогистикПро»', status: 'won', deadline: '01.04.2026', budget: '₽ 38 млн', daysLeft: 0, winChance: 100 },
+  { id: 't5', number: 'Т-2026-043', name: 'ТЦ «Меридиан» — ОВиК', customer: 'ООО «МеридианГрупп»', status: 'lost', deadline: '10.04.2026', budget: '₽ 62 млн', daysLeft: 0, winChance: 0 },
+  { id: 't6', number: 'Т-2026-047', name: 'ЖК «Южный парк»', customer: 'ООО «ЮжПарк»', status: 'preparation', deadline: '12.07.2026', budget: '₽ 550 млн', daysLeft: 52, winChance: 55 },
+];
 
-  const steps = [
-    { label: 'Поступило', value: '1247', sub: 'всего', color: '#2563EB' },
-    { label: 'В работе', value: '156', sub: 'активно', color: '#0EA5E9' },
-    { label: 'На согласовании', value: '84', sub: '2.3 дня', color: '#D4AF37' },
-    { label: 'Утверждено', value: '892', sub: 'за месяц', color: '#0C7205' },
-    { label: 'Просрочено', value: '7', sub: 'внимание', color: '#DC2626' },
+/* ═══════════════════════════════════════════════════════════
+   TABS — 1:1 как «Панель аналитики / Портфель заказов»
+   ═══════════════════════════════════════════════════════════ */
+type TabKey = 'tenders' | 'projects';
+
+function PageTabs({ active, onChange }: { active: TabKey; onChange: (t: TabKey) => void }) {
+  const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
+    { key: 'tenders', label: 'ТЕНДЕРЫ', icon: <Gavel size={16} /> },
+    { key: 'projects', label: 'ПРОЕКТЫ', icon: <FolderKanban size={16} /> },
   ];
 
   return (
     <div 
-      className="neon-blue p-3 rounded-xl cursor-pointer"
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      style={{
-        background: 'var(--card-bg)',
-        transform: hover ? 'scale(1.01) translateY(-2px)' : 'scale(1)',
-        boxShadow: hover 
-          ? (isDark ? '0 8px 24px rgba(0,0,0,0.35)' : '0 8px 24px rgba(0,0,0,0.08)') 
-          : 'none',
-        transition: 'transform 0.25s ease, box-shadow 0.25s ease',
-      }}
+      className="flex items-center gap-1"
+      style={{ borderBottom: '1px solid #e5e7eb' }}
     >
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>
-          Воронка документооборота
-        </h3>
-        <button className="text-[10px] flex items-center gap-0.5" style={{ color: 'var(--text-muted)' }}>
-          Все <ArrowRight size={10} />
-        </button>
-      </div>
-
-      <div className="flex items-center justify-between">
-        {steps.map((step, i) => (
-          <div key={i} className="flex items-center gap-0.5">
-            <button
-              onClick={() => navigate('/workflow')}
-              className="flex flex-col items-center text-center min-w-[60px] rounded-md py-1 transition-colors"
-              style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-            >
-              <span className="text-[9px] leading-none mb-0.5" style={{ color: 'var(--text-muted)' }}>
-                {step.label}
-              </span>
-              <span className="text-base font-bold leading-tight" style={{ color: step.color }}>
-                {step.value}
-              </span>
-              <span className="text-[8px] leading-none mt-0.5" style={{ color: 'var(--text-muted)' }}>
-                {step.sub}
-              </span>
-            </button>
-            {i < steps.length - 1 && (
-              <ChevronRight size={10} className="mx-0.5 shrink-0" style={{ color: 'var(--text-muted)', opacity: 0.35 }} />
-            )}
-          </div>
-        ))}
-      </div>
+      {tabs.map((tab) => {
+        const isActive = active === tab.key;
+        return (
+          <button
+            key={tab.key}
+            onClick={() => onChange(tab.key)}
+            className="flex items-center gap-2 px-4 py-2.5 text-sm transition-colors cursor-pointer outline-none"
+            style={{
+              color: isActive ? '#111827' : '#9ca3af',
+              background: 'none',
+              border: 'none',
+              borderBottom: isActive ? '2px solid #8b5cf6' : '2px solid transparent',
+              marginBottom: '-1px',
+              fontWeight: isActive ? 600 : 400,
+            }}
+            onMouseEnter={(e) => {
+              if (!isActive) e.currentTarget.style.color = '#4b5563';
+            }}
+            onMouseLeave={(e) => {
+              if (!isActive) e.currentTarget.style.color = '#9ca3af';
+            }}
+          >
+            <span style={{ opacity: isActive ? 1 : 0.6 }}>{tab.icon}</span>
+            {tab.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
 
-/* ── Компактная загруженность по дням ── */
-function CompactHeatmap() {
+/* ═══════════════════════════════════════════════════════════
+   FILTER BAR — плашки как на скриншоте
+   ═══════════════════════════════════════════════════════════ */
+function FilterBar({ 
+  options, 
+  active, 
+  onChange, 
+  count 
+}: { 
+  options: { key: string; label: string }[]; 
+  active: string; 
+  onChange: (k: string) => void;
+  count?: number;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-2 mt-3">
+      {options.map((opt) => (
+        <button
+          key={opt.key}
+          onClick={() => onChange(opt.key)}
+          className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md transition-colors cursor-pointer outline-none"
+          style={{
+            background: '#ffffff',
+            color: active === opt.key ? '#111827' : '#64748b',
+            border: active === opt.key ? '1px solid #cbd5e1' : '1px solid #e2e8f0',
+            fontWeight: active === opt.key ? 500 : 400,
+          }}
+        >
+          {opt.label}
+          <ChevronDown size={12} style={{ opacity: 0.5 }} />
+        </button>
+      ))}
+      {count !== undefined && (
+        <span className="text-xs ml-1" style={{ color: '#94a3b8' }}>
+          Найдено: {count}
+        </span>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TENDER VIEW
+   ═══════════════════════════════════════════════════════════ */
+function TendersView() {
   const navigate = useNavigate();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  const [filter, setFilter] = useState<string>('all');
+  const [search, setSearch] = useState('');
 
-  const weeks = [
-    { label: '←3н', days: [27, 28, 29, 30, 1, 2, 3] },
-    { label: '←2н', days: [4, 5, 6, 7, 8, 9, 10] },
-    { label: '←1н', days: [11, 12, 13, 14, 15, 16, 17] },
-    { label: 'Тек', days: [18, 19, 20, 21, 22, 23, 24] },
-    { label: '→',   days: [25, 26, 27, 28, 29, 30, 31] },
-  ];
+  const filtered = tenderData.filter(t => {
+    if (filter !== 'all' && t.status !== filter) return false;
+    if (search && !t.name.toLowerCase().includes(search.toLowerCase()) && !t.number.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  });
 
-  // Массив значений, параллельный weeks
-  const loadData = [
-    [10, 25, 15, 55, 20, 35, 10],   // ←3н
-    [15, 45, 60, 85, 50, 30, 15],   // ←2н
-    [20, 40, 75, 90, 65, 35, 20],   // ←1н
-    [25, 50, 70, 95, 80, 45, 30],   // Тек
-    [20, 35, 60, 40, 25, 15, 10],   // →
-  ];
-
-  const getBg = (val: number) => {
-    if (val <= 20) return isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)';
-    if (val <= 45) return isDark ? 'rgba(59,130,246,0.22)' : 'rgba(59,130,246,0.14)';
-    if (val <= 70) return isDark ? 'rgba(212,175,55,0.28)' : 'rgba(212,175,55,0.18)';
-    if (val <= 85) return isDark ? 'rgba(251,146,60,0.32)' : 'rgba(251,146,60,0.22)';
-    return isDark ? 'rgba(239,68,68,0.38)' : 'rgba(239,68,68,0.22)';
+  const statusMeta: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
+    preparation: { label: 'Подготовка', color: '#2563EB', icon: <Clock3 size={12} /> },
+    submitted:   { label: 'Подана',     color: '#D4AF37', icon: <Send size={12} /> },
+    review:      { label: 'Рассмотрение', color: '#0EA5E9', icon: <Search size={12} /> },
+    won:         { label: 'Выиграна',   color: '#0C7205', icon: <CheckCircle2 size={12} /> },
+    lost:        { label: 'Проиграна',  color: '#DC2626', icon: <XCircle size={12} /> },
   };
 
-  const getText = (val: number) => {
-    if (val <= 20) return 'var(--text-muted)';
-    if (val >= 85) return isDark ? '#fecaca' : '#991b1b';
-    return isDark ? '#e2e8f0' : '#475569';
-  };
+  const kpi = [
+    { label: 'Активные', value: '12', sub: 'в работе', color: '#2563EB', icon: <Clock3 size={14} /> },
+    { label: 'На рассмотрении', value: '3', sub: 'ожидание', color: '#0EA5E9', icon: <Search size={14} /> },
+    { label: 'Выиграно', value: '8', sub: 'в этом году', color: '#0C7205', icon: <TrendingUp size={14} /> },
+    { label: 'Проиграно', value: '4', sub: 'в этом году', color: '#DC2626', icon: <TrendingDown size={14} /> },
+  ];
+
+  const filterOptions = [
+    { key: 'all', label: 'Все статусы' },
+    { key: 'preparation', label: 'Подготовка' },
+    { key: 'submitted', label: 'Подана' },
+    { key: 'review', label: 'Рассмотрение' },
+    { key: 'won', label: 'Выиграно' },
+    { key: 'lost', label: 'Проиграно' },
+  ];
 
   return (
-    <div className="w-full">
-      <div className="flex items-center justify-between mb-1.5">
-        <h3 className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>
-          Загруженность по дням
-        </h3>
-        <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
-          Последние 30 дней
-        </span>
-      </div>
-
-      <div className="grid grid-cols-[1.75rem_repeat(7,1fr)] gap-1 mb-1">
-        <div />
-        {['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map(d => (
-          <div key={d} className="text-center text-[9px] font-medium" style={{ color: 'var(--text-muted)' }}>
-            {d}
-          </div>
-        ))}
-      </div>
-
-      <div className="flex flex-col gap-1">
-        {weeks.map((w, wi) => (
-          <div key={wi} className="grid grid-cols-[1.75rem_repeat(7,1fr)] gap-1 items-center">
-            <div className="text-[9px] text-right leading-none pr-1" style={{ color: 'var(--text-muted)' }}>
-              {w.label}
-            </div>
-            {w.days.map((day, di) => {
-              const val = loadData[wi][di] ?? 0;
-              const isWeekend = di >= 5;
-              return (
-                <button
-                  key={di}
-                  onClick={() => navigate('/team')}
-                  className="h-6 rounded-md flex items-center justify-center text-[9px] font-medium select-none transition-transform hover:scale-110"
-                  style={{
-                    background: getBg(val),
-                    color: isWeekend && val <= 20 ? 'var(--text-muted)' : getText(val),
-                    opacity: isWeekend && val <= 20 ? 0.5 : 1,
-                    border: 'none',
-                    cursor: 'pointer',
-                  }}
-                  title={`${day}: загрузка ${val}%`}
-                >
-                  {day}
-                </button>
-              );
-            })}
-          </div>
-        ))}
-      </div>
-
-      <div className="flex items-center gap-2 mt-1.5">
-        <span className="text-[9px]" style={{ color: 'var(--text-muted)' }}>Низкая</span>
-        <div className="flex gap-0.5">
-          {[15, 35, 60, 90].map(v => (
-            <div key={v} className="w-2.5 h-2.5 rounded-sm" style={{ background: getBg(v) }} />
-          ))}
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div>
+          <h1 className="text-xl md:text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+            Тендерный отдел
+          </h1>
+          <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+            Управление тендерами и предложениями
+          </p>
         </div>
-        <span className="text-[9px]" style={{ color: 'var(--text-muted)' }}>Критическая</span>
+      </div>
+
+      {/* KPI */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {kpi.map((item, i) => (
+          <div key={i} className="p-3 rounded-lg flex flex-col gap-1" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>{item.label}</span>
+              <span className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: item.color + '15', color: item.color }}>
+                {item.icon}
+              </span>
+            </div>
+            <div className="text-xl font-bold" style={{ color: item.color }}>{item.value}</div>
+            <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{item.sub}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Toolbar */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2 px-2 py-1.5 rounded-md flex-1 min-w-[200px] max-w-sm" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+          <Search size={14} style={{ color: 'var(--text-muted)' }} />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Поиск по номеру или названию..."
+            className="bg-transparent text-xs outline-none w-full"
+            style={{ color: 'var(--text-primary)' }}
+          />
+        </div>
+      </div>
+
+      <FilterBar 
+        options={filterOptions} 
+        active={filter} 
+        onChange={setFilter} 
+        count={filtered.length} 
+      />
+
+      {/* Table */}
+      <div className="rounded-xl overflow-hidden" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
+                {['№ тендера','Название','Заказчик','Статус','Срок','Бюджет','Шанс','Действия'].map((h) => (
+                  <th key={h} className="text-[10px] font-semibold uppercase tracking-wider px-3 py-2.5" style={{ color: 'var(--text-muted)' }}>
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((t) => {
+                const meta = statusMeta[t.status];
+                return (
+                  <tr 
+                    key={t.id} 
+                    className="transition-colors cursor-pointer"
+                    style={{ borderBottom: '1px solid var(--border-color)' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                  >
+                    <td className="px-3 py-2.5 text-[11px] font-mono font-medium" style={{ color: 'var(--text-secondary)' }}>{t.number}</td>
+                    <td className="px-3 py-2.5 text-[11px] font-medium" style={{ color: 'var(--text-primary)' }}>{t.name}</td>
+                    <td className="px-3 py-2.5 text-[11px]" style={{ color: 'var(--text-secondary)' }}>{t.customer}</td>
+                    <td className="px-3 py-2.5">
+                      <span 
+                        className="inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-full font-medium"
+                        style={{ background: meta.color + '15', color: meta.color, border: `1px solid ${meta.color}30` }}
+                      >
+                        {meta.icon} {meta.label}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2.5 text-[11px]" style={{ color: t.daysLeft < 0 ? '#DC2626' : t.daysLeft <= 3 ? '#D4AF37' : 'var(--text-secondary)' }}>
+                      <span className="flex items-center gap-1">
+                        <Calendar size={10} /> {t.deadline} {t.daysLeft < 0 && `(${t.daysLeft} дн.)`}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2.5 text-[11px] font-medium" style={{ color: 'var(--text-primary)' }}>{t.budget}</td>
+                    <td className="px-3 py-2.5">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-12 h-1.5 rounded-full overflow-hidden" style={{ background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }}>
+                          <div className="h-full rounded-full" style={{ width: `${t.winChance}%`, background: t.winChance >= 70 ? '#0C7205' : t.winChance >= 40 ? '#D4AF37' : '#DC2626' }} />
+                        </div>
+                        <span className="text-[10px] font-medium" style={{ color: 'var(--text-secondary)' }}>{t.winChance}%</span>
+                      </div>
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <button 
+                        onClick={() => navigate('/documents')}
+                        className="text-[9px] px-2 py-1 rounded transition-colors cursor-pointer"
+                        style={{ color: '#2563EB', background: 'rgba(37,99,235,0.1)' }}
+                      >
+                        Открыть
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={8} className="px-3 py-8 text-center text-xs" style={{ color: 'var(--text-muted)' }}>
+                    Ничего не найдено
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
 }
 
-/* ── Component ── */
-export default function Dashboard() {
+/* ═══════════════════════════════════════════════════════════
+   PROJECTS VIEW (упрощённый дашборд — ЗГД / мастер участка)
+   ═══════════════════════════════════════════════════════════ */
+function ProjectsView() {
   const navigate = useNavigate();
   const [expandedProject, setExpandedProject] = useState<string | null>(null);
   const { theme } = useTheme();
@@ -288,131 +403,137 @@ export default function Dashboard() {
   const [showAllRisks, setShowAllRisks] = useState(false);
   const visibleRisks = showAllRisks ? riskItems : riskItems.slice(0, 3);
 
+  const filterOptions = [
+    { key: 'all', label: 'Все типы объектов' },
+    { key: 'active', label: 'В работе' },
+    { key: 'review', label: 'На проверке' },
+    { key: 'overdue', label: 'Просрочен' },
+    { key: 'approved', label: 'Завершён' },
+  ];
+  const [projFilter, setProjFilter] = useState('all');
+
+  const filteredProjects = projFilter === 'all' 
+    ? sortedProjects 
+    : sortedProjects.filter(p => p.status === projFilter);
+
   return (
-    <div 
-      className="min-h-screen w-full overflow-x-hidden" 
-      style={{ background: 'var(--layout-bg)', color: 'var(--text-primary)', padding: '1.5rem' }}
-    >
-      {/* ═══ ГЛАВНЫЙ GRID: левая основная + правая sidebar (260px) ═══ */}
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div>
+          <h1 className="text-xl md:text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+            Проекты
+          </h1>
+          <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+            Аналитика по проектам и документообороту
+          </p>
+        </div>
+      </div>
+
+      {/* Быстрые действия */}
+      <div className="flex flex-wrap gap-2">
+        <button 
+          onClick={() => alert('Массовое согласование — в разработке')}
+          className="text-xs px-2 py-1 rounded-md transition-all hover:brightness-105 cursor-pointer"
+          style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
+        >
+          ⚡ Утвердить 84 документа
+        </button>
+        <button 
+          onClick={() => navigate('/team')}
+          className="text-xs px-2 py-1 rounded-md transition-all hover:brightness-105 cursor-pointer"
+          style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
+        >
+          👤 Назначить ресурс
+        </button>
+        <button 
+          disabled
+          className="text-xs px-2 py-1 rounded-md opacity-50 cursor-not-allowed"
+          style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}
+        >
+          📋 Созвон по рискам
+        </button>
+        <button 
+          disabled
+          className="text-xs px-2 py-1 rounded-md opacity-50 cursor-not-allowed"
+          style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}
+        >
+          📊 Экспорт отчёта
+        </button>
+      </div>
+
+      {/* 3 KPI */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <button onClick={() => navigate('/workflow?filter=overdue')} className="group p-3 rounded-lg text-left transition-all hover:scale-[1.02] flex flex-col gap-1 cursor-pointer" style={{ background: 'var(--card-bg)', border: '1px solid rgba(220,38,38,0.35)' }}>
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Требуют внимания</span>
+            <span className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: 'rgba(220,38,38,0.12)', color: '#DC2626' }}>
+              <AlertTriangle size={12} />
+            </span>
+          </div>
+          <div className="text-xl font-bold" style={{ color: '#DC2626' }}>7</div>
+          <div className="text-[10px] flex items-center gap-1 font-medium" style={{ color: '#DC2626' }}>
+            <ArrowRight size={10} className="transition-transform group-hover:translate-x-1" />
+            Срочно в Workflow
+          </div>
+        </button>
+        <button onClick={() => navigate('/workflow')} className="group p-3 rounded-lg text-left transition-all hover:scale-[1.02] flex flex-col gap-1 cursor-pointer" style={{ background: 'var(--card-bg)', border: '1px solid rgba(212,175,55,0.35)' }}>
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>На согласовании</span>
+            <span className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: 'rgba(212,175,55,0.12)', color: '#D4AF37' }}>
+              <Clock size={12} />
+            </span>
+          </div>
+          <div className="text-xl font-bold" style={{ color: '#D4AF37' }}>84</div>
+          <div className="text-[10px] flex items-center gap-1" style={{ color: 'var(--text-muted)' }}>
+            <ArrowRight size={10} className="transition-transform group-hover:translate-x-1" />
+            Среднее время: 2.3 дня
+          </div>
+        </button>
+        <button onClick={() => navigate('/documents?dept=tender')} className="group p-3 rounded-lg text-left transition-all hover:scale-[1.02] flex flex-col gap-1 cursor-pointer" style={{ background: 'var(--card-bg)', border: '1px solid rgba(37,99,235,0.35)' }}>
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Перегруженный отдел</span>
+            <span className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: 'rgba(37,99,235,0.12)', color: '#2563EB' }}>
+              <Users size={12} />
+            </span>
+          </div>
+          <div className="text-xl font-bold" style={{ color: '#2563EB' }}>34/40</div>
+          <div className="text-[10px] flex items-center gap-1" style={{ color: 'var(--text-muted)' }}>
+            <ArrowRight size={10} className="transition-transform group-hover:translate-x-1" />
+            Тендерный отдел — 85%
+          </div>
+        </button>
+      </div>
+
+      <FilterBar 
+        options={filterOptions} 
+        active={projFilter} 
+        onChange={setProjFilter} 
+        count={filteredProjects.length} 
+      />
+
+      {/* ═══ ГЛАВНЫЙ GRID: контент + sidebar ═══ */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-5 items-start">
 
-        {/* ═══ ЛЕВАЯ КОЛОНКА ═══ */}
+        {/* ЛЕВАЯ КОЛОНКА */}
         <div className="space-y-4 min-w-0">
-
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <div>
-              <h1 className="text-xl md:text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                Панель управления
-              </h1>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
-                Аналитика по проектам и документообороту
-              </p>
-            </div>
-
-          </div>
-
-          {/* Быстрые действия (CTA) */}
-          <div className="flex flex-wrap gap-2">
-            <button 
-              onClick={() => alert('Массовое согласование — в разработке')}
-              className="text-xs px-2 py-1 rounded-md transition-all hover:brightness-105"
-              style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
-            >
-              ⚡ Утвердить 84 документа
-            </button>
-            <button 
-              onClick={() => navigate('/team')}
-              className="text-xs px-2 py-1 rounded-md transition-all hover:brightness-105"
-              style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
-            >
-              👤 Назначить ресурс
-            </button>
-            <button 
-              disabled
-              className="text-xs px-2 py-1 rounded-md opacity-50 cursor-not-allowed"
-              style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}
-            >
-              📋 Созвон по рискам
-            </button>
-            <button 
-              disabled
-              className="text-xs px-2 py-1 rounded-md opacity-50 cursor-not-allowed"
-              style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}
-            >
-              📊 Экспорт отчёта
-            </button>
-          </div>
-
-          {/* 3 KPI */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <button onClick={() => navigate('/workflow?filter=overdue')} className="group p-3 rounded-lg text-left transition-all hover:scale-[1.02] flex flex-col gap-1" style={{ background: 'var(--card-bg)', border: '1px solid rgba(220,38,38,0.35)' }}>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Требуют внимания</span>
-                <span className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: 'rgba(220,38,38,0.12)', color: '#DC2626' }}>
-                  <AlertTriangle size={12} />
-                </span>
-              </div>
-              <div className="text-xl font-bold" style={{ color: '#DC2626' }}>7</div>
-              <div className="text-[10px] flex items-center gap-1 font-medium" style={{ color: '#DC2626' }}>
-                <ArrowRight size={10} className="transition-transform group-hover:translate-x-1" />
-                Срочно в Workflow
-              </div>
-            </button>
-            <button onClick={() => navigate('/workflow')} className="group p-3 rounded-lg text-left transition-all hover:scale-[1.02] flex flex-col gap-1" style={{ background: 'var(--card-bg)', border: '1px solid rgba(212,175,55,0.35)' }}>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>На согласовании</span>
-                <span className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: 'rgba(212,175,55,0.12)', color: '#D4AF37' }}>
-                  <Clock size={12} />
-                </span>
-              </div>
-              <div className="text-xl font-bold" style={{ color: '#D4AF37' }}>84</div>
-              <div className="text-[10px] flex items-center gap-1" style={{ color: 'var(--text-muted)' }}>
-                <ArrowRight size={10} className="transition-transform group-hover:translate-x-1" />
-                Среднее время: 2.3 дня
-              </div>
-            </button>
-            <button onClick={() => navigate('/documents?dept=tender')} className="group p-3 rounded-lg text-left transition-all hover:scale-[1.02] flex flex-col gap-1" style={{ background: 'var(--card-bg)', border: '1px solid rgba(37,99,235,0.35)' }}>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Перегруженный отдел</span>
-                <span className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: 'rgba(37,99,235,0.12)', color: '#2563EB' }}>
-                  <Users size={12} />
-                </span>
-              </div>
-              <div className="text-xl font-bold" style={{ color: '#2563EB' }}>34/40</div>
-              <div className="text-[10px] flex items-center gap-1" style={{ color: 'var(--text-muted)' }}>
-                <ArrowRight size={10} className="transition-transform group-hover:translate-x-1" />
-                Тендерный отдел — 85%
-              </div>
-            </button>
-          </div>
-
-          {/* Воронка */}
-          <CompactFunnel />
-
-          {/* Загруженность по дням — компактная */}
-          <div className="p-3 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
-            <CompactHeatmap />
-          </div>
-
-          {/* ═══ ТРИ БЛОКА В ОДИН РЯД — равные широкие колонки ═══ */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-
-            {/* 1. Прогресс проектов */}
+          {/* ДВА БЛОКА В ОДИН РЯД */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Прогресс проектов */}
             <div className="p-3 rounded-xl min-w-0" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
               <div className="flex items-center justify-between mb-3">
                 <button
                   onClick={() => navigate('/projects')}
-                  className="text-xs font-semibold text-left"
-                  style={{ color: 'var(--text-primary)', background: 'none', border: 'none', cursor: 'pointer' }}
+                  className="text-xs font-semibold text-left cursor-pointer"
+                  style={{ color: 'var(--text-primary)', background: 'none', border: 'none' }}
                 >
                   Прогресс проектов
                 </button>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => navigate('/projects')}
-                    className="text-[10px] flex items-center gap-0.5 px-1.5 py-0.5 rounded transition-colors"
-                    style={{ color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
+                    className="text-[10px] flex items-center gap-0.5 px-1.5 py-0.5 rounded transition-colors cursor-pointer"
+                    style={{ color: 'var(--text-muted)', background: 'none', border: 'none' }}
                     onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)'; }}
                     onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                   >
@@ -423,7 +544,7 @@ export default function Dashboard() {
               </div>
 
               <div className="flex flex-col gap-2">
-                {sortedProjects.map((project) => {
+                {filteredProjects.map((project) => {
                   const color = getProjectColor(project.status);
                   const isExpanded = expandedProject === project.id;
                   const label = getProjectLabel(project.status);
@@ -439,8 +560,8 @@ export default function Dashboard() {
                     >
                       <button
                         onClick={() => setExpandedProject(isExpanded ? null : project.id)}
-                        className="w-full text-left p-2.5 transition-colors hover:brightness-105"
-                        style={{ cursor: 'pointer', background: 'none', border: 'none' }}
+                        className="w-full text-left p-2.5 transition-colors hover:brightness-105 cursor-pointer"
+                        style={{ background: 'none', border: 'none' }}
                       >
                         <div className="flex items-center justify-between mb-1.5">
                           <div className="flex items-center gap-1.5 min-w-0">
@@ -491,7 +612,7 @@ export default function Dashboard() {
                               <span className="text-[10px] font-medium" style={{ color: 'var(--text-secondary)' }}>Документы</span>
                               <button 
                                 onClick={(e) => { e.stopPropagation(); navigate(project.route); }}
-                                className="text-[9px] flex items-center gap-0.5 px-1.5 py-0.5 rounded transition-colors"
+                                className="text-[9px] flex items-center gap-0.5 px-1.5 py-0.5 rounded transition-colors cursor-pointer"
                                 style={{ color: '#2563EB', background: 'rgba(37,99,235,0.1)' }}
                               >
                                 Все <ArrowRight size={8} />
@@ -526,120 +647,18 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* 2. Загрузка по отделам */}
+            {/* Загрузка по отделам */}
             <div
               className="p-3 rounded-xl min-w-0"
               style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}
             >
               <DepartmentLoad />
             </div>
-
-            {/* 3. Загрузка команды */}
-            <div
-              className="p-3 rounded-xl min-w-0"
-              style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}
-            >
-              <TeamLoadSection />
-            </div>
-
           </div>
-
         </div>
 
-        {/* ═══ ПРАВАЯ SIDEBAR (260px) ═══ */}
+        {/* ПРАВАЯ SIDEBAR */}
         <div className="space-y-4 lg:sticky lg:top-5">
-
-          {/* Что нового */}
-          <div className="p-3 rounded-xl flex flex-col gap-2" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>Что нового</h3>
-              <div className="flex items-center gap-1">
-                <span className="text-[9px] px-1 py-0.5 rounded-full font-medium" style={{ background: 'rgba(220,38,38,0.15)', color: '#DC2626' }}>3</span>
-                <Bell size={14} style={{ color: 'var(--text-muted)' }} />
-              </div>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              {[
-                { icon: <FileWarning size={12} />, text: 'Новое замечание по КЖ-02-014', badge: 'Критично', badgeColor: '#DC2626', time: '10 мин' },
-                { icon: <CheckCircle size={12} />, text: 'АР-03-015 согласован', badge: 'Согласование', badgeColor: '#D4AF37', time: '1 ч' },
-                { icon: <MessageSquare size={12} />, text: 'Упоминание в ТЭЦ-5', badge: 'Новое', badgeColor: '#2563EB', time: '2 ч' },
-                { icon: <UserPlus size={12} />, text: 'Назначен по Склад А-12', badge: 'Назначение', badgeColor: '#0C7205', time: '3 ч' },
-              ].map((note, i) => (
-                <button
-                  key={i}
-                  onClick={() => navigate('/workflow')}
-                  className="w-full text-left p-2 rounded-md transition-colors flex items-start gap-1.5"
-                  style={{ background: 'none', border: 'none', cursor: 'pointer' }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
-                >
-                  <span style={{ color: 'var(--text-muted)', marginTop: '1px' }}>{note.icon}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[11px] leading-snug" style={{ color: 'var(--text-primary)' }}>{note.text}</div>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="text-[9px] px-1 py-0.5 rounded-full font-medium" style={{ background: note.badgeColor + '18', color: note.badgeColor, border: `1px solid ${note.badgeColor}30` }}>
-                        {note.badge}
-                      </span>
-                      <span className="text-[9px]" style={{ color: 'var(--text-muted)' }}>{note.time}</span>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-            <button
-              onClick={() => navigate('/workflow')}
-              className="w-full text-center text-[10px] py-1 rounded-md transition-colors"
-              style={{ color: 'var(--text-secondary)', background: 'var(--card-elevated)', border: '1px solid var(--border-color)' }}
-              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--card-elevated)'; }}
-            >
-              Показать все
-            </button>
-          </div>
-
-          {/* Команда */}
-          <div className="p-3 rounded-xl flex flex-col gap-2" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>Команда</h3>
-              <div className="flex items-center gap-1">
-                <span className="text-[9px] px-1 py-0.5 rounded-full font-medium" style={{ background: 'rgba(212,175,55,0.15)', color: '#D4AF37' }}>2</span>
-                <Gift size={14} style={{ color: 'var(--text-muted)' }} />
-              </div>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              {[
-                { name: 'Анна Петрова', role: 'ГИП', date: 'Сегодня', avatar: 'АП', highlight: true },
-                { name: 'Дмитрий Соколов', role: 'Конструктор', date: 'Завтра', avatar: 'ДС', highlight: true },
-                { name: 'Елена Волкова', role: 'Архитектор', date: '18 мая', avatar: 'ЕВ', highlight: false },
-                { name: 'Иван Кузнецов', role: 'ОВиК', date: '22 мая', avatar: 'ИК', highlight: false },
-              ].map((person, i) => (
-                <div
-                  key={i}
-                  onClick={() => navigate('/team')}
-                  className="w-full flex items-center gap-2 p-1.5 rounded-md text-left transition-colors cursor-pointer"
-                  style={{ background: person.highlight ? (isDark ? 'rgba(212,175,55,0.08)' : 'rgba(212,175,55,0.06)') : 'transparent' }}
-                  onMouseEnter={(e) => { if (!person.highlight) e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = person.highlight ? (isDark ? 'rgba(212,175,55,0.08)' : 'rgba(212,175,55,0.06)') : 'transparent'; }}
-                >
-                  <div className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0" style={{ background: person.highlight ? 'rgba(212,175,55,0.2)' : 'var(--card-elevated)', color: person.highlight ? '#D4AF37' : 'var(--text-secondary)', border: `1px solid ${person.highlight ? '#D4AF3740' : 'var(--border-color)'}` }}>
-                    {person.avatar}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[11px] font-medium truncate" style={{ color: 'var(--text-primary)' }}>{person.name}</div>
-                    <div className="text-[9px]" style={{ color: 'var(--text-muted)' }}>{person.role}</div>
-                  </div>
-                  <div className="text-[9px] font-medium shrink-0" style={{ color: person.highlight ? '#D4AF37' : 'var(--text-muted)' }}>
-                    {person.highlight && <Gift size={8} className="inline mr-0.5" />}
-                    {person.date}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <button onClick={() => navigate('/team')} className="w-full text-center text-[10px] py-1 rounded-md" style={{ color: 'var(--text-secondary)', background: 'var(--card-elevated)', border: '1px solid var(--border-color)' }}>
-              Вся команда
-            </button>
-          </div>
-
           {/* Риски */}
           <div className="p-3 rounded-xl flex flex-col gap-2" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
             <div className="flex items-center justify-between">
@@ -666,7 +685,7 @@ export default function Dashboard() {
                   <div className="text-[10px] mb-1.5" style={{ color: 'var(--text-primary)' }}>{risk.desc}</div>
                   <button 
                     onClick={() => navigate('/workflow')}
-                    className="text-[9px] px-1.5 py-0.5 rounded transition-colors"
+                    className="text-[9px] px-1.5 py-0.5 rounded transition-colors cursor-pointer"
                     style={{ color: risk.color, background: risk.color + '15' }}
                   >
                     {risk.action}
@@ -677,16 +696,41 @@ export default function Dashboard() {
             {riskItems.length > 3 && (
               <button 
                 onClick={() => setShowAllRisks(!showAllRisks)}
-                className="w-full text-center text-[10px] py-1 rounded-md" 
+                className="w-full text-center text-[10px] py-1 rounded-md cursor-pointer" 
                 style={{ color: 'var(--text-secondary)', background: 'var(--card-elevated)', border: '1px solid var(--border-color)' }}
               >
                 {showAllRisks ? 'Скрыть' : 'Показать все риски'}
               </button>
             )}
           </div>
-
         </div>
 
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MAIN PAGE
+   ═══════════════════════════════════════════════════════════ */
+export default function ProjectsPage() {
+  const [activeTab, setActiveTab] = useState<TabKey>('projects');
+
+  return (
+    <div className="min-h-screen w-full overflow-x-hidden" style={{ background: 'var(--layout-bg)', color: 'var(--text-primary)' }}>
+      {/* Header area */}
+      <div className="px-6 pt-6 pb-2">
+        <h1 className="text-xl md:text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+          Портфель заказов
+        </h1>
+        <p className="text-xs mt-0.5 mb-4" style={{ color: 'var(--text-secondary)' }}>
+          Управление тендерами, проектами и документооборотом
+        </p>
+        <PageTabs active={activeTab} onChange={setActiveTab} />
+      </div>
+      
+      <div style={{ padding: '1.5rem' }}>
+        {activeTab === 'tenders' ? <TendersView /> : <ProjectsView />}
       </div>
     </div>
   );
