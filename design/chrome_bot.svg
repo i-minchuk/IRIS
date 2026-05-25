@@ -1,0 +1,161 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <defs>
+    <!-- Chrome body gradient -->
+    <radialGradient id="chromeBody" cx="35%" cy="30%" r="65%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="15%" stop-color="#e8e8e8"/>
+      <stop offset="35%" stop-color="#b0b0b0"/>
+      <stop offset="55%" stop-color="#606060"/>
+      <stop offset="75%" stop-color="#2a2a2a"/>
+      <stop offset="90%" stop-color="#0f0f0f"/>
+      <stop offset="100%" stop-color="#050505"/>
+    </radialGradient>
+
+    <!-- Inner notch gradient -->
+    <radialGradient id="notchInner" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#1a1a1a"/>
+      <stop offset="40%" stop-color="#0a0a0a"/>
+      <stop offset="100%" stop-color="#000000"/>
+    </radialGradient>
+
+    <!-- Highlight reflection -->
+    <linearGradient id="highlight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
+      <stop offset="30%" stop-color="#ffffff" stop-opacity="0.7"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Rim light -->
+    <linearGradient id="rimLight" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#88bbff" stop-opacity="0.6"/>
+      <stop offset="50%" stop-color="#ffffff" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#88bbff" stop-opacity="0.6"/>
+    </linearGradient>
+
+    <!-- Eye gradient -->
+    <radialGradient id="eyeGrad" cx="40%" cy="30%" r="60%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="60%" stop-color="#aaccff"/>
+      <stop offset="100%" stop-color="#5577aa"/>
+    </radialGradient>
+
+    <!-- ========== CSS Animations ========== -->
+    <style>
+      /* Active smooth floating */
+      .character {
+        animation: float 4s ease-in-out infinite;
+        transform-origin: 250px 360px;
+      }
+      @keyframes float {
+        0%, 100% { transform: translateY(0px) rotate(0deg); }
+        25%  { transform: translateY(-25px) rotate(-2deg); }
+        50%  { transform: translateY(-35px) rotate(0deg); }
+        75%  { transform: translateY(-15px) rotate(2deg); }
+      }
+
+      /* Shadow pulse */
+      .shadow {
+        animation: shadowPulse 4s ease-in-out infinite;
+        transform-origin: 250px 380px;
+      }
+      @keyframes shadowPulse {
+        0%, 100% { transform: scaleX(1); opacity: 0.4; }
+        25%  { transform: scaleX(0.85); opacity: 0.25; }
+        50%  { transform: scaleX(0.75); opacity: 0.2; }
+        75%  { transform: scaleX(0.9); opacity: 0.3; }
+      }
+
+      /* Eye blinking */
+      .eye-left  { animation: blinkLeft 4s ease-in-out infinite; transform-origin: 215px 235px; }
+      .eye-right { animation: blinkRight 4s ease-in-out infinite; transform-origin: 285px 235px; }
+      @keyframes blinkLeft  { 0%, 48%, 52%, 100% { transform: scaleY(1); } 50% { transform: scaleY(0.1); } }
+      @keyframes blinkRight { 0%, 58%, 62%, 100% { transform: scaleY(1); } 60% { transform: scaleY(0.1); } }
+
+      /* Smile animation */
+      .smile-path {
+        animation: smilePath 4s ease-in-out infinite;
+      }
+      @keyframes smilePath {
+        0%, 100% { d: path('M 235 270 Q 250 280 265 270'); }
+        50%      { d: path('M 230 268 Q 250 295 270 268'); }
+      }
+
+      /* Highlight glow */
+      .glow-highlight { animation: glow 3s ease-in-out infinite; }
+      @keyframes glow { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+
+      /* Sparkles */
+      .sparkle     { animation: sparkle 2.5s ease-in-out infinite; }
+      .sparkle-2   { animation-delay: 0.8s; }
+      .sparkle-3   { animation-delay: 1.5s; }
+      .sparkle-4   { animation-delay: 0.3s; }
+      @keyframes sparkle { 0%, 100% { opacity: 0; transform: scale(0); } 50% { opacity: 1; transform: scale(1); } }
+    </style>
+  </defs>
+
+  <!-- Ground shadow -->
+  <radialGradient id="shadowGrad" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#000" stop-opacity="0.8"/>
+    <stop offset="50%" stop-color="#000" stop-opacity="0.3"/>
+    <stop offset="100%" stop-color="#000" stop-opacity="0"/>
+  </radialGradient>
+  <ellipse class="shadow" cx="250" cy="380" rx="70" ry="12" fill="url(#shadowGrad)"/>
+
+  <!-- Character group -->
+  <g class="character">
+    <!-- Main chrome sphere body -->
+    <circle cx="250" cy="250" r="110" fill="url(#chromeBody)"/>
+
+    <!-- Top notch cutout -->
+    <path d="M 185 200 Q 185 140 250 140 Q 315 140 315 200 Q 315 175 250 175 Q 185 175 185 200 Z" fill="url(#notchInner)"/>
+
+    <!-- Notch rim highlights -->
+    <path d="M 185 200 Q 185 140 250 140 Q 315 140 315 200" fill="none" stroke="url(#rimLight)" stroke-width="3" stroke-linecap="round"/>
+    <path d="M 188 198 Q 188 175 250 175 Q 312 175 312 198" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-opacity="0.3" stroke-linecap="round"/>
+
+    <!-- Chrome reflections -->
+    <ellipse class="glow-highlight" cx="210" cy="190" rx="25" ry="18" fill="url(#highlight)" opacity="0.9"/>
+    <rect class="glow-highlight" x="230" y="245" width="40" height="4" rx="2" fill="#ffffff" opacity="0.85"/>
+    <path d="M 170 320 Q 250 345 330 320" fill="none" stroke="#ffffff" stroke-width="2" stroke-opacity="0.2" stroke-linecap="round"/>
+    <path d="M 148 220 Q 140 250 148 280" fill="none" stroke="#88bbff" stroke-width="2.5" stroke-opacity="0.4" stroke-linecap="round"/>
+    <path d="M 352 220 Q 360 250 352 280" fill="none" stroke="#88bbff" stroke-width="2.5" stroke-opacity="0.4" stroke-linecap="round"/>
+
+    <!-- === FACE === -->
+    <!-- Left eye -->
+    <g class="eye-left">
+      <ellipse cx="215" cy="235" rx="16" ry="18" fill="#223355"/>
+      <ellipse cx="215" cy="235" rx="14" ry="16" fill="url(#eyeGrad)"/>
+      <ellipse cx="210" cy="229" rx="5.5" ry="6.5" fill="#ffffff" opacity="0.95"/>
+      <circle cx="219" cy="241" r="3" fill="#ffffff" opacity="0.8"/>
+    </g>
+
+    <!-- Right eye -->
+    <g class="eye-right">
+      <ellipse cx="285" cy="235" rx="16" ry="18" fill="#223355"/>
+      <ellipse cx="285" cy="235" rx="14" ry="16" fill="url(#eyeGrad)"/>
+      <ellipse cx="280" cy="229" rx="5.5" ry="6.5" fill="#ffffff" opacity="0.95"/>
+      <circle cx="289" cy="241" r="3" fill="#ffffff" opacity="0.8"/>
+    </g>
+
+    <!-- Smile -->
+    <path class="smile-path" d="M 235 270 Q 250 282 265 270" fill="none" stroke="#334477" stroke-width="3" stroke-linecap="round"/>
+
+    <!-- Blush marks -->
+    <ellipse cx="195" cy="255" rx="10" ry="6" fill="#ff88aa" opacity="0.15"/>
+    <ellipse cx="305" cy="255" rx="10" ry="6" fill="#ff88aa" opacity="0.15"/>
+
+    <!-- Sparkles -->
+    <g class="sparkle" transform="translate(140, 160)">
+      <path d="M 0 -10 Q 0 0 10 0 Q 0 0 0 10 Q 0 0 -10 0 Q 0 0 0 -10 Z" fill="#ffffff" opacity="0.8"/>
+    </g>
+    <g class="sparkle sparkle-2" transform="translate(360, 180)">
+      <path d="M 0 -8 Q 0 0 8 0 Q 0 0 0 8 Q 0 0 -8 0 Q 0 0 0 -8 Z" fill="#ffffff" opacity="0.7"/>
+    </g>
+    <g class="sparkle sparkle-3" transform="translate(130, 300)">
+      <path d="M 0 -6 Q 0 0 6 0 Q 0 0 0 6 Q 0 0 -6 0 Q 0 0 0 -6 Z" fill="#88bbff" opacity="0.6"/>
+    </g>
+    <g class="sparkle sparkle-4" transform="translate(370, 280)">
+      <path d="M 0 -7 Q 0 0 7 0 Q 0 0 0 7 Q 0 0 -7 0 Q 0 0 0 -7 Z" fill="#ffffff" opacity="0.5"/>
+    </g>
+  </g>
+</svg>

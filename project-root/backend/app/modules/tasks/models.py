@@ -66,11 +66,8 @@ class Task(Base):
         Index("idx_tasks_due_date", "due_date", "status"),
         Index("idx_tasks_type_status", "type", "status"),
         Index("idx_tasks_priority", "priority"),
-<<<<<<< HEAD
         Index("idx_tasks_due_date_status", "due_date", "status"),
-=======
         # Note: partial index with CURRENT_TIMESTAMP removed — PostgreSQL requires IMMUTABLE expressions
->>>>>>> mvp-sqlite-stable
     )
 
     # Relationships

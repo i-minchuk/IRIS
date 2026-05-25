@@ -221,14 +221,10 @@ async def seed_all():
                         source=source,
                         author_id=user_ids[1] if len(user_ids) > 1 else user_ids[0],
                     )
-<<<<<<< HEAD
                     db.add(remark)
                     await db.flush()
                     created_count += 1
                     print(f"  ✅ Created remark: {title}")
-=======
-                    print(f"  Created remark: {title}")
->>>>>>> mvp-sqlite-stable
                 except Exception as e:
                     print(f"  ⚠️ Remark skipped ({e})")
                     await db.rollback()

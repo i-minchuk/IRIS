@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/providers/ThemeProvider';
+import { ChromeBot } from '@/components/ChromeBot';
 import {
   TrendingUp, TrendingDown, AlertTriangle,
   Award, DollarSign, Briefcase, Users, Clock,
@@ -74,116 +75,6 @@ const kpiSparkData = {
   overdue:  [15, 14, 12, 11, 9, 8, 7],
   load:     [78, 80, 82, 83, 84, 85, 84],
 };
-
-/* ═══════════════════════════════════════════
-   IRIS AVATAR — финальные цвета
-   ═══════════════════════════════════════════ */
-function IrisAvatar({ isDark, className = 'w-10 h-10' }: { isDark: boolean; className?: string }) {
-  if (isDark) {
-    return (
-      <svg className={className} viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ filter: 'drop-shadow(0 0 8px rgba(6, 64, 3, 0.4))' }}>
-        <defs>
-          <radialGradient id="irisFaceDark" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#8bc34a" />
-            <stop offset="60%" stopColor="#4caf50" />
-            <stop offset="100%" stopColor="#2e7d32" />
-          </radialGradient>
-          <radialGradient id="irisGlowDark" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="rgba(67, 27, 177, 0.4)" />
-            <stop offset="100%" stopColor="rgba(56, 104, 236, 0)" />
-          </radialGradient>
-        </defs>
-        <circle cx="32" cy="32" r="30" fill="url(#irisGlowDark)" opacity="0.5">
-          <animate attributeName="r" values="28;32;28" dur="3s" repeatCount="indefinite" />
-          <animate attributeName="opacity" values="0.4;0.6;0.4" dur="3s" repeatCount="indefinite" />
-        </circle>
-        <g>
-          <animateTransform attributeName="transform" type="translate" values="0,-2; 0,2; 0,-2" dur="2.5s" repeatCount="indefinite" calcMode="spline" keySplines="0.45 0 0.55 1; 0.45 0 0.55 1" />
-          <circle cx="32" cy="32" r="26" stroke="#eeff02" strokeWidth="1" strokeOpacity="0.5" fill="none">
-            <animateTransform attributeName="transform" type="rotate" from="0 32 32" to="360 32 32" dur="8s" repeatCount="indefinite" />
-          </circle>
-          <circle cx="32" cy="32" r="22" stroke="#00fc15" strokeWidth="0.5" strokeOpacity="0.35" strokeDasharray="4 4" fill="none">
-            <animateTransform attributeName="transform" type="rotate" from="360 32 32" to="0 32 32" dur="12s" repeatCount="indefinite" />
-          </circle>
-          <circle cx="32" cy="32" r="20" fill="url(#irisFaceDark)" stroke="#064003" strokeWidth="1.5" />
-          <g>
-            <ellipse cx="25" cy="28" rx="3.5" ry="4.5" fill="#e8f5e9">
-              <animate attributeName="ry" values="4.5;0.5;4.5" dur="4s" repeatCount="indefinite" keyTimes="0;0.05;0.1" />
-            </ellipse>
-            <ellipse cx="39" cy="28" rx="3.5" ry="4.5" fill="#e8f5e9">
-              <animate attributeName="ry" values="4.5;0.5;4.5" dur="4s" repeatCount="indefinite" keyTimes="0;0.05;0.1" />
-            </ellipse>
-            <circle cx="25" cy="28" r="1.5" fill="#064003">
-              <animate attributeName="cx" values="25;26;24;25" dur="6s" repeatCount="indefinite" />
-            </circle>
-            <circle cx="39" cy="28" r="1.5" fill="#064003">
-              <animate attributeName="cx" values="39;40;38;39" dur="6s" repeatCount="indefinite" />
-            </circle>
-          </g>
-          <path d="M26 38 Q32 42 38 38" stroke="#c8e6c9" strokeWidth="1.5" strokeLinecap="round" fill="none">
-            <animate attributeName="d" values="M26 38 Q32 42 38 38;M26 39 Q32 40 38 39;M26 38 Q32 42 38 38" dur="3s" repeatCount="indefinite" />
-          </path>
-          <circle cx="32" cy="10" r="2" fill="#2e7d32">
-            <animate attributeName="r" values="1.5;3;1.5" dur="2s" repeatCount="indefinite" />
-            <animate attributeName="opacity" values="1;0.6;1" dur="2s" repeatCount="indefinite" />
-          </circle>
-        </g>
-      </svg>
-    );
-  }
-
-  /* ═══ СВЕТЛАЯ ТЕМА — ярче, контрастнее ═══ */
-  return (
-    <svg className={className} viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ filter: 'drop-shadow(0 0 6px rgba(34, 197, 94, 0.35))' }}>
-      <defs>
-        <radialGradient id="irisFaceLight" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#dcfce7" />   {/* ярко-мятный */}
-          <stop offset="50%" stopColor="#86efac" />  {/* насыщенный зелёный */}
-          <stop offset="100%" stopColor="#22c55e" /> {/* травяной */}
-        </radialGradient>
-        <radialGradient id="irisGlowLight" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="rgba(34, 197, 94, 0.2)" />
-          <stop offset="100%" stopColor="rgba(34, 197, 94, 0)" />
-        </radialGradient>
-      </defs>
-      <circle cx="32" cy="32" r="30" fill="url(#irisGlowLight)" opacity="0.7">
-        <animate attributeName="r" values="28;31;28" dur="3s" repeatCount="indefinite" />
-        <animate attributeName="opacity" values="0.5;0.8;0.5" dur="3s" repeatCount="indefinite" />
-      </circle>
-      <g>
-        <animateTransform attributeName="transform" type="translate" values="0,-2; 0,2; 0,-2" dur="2.5s" repeatCount="indefinite" calcMode="spline" keySplines="0.45 0 0.55 1; 0.45 0 0.55 1" />
-        <circle cx="32" cy="32" r="26" stroke="#4ade80" strokeWidth="1.2" strokeOpacity="0.7" fill="none">
-          <animateTransform attributeName="transform" type="rotate" from="0 32 32" to="360 32 32" dur="8s" repeatCount="indefinite" />
-        </circle>
-        <circle cx="32" cy="32" r="22" stroke="#86efac" strokeWidth="0.6" strokeOpacity="0.6" strokeDasharray="4 4" fill="none">
-          <animateTransform attributeName="transform" type="rotate" from="360 32 32" to="0 32 32" dur="12s" repeatCount="indefinite" />
-        </circle>
-        <circle cx="32" cy="32" r="20" fill="url(#irisFaceLight)" stroke="#15803d" strokeWidth="1.5" />
-        <g>
-          <ellipse cx="25" cy="28" rx="3.5" ry="4.5" fill="#ffffff">
-            <animate attributeName="ry" values="4.5;0.5;4.5" dur="4s" repeatCount="indefinite" keyTimes="0;0.05;0.1" />
-          </ellipse>
-          <ellipse cx="39" cy="28" rx="3.5" ry="4.5" fill="#ffffff">
-            <animate attributeName="ry" values="4.5;0.5;4.5" dur="4s" repeatCount="indefinite" keyTimes="0;0.05;0.1" />
-          </ellipse>
-          <circle cx="25" cy="28" r="1.5" fill="#14532d">
-            <animate attributeName="cx" values="25;26;24;25" dur="6s" repeatCount="indefinite" />
-          </circle>
-          <circle cx="39" cy="28" r="1.5" fill="#14532d">
-            <animate attributeName="cx" values="39;40;38;39" dur="6s" repeatCount="indefinite" />
-          </circle>
-        </g>
-        <path d="M26 38 Q32 42 38 38" stroke="#4ade80" strokeWidth="1.5" strokeLinecap="round" fill="none">
-          <animate attributeName="d" values="M26 38 Q32 42 38 38;M26 39 Q32 40 38 39;M26 38 Q32 42 38 38" dur="3s" repeatCount="indefinite" />
-        </path>
-        <circle cx="32" cy="10" r="2" fill="#22c55e">
-          <animate attributeName="r" values="1.5;3;1.5" dur="2s" repeatCount="indefinite" />
-          <animate attributeName="opacity" values="1;0.5;1" dur="2s" repeatCount="indefinite" />
-        </circle>
-      </g>
-    </svg>
-  );
-}
 
 /* ── Sparkline с tooltip ── */
 function Sparkline({ data, labels, color }: { data: number[]; labels: string[]; color: string }) {
@@ -267,7 +158,6 @@ export default function Dashboard() {
   ];
 
   return (
-    /* Убран min-h-screen — контент занимает ровно столько, сколько нужно */
     <div className="w-full overflow-x-hidden px-3 md:px-6 py-4 md:py-6" style={{ background: 'var(--layout-bg)', color: 'var(--text-primary)' }}>
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-4 md:gap-5 items-start">
 
@@ -370,7 +260,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Tender funnel — min-width защита от сжатия */}
+          {/* Tender funnel */}
           <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Тендерная воронка</h3>
@@ -398,7 +288,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* KPI + sparklines + count-up */}
+          {/* KPI + sparklines */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {[
               { label: 'Ср. срок согласования', valueRaw: 2.3, suffix: ' дня', trend: '-0.5 дн', good: true, icon: <Clock size={14} />, color: '#0C7205', spark: kpiSparkData.approval, decimals: 1 },
@@ -534,10 +424,10 @@ export default function Dashboard() {
 
         </div>
 
-        {/* ═══ ПРАВАЯ КОЛОНКА — 340px, без пустоты ═══ */}
+        {/* ═══ ПРАВАЯ КОЛОНКА ═══ */}
         <div className="space-y-4 xl:sticky xl:top-5">
 
-          {/* Риски — текст больше не ломается */}
+          {/* Риски */}
           <div className="p-3 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Риски и требования внимания</h3>
@@ -572,10 +462,10 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* IRIS — финальные цвета, яркий для светлой темы */}
-          <div className="p-3 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
-            <div className="flex items-center gap-3 mb-2">
-              <IrisAvatar isDark={isDark} className="w-10 h-10" />
+          {/* IRIS — изумрудный агент со звёздами */}
+          <div className="p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+            <div className="flex items-center gap-3 mb-3">
+              <ChromeBot size={100} variant={isDark ? 'dark' : 'light'} />
               <div>
                 <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Рекомендации IRIS</h3>
                 <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>AI-ассистент</span>

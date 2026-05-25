@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/providers/ThemeProvider';
+import { ChromeBot } from '@/components/ChromeBot';
 import {
   FolderKanban, FileCheck, Clock, AlertTriangle,
   ArrowRight, Users, ChevronRight, ChevronDown,
   Link as LinkIcon, Gavel, Search,
-  Calendar, DollarSign, TrendingUp, TrendingDown,
-  CheckCircle2, XCircle, Clock3, Send
+  Calendar, TrendingUp, TrendingDown,
+  CheckCircle2, XCircle, Clock3, Send, Sparkles,
+  FileText, HardHat, Layers, Bookmark, Eye, Download
 } from 'lucide-react';
 import { DepartmentLoad } from './DashboardWidgets';
 
@@ -48,7 +50,7 @@ interface TenderItem {
    DATA
    ═══════════════════════════════════════════════════════════ */
 const projectData: ProjectItem[] = [
-  { 
+  {
     id: 'gamma', name: 'Офис «Гамма»', percent: 23, status: 'overdue', route: '/projects?filter=overdue',
     deadline: '18.05.2026', daysLeft: 2, riskLevel: 'high', blockedBy: 'ТЭЦ-5',
     docs: [
@@ -56,7 +58,7 @@ const projectData: ProjectItem[] = [
       { name: 'КЖ-02-014.dwg', status: 'На проверке', date: '10.05.2026' },
     ]
   },
-  { 
+  {
     id: 'meridian', name: 'ТЦ «Меридиан»', percent: 45, status: 'review', route: '/projects?filter=review',
     deadline: '25.05.2026', daysLeft: 9, riskLevel: 'medium',
     docs: [
@@ -64,7 +66,7 @@ const projectData: ProjectItem[] = [
       { name: 'ОВиК-01-005.docx', status: 'На согласовании', date: '12.05.2026' },
     ]
   },
-  { 
+  {
     id: 'severny', name: 'ЖК «Северный»', percent: 78, status: 'active', route: '/projects?filter=active',
     deadline: '10.05.2026', daysLeft: 5, riskLevel: 'high',
     docs: [
@@ -72,14 +74,14 @@ const projectData: ProjectItem[] = [
       { name: 'ЭМ-04-002.pdf', status: 'В работе', date: '11.05.2026' },
     ]
   },
-  { 
+  {
     id: 'tec5', name: 'ТЭЦ-5', percent: 61, status: 'active', route: '/projects?filter=active',
     deadline: '30.05.2026', daysLeft: 25, riskLevel: 'low',
     docs: [
       { name: 'КР-01-002.pdf', status: 'На согласовании', date: '06.05.2026' },
     ]
   },
-  { 
+  {
     id: 'sklad', name: 'Склад А-12', percent: 92, status: 'approved', route: '/projects?filter=approved',
     deadline: '05.05.2026', daysLeft: 0, riskLevel: 'low', blockedBy: 'Склад А-12',
     docs: [
@@ -97,46 +99,69 @@ const tenderData: TenderItem[] = [
   { id: 't6', number: 'Т-2026-047', name: 'ЖК «Южный парк»', customer: 'ООО «ЮжПарк»', status: 'preparation', deadline: '12.07.2026', budget: '₽ 550 млн', daysLeft: 52, winChance: 55 },
 ];
 
+interface TemplateDoc {
+  id: string;
+  name: string;
+  category: string;
+  format: string;
+  downloads: number;
+  isFavorite: boolean;
+}
+
+interface TypicalSolution {
+  id: string;
+  name: string;
+  type: string;
+  projectsUsed: string[];
+  preview: string;
+}
+
+const templates: TemplateDoc[] = [
+  { id: 't1', name: 'Типовой узел примыкания балки', category: 'КЖ', format: 'dwg', downloads: 45, isFavorite: true },
+  { id: 't2', name: 'Шаблон спецификации арматуры', category: 'КЖ', format: 'xlsx', downloads: 32, isFavorite: false },
+  { id: 't3', name: 'Типовая схема вентиляции подвала', category: 'ОВиК', format: 'dwg', downloads: 28, isFavorite: true },
+  { id: 't4', name: 'Шаблон однолинейной схемы', category: 'ЭОМ', format: 'dwg', downloads: 21, isFavorite: false },
+  { id: 't5', name: 'Типовой план эвакуации', category: 'АР', format: 'pdf', downloads: 67, isFavorite: true },
+  { id: 't6', name: 'Шаблон ведомости рабочей документации', category: 'Тендер', format: 'docx', downloads: 89, isFavorite: true },
+];
+
+const typicalSolutions: TypicalSolution[] = [
+  { id: 's1', name: 'Узел балка-колонна (монолит)', type: 'КЖ', projectsUsed: ['ЖК «Северный»', 'ЖК «Южный парк»'], preview: 'Схема арматурного каркаса узла' },
+  { id: 's2', name: 'Фундамент плита под ТЭЦ', type: 'КР', projectsUsed: ['ТЭЦ-5'], preview: 'Плита 2.5м с арматурой Ø32' },
+  { id: 's3', name: 'Вентилируемый фасад (керамогранит)', type: 'АР', projectsUsed: ['ТЦ «Меридиан»'], preview: 'Узел крепления подсистемы' },
+  { id: 's4', name: 'Беспролётные фермы 36м', type: 'КМ', projectsUsed: ['Склад А-12'], preview: 'Схема узла опирания фермы' },
+];
+
 /* ═══════════════════════════════════════════════════════════
-   TABS — 1:1 как «Панель аналитики / Портфель заказов»
+   SUB-TABS (Архив-стиль)
    ═══════════════════════════════════════════════════════════ */
-type TabKey = 'tenders' | 'projects';
+type TabKey = 'tenders' | 'solutions' | 'templates' | 'projects';
+const TAB_COLOR = '#8B5CF6';
 
 function PageTabs({ active, onChange }: { active: TabKey; onChange: (t: TabKey) => void }) {
   const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
-    { key: 'tenders', label: 'ТЕНДЕРЫ', icon: <Gavel size={16} /> },
-    { key: 'projects', label: 'ПРОЕКТЫ', icon: <FolderKanban size={16} /> },
+    { key: 'tenders', label: 'Тендеры', icon: <Gavel size={16} /> },
+    { key: 'solutions', label: 'Типовые решения', icon: <HardHat size={16} /> },
+    { key: 'templates', label: 'Шаблоны', icon: <FileText size={16} /> },
+    { key: 'projects', label: 'Проекты', icon: <FolderKanban size={16} /> },
   ];
 
   return (
-    <div 
-      className="flex items-center gap-1"
-      style={{ borderBottom: '1px solid #e5e7eb' }}
-    >
+    <div className="flex items-center gap-1 border-b" style={{ borderColor: 'var(--border-divider)' }}>
       {tabs.map((tab) => {
         const isActive = active === tab.key;
         return (
           <button
             key={tab.key}
             onClick={() => onChange(tab.key)}
-            className="flex items-center gap-2 px-4 py-2.5 text-sm transition-colors cursor-pointer outline-none"
+            className="relative px-4 py-2.5 text-sm font-medium transition-all flex items-center gap-2"
             style={{
-              color: isActive ? '#111827' : '#9ca3af',
-              background: 'none',
-              border: 'none',
-              borderBottom: isActive ? '2px solid #8b5cf6' : '2px solid transparent',
-              marginBottom: '-1px',
-              fontWeight: isActive ? 600 : 400,
-            }}
-            onMouseEnter={(e) => {
-              if (!isActive) e.currentTarget.style.color = '#4b5563';
-            }}
-            onMouseLeave={(e) => {
-              if (!isActive) e.currentTarget.style.color = '#9ca3af';
+              color: isActive ? TAB_COLOR : 'var(--text-secondary)',
+              backgroundColor: isActive ? `${TAB_COLOR}26` : 'transparent',
             }}
           >
-            <span style={{ opacity: isActive ? 1 : 0.6 }}>{tab.icon}</span>
-            {tab.label}
+            {tab.icon} {tab.label}
+            {isActive && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-4/5 rounded-full" style={{ backgroundColor: TAB_COLOR, boxShadow: `0 0 8px ${TAB_COLOR}` }} />}
           </button>
         );
       })}
@@ -145,16 +170,13 @@ function PageTabs({ active, onChange }: { active: TabKey; onChange: (t: TabKey) 
 }
 
 /* ═══════════════════════════════════════════════════════════
-   FILTER BAR — плашки как на скриншоте
+   FILTER BAR
    ═══════════════════════════════════════════════════════════ */
-function FilterBar({ 
-  options, 
-  active, 
-  onChange, 
-  count 
-}: { 
-  options: { key: string; label: string }[]; 
-  active: string; 
+function FilterBar({
+  options, active, onChange, count
+}: {
+  options: { key: string; label: string }[];
+  active: string;
   onChange: (k: string) => void;
   count?: number;
 }) {
@@ -177,9 +199,7 @@ function FilterBar({
         </button>
       ))}
       {count !== undefined && (
-        <span className="text-xs ml-1" style={{ color: '#94a3b8' }}>
-          Найдено: {count}
-        </span>
+        <span className="text-xs ml-1" style={{ color: '#94a3b8' }}>Найдено: {count}</span>
       )}
     </div>
   );
@@ -228,15 +248,9 @@ function TendersView() {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-        <div>
-          <h1 className="text-xl md:text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-            Тендерный отдел
-          </h1>
-          <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
-            Управление тендерами и предложениями
-          </p>
-        </div>
+      <div className="mb-4">
+        <h1 className="text-xl md:text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Тендерный отдел</h1>
+        <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>Управление тендерами и предложениями</p>
       </div>
 
       {/* KPI */}
@@ -269,12 +283,7 @@ function TendersView() {
         </div>
       </div>
 
-      <FilterBar 
-        options={filterOptions} 
-        active={filter} 
-        onChange={setFilter} 
-        count={filtered.length} 
-      />
+      <FilterBar options={filterOptions} active={filter} onChange={setFilter} count={filtered.length} />
 
       {/* Table */}
       <div className="rounded-xl overflow-hidden" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
@@ -283,9 +292,7 @@ function TendersView() {
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
                 {['№ тендера','Название','Заказчик','Статус','Срок','Бюджет','Шанс','Действия'].map((h) => (
-                  <th key={h} className="text-[10px] font-semibold uppercase tracking-wider px-3 py-2.5" style={{ color: 'var(--text-muted)' }}>
-                    {h}
-                  </th>
+                  <th key={h} className="text-[10px] font-semibold uppercase tracking-wider px-3 py-2.5" style={{ color: 'var(--text-muted)' }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -293,10 +300,7 @@ function TendersView() {
               {filtered.map((t) => {
                 const meta = statusMeta[t.status];
                 return (
-                  <tr 
-                    key={t.id} 
-                    className="transition-colors cursor-pointer"
-                    style={{ borderBottom: '1px solid var(--border-color)' }}
+                  <tr key={t.id} className="transition-colors cursor-pointer" style={{ borderBottom: '1px solid var(--border-color)' }}
                     onMouseEnter={(e) => { e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                   >
@@ -304,17 +308,13 @@ function TendersView() {
                     <td className="px-3 py-2.5 text-[11px] font-medium" style={{ color: 'var(--text-primary)' }}>{t.name}</td>
                     <td className="px-3 py-2.5 text-[11px]" style={{ color: 'var(--text-secondary)' }}>{t.customer}</td>
                     <td className="px-3 py-2.5">
-                      <span 
-                        className="inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-full font-medium"
-                        style={{ background: meta.color + '15', color: meta.color, border: `1px solid ${meta.color}30` }}
-                      >
+                      <span className="inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-full font-medium"
+                        style={{ background: meta.color + '15', color: meta.color, border: `1px solid ${meta.color}30` }}>
                         {meta.icon} {meta.label}
                       </span>
                     </td>
                     <td className="px-3 py-2.5 text-[11px]" style={{ color: t.daysLeft < 0 ? '#DC2626' : t.daysLeft <= 3 ? '#D4AF37' : 'var(--text-secondary)' }}>
-                      <span className="flex items-center gap-1">
-                        <Calendar size={10} /> {t.deadline} {t.daysLeft < 0 && `(${t.daysLeft} дн.)`}
-                      </span>
+                      <span className="flex items-center gap-1"><Calendar size={10} /> {t.deadline} {t.daysLeft < 0 && `(${t.daysLeft} дн.)`}</span>
                     </td>
                     <td className="px-3 py-2.5 text-[11px] font-medium" style={{ color: 'var(--text-primary)' }}>{t.budget}</td>
                     <td className="px-3 py-2.5">
@@ -326,11 +326,7 @@ function TendersView() {
                       </div>
                     </td>
                     <td className="px-3 py-2.5">
-                      <button 
-                        onClick={() => navigate('/documents')}
-                        className="text-[9px] px-2 py-1 rounded transition-colors cursor-pointer"
-                        style={{ color: '#2563EB', background: 'rgba(37,99,235,0.1)' }}
-                      >
+                      <button onClick={() => navigate('/documents')} className="text-[9px] px-2 py-1 rounded transition-colors cursor-pointer" style={{ color: '#2563EB', background: 'rgba(37,99,235,0.1)' }}>
                         Открыть
                       </button>
                     </td>
@@ -338,11 +334,7 @@ function TendersView() {
                 );
               })}
               {filtered.length === 0 && (
-                <tr>
-                  <td colSpan={8} className="px-3 py-8 text-center text-xs" style={{ color: 'var(--text-muted)' }}>
-                    Ничего не найдено
-                  </td>
-                </tr>
+                <tr><td colSpan={8} className="px-3 py-8 text-center text-xs" style={{ color: 'var(--text-muted)' }}>Ничего не найдено</td></tr>
               )}
             </tbody>
           </table>
@@ -353,7 +345,98 @@ function TendersView() {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   PROJECTS VIEW (упрощённый дашборд — ЗГД / мастер участка)
+   SOLUTIONS VIEW
+   ═══════════════════════════════════════════════════════════ */
+function SolutionsView() {
+  return (
+    <div className="space-y-6">
+      <div className="p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+        <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+          <HardHat size={14} className="inline mr-1" style={{ color: '#4F7A4C' }} />
+          База типовых решений. Узлы, детали и конструкции, которые уже применялись на проектах.
+        </p>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {typicalSolutions.map(s => (
+          <div key={s.id} className="p-5 space-y-3 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+            <div className="flex items-center gap-2">
+              <Layers size={18} style={{ color: '#6B5B95' }} />
+              <div>
+                <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{s.name}</h3>
+                <span className="text-xs px-2 py-0.5 rounded border" style={{ color: '#6B5B95', borderColor: 'rgba(107,91,149,0.3)', background: 'rgba(107,91,149,0.08)' }}>{s.type}</span>
+              </div>
+            </div>
+            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{s.preview}</p>
+            <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+              <strong>Применено в:</strong> {s.projectsUsed.join(', ')}
+            </div>
+            <div className="flex gap-2">
+              <button className="flex-1 text-xs py-1.5 rounded-lg text-white text-center" style={{ background: 'linear-gradient(135deg, #6B5B95 0%, #5A4D80 100%)' }}>
+                <Eye size={12} className="inline mr-1" /> Просмотр
+              </button>
+              <button className="flex-1 text-xs py-1.5 rounded-lg border text-center transition-colors" style={{ color: '#6B7280', borderColor: 'rgba(107,114,128,0.3)' }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(107,114,128,0.1)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
+                <Download size={12} className="inline mr-1" /> DWG
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TEMPLATES VIEW
+   ═══════════════════════════════════════════════════════════ */
+function TemplatesView() {
+  const [search, setSearch] = useState('');
+  const filtered = templates.filter(t =>
+    t.name.toLowerCase().includes(search.toLowerCase()) || t.category.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-default)' }}>
+          <Search size={16} style={{ color: 'var(--text-muted)' }} />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Поиск по шаблону..." className="bg-transparent outline-none text-sm w-48 md:w-72" style={{ color: 'var(--text-primary)' }} />
+        </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filtered.map(t => (
+          <div key={t.id} className="p-4 space-y-3 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-2">
+                <FileText size={18} style={{ color: '#6B7280' }} />
+                <div>
+                  <h3 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t.name}</h3>
+                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{t.category} · {t.format.toUpperCase()}</p>
+                </div>
+              </div>
+              <button className="p-1 rounded transition-colors" style={{ color: t.isFavorite ? '#D4AF37' : 'var(--text-muted)' }}>
+                <Bookmark size={14} />
+              </button>
+            </div>
+            <div className="flex items-center justify-between text-xs" style={{ color: 'var(--text-muted)' }}>
+              <span className="flex items-center gap-1"><Download size={10} /> {t.downloads} скачиваний</span>
+            </div>
+            <div className="flex gap-2">
+              <button className="flex-1 text-xs py-1.5 rounded-lg text-white text-center" style={{ background: 'linear-gradient(135deg, #6B7280 0%, #4B5563 100%)' }}>
+                <Eye size={12} className="inline mr-1" /> Просмотр
+              </button>
+              <button className="flex-1 text-xs py-1.5 rounded-lg border text-center transition-colors" style={{ color: '#6B7280', borderColor: 'rgba(107,114,128,0.3)' }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(107,114,128,0.1)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
+                <Download size={12} className="inline mr-1" /> Скачать
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PROJECTS VIEW
    ═══════════════════════════════════════════════════════════ */
 function ProjectsView() {
   const navigate = useNavigate();
@@ -386,18 +469,9 @@ function ProjectsView() {
   };
 
   const riskItems = [
-    { 
-      id: 'r1', level: 'high' as const, title: 'Офис «Гамма»', desc: 'Просрочка + нет согласования заказчика', 
-      action: 'Перейти в Workflow', color: '#DC2626' 
-    },
-    { 
-      id: 'r2', level: 'medium' as const, title: 'ТЭЦ-5', desc: 'Зависимость от подрядчика (блокирует Склад А-12)', 
-      action: 'Посмотреть замечания', color: '#D4AF37' 
-    },
-    { 
-      id: 'r3', level: 'medium' as const, title: 'Тендерный отдел', desc: 'Перегруз 85% (план 75%)', 
-      action: 'Перераспределить', color: '#D4AF37' 
-    },
+    { id: 'r1', level: 'high' as const, title: 'Офис «Гамма»', desc: 'Просрочка + нет согласования заказчика', action: 'Перейти в Workflow', color: '#DC2626' },
+    { id: 'r2', level: 'medium' as const, title: 'ТЭЦ-5', desc: 'Зависимость от подрядчика (блокирует Склад А-12)', action: 'Посмотреть замечания', color: '#D4AF37' },
+    { id: 'r3', level: 'medium' as const, title: 'Тендерный отдел', desc: 'Перегруз 85% (план 75%)', action: 'Перераспределить', color: '#D4AF37' },
   ];
 
   const [showAllRisks, setShowAllRisks] = useState(false);
@@ -412,53 +486,39 @@ function ProjectsView() {
   ];
   const [projFilter, setProjFilter] = useState('all');
 
-  const filteredProjects = projFilter === 'all' 
-    ? sortedProjects 
+  const filteredProjects = projFilter === 'all'
+    ? sortedProjects
     : sortedProjects.filter(p => p.status === projFilter);
 
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-        <div>
-          <h1 className="text-xl md:text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-            Проекты
-          </h1>
-          <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
-            Аналитика по проектам и документообороту
-          </p>
-        </div>
+      <div className="mb-4">
+        <h1 className="text-xl md:text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Проекты</h1>
+        <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>Аналитика по проектам и документообороту</p>
       </div>
 
       {/* Быстрые действия */}
       <div className="flex flex-wrap gap-2">
-        <button 
-          onClick={() => alert('Массовое согласование — в разработке')}
+        <button onClick={() => alert('Массовое согласование — в разработке')}
           className="text-xs px-2 py-1 rounded-md transition-all hover:brightness-105 cursor-pointer"
-          style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
-        >
-          ⚡ Утвердить 84 документа
+          style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>
+          Утвердить 84 документа
         </button>
-        <button 
-          onClick={() => navigate('/team')}
+        <button onClick={() => navigate('/team')}
           className="text-xs px-2 py-1 rounded-md transition-all hover:brightness-105 cursor-pointer"
-          style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
-        >
-          👤 Назначить ресурс
+          style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>
+          Назначить ресурс
         </button>
-        <button 
-          disabled
+        <button disabled
           className="text-xs px-2 py-1 rounded-md opacity-50 cursor-not-allowed"
-          style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}
-        >
-          📋 Созвон по рискам
+          style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}>
+          Созвон по рискам
         </button>
-        <button 
-          disabled
+        <button disabled
           className="text-xs px-2 py-1 rounded-md opacity-50 cursor-not-allowed"
-          style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}
-        >
-          📊 Экспорт отчёта
+          style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}>
+          Экспорт отчёта
         </button>
       </div>
 
@@ -467,78 +527,45 @@ function ProjectsView() {
         <button onClick={() => navigate('/workflow?filter=overdue')} className="group p-3 rounded-lg text-left transition-all hover:scale-[1.02] flex flex-col gap-1 cursor-pointer" style={{ background: 'var(--card-bg)', border: '1px solid rgba(220,38,38,0.35)' }}>
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Требуют внимания</span>
-            <span className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: 'rgba(220,38,38,0.12)', color: '#DC2626' }}>
-              <AlertTriangle size={12} />
-            </span>
+            <span className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: 'rgba(220,38,38,0.12)', color: '#DC2626' }}><AlertTriangle size={12} /></span>
           </div>
           <div className="text-xl font-bold" style={{ color: '#DC2626' }}>7</div>
-          <div className="text-[10px] flex items-center gap-1 font-medium" style={{ color: '#DC2626' }}>
-            <ArrowRight size={10} className="transition-transform group-hover:translate-x-1" />
-            Срочно в Workflow
-          </div>
+          <div className="text-[10px] flex items-center gap-1 font-medium" style={{ color: '#DC2626' }}><ArrowRight size={10} className="transition-transform group-hover:translate-x-1" />Срочно в Workflow</div>
         </button>
         <button onClick={() => navigate('/workflow')} className="group p-3 rounded-lg text-left transition-all hover:scale-[1.02] flex flex-col gap-1 cursor-pointer" style={{ background: 'var(--card-bg)', border: '1px solid rgba(212,175,55,0.35)' }}>
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>На согласовании</span>
-            <span className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: 'rgba(212,175,55,0.12)', color: '#D4AF37' }}>
-              <Clock size={12} />
-            </span>
+            <span className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: 'rgba(212,175,55,0.12)', color: '#D4AF37' }}><Clock size={12} /></span>
           </div>
           <div className="text-xl font-bold" style={{ color: '#D4AF37' }}>84</div>
-          <div className="text-[10px] flex items-center gap-1" style={{ color: 'var(--text-muted)' }}>
-            <ArrowRight size={10} className="transition-transform group-hover:translate-x-1" />
-            Среднее время: 2.3 дня
-          </div>
+          <div className="text-[10px] flex items-center gap-1" style={{ color: 'var(--text-muted)' }}><ArrowRight size={10} className="transition-transform group-hover:translate-x-1" />Среднее время: 2.3 дня</div>
         </button>
         <button onClick={() => navigate('/documents?dept=tender')} className="group p-3 rounded-lg text-left transition-all hover:scale-[1.02] flex flex-col gap-1 cursor-pointer" style={{ background: 'var(--card-bg)', border: '1px solid rgba(37,99,235,0.35)' }}>
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Перегруженный отдел</span>
-            <span className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: 'rgba(37,99,235,0.12)', color: '#2563EB' }}>
-              <Users size={12} />
-            </span>
+            <span className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: 'rgba(37,99,235,0.12)', color: '#2563EB' }}><Users size={12} /></span>
           </div>
           <div className="text-xl font-bold" style={{ color: '#2563EB' }}>34/40</div>
-          <div className="text-[10px] flex items-center gap-1" style={{ color: 'var(--text-muted)' }}>
-            <ArrowRight size={10} className="transition-transform group-hover:translate-x-1" />
-            Тендерный отдел — 85%
-          </div>
+          <div className="text-[10px] flex items-center gap-1" style={{ color: 'var(--text-muted)' }}><ArrowRight size={10} className="transition-transform group-hover:translate-x-1" />Тендерный отдел — 85%</div>
         </button>
       </div>
 
-      <FilterBar 
-        options={filterOptions} 
-        active={projFilter} 
-        onChange={setProjFilter} 
-        count={filteredProjects.length} 
-      />
+      <FilterBar options={filterOptions} active={projFilter} onChange={setProjFilter} count={filteredProjects.length} />
 
-      {/* ═══ ГЛАВНЫЙ GRID: контент + sidebar ═══ */}
+      {/* ═══ ГЛАВНЫЙ GRID ═══ */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-5 items-start">
 
         {/* ЛЕВАЯ КОЛОНКА */}
         <div className="space-y-4 min-w-0">
-          {/* ДВА БЛОКА В ОДИН РЯД */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Прогресс проектов */}
             <div className="p-3 rounded-xl min-w-0" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
               <div className="flex items-center justify-between mb-3">
-                <button
-                  onClick={() => navigate('/projects')}
-                  className="text-xs font-semibold text-left cursor-pointer"
-                  style={{ color: 'var(--text-primary)', background: 'none', border: 'none' }}
-                >
-                  Прогресс проектов
-                </button>
+                <button onClick={() => navigate('/projects')} className="text-xs font-semibold text-left cursor-pointer" style={{ color: 'var(--text-primary)', background: 'none', border: 'none' }}>Прогресс проектов</button>
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => navigate('/projects')}
-                    className="text-[10px] flex items-center gap-0.5 px-1.5 py-0.5 rounded transition-colors cursor-pointer"
-                    style={{ color: 'var(--text-muted)', background: 'none', border: 'none' }}
+                  <button onClick={() => navigate('/projects')} className="text-[10px] flex items-center gap-0.5 px-1.5 py-0.5 rounded transition-colors cursor-pointer" style={{ color: 'var(--text-muted)', background: 'none', border: 'none' }}
                     onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
-                  >
-                    Все <ArrowRight size={10} />
-                  </button>
+                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}>Все <ArrowRight size={10} /></button>
                   <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>По риску ↓</span>
                 </div>
               </div>
@@ -550,31 +577,13 @@ function ProjectsView() {
                   const label = getProjectLabel(project.status);
 
                   return (
-                    <div 
-                      key={project.id}
-                      className="rounded-lg overflow-hidden transition-all"
-                      style={{ 
-                        background: 'var(--card-bg)', 
-                        border: `1px solid ${isExpanded ? color + '40' : 'var(--border-color)'}`,
-                      }}
-                    >
-                      <button
-                        onClick={() => setExpandedProject(isExpanded ? null : project.id)}
-                        className="w-full text-left p-2.5 transition-colors hover:brightness-105 cursor-pointer"
-                        style={{ background: 'none', border: 'none' }}
-                      >
+                    <div key={project.id} className="rounded-lg overflow-hidden transition-all" style={{ background: 'var(--card-bg)', border: `1px solid ${isExpanded ? color + '40' : 'var(--border-color)'}` }}>
+                      <button onClick={() => setExpandedProject(isExpanded ? null : project.id)} className="w-full text-left p-2.5 transition-colors hover:brightness-105 cursor-pointer" style={{ background: 'none', border: 'none' }}>
                         <div className="flex items-center justify-between mb-1.5">
                           <div className="flex items-center gap-1.5 min-w-0">
                             <span style={{ color }}>{getProjectIcon(project.status)}</span>
-                            <span className="text-xs font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
-                              {project.name}
-                            </span>
-                            <span 
-                              className="text-[9px] px-1 py-0.5 rounded-full font-medium shrink-0"
-                              style={{ background: color + '20', color, border: `1px solid ${color}40` }}
-                            >
-                              {label}
-                            </span>
+                            <span className="text-xs font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{project.name}</span>
+                            <span className="text-[9px] px-1 py-0.5 rounded-full font-medium shrink-0" style={{ background: color + '20', color, border: `1px solid ${color}40` }}>{label}</span>
                           </div>
                           <div className="flex items-center gap-1.5 shrink-0 ml-1.5">
                             <span className="text-xs font-bold" style={{ color }}>{project.percent}%</span>
@@ -587,20 +596,11 @@ function ProjectsView() {
                         </div>
 
                         <div className="mt-1.5 flex items-center justify-between">
-                          <span 
-                            className="text-[10px]"
-                            style={{ 
-                              color: project.daysLeft <= 3 ? '#DC2626' : 
-                                     project.daysLeft <= 7 ? '#D4AF37' : 
-                                     'var(--text-muted)'
-                            }}
-                          >
-                            📅 Дедлайн: {project.deadline} ({project.daysLeft} дн.)
+                          <span className="text-[10px]" style={{ color: project.daysLeft <= 3 ? '#DC2626' : project.daysLeft <= 7 ? '#D4AF37' : 'var(--text-muted)' }}>
+                            Дедлайн: {project.deadline} ({project.daysLeft} дн.)
                           </span>
                           {project.blockedBy && (
-                            <span className="text-[9px] flex items-center gap-0.5 shrink-0 ml-1.5" style={{ color: '#FF6B6B' }}>
-                              <LinkIcon size={9} /> Блокирует: {project.blockedBy}
-                            </span>
+                            <span className="text-[9px] flex items-center gap-0.5 shrink-0 ml-1.5" style={{ color: '#FF6B6B' }}><LinkIcon size={9} /> Блокирует: {project.blockedBy}</span>
                           )}
                         </div>
                       </button>
@@ -610,29 +610,14 @@ function ProjectsView() {
                           <div className="border-t pt-2 mt-0.5" style={{ borderColor: 'var(--border-color)' }}>
                             <div className="flex items-center justify-between mb-1.5">
                               <span className="text-[10px] font-medium" style={{ color: 'var(--text-secondary)' }}>Документы</span>
-                              <button 
-                                onClick={(e) => { e.stopPropagation(); navigate(project.route); }}
-                                className="text-[9px] flex items-center gap-0.5 px-1.5 py-0.5 rounded transition-colors cursor-pointer"
-                                style={{ color: '#2563EB', background: 'rgba(37,99,235,0.1)' }}
-                              >
-                                Все <ArrowRight size={8} />
-                              </button>
+                              <button onClick={(e) => { e.stopPropagation(); navigate(project.route); }} className="text-[9px] flex items-center gap-0.5 px-1.5 py-0.5 rounded transition-colors cursor-pointer" style={{ color: '#2563EB', background: 'rgba(37,99,235,0.1)' }}>Все <ArrowRight size={8} /></button>
                             </div>
                             <div className="flex flex-col gap-1.5">
                               {project.docs.map((doc, di) => (
                                 <div key={di} className="flex items-center justify-between">
                                   <span className="text-[11px] truncate" style={{ color: 'var(--text-primary)' }}>{doc.name}</span>
                                   <div className="flex items-center gap-1.5 shrink-0 ml-1.5">
-                                    <span 
-                                      className="text-[9px] px-1 py-0.5 rounded-full"
-                                      style={{ 
-                                        background: doc.status === 'Просрочен' ? 'rgba(239,68,68,0.15)' : 'rgba(37,99,235,0.15)', 
-                                        color: doc.status === 'Просрочен' ? '#EF4444' : '#2563EB',
-                                        border: `1px solid ${doc.status === 'Просрочен' ? 'rgba(239,68,68,0.3)' : 'rgba(37,99,235,0.3)'}`
-                                      }}
-                                    >
-                                      {doc.status}
-                                    </span>
+                                    <span className="text-[9px] px-1 py-0.5 rounded-full" style={{ background: doc.status === 'Просрочен' ? 'rgba(239,68,68,0.15)' : 'rgba(37,99,235,0.15)', color: doc.status === 'Просрочен' ? '#EF4444' : '#2563EB', border: `1px solid ${doc.status === 'Просрочен' ? 'rgba(239,68,68,0.3)' : 'rgba(37,99,235,0.3)'}` }}>{doc.status}</span>
                                     <span className="text-[9px]" style={{ color: 'var(--text-muted)' }}>{doc.date}</span>
                                   </div>
                                 </div>
@@ -648,10 +633,7 @@ function ProjectsView() {
             </div>
 
             {/* Загрузка по отделам */}
-            <div
-              className="p-3 rounded-xl min-w-0"
-              style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}
-            >
+            <div className="p-3 rounded-xl min-w-0" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
               <DepartmentLoad />
             </div>
           </div>
@@ -670,39 +652,45 @@ function ProjectsView() {
             </div>
             <div className="flex flex-col gap-2">
               {visibleRisks.map((risk) => (
-                <div 
-                  key={risk.id} 
-                  className="p-2 rounded-md"
-                  style={{ 
-                    borderLeft: '4px solid',
-                    borderColor: risk.color,
-                    background: risk.color + '08'
-                  }}
-                >
-                  <div className="text-[10px] font-semibold mb-0.5" style={{ color: risk.color }}>
-                    {risk.level === 'high' ? '🔴 Высокий' : '🟡 Средний'}: {risk.title}
-                  </div>
+                <div key={risk.id} className="p-2 rounded-md" style={{ borderLeft: '4px solid', borderColor: risk.color, background: risk.color + '08' }}>
+                  <div className="text-[10px] font-semibold mb-0.5" style={{ color: risk.color }}>{risk.level === 'high' ? 'Высокий' : 'Средний'}: {risk.title}</div>
                   <div className="text-[10px] mb-1.5" style={{ color: 'var(--text-primary)' }}>{risk.desc}</div>
-                  <button 
-                    onClick={() => navigate('/workflow')}
-                    className="text-[9px] px-1.5 py-0.5 rounded transition-colors cursor-pointer"
-                    style={{ color: risk.color, background: risk.color + '15' }}
-                  >
-                    {risk.action}
-                  </button>
+                  <button onClick={() => navigate('/workflow')} className="text-[9px] px-1.5 py-0.5 rounded transition-colors cursor-pointer" style={{ color: risk.color, background: risk.color + '15' }}>{risk.action}</button>
                 </div>
               ))}
             </div>
             {riskItems.length > 3 && (
-              <button 
-                onClick={() => setShowAllRisks(!showAllRisks)}
-                className="w-full text-center text-[10px] py-1 rounded-md cursor-pointer" 
-                style={{ color: 'var(--text-secondary)', background: 'var(--card-elevated)', border: '1px solid var(--border-color)' }}
-              >
+              <button onClick={() => setShowAllRisks(!showAllRisks)} className="w-full text-center text-[10px] py-1 rounded-md cursor-pointer" style={{ color: 'var(--text-secondary)', background: 'var(--card-elevated)', border: '1px solid var(--border-color)' }}>
                 {showAllRisks ? 'Скрыть' : 'Показать все риски'}
               </button>
             )}
           </div>
+
+          {/* IRIS — плашка рекомендаций */}
+          <div className="p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+            <div className="flex items-center gap-3 mb-3">
+              <ChromeBot size={100} variant={isDark ? 'dark' : 'light'} />
+              <div>
+                <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Рекомендации IRIS</h3>
+                <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>AI-ассистент</span>
+              </div>
+            </div>
+            <div className="p-2.5 rounded-lg" style={{ background: isDark ? 'rgba(12,114,5,0.08)' : 'rgba(12,114,5,0.06)', border: '1px solid rgba(12,114,5,0.2)' }}>
+              <div className="flex items-start gap-2">
+                <Sparkles size={14} className="shrink-0 mt-0.5" style={{ color: '#0C7205' }} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs leading-relaxed" style={{ color: 'var(--text-primary)' }}>
+                    Перегруз тендерного отдела: <strong>85%</strong>. Переложить <strong>КЖ-02-014</strong> на проектный?
+                  </p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <button onClick={() => navigate('/team')} className="text-[10px] px-2 py-1 rounded-md font-medium transition-colors hover:brightness-110" style={{ background: '#0C7205', color: '#fff' }}>Применить</button>
+                    <button onClick={() => navigate('/workflow')} className="text-[10px] px-2 py-1 rounded-md transition-colors" style={{ color: 'var(--text-secondary)', border: '1px solid var(--border-color)' }}>Подробнее</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
 
       </div>
@@ -720,17 +708,16 @@ export default function ProjectsPage() {
     <div className="min-h-screen w-full overflow-x-hidden" style={{ background: 'var(--layout-bg)', color: 'var(--text-primary)' }}>
       {/* Header area */}
       <div className="px-6 pt-6 pb-2">
-        <h1 className="text-xl md:text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-          Портфель заказов
-        </h1>
-        <p className="text-xs mt-0.5 mb-4" style={{ color: 'var(--text-secondary)' }}>
-          Управление тендерами, проектами и документооборотом
-        </p>
+        <h1 className="text-xl md:text-2xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Портфель заказов</h1>
+        <p className="text-xs mb-4" style={{ color: 'var(--text-secondary)' }}>Управление тендерами, проектами и документооборотом</p>
         <PageTabs active={activeTab} onChange={setActiveTab} />
       </div>
-      
+
       <div style={{ padding: '1.5rem' }}>
-        {activeTab === 'tenders' ? <TendersView /> : <ProjectsView />}
+        {activeTab === 'tenders' && <TendersView />}
+        {activeTab === 'solutions' && <SolutionsView />}
+        {activeTab === 'templates' && <TemplatesView />}
+        {activeTab === 'projects' && <ProjectsView />}
       </div>
     </div>
   );

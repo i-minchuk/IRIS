@@ -86,7 +86,7 @@ export default function DocumentsPage() {
   const [filterType, setFilterType] = useState<DocType | 'all'>('all');
   const [filterStatus, setFilterStatus] = useState<DocStatus | 'all'>('all');
   const [filterProject, setFilterProject] = useState('all');
-  const [showGamification, setShowGamification] = useState(true);
+  const [activeTab, setActiveTab] = useState<'projects' | 'employees'>('projects');
 
   const filtered = docsData.filter(d => {
     const matchSearch = d.name.toLowerCase().includes(searchQuery.toLowerCase()) || d.code.toLowerCase().includes(searchQuery.toLowerCase());
@@ -106,18 +106,34 @@ export default function DocumentsPage() {
           <h1 className="text-2xl md:text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>Документация</h1>
           <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Управление проектной документацией и ревизиями</p>
         </div>
-        <div className="flex items-center gap-3">
-          <button onClick={() => setShowGamification(!showGamification)} className="px-3 py-2 rounded-lg text-xs font-medium border flex items-center gap-1.5 transition-colors" style={{ color: '#D4AF37', borderColor: 'rgba(212,175,55,0.4)' }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(212,175,55,0.1)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
-            <Trophy size={14} /> {showGamification ? 'Скрыть активность' : 'Показать активность'}
-          </button>
-          <button className="px-4 py-2 rounded-lg text-sm font-medium text-white flex items-center gap-2" style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #B8942F 100%)', boxShadow: '0 4px 16px rgba(212,175,55,0.35)' }}>
-            <Upload size={16} /> Загрузить
-          </button>
-        </div>
+        <button className="px-4 py-2 rounded-lg text-sm font-medium text-white flex items-center gap-2" style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #B8942F 100%)', boxShadow: '0 4px 16px rgba(212,175,55,0.35)' }}>
+          <Upload size={16} /> Загрузить
+        </button>
       </div>
 
-      {/* ── Gamification Block ── */}
-      {showGamification && (
+      {/* Sub-tabs */}
+      <div className="flex items-center gap-1 border-b" style={{ borderColor: 'var(--border-divider)' }}>
+        {[
+          { key: 'projects' as const, label: 'Проекты', icon: <FolderKanban size={16} /> },
+          { key: 'employees' as const, label: 'Сотрудники', icon: <User size={16} /> },
+        ].map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className="relative px-4 py-2.5 text-sm font-medium transition-all flex items-center gap-2"
+            style={{
+              color: activeTab === tab.key ? '#4F7A4C' : 'var(--text-secondary)',
+              backgroundColor: activeTab === tab.key ? 'rgba(79,122,76,0.15)' : 'transparent',
+            }}
+          >
+            {tab.icon} {tab.label}
+            {activeTab === tab.key && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-4/5 rounded-full" style={{ backgroundColor: '#4F7A4C', boxShadow: '0 0 8px #4F7A4C' }} />}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Employees Tab ── */}
+      {activeTab === 'employees' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* My Stats */}
           <div className="neon-yellow p-5 space-y-4" style={{ background: 'var(--card-bg)' }}>
@@ -188,6 +204,9 @@ export default function DocumentsPage() {
         </div>
       )}
 
+      {/* ── Projects Tab ── */}
+      {activeTab === 'projects' && (
+      <div className="space-y-6">
       {/* ── Filters ── */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-default)' }}>
@@ -275,6 +294,8 @@ export default function DocumentsPage() {
           <FileText size={48} style={{ color: 'var(--text-muted)' }} className="mx-auto mb-4 opacity-30" />
           <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Документы не найдены. Измените фильтры или загрузите новые.</p>
         </div>
+      )}
+      </div>
       )}
     </div>
   );
