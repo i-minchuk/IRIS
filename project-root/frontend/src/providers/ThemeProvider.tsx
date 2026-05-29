@@ -23,14 +23,16 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   useEffect(() => {
     const root = document.documentElement;
-    // Устанавливаем data-theme атрибут для переключения CSS переменных
+    // Устанавливаем data-theme атрибут
     root.setAttribute('data-theme', theme);
     
-    // Также поддерживаем класс .dark для совместимости с Tailwind
+    // Управляем классами для совместимости с CSS
     if (theme === 'dark') {
-      root.classList.add('dark');
+      root.classList.add('dark', 'theme-dark');
+      root.classList.remove('theme-light');
     } else {
-      root.classList.remove('dark');
+      root.classList.add('theme-light');
+      root.classList.remove('dark', 'theme-dark');
     }
     
     localStorage.setItem('iris-theme', theme);
@@ -39,16 +41,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const toggleTheme = () => {
     setTheme(prev => {
       const next = prev === 'light' ? 'dark' : 'light';
-      const root = document.documentElement;
-      root.setAttribute('data-theme', next);
-      
-      if (next === 'dark') {
-        root.classList.add('dark');
-      } else {
-        root.classList.remove('dark');
-      }
-      
-      localStorage.setItem('iris-theme', next);
       return next;
     });
   };
