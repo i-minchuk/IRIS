@@ -1,6 +1,8 @@
 """Documents, revisions, remarks and approval workflow API router."""
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Query
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func
 
 from app.db.session import get_db
 from app.modules.auth.deps import get_current_active_user
@@ -8,18 +10,53 @@ from app.modules.auth.models import User
 from app.modules.documents.dependencies import router as deps_router
 from app.modules.documents.service import DocumentService
 from app.modules.documents.deps import get_document_service
+from app.modules.documents.models import Document
+from app.ai.classification import classify_document
 
 router = APIRouter(tags=["documents"])
 router.include_router(deps_router, prefix="/dependencies")
 
 
-@router.get("", response_model=list)
+@router.get("", response_model=dict)
 async def list_documents(
     project_id: int = None,
     section_id: int = None,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    db: AsyncSession = Depends(lambda: get_db(read_only=True)),
     service: DocumentService = Depends(get_document_service),
 ):
-    return await service.list_documents(project_id, section_id)
+    offset = (page - 1) * page_size
+    query = select(Document)
+    if project_id:
+        query = query.where(Document.project_id == project_id)
+    if section_id:
+        query = query.where(Document.section_id == section_id)
+    total = await db.scalar(select(func.count()).select_from(query.subquery()))
+    result = await db.execute(query.order_by(Document.created_at.desc()).offset(offset).limit(page_size))
+    docs = result.scalars().all()
+    items = [
+        {
+            "id": d.id,
+            "number": d.number,
+            "name": d.name,
+            "doc_type": d.doc_type,
+            "status": d.status,
+            "crs_code": d.crs_code,
+            "author_id": d.author_id,
+            "project_id": d.project_id,
+            "section_id": d.section_id,
+            "created_at": d.created_at.isoformat() if d.created_at else None,
+        }
+        for d in docs
+    ]
+    return {
+        "items": items,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "pages": (total + page_size - 1) // page_size,
+    }
 
 
 @router.post("", response_model=dict)
@@ -56,25 +93,6 @@ async def create_revision(
     service: DocumentService = Depends(get_document_service),
 ):
     return await service.create_revision(document_id, data, current_user.id)
-
-
-@router.post("/{document_id}/remarks", response_model=dict)
-async def create_remark(
-    document_id: int,
-    data: dict,
-    current_user: User = Depends(get_current_active_user),
-    service: DocumentService = Depends(get_document_service),
-):
-    return await service.create_remark(document_id, data, current_user.id)
-
-
-@router.patch("/remarks/{remark_id}/status", response_model=dict)
-async def update_remark_status(
-    remark_id: int,
-    data: dict,
-    service: DocumentService = Depends(get_document_service),
-):
-    return await service.update_remark_status(remark_id, data)
 
 
 @router.post("/{document_id}/approval-workflows", response_model=dict)
@@ -168,15 +186,36 @@ async def submit_for_review(
     return await service.submit_for_review(document_id, current_user.id)
 
 
-@router.get("/remarks/all", response_model=list)
-async def list_all_remarks(
-    project_id: int = None,
-    severity: str = None,
-    status: str = None,
-    remark_type: str = None,
-    category: str = None,
-    service: DocumentService = Depends(get_document_service),
+@router.post("/{document_id}/classify", response_model=dict)
+async def classify_document_endpoint(
+    document_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ):
-    return await service.list_all_remarks(
-        project_id, severity, status, remark_type, category
+    """Run AI classification on a document and persist the result."""
+    result = await db.execute(select(Document).where(Document.id == document_id))
+    doc = result.scalar_one_or_none()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    content = ""
+    if doc.content and isinstance(doc.content, dict):
+        content = doc.content.get("body") or doc.content.get("text") or ""
+    if not content:
+        content = doc.name or ""
+
+    result_data = await classify_document(content)
+    doc.ai_classified_type = result_data.get("type")
+    doc.ai_confidence = result_data.get("confidence")
+    await db.commit()
+    return result_data
+
+
+@router.post("/suggest-fields", response_model=dict)
+async def suggest_fields(request: dict, db: AsyncSession = Depends(get_db)):
+    from app.ai.autofill import suggest_document_fields
+    return await suggest_document_fields(
+        request.get("template_type"), request.get("project_name", "")
     )
+
+

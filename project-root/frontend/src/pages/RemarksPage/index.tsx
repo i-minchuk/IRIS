@@ -69,7 +69,7 @@ export const RemarksPage: React.FC = () => {
   };
 
   return (
-    <div className="h-screen bg-[#0f172a] text-[#e2e8f0] flex flex-col">
+    <div className="h-screen bg-[#0f172a] text-[#e2e8f0] flex flex-col px-3 md:px-6 py-4 md:py-6">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-[#1e293b] border-b border-[#334155]">
         <div className="flex items-center gap-3">
@@ -202,7 +202,7 @@ export const RemarksPage: React.FC = () => {
         )}
 
         {!isLoading && !error && viewMode === 'stats' && (
-          <RemarksStatistics statistics={statistics} />
+          <RemarksStatistics statistics={statistics} remarks={remarks} />
         )}
       </div>
 
@@ -216,3 +216,5 @@ export const RemarksPage: React.FC = () => {
     </div>
   );
 };
+
+export default RemarksPage;

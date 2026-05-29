@@ -99,6 +99,7 @@ class RemarkResponse(BaseModel):
     document_name: Optional[str] = None
     revision_id: Optional[int]
     workflow_step_id: Optional[int]
+    workflow_instance_id: Optional[int]
     
     source: RemarkSource
     status: RemarkStatus
@@ -152,6 +153,9 @@ class RemarkListItem(BaseModel):
     author_name: Optional[str] = None
     assignee_id: Optional[int]
     assignee_name: Optional[str] = None
+    
+    workflow_instance_id: Optional[int] = None
+    workflow_status: Optional[str] = None
     
     due_date: Optional[str]
     

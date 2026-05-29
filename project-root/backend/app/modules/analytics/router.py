@@ -2,7 +2,7 @@
 from typing import Optional
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select, func, and_, or_, case
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,17 +10,25 @@ from app.db.session import get_db
 from app.modules.auth.deps import get_current_active_user
 from app.modules.auth.models import User
 from app.modules.projects.models import Project
-from app.modules.documents.models import Document, DocumentRemark
+from app.modules.documents.models import Document
+from app.modules.remarks.models import Remark
 from app.modules.time_tracking.models import TimeSession
 from app.modules.tenders.models import Tender
+from app.core.cache import cache_response
 import hashlib
+
+
+def _get_db(read_only: bool = True):
+    """Return get_db dependency with read_only flag for analytics endpoints."""
+    return get_db(read_only=read_only)
 
 router = APIRouter(tags=["analytics"])
 
 
 @router.get("/dashboard", response_model=dict)
+@cache_response(expire_seconds=300)
 async def get_dashboard(
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(_get_db),
     current_user: User = Depends(get_current_active_user),
 ):
     """Return manager dashboard: KPIs, project scorecard, team performance."""
@@ -40,13 +48,13 @@ async def get_dashboard(
     approved_docs = approved_docs_result.scalar() or 0
 
     open_remarks_result = await db.execute(
-        select(func.count()).where(~DocumentRemark.status.in_(["closed", "resolved_confirmed"]))
+        select(func.count()).where(~Remark.status.in_(["closed", "resolved"]))
     )
     open_remarks = open_remarks_result.scalar() or 0
 
     critical_remarks_result = await db.execute(
         select(func.count()).where(
-            and_(DocumentRemark.severity == "critical", ~DocumentRemark.status.in_(["closed", "resolved_confirmed"]))
+            and_(Remark.priority == "critical", ~Remark.status.in_(["closed", "resolved"]))
         )
     )
     critical_remarks = critical_remarks_result.scalar() or 0
@@ -76,12 +84,12 @@ async def get_dashboard(
 
         rem_count = await db.execute(
             select(func.count())
-            .select_from(DocumentRemark)
+            .select_from(Remark)
             .join(Document)
             .where(
                 and_(
                     Document.project_id == project.id,
-                    ~DocumentRemark.status.in_(["closed", "resolved_confirmed"]),
+                    ~Remark.status.in_(["closed", "resolved"]),
                 )
             )
         )
@@ -120,12 +128,12 @@ async def get_dashboard(
 
         user_remarks = await db.execute(
             select(func.count())
-            .select_from(DocumentRemark)
+            .select_from(Remark)
             .join(Document)
             .where(
                 and_(
                     Document.author_id == user.id,
-                    ~DocumentRemark.status.in_(["closed", "resolved_confirmed"]),
+                    ~Remark.status.in_(["closed", "resolved"]),
                 )
             )
         )
@@ -166,8 +174,9 @@ async def get_dashboard(
 
 
 @router.get("/kpi", response_model=dict)
+@cache_response(expire_seconds=300)
 async def get_kpi_tiles(
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(_get_db),
     current_user: User = Depends(get_current_active_user),
 ):
     """Return 6 KPI tiles for the executive dashboard."""
@@ -305,8 +314,9 @@ def _hash_seed(project_id: int, field: str) -> float:
 
 
 @router.get("/portfolio", response_model=dict)
+@cache_response(expire_seconds=300)
 async def get_portfolio(
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(_get_db),
     current_user: User = Depends(get_current_active_user),
 ):
     """Return project portfolio bubble-chart data (budget% vs schedule%)."""
@@ -361,9 +371,37 @@ async def get_portfolio(
     }
 
 
+@router.get("/trend", response_model=dict)
+@cache_response(expire_seconds=600)
+async def get_trend(
+    period: str = Query("month"),
+    db: AsyncSession = Depends(_get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Return 12 data points for trend charts (mock data)."""
+    points = [
+        {"month": "Янв", "revenue": 10.5, "profit": 2.1, "expenses": 8.4},
+        {"month": "Фев", "revenue": 12.3, "profit": 3.0, "expenses": 9.3},
+        {"month": "Мар", "revenue": 14.1, "profit": 3.8, "expenses": 10.3},
+        {"month": "Апр", "revenue": 13.5, "profit": 3.2, "expenses": 10.3},
+        {"month": "Май", "revenue": 15.8, "profit": 4.5, "expenses": 11.3},
+        {"month": "Июн", "revenue": 17.2, "profit": 5.1, "expenses": 12.1},
+        {"month": "Июл", "revenue": 16.9, "profit": 4.8, "expenses": 12.1},
+        {"month": "Авг", "revenue": 18.5, "profit": 5.5, "expenses": 13.0},
+        {"month": "Сен", "revenue": 19.1, "profit": 5.8, "expenses": 13.3},
+        {"month": "Окт", "revenue": 18.3, "profit": 5.2, "expenses": 13.1},
+        {"month": "Ноя", "revenue": 20.2, "profit": 6.1, "expenses": 14.1},
+        {"month": "Дек", "revenue": 22.0, "profit": 7.0, "expenses": 15.0},
+    ]
+    return {
+        "points": points,
+        "period": period,
+    }
+
+
 @router.get("/shipments/calendar", response_model=dict)
 async def get_shipments_calendar(
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(_get_db),
     current_user: User = Depends(get_current_active_user),
 ):
     """Return weekly shipment calendar with status pipeline."""
@@ -412,7 +450,7 @@ async def get_shipments_calendar(
 
 @router.get("/sparklines", response_model=dict)
 async def get_sparklines(
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(_get_db),
     current_user: User = Depends(get_current_active_user),
 ):
     """Return 30-day sparkline data for trend charts."""
@@ -475,7 +513,7 @@ async def get_sparklines(
 
 @router.get("/alerts", response_model=dict)
 async def get_alerts(
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(_get_db),
     current_user: User = Depends(get_current_active_user),
 ):
     """Return top auto-generated alerts with suggested actions."""
@@ -562,22 +600,26 @@ async def get_alerts(
 
 @router.get("/tender-pipeline", response_model=dict)
 async def get_tender_pipeline(
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(_get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    """Return tender pipeline funnel with stage aggregates."""
+    """Return tender pipeline funnel with real stage aggregates."""
 
-    stages = [
-        {"key": "analysis", "label": "Анализ и подготовка", "statuses": ["draft"]},
-        {"key": "documentation", "label": "Документация КД", "statuses": ["review"]},
-        {"key": "pricing", "label": "Ценообразование", "statuses": ["approved"]},
-        {"key": "sent", "label": "Подано", "statuses": ["sent"]},
-        {"key": "review", "label": "На рассмотрении", "statuses": ["won", "lost"]},
+    # Map funnel stages to Tender.status values
+    stage_defs = [
+        {"key": "preparation", "label": "Подготовка", "statuses": ["draft"]},
+        {"key": "review", "label": "Изучение", "statuses": ["review"]},
+        {"key": "approval", "label": "Согласование", "statuses": ["approved"]},
+        {"key": "estimation", "label": "Смета", "statuses": ["approved"]},
+        {"key": "submission", "label": "Подано", "statuses": ["sent"]},
+        {"key": "won", "label": "Выиграно", "statuses": ["won"]},
+        {"key": "lost", "label": "Проиграно", "statuses": ["lost"]},
+        {"key": "cancelled", "label": "Отменено", "statuses": ["cancelled"]},
     ]
 
     pipeline = []
     total_max = 0
-    for stage in stages:
+    for stage in stage_defs:
         result = await db.execute(
             select(
                 func.count().label("count"),
@@ -595,14 +637,16 @@ async def get_tender_pipeline(
             "sum_cost_m": round(sum_cost / 1_000_000, 1),
         })
 
-    # Win rate: won / (won + lost)
+    # Real counts for won / lost / cancelled
     won_result = await db.execute(select(func.count()).where(Tender.status == "won"))
     lost_result = await db.execute(select(func.count()).where(Tender.status == "lost"))
+    cancelled_result = await db.execute(select(func.count()).where(Tender.status == "cancelled"))
     won_count = won_result.scalar() or 0
     lost_count = lost_result.scalar() or 0
+    cancelled_count = cancelled_result.scalar() or 0
     win_rate = round(won_count / (won_count + lost_count) * 100, 0) if (won_count + lost_count) > 0 else 0
 
-    # Average preparation days (mock: created_at to now for sent tenders)
+    # Average preparation days for sent tenders
     sent_result = await db.execute(
         select(func.avg(func.julianday("now") - func.julianday(Tender.created_at)))
         .where(Tender.status == "sent")
@@ -615,7 +659,7 @@ async def get_tender_pipeline(
             and_(
                 Tender.deadline.isnot(None),
                 Tender.deadline < datetime.now(timezone.utc),
-                ~Tender.status.in_(["won", "lost", "archived"]),
+                ~Tender.status.in_(["won", "lost", "cancelled", "archived"]),
             )
         )
     )
@@ -627,13 +671,16 @@ async def get_tender_pipeline(
         "win_rate": win_rate,
         "avg_prep_days": int(avg_prep),
         "overdue_count": overdue_count,
+        "won_count": won_count,
+        "lost_count": lost_count,
+        "cancelled_count": cancelled_count,
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
 
 
 @router.get("/documents-by-project", response_model=dict)
 async def get_documents_by_project(
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(_get_db),
     current_user: User = Depends(get_current_active_user),
 ):
     """Return document counts grouped by project and status."""
@@ -680,9 +727,119 @@ async def get_documents_by_project(
     }
 
 
+@router.get("/action-items", response_model=dict)
+async def get_action_items(
+    db: AsyncSession = Depends(_get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Return action items requiring attention."""
+    now = datetime.now(timezone.utc)
+    items = []
+
+    # 1. Overdue tasks (due_date < today, not completed)
+    from app.modules.tasks.models import Task
+
+    overdue_tasks_result = await db.execute(
+        select(Task).where(
+            and_(
+                Task.due_date.isnot(None),
+                Task.due_date < now,
+                ~Task.status.in_(["completed", "cancelled", "done"]),
+            )
+        ).limit(10)
+    )
+    overdue_tasks = overdue_tasks_result.scalars().all()
+    for task in overdue_tasks:
+        days_overdue = max(1, (now - task.due_date).days)
+        items.append({
+            "id": f"task_{task.id}",
+            "text": task.title,
+            "deadline": f"Просрочено {days_overdue} дн.",
+            "color": "#DC2626",
+            "action": "Открыть",
+            "type": "task",
+        })
+
+    # 2. Remarks without response (> 3 days old, not closed/resolved)
+    from app.modules.remarks.models import Remark
+
+    three_days_ago = now - timedelta(days=3)
+    old_remarks_result = await db.execute(
+        select(Remark).where(
+            and_(
+                Remark.status.notin_(["closed", "resolved"]),
+                Remark.created_at < three_days_ago,
+            )
+        ).limit(10)
+    )
+    old_remarks = old_remarks_result.scalars().all()
+    for remark in old_remarks:
+        days_old = max(1, (now - remark.created_at).days)
+        items.append({
+            "id": f"remark_{remark.id}",
+            "text": remark.title,
+            "deadline": f"Без ответа {days_old} дн.",
+            "color": "#D4AF37",
+            "action": "Ответить",
+            "type": "remark",
+        })
+
+    # 3. Documents in review > 5 days
+    five_days_ago = now - timedelta(days=5)
+    review_docs_result = await db.execute(
+        select(Document).where(
+            and_(
+                Document.status.in_(["in_review", "review", "pending"]),
+                Document.created_at < five_days_ago,
+            )
+        ).limit(10)
+    )
+    review_docs = review_docs_result.scalars().all()
+    for doc in review_docs:
+        days_old = max(1, (now - doc.created_at).days)
+        items.append({
+            "id": f"doc_{doc.id}",
+            "text": f"Согласование: {doc.name}",
+            "deadline": f"{days_old} дн. на согласовании",
+            "color": "#2563EB",
+            "action": "Перейти",
+            "type": "document",
+        })
+
+    # 4. Tenders with deadline < 7 days (and not finalized)
+    seven_days_future = now + timedelta(days=7)
+    urgent_tenders_result = await db.execute(
+        select(Tender).where(
+            and_(
+                Tender.deadline.isnot(None),
+                Tender.deadline < seven_days_future,
+                Tender.deadline >= now,
+                ~Tender.status.in_(["won", "lost", "archived", "closed"]),
+            )
+        ).limit(10)
+    )
+    urgent_tenders = urgent_tenders_result.scalars().all()
+    for tender in urgent_tenders:
+        days_left = max(1, (tender.deadline - now).days)
+        items.append({
+            "id": f"tender_{tender.id}",
+            "text": tender.name,
+            "deadline": f"Дедлайн через {days_left} дн.",
+            "color": "#8B5CF6",
+            "action": "Подать",
+            "type": "tender",
+        })
+
+    return {
+        "items": items[:10],
+        "total": len(items),
+        "updated_at": now.isoformat(),
+    }
+
+
 @router.get("/production-sqcdp", response_model=dict)
 async def get_production_sqcdp(
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(_get_db),
     current_user: User = Depends(get_current_active_user),
 ):
     """Return SQCDP production metrics."""

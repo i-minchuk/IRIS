@@ -16,7 +16,7 @@ from app.modules.tasks.dto import (
 router = APIRouter(tags=["tasks"])
 
 
-@router.get("", response_model=list[TaskResponse])
+@router.get("", response_model=dict)
 async def list_tasks(
     project_id: Optional[int] = Query(None, description="Filter by project ID"),
     assignee_id: Optional[int] = Query(None, description="Filter by assignee"),
@@ -28,13 +28,15 @@ async def list_tasks(
     due_date_to: Optional[str] = Query(None, description="Filter tasks due up to this date"),
     overdue_only: bool = Query(False, description="Show only overdue tasks"),
     search: Optional[str] = Query(None, description="Search in title/description"),
-    limit: int = Query(100, ge=1, le=500),
-    offset: int = Query(0, ge=0),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    """Get list of tasks with filters."""
+    """Get list of tasks with filters and pagination."""
     from datetime import datetime
+    
+    offset = (page - 1) * page_size
     
     # Build filters
     filters = TaskFilters(
@@ -51,9 +53,16 @@ async def list_tasks(
     )
     
     service = TaskService(db)
-    tasks, total = await service.get_tasks(filters, limit, offset)
+    tasks, total = await service.get_tasks(filters, page_size, offset)
+    items = [service.task_to_response(task) for task in tasks]
     
-    return [service.task_to_response(task) for task in tasks]
+    return {
+        "items": items,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "pages": (total + page_size - 1) // page_size,
+    }
 
 
 @router.post("", response_model=TaskResponse, status_code=status.HTTP_201_CREATED)
@@ -135,3 +144,53 @@ async def delete_task(
     if not success:
         raise HTTPException(status_code=404, detail="Task not found")
     return {"ok": True}
+
+
+@router.post("/{task_id}/start", response_model=TaskResponse)
+async def start_task(
+    task_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Start a task and create a time session."""
+    service = TaskService(db)
+    task = await service.start_task(task_id, current_user.id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return service.task_to_response(task)
+
+
+@router.post("/{task_id}/stop", response_model=TaskResponse)
+async def stop_task(
+    task_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Stop a task and close the active time session."""
+    service = TaskService(db)
+    task = await service.stop_task(task_id, current_user.id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found or no active session")
+    return service.task_to_response(task)
+
+
+@router.get("/{task_id}/time", response_model=dict)
+async def get_task_time(
+    task_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Get total time spent on a task."""
+    service = TaskService(db)
+    total_seconds = await service.get_task_total_time(task_id)
+    return {"task_id": task_id, "total_seconds": total_seconds}
+
+
+@router.get("/recommendations")
+async def get_recommendations(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get AI-powered task recommendations for current user."""
+    from app.ai.recommendations import get_task_recommendations
+    return await get_task_recommendations(current_user.id, db)

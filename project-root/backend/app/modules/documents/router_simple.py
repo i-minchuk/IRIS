@@ -21,7 +21,7 @@ async def list_documents(
     document_type: Optional[str] = Query(None, description="Filter by document type"),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(lambda: get_db(read_only=True)),
     current_user: User = Depends(get_current_active_user),
 ):
     """List documents with optional filters."""

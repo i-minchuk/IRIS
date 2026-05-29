@@ -25,7 +25,7 @@ export const ProjectTasksPage: React.FC = () => {
   const [page, setPage] = useState(1);
   const pageSize = 50;
 
-  const { tasks, loading, statistics, error, refetch, updateTaskStatus } = useTasks(filters, page, pageSize);
+  const { tasks, loading, statistics, error, refetch, updateTaskStatus, startTask, stopTask, activeTaskId, taskTimers } = useTasks(filters, page, pageSize);
 
   const handleFilterChange = (newFilters: Partial<TaskFilters>) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
@@ -117,6 +117,10 @@ export const ProjectTasksPage: React.FC = () => {
               currentPage={page}
               pageSize={pageSize}
               totalCount={statistics?.total || 0}
+              onStartTask={startTask}
+              onStopTask={stopTask}
+              activeTaskId={activeTaskId}
+              taskTimers={taskTimers}
             />
           )}
         </div>
@@ -136,4 +140,8 @@ export const ProjectTasksPage: React.FC = () => {
       </div>
     </div>
   );
-};
+}
+
+
+
+export default ProjectTasksPage;

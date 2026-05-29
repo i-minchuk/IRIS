@@ -5,30 +5,55 @@ from pydantic import BaseModel, ConfigDict
 
 
 class DocumentBase(BaseModel):
-    title: str
-    document_type: str = "specification"
+    name: str
+    doc_type: str = "specification"
     status: str = "draft"
-    version: str = "1.0"
-    file_path: Optional[str] = None
+    number: str = ""
 
 
 class DocumentCreate(DocumentBase):
     project_id: int
-    created_by_id: Optional[int] = None
+    stage_id: Optional[int] = None
+    kit_id: Optional[int] = None
+    section_id: Optional[int] = None
+    author_id: Optional[int] = None
+    crs_code: Optional[str] = None
+    content: Optional[dict] = None
+    variables_snapshot: Optional[dict] = None
 
 
 class DocumentUpdate(BaseModel):
-    title: Optional[str] = None
-    document_type: Optional[str] = None
+    name: Optional[str] = None
+    doc_type: Optional[str] = None
     status: Optional[str] = None
-    version: Optional[str] = None
-    file_path: Optional[str] = None
+    number: Optional[str] = None
+    crs_code: Optional[str] = None
+    content: Optional[dict] = None
+    variables_snapshot: Optional[dict] = None
+    section_id: Optional[int] = None
+    kit_id: Optional[int] = None
+    stage_id: Optional[int] = None
 
 
 class DocumentResponse(DocumentBase):
     id: int
     project_id: int
-    created_by_id: Optional[int]
+    stage_id: Optional[int] = None
+    kit_id: Optional[int] = None
+    section_id: Optional[int] = None
+    author_id: int
+    checker_id: Optional[int] = None
+    approver_id: Optional[int] = None
+    locked_by_id: Optional[int] = None
+    locked_at: Optional[datetime] = None
+    crs_code: Optional[str] = None
+    crs_approved_date: Optional[datetime] = None
+    content: Optional[dict] = None
+    variables_snapshot: Optional[dict] = None
+    current_revision_id: Optional[int] = None
+    operation_id: Optional[int] = None
+    ai_classified_type: Optional[str] = None
+    ai_confidence: Optional[float] = None
     created_at: datetime
     updated_at: datetime
 

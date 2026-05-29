@@ -12,7 +12,9 @@ class EngineerMetric(Base):
     __tablename__ = "engineer_metrics"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(Integer, nullable=False, unique=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True
+    )
     total_points: Mapped[int] = mapped_column(Integer, default=0)
     xp: Mapped[int] = mapped_column(Integer, default=0)
     rank: Mapped[str] = mapped_column(String(50), default="junior")
@@ -22,12 +24,16 @@ class EngineerMetric(Base):
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
 
+    user: Mapped["User"] = relationship("User", backref="engineer_metrics")
+
 
 class GamificationEvent(Base):
     __tablename__ = "gamification_events"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     project_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     event_type: Mapped[str] = mapped_column(String(100), nullable=False)
     points_delta: Mapped[int] = mapped_column(Integer, default=0)
@@ -41,12 +47,16 @@ class GamificationEvent(Base):
     ref_task_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     comment: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
+    user: Mapped["User"] = relationship("User", backref="gamification_events")
+
 
 class GamificationBadge(Base):
     __tablename__ = "gamification_badges"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     badge_id: Mapped[str] = mapped_column(String(100), nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(String(500), nullable=False)
@@ -54,6 +64,8 @@ class GamificationBadge(Base):
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
     meta: Mapped[dict] = mapped_column("metadata", JSON, default=dict)
+
+    user: Mapped["User"] = relationship("User", backref="gamification_badges")
 
     __table_args__ = (
         {"sqlite_autoincrement": True},
@@ -64,7 +76,9 @@ class DailyQuest(Base):
     __tablename__ = "daily_quests"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     quest_type: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(String(500), nullable=False)
@@ -76,12 +90,16 @@ class DailyQuest(Base):
     is_completed: Mapped[bool] = mapped_column(Boolean, default=False)
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
+    user: Mapped["User"] = relationship("User", backref="daily_quests")
+
 
 class ComboAchievement(Base):
     __tablename__ = "combo_achievements"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     combo_type: Mapped[str] = mapped_column(String(100), nullable=False)
     current_count: Mapped[int] = mapped_column(Integer, default=0)
     max_count: Mapped[int] = mapped_column(Integer, default=10)
@@ -89,12 +107,16 @@ class ComboAchievement(Base):
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
+    user: Mapped["User"] = relationship("User", backref="combo_achievements")
+
 
 class Notification(Base):
     __tablename__ = "notifications"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     type: Mapped[str] = mapped_column(String(100), nullable=False)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     message: Mapped[str] = mapped_column(Text, nullable=False)
@@ -103,3 +125,5 @@ class Notification(Base):
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
     meta: Mapped[dict] = mapped_column("metadata", JSON, default=dict)
+
+    user: Mapped["User"] = relationship("User", backref="notifications")

@@ -9,7 +9,6 @@ from app.core.config import settings
 from app.modules.auth.models import User
 from app.modules.projects.models import Project
 from app.modules.documents.models import Document
-from app.modules.documents.models import DocumentRemark
 from app.modules.tenders.models import Tender
 
 
@@ -150,44 +149,7 @@ async def seed_db():
 
         await session.commit()
 
-        # 4. Создаём замечания (DocumentRemark)
-        remarks_data = [
-            {
-                "document_id": 1,
-                "title": "Несоответствие отметок высот",
-                "description": "Отметки высот на чертеже АР-001 не совпадают с разрезом АР-002",
-                "remark_type": "customer",
-                "severity": "major",
-                "status": "new",
-                "category": "архитектура",
-            },
-            {
-                "document_id": 2,
-                "title": "Отсутствует привязка колонн",
-                "description": "На плане этажа КР-001 не указаны оси привязки колонн",
-                "remark_type": "internal",
-                "severity": "major",
-                "status": "acknowledged",
-                "category": "конструктив",
-            },
-            {
-                "document_id": 3,
-                "title": "Проверка сечения балок",
-                "description": "Требуется проверить сечение балок перекрытия на прочность",
-                "remark_type": "internal",
-                "severity": "minor",
-                "status": "resolved_pending",
-                "category": "расчёт",
-            },
-        ]
-
-        for rem_data in remarks_data:
-            session.add(DocumentRemark(**rem_data))
-            print(f"Created remark: {rem_data['title']}")
-
-        await session.commit()
-
-        # 5. Создаём тендеры
+        # 4. Создаём тендеры
         tenders_data = [
             {
                 "name": "Генеральный подряд на строительство ЖК «Северная Звезда»",

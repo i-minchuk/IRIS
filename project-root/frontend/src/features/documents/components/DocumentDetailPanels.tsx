@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { DocumentDetail } from '@/api/documents';
+import { classifyDocument } from '@/api/documents';
 
 interface Props {
   doc: DocumentDetail;
@@ -8,6 +9,22 @@ interface Props {
 export const DocumentDetailPanels: React.FC<Props> = ({ doc }) => {
   const openRemarks = doc.remarks?.filter((r) => r.status !== 'closed' && r.status !== 'resolved_confirmed').length || 0;
   const totalRevisions = doc.revisions?.length || 0;
+  const [classifying, setClassifying] = useState(false);
+  const [aiResult, setAiResult] = useState<{ type: string; confidence: number } | null>(
+    doc.ai_classified_type ? { type: doc.ai_classified_type, confidence: doc.ai_confidence || 0 } : null
+  );
+
+  const handleClassify = async () => {
+    setClassifying(true);
+    try {
+      const res = await classifyDocument(doc.id);
+      setAiResult({ type: res.type, confidence: res.confidence });
+    } catch {
+      // ignore
+    } finally {
+      setClassifying(false);
+    }
+  };
 
   return (
     <div className="grid grid-cols-4 gap-3 mt-3">
@@ -37,10 +54,26 @@ export const DocumentDetailPanels: React.FC<Props> = ({ doc }) => {
       </div>
 
       <div className="bg-gray-50 dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-700 p-2">
-        <div className="text-[10px] text-gray-400 dark:text-gray-500 uppercase font-semibold">Согласование</div>
+        <div className="text-[10px] text-gray-400 dark:text-gray-500 uppercase font-semibold flex justify-between items-center">
+          <span>AI Классификация</span>
+          <button
+            onClick={handleClassify}
+            disabled={classifying}
+            className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 hover:bg-emerald-200 disabled:opacity-50"
+            title="Запустить AI-классификацию"
+          >
+            {classifying ? '…' : '▶'}
+          </button>
+        </div>
         <div className="text-xs text-gray-700 dark:text-gray-300 mt-1">
-          <div>Статус: <span className="font-medium">{doc.status}</span></div>
-          <div>CRS: <span className="font-medium">{doc.crs_code ? `Код ${doc.crs_code}` : 'Ожидание'}</span></div>
+          {aiResult ? (
+            <>
+              <div>Тип: <span className="font-medium">{aiResult.type}</span></div>
+              <div>Уверенность: <span className="font-medium">{(aiResult.confidence * 100).toFixed(0)}%</span></div>
+            </>
+          ) : (
+            <div className="text-gray-400 dark:text-gray-500">Не классифицирован</div>
+          )}
         </div>
       </div>
     </div>

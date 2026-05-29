@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import { X } from 'lucide-react';
 import { RemarkCreateInput, RemarkPriority, RemarkCategory, RemarkSource, RemarkTag } from '@/types/remarks';
 
@@ -65,8 +66,15 @@ export const RemarkModal: React.FC<RemarkModalProps> = ({
         description: '',
         tag_ids: [],
       });
-    } catch (error) {
-      console.error('Failed to create remark:', error);
+    } catch (error: any) {
+      const status = error?.response?.status;
+      let message = 'Не удалось создать замечание';
+      if (status === 400) message = 'Ошибка в данных';
+      else if (status === 403) message = 'Доступ запрещён';
+      else if (status === 404) message = 'Не найдено';
+      else if (status === 422) message = 'Ошибка валидации';
+      else if (status >= 500) message = 'Ошибка сервера';
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }

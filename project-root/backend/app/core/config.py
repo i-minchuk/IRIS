@@ -13,27 +13,33 @@ BASE_DIR = Path(__file__).resolve().parents[2]
 
 def is_secure_secret_key(secret_key: str) -> bool:
     """Проверка SECRET_KEY на безопасность для production."""
-    if not secret_key:
+    if not secret_key or len(secret_key) < 32:
         return False
-    
-    if len(secret_key) < 32:
-        return False
-    
+
     default_keys = [
         "your-super-secret-key-change-in-production-please",
         "change-me-in-production-min-32-chars-long",
         "secret",
         "password",
         "12345678901234567890123456789012",
+        "admin",
+        "root",
+        "toor",
+        "qwerty",
+        "12345678",
     ]
 
-    if secret_key in default_keys:
+    if secret_key.lower() in [k.lower() for k in default_keys]:
         return False
-    
-    has_letters = any(c.isalpha() for c in secret_key)
-    has_digits = any(c.isdigit() for c in secret_key)
-    
-    return has_letters and has_digits
+
+    # Проверка энтропии
+    has_upper = any(c.isupper() for c in secret_key)
+    has_lower = any(c.islower() for c in secret_key)
+    has_digit = any(c.isdigit() for c in secret_key)
+    has_special = any(c in "!@#$%^&*()_+-=[]{}|;:,.<>?" for c in secret_key)
+
+    score = sum([has_upper, has_lower, has_digit, has_special])
+    return score >= 3  # Минимум 3 из 4 категорий
 
 
 class Settings(BaseSettings):
@@ -51,6 +57,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = Field(
         default="postgresql+asyncpg://postgres@localhost:5432/iris"
     )
+    DATABASE_REPLICA_URL: Optional[str] = Field(default=None)
 
     SECRET_KEY: str = Field(
         default="your-super-secret-key-change-in-production-please"
@@ -79,10 +86,12 @@ class Settings(BaseSettings):
 
     REDIS_URL: str = "redis://localhost:6379"
 
-    DB_POOL_SIZE: int = 10
-    DB_MAX_OVERFLOW: int = 20
+    DB_POOL_SIZE: int = 20
+    DB_MAX_OVERFLOW: int = 30
     DB_POOL_TIMEOUT: int = 30
     DB_POOL_RECYCLE: int = 3600
+    DB_POOL_PRE_PING: bool = True
+    DB_ECHO: bool = False
 
     # AI настройки — ВСЕ с default, чтобы CI не падал
     OPENAI_API_KEY: Optional[str] = Field(default=None)
@@ -97,6 +106,22 @@ class Settings(BaseSettings):
     CHUNK_SIZE: int = 1000
     CHUNK_OVERLAP: int = 200
     MAX_CONTEXT_TOKENS: int = 8000
+
+    TELEGRAM_BOT_TOKEN: Optional[str] = None
+
+    ENCRYPTION_KEY: Optional[str] = None
+
+    # Email
+    SENDGRID_API_KEY: Optional[str] = Field(default=None)
+    FROM_EMAIL: str = "noreply@dokpotok.ru"
+
+    # SAML / SSO
+    BASE_URL: str = "http://localhost:8000"
+    SAML_SP_CERT: Optional[str] = None
+    SAML_SP_KEY: Optional[str] = None
+    SAML_IDP_ENTITY_ID: Optional[str] = None
+    SAML_IDP_SSO_URL: Optional[str] = None
+    SAML_IDP_CERT: Optional[str] = None
 
     def model_post_init(self, __context) -> None:
         if not is_secure_secret_key(self.SECRET_KEY):

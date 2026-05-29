@@ -63,7 +63,6 @@ class Task(Base):
     __table_args__ = (
         Index("idx_tasks_project_status", "project_id", "status"),
         Index("idx_tasks_assignee_status", "assignee_id", "status"),
-        Index("idx_tasks_due_date", "due_date", "status"),
         Index("idx_tasks_type_status", "type", "status"),
         Index("idx_tasks_priority", "priority"),
         Index("idx_tasks_due_date_status", "due_date", "status"),
@@ -78,4 +77,5 @@ class Task(Base):
     operation: Mapped[Optional["Operation"]] = relationship(back_populates="tasks")
     document: Mapped[Optional["Document"]] = relationship(back_populates="tasks")
     work_center: Mapped[Optional["WorkCenter"]] = relationship()
+    time_sessions: Mapped[list["TimeSession"]] = relationship(back_populates="task")
     

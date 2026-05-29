@@ -12,6 +12,8 @@ from app.modules.projects.models import Project
 from app.modules.documents.models import Document
 from app.modules.operations.models import Operation
 from app.modules.routes.models import Route
+from app.modules.gamification.service import GamificationService
+from app.modules.time_tracking.models import TimeSession
 
 
 class TaskService:
@@ -159,6 +161,82 @@ class TaskService:
         await self.db.delete(task)
         await self.db.commit()
         return True
+
+    async def start_task(self, task_id: int, user_id: int) -> Optional[Task]:
+        """Start a task: set status to in_progress and create a time session."""
+        task = await self.get_task(task_id)
+        if not task:
+            return None
+
+        now = datetime.now(timezone.utc)
+
+        # Update task status
+        if task.status != TaskStatus.IN_PROGRESS:
+            old_status = task.status
+            task.status = TaskStatus.IN_PROGRESS
+            if not task.started_at:
+                task.started_at = now
+            task.updated_at = now
+            await self._sync_on_status_change(task, old_status, TaskStatus.IN_PROGRESS)
+
+        # Create time session
+        session = TimeSession(
+            user_id=user_id,
+            task_id=task_id,
+            project_id=task.project_id,
+            started_at=now,
+        )
+        self.db.add(session)
+        await self.db.commit()
+        await self.db.refresh(task)
+        return await self.get_task(task_id)
+
+    async def stop_task(self, task_id: int, user_id: int) -> Optional[Task]:
+        """Stop a task: close the active time session and update actual_hours."""
+        task = await self.get_task(task_id)
+        if not task:
+            return None
+
+        now = datetime.now(timezone.utc)
+
+        # Find active session for this task and user
+        result = await self.db.execute(
+            select(TimeSession)
+            .where(
+                TimeSession.task_id == task_id,
+                TimeSession.user_id == user_id,
+                TimeSession.ended_at.is_(None)
+            )
+            .order_by(TimeSession.started_at.desc())
+        )
+        session = result.scalar_one_or_none()
+        if not session:
+            return None
+
+        session.ended_at = now
+        session.total_duration = int((session.ended_at - session.started_at).total_seconds())
+        session.active_time = session.total_duration
+
+        # Update task actual_hours
+        duration_hours = session.total_duration / 3600.0
+        if task.actual_hours:
+            task.actual_hours += duration_hours
+        else:
+            task.actual_hours = duration_hours
+        task.updated_at = now
+
+        await self.db.commit()
+        await self.db.refresh(task)
+        return await self.get_task(task_id)
+
+    async def get_task_total_time(self, task_id: int) -> int:
+        """Get total time spent on a task in seconds."""
+        result = await self.db.execute(
+            select(func.sum(TimeSession.total_duration))
+            .where(TimeSession.task_id == task_id, TimeSession.ended_at.isnot(None))
+        )
+        total = result.scalar()
+        return int(total) if total else 0
     
     async def _sync_on_status_change(self, task: Task, old_status: TaskStatus, new_status: TaskStatus):
         """Synchronize task status change with production tables (operations, documents, projects).
@@ -194,6 +272,16 @@ class TaskService:
                     
                     # Update project forecast if this is a critical path operation
                     await self._update_project_forecast(operation)
+                    
+                    # Gamification: award XP for completing production task
+                    if task.assignee_id:
+                        gamification = GamificationService(self.db)
+                        await gamification.award_event(
+                            user_id=task.assignee_id,
+                            event_type="task_completed",
+                            points=10,
+                            xp=15,
+                        )
                 
                 elif new_status == TaskStatus.CANCELLED and old_status != TaskStatus.CANCELLED:
                     # Cancel operation
@@ -208,6 +296,16 @@ class TaskService:
                     # Mark document as ready
                     if not document.actual_ready:
                         document.actual_ready = now
+                    
+                    # Gamification: award XP for completing document task
+                    if task.assignee_id:
+                        gamification = GamificationService(self.db)
+                        await gamification.award_event(
+                            user_id=task.assignee_id,
+                            event_type="document_task_completed",
+                            points=15,
+                            xp=20,
+                        )
                 
                 elif new_status == TaskStatus.ON_HOLD and old_status != TaskStatus.ON_HOLD:
                     # Pause document work
@@ -230,6 +328,16 @@ class TaskService:
                     elif task.type == TaskType.REVIEW:
                         # Could update document.reviewed_at, etc.
                         pass
+                    
+                    # Gamification: award XP for approval/review completion
+                    if task.assignee_id:
+                        gamification = GamificationService(self.db)
+                        await gamification.award_event(
+                            user_id=task.assignee_id,
+                            event_type="approval_completed",
+                            points=20,
+                            xp=25,
+                        )
     
     async def _update_project_forecast(self, operation: Operation):
         """Update project forecast finish based on operation completion."""

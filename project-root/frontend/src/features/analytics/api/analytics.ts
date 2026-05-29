@@ -101,6 +101,9 @@ export interface TenderPipelineData {
   win_rate: number;
   avg_prep_days: number;
   overdue_count: number;
+  won_count: number;
+  lost_count: number;
+  cancelled_count: number;
   updated_at: string;
 }
 
@@ -174,14 +177,59 @@ export interface SparklinesData {
   updated_at: string;
 }
 
+export interface TrendPoint {
+  label: string;
+  value: number;
+}
+
+export interface TrendData {
+  points: TrendPoint[];
+  period: string;
+  updated_at: string;
+}
+
+export interface PortfolioChartItem {
+  type: string;
+  share: number;
+  revenue: number;
+  color: string;
+}
+
+export interface PortfolioChartData {
+  items: PortfolioChartItem[];
+  period: string;
+  updated_at: string;
+}
+
+export interface ActionItem {
+  id: string;
+  text: string;
+  deadline: string;
+  color: string;
+  action: string;
+  type?: string;
+}
+
+export interface ActionItemsData {
+  items: ActionItem[];
+  total: number;
+  updated_at: string;
+}
+
+export type AnalyticsPeriod = 'today' | 'week' | 'month' | 'quarter';
+
 export const analyticsApi = {
   getDashboard: () => client.get<DashboardData>('/analytics/dashboard'),
   getKpiTiles: () => client.get<KpiTilesResponse>('/analytics/kpi'),
-  getPortfolio: () => client.get<PortfolioData>('/analytics/portfolio'),
+  getPortfolio: (period?: AnalyticsPeriod) =>
+    client.get<PortfolioChartData>('/analytics/portfolio', { params: period ? { period } : undefined }),
   getAlerts: () => client.get<AlertsData>('/analytics/alerts'),
   getTenderPipeline: () => client.get<TenderPipelineData>('/analytics/tender-pipeline'),
   getDocumentsByProject: () => client.get<DocumentsByProjectData>('/analytics/documents-by-project'),
   getProductionSqcdp: () => client.get<SqcdpData>('/analytics/production-sqcdp'),
   getShipmentsCalendar: () => client.get<ShipmentCalendarData>('/analytics/shipments/calendar'),
   getSparklines: () => client.get<SparklinesData>('/analytics/sparklines'),
+  getTrend: (period?: AnalyticsPeriod) =>
+    client.get<TrendData>('/analytics/trend', { params: period ? { period } : undefined }),
+  getActionItems: () => client.get<ActionItemsData>('/analytics/action-items'),
 };

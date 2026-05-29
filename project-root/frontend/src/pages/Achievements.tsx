@@ -23,7 +23,7 @@ import {
   Zap,
   Info,
 } from 'lucide-react';
-import { Card, Button, Badge } from '../components/ui';
+import { Card, Button } from '../components/ui';
 
 interface BadgeProgress {
   badge: BadgeType;
@@ -370,9 +370,9 @@ export default function Achievements() {
                   <p className="text-sm text-gray-600 dark:text-gray-400">
                     {badge.desc}
                   </p>
-                  <Badge className="mt-2 bg-green-100 text-green-700 border-none">
+                  <span className="mt-2 inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium bg-green-100 text-green-700 border border-green-200">
                     Получен
-                  </Badge>
+                  </span>
                 </div>
               </Card>
             ))}
@@ -460,9 +460,9 @@ export default function Achievements() {
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     {badge.desc}
                   </p>
-                  <Badge className="mt-2 bg-gray-200 text-gray-600 dark:text-gray-400 border-none">
+                  <span className="mt-2 inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium bg-gray-200 text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600">
                     Заблокирован
-                  </Badge>
+                  </span>
                 </div>
               </Card>
             ))}

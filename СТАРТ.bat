@@ -1,53 +1,72 @@
 @echo off
+chcp 1251 >nul
+title DokPotok IRIS - Start
+color 0B
+
+set "PROJECT_ROOT=%~dp0project-root"
+set "BACKEND_DIR=%PROJECT_ROOT%\backend"
+set "FRONTEND_DIR=%PROJECT_ROOT%\frontend"
+set "VENV_PYTHON=%BACKEND_DIR%\.venv\Scripts\python.exe"
+
+echo.
 echo ============================================
-echo    ДОКПОТОК IRIS - ЗАПУСК СИСТЕМЫ
+echo    DokPotok IRIS - Start System
 echo ============================================
 echo.
 
-echo [1/4] Проверка PostgreSQL...
-sc query postgresql-x64-16 | find "RUNNING" >nul
-if %errorlevel% neq 0 (
-    echo        PostgreSQL не запущен. Запускаем...
-    net start postgresql-x64-16
-    if %errorlevel% neq 0 (
-        echo        ОШИБКА: Не удалось запустить PostgreSQL!
-        echo        Запустите вручную: services.msc -> PostgreSQL -> Запустить
-        pause
-        exit /b 1
-    )
-    echo        PostgreSQL запущен
-    timeout /t 3 /nobreak >nul
+echo [1/5] Checking environment...
+if not exist "%VENV_PYTHON%" (
+    echo    ERROR: Python venv not found
+    echo    Path: %VENV_PYTHON%
+    pause
+    exit /b 1
+)
+echo    OK: Python venv found
+
+echo.
+echo [2/5] Stopping old processes...
+taskkill /F /IM python.exe >nul 2>&1
+taskkill /F /IM node.exe >nul 2>&1
+ping -n 4 127.0.0.1 >nul
+echo    OK: Old processes stopped
+
+echo.
+echo [3/5] Starting Backend (port 8000)...
+start "DokPotok IRIS - Backend" /D "%BACKEND_DIR%" cmd /k ""%VENV_PYTHON%" -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+ping -n 6 127.0.0.1 >nul
+
+curl -s --max-time 5 http://localhost:8000/health >nul 2>&1
+if %errorlevel% equ 0 (
+    echo    OK: Backend is running
 ) else (
-    echo        PostgreSQL уже работает
+    echo    WAIT: Backend is starting...
+    ping -n 5 127.0.0.1 >nul
 )
 
 echo.
-echo [2/4] Запуск Backend (порт 8000)...
-start "Backend API" powershell -NoExit -Command "cd C:\Users\Novikova\Desktop\ДокПоток_IRIS\project-root\backend; .\.venv\Scripts\Activate.ps1; python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
-timeout /t 2 /nobreak >nul
+echo [4/5] Starting Frontend (port 5173)...
+start "DokPotok IRIS - Frontend" /D "%FRONTEND_DIR%" cmd /k "npm run dev"
+ping -n 6 127.0.0.1 >nul
+echo    OK: Frontend started
 
-echo [3/4] Запуск Frontend (порт 5173)...
-start "Frontend" powershell -NoExit -Command "cd C:\Users\Novikova\Desktop\ДокПоток_IRIS\project-root\frontend; npm run dev"
-timeout /t 3 /nobreak >nul
-
-echo [4/4] Открытие браузера...
+echo.
+echo [5/5] Opening browser...
 start http://localhost:5173
+echo    OK: Browser opened
 
 echo.
 echo ============================================
-echo    СИСТЕМА ЗАПУЩЕНА!
+echo    System is running!
 echo ============================================
 echo.
 echo    Frontend:  http://localhost:5173
 echo    Backend:   http://localhost:8000
 echo    API Docs:  http://localhost:8000/docs
 echo.
-echo    Вход:
-echo       Email: admin@iris.local
-echo       Пароль: admin123
+echo    Login:    admin
+echo    Password: admin123
 echo.
-echo    Не закрывайте окна PowerShell!
-echo       Это серверы системы.
+echo    Do not close Backend and Frontend windows!
 echo.
 echo ============================================
 pause

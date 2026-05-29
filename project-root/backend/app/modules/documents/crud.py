@@ -25,7 +25,7 @@ async def get_documents(
     if status:
         filters.append(Document.status == status)
     if document_type:
-        filters.append(Document.document_type == document_type)
+        filters.append(Document.doc_type == document_type)
     
     if filters:
         query = query.where(and_(*filters))

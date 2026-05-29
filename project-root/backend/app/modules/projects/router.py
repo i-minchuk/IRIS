@@ -1,27 +1,34 @@
 """Projects API router."""
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 
 from app.db.session import get_db
 from app.modules.auth.deps import get_current_active_user
 from app.modules.auth.models import User
 from app.modules.projects.models import Project, Stage, Kit, Section
+from app.core.cache import invalidate_cache
 
 router = APIRouter(tags=["projects"])
 
 
-@router.get("", response_model=list)
+@router.get("", response_model=dict)
 async def list_projects(
-    db: AsyncSession = Depends(get_db),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    db: AsyncSession = Depends(lambda: get_db(read_only=True)),
     current_user: User = Depends(get_current_active_user),
 ):
-    result = await db.execute(select(Project).order_by(Project.created_at.desc()))
+    offset = (page - 1) * page_size
+    total = await db.scalar(select(func.count()).select_from(Project))
+    result = await db.execute(
+        select(Project).order_by(Project.created_at.desc()).offset(offset).limit(page_size)
+    )
     projects = result.scalars().all()
-    return [
+    items = [
         {
             "id": p.id,
             "name": p.name,
@@ -34,6 +41,13 @@ async def list_projects(
         }
         for p in projects
     ]
+    return {
+        "items": items,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "pages": (total + page_size - 1) // page_size,
+    }
 
 
 @router.post("", response_model=dict)
@@ -56,6 +70,8 @@ async def create_project(
     db.add(project)
     await db.commit()
     await db.refresh(project)
+    await invalidate_cache("cache:*portfolio*")
+    await invalidate_cache("cache:*dashboard*")
     return {
         "id": project.id,
         "name": project.name,

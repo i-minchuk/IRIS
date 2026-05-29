@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTheme } from '@/providers/ThemeProvider';
-import { Eye, EyeOff, ArrowLeft, LogIn, User, Lock } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft, LogIn, User, Lock, Shield } from 'lucide-react';
 import { useZoomStore } from '@/features/zoom/store/zoomStore';
+import { authApi } from '@/features/auth/api/authApi';
+import { useAuthStore } from '@/features/auth/store/authStore';
 
 export default function LoginPage() {
   const { theme } = useTheme();
@@ -19,15 +21,48 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const setAuth = useAuthStore((state) => state.setAuth);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (!login.trim() || !password.trim()) {
+      setError('Введите логин и пароль.');
+      return;
+    }
+    if (login.trim().length < 3) {
+      setError('Логин должен содержать минимум 3 символа.');
+      return;
+    }
+    if (password.length < 6) {
+      setError('Пароль должен содержать минимум 6 символов.');
+      return;
+    }
+
     setIsLoading(true);
 
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const tokenResponse = await authApi.login({ username: login.trim(), password });
+
+      localStorage.setItem('access_token', tokenResponse.access_token);
+      localStorage.setItem('refresh_token', tokenResponse.refresh_token);
+
+      const apiUser = await authApi.getCurrentUser();
+      const user = {
+        id: apiUser.id,
+        email: apiUser.email,
+        full_name: apiUser.full_name,
+        role: (apiUser.role || 'engineer') as import('@/features/auth/store/authStore').UserRole,
+        is_active: apiUser.is_active,
+      };
+      setAuth(user, tokenResponse.access_token);
       navigate('/dashboard', { replace: true });
-    }, 800);
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Ошибка входа. Проверьте соединение с сервером.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -91,7 +126,7 @@ export default function LoginPage() {
               <label htmlFor="login" className="block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: isDark ? '#8B92A8' : '#6B7280' }}>Логин</label>
               <div className="relative">
                 <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: isDark ? '#5A6270' : '#A0A8B8' }} />
-                <input id="login" type="text" value={login} onChange={(e) => setLogin(e.target.value)} placeholder="Введите логин" autoComplete="username"
+                <input id="login" type="text" value={login} onChange={(e) => setLogin(e.target.value)} placeholder="Введите логин" autoComplete="username" required minLength={3}
                   className="w-full h-11 pl-10 pr-3 rounded-lg text-sm outline-none"
                   style={{ background: isDark ? '#1A1F2E' : '#FFFFFF', border: `1px solid ${isDark ? '#3D4554' : '#CED2DD'}`, color: isDark ? '#E2E5EC' : '#1E2230' }} />
               </div>
@@ -101,7 +136,7 @@ export default function LoginPage() {
               <label htmlFor="password" className="block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: isDark ? '#8B92A8' : '#6B7280' }}>Пароль</label>
               <div className="relative">
                 <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: isDark ? '#5A6270' : '#A0A8B8' }} />
-                <input id="password" type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Введите пароль" autoComplete="current-password"
+                <input id="password" type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Введите пароль" autoComplete="current-password" required minLength={6}
                   className="w-full h-11 pl-10 pr-10 rounded-lg text-sm outline-none"
                   style={{ background: isDark ? '#1A1F2E' : '#FFFFFF', border: `1px solid ${isDark ? '#3D4554' : '#CED2DD'}`, color: isDark ? '#E2E5EC' : '#1E2230' }} />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none p-0 cursor-pointer" style={{ color: isDark ? '#5A6270' : '#A0A8B8' }}>
@@ -117,7 +152,24 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <p className="text-center text-[11px] mt-4" style={{ color: isDark ? '#8B92A8' : '#6B7280' }}>Демо: любой логин и пароль</p>
+          <div className="flex items-center justify-between mt-5">
+            <Link to="/register" className="text-[13px] font-semibold hover:underline" style={{ color: isDark ? '#5C75E0' : '#3B4FA8' }}>Зарегистрироваться</Link>
+            <Link to="/forgot-password" className="text-[13px] hover:underline" style={{ color: isDark ? '#8B92A8' : '#6B7280' }}>Забыли пароль?</Link>
+          </div>
+
+          <div className="mt-6 pt-5" style={{ borderTop: `1px solid ${isDark ? '#3D4554' : '#CED2DD'}` }}>
+            <a
+              href="/api/v1/auth/saml/login"
+              className="w-full h-11 rounded-lg font-semibold text-sm flex items-center justify-center gap-2"
+              style={{
+                background: isDark ? '#1A1F2E' : '#F5F6FA',
+                color: isDark ? '#E2E5EC' : '#1E2230',
+                border: `1px solid ${isDark ? '#3D4554' : '#CED2DD'}`,
+              }}
+            >
+              <Shield size={16} /> Войти через SSO
+            </a>
+          </div>
         </div>
       </div>
     </div>

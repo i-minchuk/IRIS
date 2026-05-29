@@ -13,6 +13,8 @@ export interface DocumentItem {
   project_id: number;
   section_id?: number;
   current_revision_id?: number | null;
+  ai_classified_type?: string;
+  ai_confidence?: number;
   created_at?: string;
 }
 
@@ -31,7 +33,7 @@ export interface DocumentDetail extends DocumentItem {
   discipline?: string;
   locked_by_user?: LockedByUser | null;
   revisions: Revision[];
-  remarks: Remark[];
+  remarks: LegacyRemark[];
 }
 
 export interface Revision {
@@ -44,7 +46,7 @@ export interface Revision {
   changes_summary?: string;
 }
 
-export interface Remark {
+export interface LegacyRemark {
   id: number;
   title: string;
   description?: string;
@@ -85,24 +87,6 @@ export const createRevision = async (documentId: number, body: Partial<Revision>
   return data;
 };
 
-export const createRemark = async (documentId: number, body: Partial<Remark>): Promise<Remark> => {
-  const { data } = await client.post(`/api/v1/documents/${documentId}/remarks`, body);
-  return data;
-};
-
-export const updateRemarkStatus = async (remarkId: number, body: { status: string; response?: string; resolution_action?: string }): Promise<Remark> => {
-  const { data } = await client.patch(`/api/v1/documents/remarks/${remarkId}/status`, body);
-  return data;
-};
-
-export interface RemarkFilter {
-  project_id?: number;
-  severity?: string;
-  status?: string;
-  remark_type?: string;
-  category?: string;
-}
-
 export const submitForApproval = async (documentId: number): Promise<{ document_id: number; status: string; workflow_id: number }> => {
   const { data } = await client.post(`/api/v1/documents/${documentId}/submit-for-approval`);
   return data;
@@ -113,7 +97,9 @@ export const submitForReview = async (documentId: number): Promise<{ document_id
   return data;
 };
 
-export const getAllRemarks = async (filters?: RemarkFilter): Promise<Remark[]> => {
-  const { data } = await client.get('/api/v1/documents/remarks/all', { params: filters });
+export const classifyDocument = async (documentId: number): Promise<{ type: string; confidence: number; keywords: string[] }> => {
+  const { data } = await client.post(`/api/v1/documents/${documentId}/classify`);
   return data;
 };
+
+

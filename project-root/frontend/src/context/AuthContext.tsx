@@ -3,13 +3,16 @@ import type { ReactNode } from 'react';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import { authApi } from '@/features/auth/api/authApi';
 
+import type { UserRole } from '@/features/auth/store/authStore';
+
 export interface User {
   id: number;
   email: string;
   full_name: string | null;
   username: string;
-  role: string;
+  role: UserRole;
   is_active: boolean;
+  totp_enabled?: boolean;
 }
 
 interface AuthContextType {
@@ -19,6 +22,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   loginDemo: () => Promise<void>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,8 +35,9 @@ function normalizeUser(raw: unknown): User {
     email,
     full_name: (r?.full_name as string | null) ?? null,
     username: (r?.username as string | undefined) ?? email.split('@')[0],
-    role: (r?.role as string | undefined) ?? 'engineer',
+    role: ((r?.role as string | undefined) ?? 'engineer') as UserRole,
     is_active: Boolean(r?.is_active ?? true),
+    totp_enabled: Boolean(r?.totp_enabled ?? false),
   };
 }
 
@@ -95,6 +100,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     storeLogout();
   }, [storeLogout]);
 
+  const refreshUser = useCallback(async () => {
+    try {
+      const currentUser = await authApi.getCurrentUser();
+      const token = useAuthStore.getState().token || '';
+      setAuth(normalizeUser(currentUser), token || 'restored');
+    } catch {
+      storeLogout();
+    }
+  }, [setAuth, storeLogout]);
+
   const user = storeUser ? normalizeUser(storeUser) : null;
 
   return (
@@ -106,6 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         loginDemo,
         logout,
+        refreshUser,
       }}
     >
       {children}

@@ -222,3 +222,31 @@ class NotificationRepository:
         await self.db.commit()
         await self.db.refresh(notif)
         return notif
+
+    async def create_and_notify(
+        self,
+        user_id: int,
+        type: str,
+        title: str,
+        message: str,
+        user_email: str | None = None,
+        email_notifications_enabled: bool = False,
+        telegram_chat_id: str | None = None,
+    ) -> Notification:
+        notif = await self.create(user_id, type, title, message)
+        if user_email and email_notifications_enabled:
+            from app.core.email import send_notification_email
+
+            await send_notification_email(
+                user_email,
+                type,
+                {"task_title": title, "days": 1},
+            )
+        if telegram_chat_id:
+            from app.core.telegram import send_telegram_message
+
+            await send_telegram_message(
+                telegram_chat_id,
+                f"🔔 <b>{title}</b>\n{message}",
+            )
+        return notif

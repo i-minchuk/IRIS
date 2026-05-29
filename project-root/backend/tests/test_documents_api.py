@@ -117,7 +117,7 @@ class TestGetDocument:
                 assert response.status_code == 200
                 data = response.json()
                 assert data["number"] == "DOC-001"
-                assert data["locked_by_user"] is None
+                assert data["locked_by_id"] is None
             finally:
                 app.dependency_overrides.pop(get_db, None)
 
@@ -139,8 +139,7 @@ class TestGetDocument:
                 response = client.get("/api/v1/documents/1")
                 assert response.status_code == 200
                 data = response.json()
-                assert data["locked_by_user"]["id"] == 2
-                assert data["locked_by_user"]["full_name"] == "Other User"
+                assert data["locked_by_id"] == 2
             finally:
                 app.dependency_overrides.pop(get_db, None)
 
@@ -171,7 +170,7 @@ class TestCreateDocument:
             try:
                 response = client.post(
                     "/api/v1/documents",
-                    json={"number": "DOC-002", "name": "New Doc", "doc_type": "PD", "project_id": 1},
+                    json={"number": "DOC-002", "name": "New Doc", "doc_type": "PD", "project_id": 1, "author_id": 1},
                 )
                 assert response.status_code == 200
                 data = response.json()

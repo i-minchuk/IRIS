@@ -19,7 +19,6 @@ from app.modules.documents.models import (  # noqa
     Document,
     Revision,
     ChangeSheet,
-    DocumentRemark,
     ApprovalWorkflow,
     ApprovalStage,
     DocumentDependency,
@@ -55,3 +54,10 @@ from app.modules.workflow.models import (  # noqa
     WorkflowComment,
     WorkflowAuditLog,
 )
+from app.models.archive import (  # noqa
+    ArchiveEntry,
+    ArchiveMaterial,
+    ArchiveConstruction,
+    ArchiveSearchIndex,
+)
+from app.models.audit import AuditLog  # noqa

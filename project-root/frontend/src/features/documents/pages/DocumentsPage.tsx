@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { getDocument, updateDocument, createDocument, createRevision, createRemark, updateRemarkStatus, type DocumentDetail, type Remark } from '@/api/documents';
+import { getDocument, updateDocument, createDocument, createRevision, type DocumentDetail } from '@/api/documents';
 import { DocumentEditor } from '../components/DocumentEditor';
 import { DocumentDetailPanels } from '../components/DocumentDetailPanels';
 import { projectsApi, type Project, type ProjectTree, type ProjectTreeDoc } from '@/features/projects/api/projects';
@@ -14,12 +14,12 @@ import Input from '@/components/ui/Input';
 import Modal from '@/components/ui/Modal';
 import Badge from '@/components/ui/Badge';
 
-const severityColors: Record<string, string> = {
-  critical: 'bg-red-100 text-red-700',
-  major: 'bg-orange-100 text-orange-700',
-  minor: 'bg-yellow-100 text-yellow-700',
-  note: 'bg-gray-100 text-gray-600',
-};
+// const severityColors: Record<string, string> = {
+//   critical: 'bg-red-100 text-red-700',
+//   major: 'bg-orange-100 text-orange-700',
+//   minor: 'bg-yellow-100 text-yellow-700',
+//   note: 'bg-gray-100 text-gray-600',
+// };
 
 const statusColors: Record<string, string> = {
   draft: 'bg-gray-100 text-gray-600',
@@ -43,8 +43,7 @@ export const DocumentsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'info' | 'editor' | 'revisions' | 'remarks' | 'variables' | 'preview'>('info');
   const [editorContent, setEditorContent] = useState('');
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
-  const [newRemark, setNewRemark] = useState({ title: '', description: '', severity: 'minor' as string });
-  const [showRemarkForm, setShowRemarkForm] = useState(false);
+
   const [renderedContent, setRenderedContent] = useState('');
   const [editorReadOnly, setEditorReadOnly] = useState(false);
   const [lockBanner, setLockBanner] = useState<string | null>(null);
@@ -179,19 +178,6 @@ export const DocumentsPage: React.FC = () => {
     }
   };
 
-  const handleAddRemark = async () => {
-    if (!selectedDoc) return;
-    await createRemark(selectedDoc.id, { ...newRemark, remark_type: 'internal' });
-    setShowRemarkForm(false);
-    setNewRemark({ title: '', description: '', severity: 'minor' });
-    handleSelectDoc({ id: selectedDoc.id, number: selectedDoc.number, name: selectedDoc.name, doc_type: selectedDoc.doc_type, status: selectedDoc.status, crs_code: selectedDoc.crs_code });
-  };
-
-  const handleCloseRemark = async (remarkId: number) => {
-    await updateRemarkStatus(remarkId, { status: 'resolved_confirmed', response: 'Исправлено' });
-    if (selectedDoc) handleSelectDoc({ id: selectedDoc.id, number: selectedDoc.number, name: selectedDoc.name, doc_type: selectedDoc.doc_type, status: selectedDoc.status, crs_code: selectedDoc.crs_code });
-  };
-
   return (
     <div className="space-y-4 h-[calc(100vh-8rem)] flex flex-col">
       {/* Toolbar */}
@@ -265,7 +251,7 @@ export const DocumentsPage: React.FC = () => {
                       {tab === 'info' && 'Информация'}
                       {tab === 'editor' && 'Редактор'}
                       {tab === 'revisions' && `Ревизии (${selectedDoc.revisions?.length || 0})`}
-                      {tab === 'remarks' && `Замечания (${selectedDoc.remarks?.length || 0})`}
+                      {tab === 'remarks' && 'Замечания'}
                       {tab === 'variables' && 'Переменные'}
                       {tab === 'preview' && 'Предпросмотр'}
                     </button>
@@ -362,30 +348,9 @@ export const DocumentsPage: React.FC = () => {
 
                 {activeTab === 'remarks' && (
                   <div className="space-y-3">
-                    <div className="flex justify-end">
-                      <Button size="sm" onClick={() => setShowRemarkForm(true)}>+ Добавить замечание</Button>
-                    </div>
-                    {selectedDoc.remarks?.map((remark: Remark) => (
-                      <div key={remark.id} className={`border rounded-lg p-3 ${severityColors[remark.severity] || ''} bg-opacity-20`}>
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h4 className="font-semibold text-sm">{remark.title}</h4>
-                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{(remark as any).description || ''}</p>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <Badge className={severityColors[remark.severity] || ''}>{remark.severity}</Badge>
-                            {remark.status !== 'resolved_confirmed' && (
-                              <Button size="sm" variant="ghost" onClick={() => handleCloseRemark(remark.id)}>Закрыть</Button>
-                            )}
-                          </div>
-                        </div>
-                        <div className="mt-2 text-xs text-gray-400 dark:text-gray-500 flex justify-between">
-                          <span>{remark.remark_type}</span>
-                          <span>{remark.status}</span>
-                        </div>
-                      </div>
-                    ))}
-                    {!selectedDoc.remarks?.length && <p className="text-gray-400 dark:text-gray-500">Нет замечаний</p>}
+                    <p className="text-gray-400 dark:text-gray-500 text-sm">
+                      Замечания управляются в разделе <a href="/remarks" className="text-emerald-600 hover:underline">Замечания</a>.
+                    </p>
                   </div>
                 )}
 
@@ -448,25 +413,7 @@ export const DocumentsPage: React.FC = () => {
         </Modal>
       )}
 
-      {/* Create Remark Modal */}
-      {showRemarkForm && (
-        <Modal title="Новое замечание" isOpen={showRemarkForm} onClose={() => setShowRemarkForm(false)}>
-          <div className="space-y-4">
-            <Input placeholder="Заголовок" value={newRemark.title} onChange={(e) => setNewRemark({ ...newRemark, title: e.target.value })} />
-            <textarea className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm" rows={3} placeholder="Описание" value={newRemark.description} onChange={(e) => setNewRemark({ ...newRemark, description: e.target.value })} />
-            <select className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm" value={newRemark.severity} onChange={(e) => setNewRemark({ ...newRemark, severity: e.target.value })}>
-              <option value="minor">Незначительное</option>
-              <option value="major">Значительное</option>
-              <option value="critical">Критичное</option>
-              <option value="note">Примечание</option>
-            </select>
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setShowRemarkForm(false)}>Отмена</Button>
-              <Button onClick={handleAddRemark}>Добавить</Button>
-            </div>
-          </div>
-        </Modal>
-      )}
+
     </div>
   );
 };

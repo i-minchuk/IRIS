@@ -1,5 +1,6 @@
 import { X, Plane, BriefcaseMedical } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { t } from "../i18n/translations";
 import type { Language } from "../i18n/translations";
 
@@ -15,13 +16,37 @@ export function VacationModal({ isOpen, onClose, onSubmit, lang }: Props) {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [reason, setReason] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({ type, startDate, endDate, reason });
-    onClose();
+    setError(null);
+
+    if (endDate && startDate && endDate <= startDate) {
+      setError(t("endAfterStart", lang));
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await onSubmit({ type, startDate, endDate, reason });
+      onClose();
+    } catch (err: any) {
+      const status = err?.response?.status;
+      let message = t("submitError", lang);
+      if (status === 400) message = 'Ошибка в данных';
+      else if (status === 403) message = 'Доступ запрещён';
+      else if (status === 404) message = 'Не найдено';
+      else if (status === 422) message = 'Ошибка валидации';
+      else if (status >= 500) message = 'Ошибка сервера';
+      toast.error(message);
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const types = [
@@ -97,19 +122,25 @@ export function VacationModal({ isOpen, onClose, onSubmit, lang }: Props) {
             />
           </div>
 
+          {error && (
+            <div className="text-red-400 text-sm">{error}</div>
+          )}
+
           <div className="flex gap-2 pt-2">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 rounded-lg border border-[var(--border-color)] text-[var(--text-muted)] text-sm hover:bg-[var(--card-bg)] transition-colors"
+              disabled={loading}
+              className="flex-1 px-4 py-2 rounded-lg border border-[var(--border-color)] text-[var(--text-muted)] text-sm hover:bg-[var(--card-bg)] transition-colors disabled:opacity-50"
             >
               {t("cancel", lang)}
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2 rounded-lg bg-purple-500 text-white text-sm font-medium hover:bg-purple-600 transition-colors"
+              disabled={loading}
+              className="flex-1 px-4 py-2 rounded-lg bg-purple-500 text-white text-sm font-medium hover:bg-purple-600 transition-colors disabled:opacity-50"
             >
-              {t("submit", lang)}
+              {loading ? t("sending", lang) : t("submit", lang)}
             </button>
           </div>
         </form>

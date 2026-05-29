@@ -111,8 +111,21 @@ async def list_remarks(
     
     remarks, total = await service.list_remarks(filters, current_user.id)
     
+    # Build list items with workflow status
+    list_items = []
+    for r in remarks:
+        item = RemarkListItem.model_validate(r)
+        # If remark has linked workflow, fetch its status
+        if r.workflow_instance_id:
+            from app.modules.workflow.service import WorkflowService
+            ws = WorkflowService(db)
+            wf = await ws.get_instance(r.workflow_instance_id)
+            if wf:
+                item.workflow_status = wf.status.value
+        list_items.append(item)
+    
     return RemarkListResponse(
-        remarks=[RemarkListItem.model_validate(r) for r in remarks],
+        remarks=list_items,
         total=total,
         page=page,
         page_size=page_size
@@ -371,13 +384,46 @@ async def perform_action(
             "success": True,
             "action": action_data.action,
             "remark_id": str(remark.id),
-            "new_status": remark.status.value
+            "new_status": remark.status.value,
+            "workflow_instance_id": remark.workflow_instance_id
         }
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
+
+
+@router.post("/{remark_id}/start-workflow", response_model=dict)
+async def start_remark_workflow(
+    remark_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Manually start approval workflow for a remark."""
+    service = get_service(db)
+    
+    remark = await service.get_remark(remark_id)
+    if not remark:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Remark not found"
+        )
+    
+    if remark.workflow_instance_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Workflow already started for this remark"
+        )
+    
+    await service._maybe_start_workflow(remark, current_user.id)
+    await db.refresh(remark)
+    
+    return {
+        "success": True,
+        "remark_id": str(remark.id),
+        "workflow_instance_id": remark.workflow_instance_id
+    }
 
 
 @router.post("/{remark_id}/link/{related_id}", response_model=dict)

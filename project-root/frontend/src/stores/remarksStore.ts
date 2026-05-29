@@ -20,6 +20,7 @@ import {
   deleteComment as apiDeleteComment,
   performAction as apiPerformAction,
   linkRemarks as apiLinkRemarks,
+  startRemarkWorkflow as apiStartRemarkWorkflow,
   getStatistics as apiGetStatistics,
   getTags as apiGetTags,
   createTag as apiCreateTag,
@@ -52,6 +53,7 @@ interface RemarksState {
   // Actions - Actions
   performAction: (remarkId: string, action: RemarkActionInput) => Promise<void>;
   linkRemarks: (remarkId: string, relatedId: string) => Promise<void>;
+  startWorkflow: (remarkId: string) => Promise<void>;
 
   // Actions - Statistics
   fetchStatistics: (projectId?: number, documentId?: number) => Promise<void>;
@@ -232,6 +234,23 @@ export const useRemarksStore = create<RemarksState>((set, get) => ({
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : 'Failed to link remarks',
+        isLoading: false,
+      });
+      throw error;
+    }
+  },
+
+  // Start workflow for remark
+  startWorkflow: async (remarkId) => {
+    set({ isLoading: true, error: null });
+    try {
+      await apiStartRemarkWorkflow(remarkId);
+      await get().loadRemark(remarkId);
+      await get().fetchRemarks();
+      set({ isLoading: false });
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : 'Failed to start workflow',
         isLoading: false,
       });
       throw error;

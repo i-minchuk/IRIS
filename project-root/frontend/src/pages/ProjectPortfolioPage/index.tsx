@@ -193,4 +193,8 @@ export const ProjectPortfolioPage: React.FC = () => {
       </div>
     </div>
   );
-};
+}
+
+
+
+export default ProjectPortfolioPage;

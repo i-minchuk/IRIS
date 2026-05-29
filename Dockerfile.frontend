@@ -1,6 +1,9 @@
 # syntax=docker/dockerfile:1
 FROM node:20-alpine AS builder
 
+ARG APP_VERSION
+ENV VITE_APP_VERSION=${APP_VERSION}
+
 WORKDIR /app
 COPY project-root/frontend/package*.json ./
 RUN npm ci

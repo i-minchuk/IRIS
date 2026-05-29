@@ -36,4 +36,19 @@ export const taskApi = {
     const response = await apiClient.get<TaskStatistics>('/api/v1/tasks/statistics', { params });
     return response.data;
   },
+
+  async startTask(taskId: number): Promise<Task> {
+    const response = await apiClient.post<Task>(`/api/v1/tasks/${taskId}/start`);
+    return response.data;
+  },
+
+  async stopTask(taskId: number): Promise<Task> {
+    const response = await apiClient.post<Task>(`/api/v1/tasks/${taskId}/stop`);
+    return response.data;
+  },
+
+  async getTaskTime(taskId: number): Promise<{ task_id: number; total_seconds: number }> {
+    const response = await apiClient.get<{ task_id: number; total_seconds: number }>(`/api/v1/tasks/${taskId}/time`);
+    return response.data;
+  },
 };

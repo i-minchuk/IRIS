@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ChevronDown, ChevronUp, FolderKanban } from 'lucide-react';
 import type { Tender, TenderStage } from '../types/tender';
+import { createProjectFromTender } from '../api/tenders';
 
 interface Props {
   tenders: Tender[];
@@ -46,8 +48,10 @@ function MarginBadge({ pct }: { pct?: number }) {
 }
 
 export function TenderRegistry({ tenders, selectedStage }: Props) {
+  const navigate = useNavigate();
   const [sortField, setSortField] = useState<'deadline' | 'nmc' | 'margin'>('deadline');
   const [sortDesc, setSortDesc] = useState(false);
+  const [creatingId, setCreatingId] = useState<number | null>(null);
 
   let filtered = selectedStage ? tenders.filter((t) => t.stage === selectedStage) : tenders;
   filtered = [...filtered].sort((a, b) => {
@@ -67,6 +71,23 @@ export function TenderRegistry({ tenders, selectedStage }: Props) {
     if (sortField === field) setSortDesc((d) => !d);
     else { setSortField(field); setSortDesc(false); }
   };
+
+  const handleCreateProject = async (tender: Tender) => {
+    if (creatingId === tender.id) return;
+    setCreatingId(tender.id);
+    try {
+      const project = await createProjectFromTender(tender.id);
+      navigate(`/projects/${project.id}`);
+    } catch (err) {
+      console.error('Failed to create project from tender', err);
+      alert('Не удалось создать проект. Возможно, проект уже создан.');
+    } finally {
+      setCreatingId(null);
+    }
+  };
+
+  const canCreateProject = (tender: Tender) =>
+    (tender.stage === 'won' || tender.stage === 'contract') && !tender.project_id;
 
   return (
     <div className="rounded-2xl p-4 sm:p-6 neon-card">
@@ -105,11 +126,13 @@ export function TenderRegistry({ tenders, selectedStage }: Props) {
               <th className="text-center py-2 px-2 font-semibold" style={{ color: 'var(--text-muted)' }}>Вероятность</th>
               <th className="text-left py-2 px-2 font-semibold" style={{ color: 'var(--text-muted)' }}>Срок</th>
               <th className="text-left py-2 px-2 font-semibold" style={{ color: 'var(--text-muted)' }}>Площадка</th>
+              <th className="text-left py-2 px-2 font-semibold" style={{ color: 'var(--text-muted)' }}>Действия</th>
             </tr>
           </thead>
           <tbody>
             {filtered.map((t) => {
               const stage = STAGE_META[t.stage];
+              const showCreateBtn = canCreateProject(t);
               return (
                 <tr
                   key={t.id}
@@ -150,6 +173,29 @@ export function TenderRegistry({ tenders, selectedStage }: Props) {
                     </span>
                   </td>
                   <td className="py-2.5 px-2" style={{ color: 'var(--text-muted)' }}>{t.platform || '—'}</td>
+                  <td className="py-2.5 px-2">
+                    {showCreateBtn && (
+                      <button
+                        onClick={() => handleCreateProject(t)}
+                        disabled={creatingId === t.id}
+                        className="inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-md font-medium transition-colors cursor-pointer"
+                        style={{
+                          background: 'var(--iris-accent-cyan)',
+                          color: 'var(--iris-text-inverse)',
+                          opacity: creatingId === t.id ? 0.6 : 1,
+                        }}
+                        title="Создать проект из тендера"
+                      >
+                        <FolderKanban className="h-3 w-3" />
+                        {creatingId === t.id ? 'Создание…' : 'Создать проект'}
+                      </button>
+                    )}
+                    {t.project_id && (
+                      <span className="text-[10px] font-medium" style={{ color: 'var(--iris-accent-cyan)' }}>
+                        Проект #{t.project_id}
+                      </span>
+                    )}
+                  </td>
                 </tr>
               );
             })}

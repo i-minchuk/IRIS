@@ -1,7 +1,8 @@
 """Redis cache implementation for performance optimization."""
 
 import json
-from typing import Optional, Any
+from functools import wraps
+from typing import Callable, Any
 
 try:
     import redis.asyncio as redis
@@ -9,104 +10,52 @@ try:
 except ImportError:
     REDIS_AVAILABLE = False
 
+from app.core.config import settings
 
-class RedisCache:
-    """Simple Redis cache wrapper with TTL support."""
-    
-    def __init__(self, redis_url: str):
+redis_client = None
+
+
+def get_redis_client():
+    global redis_client
+    if redis_client is None:
         if not REDIS_AVAILABLE:
-            raise RuntimeError(
-                "Redis is not installed. Install with: pip install redis"
+            return None
+        try:
+            redis_client = redis.from_url(
+                settings.REDIS_URL,
+                encoding="utf-8",
+                decode_responses=True,
             )
-        self.redis = redis.from_url(
-            redis_url,
-            encoding="utf-8",
-            decode_responses=True
-        )
-    
-    async def get(self, key: str) -> Optional[Any]:
-        """Get value from cache."""
-        data = await self.redis.get(key)
-        return json.loads(data) if data else None
-    
-    async def set(self, key: str, value: Any, expire: int = 300) -> None:
-        """Set value in cache with expiration time (in seconds)."""
-        await self.redis.set(key, json.dumps(value), ex=expire)
-    
-    async def delete(self, key: str) -> None:
-        """Delete key from cache."""
-        await self.redis.delete(key)
-    
-    async def clear(self) -> None:
-        """Clear all cache (use with caution)."""
-        await self.redis.flushdb()
-    
-    async def close(self) -> None:
-        """Close Redis connection."""
-        await self.redis.close()
-
-
-# Global cache instance (initialized in main.py)
-cache: Optional[RedisCache] = None
-
-
-def init_cache(redis_url: str) -> None:
-    """Initialize global cache instance."""
-    global cache
-    cache = RedisCache(redis_url)
-
-
-def get_cache() -> RedisCache:
-    """Get global cache instance."""
-    if cache is None:
-        raise RuntimeError("Cache not initialized. Call init_cache() first.")
-    return cache
-
-
-class InMemoryCache:
-    """Simple in-memory cache for development (fallback when Redis not available)."""
-    
-    def __init__(self):
-        self._cache: dict = {}
-        self._timestamps: dict = {}
-        self._TTL = 300  # 5 minutes
-    
-    async def get(self, key: str) -> Optional[Any]:
-        """Get value from cache."""
-        if key not in self._cache:
+        except Exception:
             return None
-        if not self._is_valid(key):
-            del self._cache[key]
-            del self._timestamps[key]
-            return None
-        return self._cache[key]
-    
-    async def set(self, key: str, value: Any, expire: int = 300) -> None:
-        """Set value in cache with expiration time (in seconds)."""
-        from datetime import datetime, timedelta, timezone
-        self._cache[key] = value
-        self._timestamps[key] = datetime.now(timezone.utc) + timedelta(seconds=expire)
-    
-    async def delete(self, key: str) -> None:
-        """Delete key from cache."""
-        self._cache.pop(key, None)
-        self._timestamps.pop(key, None)
-    
-    async def clear(self) -> None:
-        """Clear all cache."""
-        self._cache.clear()
-        self._timestamps.clear()
-    
-    def _is_valid(self, key: str) -> bool:
-        """Check if cache entry is still valid."""
-        from datetime import datetime, timezone
-        return self._timestamps.get(key, datetime.now(timezone.utc)) > datetime.now(timezone.utc)
+    return redis_client
 
 
-# Fallback cache for development
-_fallback_cache = InMemoryCache()
+def cache_response(expire_seconds: int = 300):
+    def decorator(func: Callable) -> Callable:
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            r = get_redis_client()
+            if r is None:
+                return await func(*args, **kwargs)
+
+            cache_key = f"cache:{func.__name__}:{hash(str(args) + str(kwargs))}"
+            cached = await r.get(cache_key)
+            if cached:
+                return json.loads(cached)
+
+            result = await func(*args, **kwargs)
+            await r.setex(cache_key, expire_seconds, json.dumps(result, default=str))
+            return result
+
+        return wrapper
+
+    return decorator
 
 
-def get_fallback_cache() -> InMemoryCache:
-    """Get fallback in-memory cache."""
-    return _fallback_cache
+async def invalidate_cache(pattern: str = "cache:*"):
+    r = get_redis_client()
+    if r is None:
+        return
+    async for key in r.scan_iter(match=pattern):
+        await r.delete(key)

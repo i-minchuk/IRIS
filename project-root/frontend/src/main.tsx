@@ -6,6 +6,7 @@ import { router } from './app/router';
 import { ThemeProvider } from './providers/ThemeProvider';
 import { LanguageProvider } from "./features/profile/i18n/LanguageContext";
 import { useAuthStore } from './features/auth/store/authStore';
+import { AuthProvider } from './context/AuthContext';
 import { Toaster } from 'sonner';
 import './shared/styles/globals.css';
 
@@ -47,7 +48,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <ThemeProvider>
         <LanguageProvider>
-          <App />
+          <AuthProvider>
+            <App />
+          </AuthProvider>
         </LanguageProvider>
       </ThemeProvider>
     </ErrorBoundary>

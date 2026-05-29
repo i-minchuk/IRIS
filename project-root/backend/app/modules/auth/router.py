@@ -1,13 +1,14 @@
 # app/modules/auth/router.py
 from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from datetime import datetime, timedelta, timezone
 
 from app.core import security
 from app.core.config import settings
-from app.core.security_utils import limiter
+from app.core.security_utils import limiter, rate_limit_standard, rate_limit_refresh_route
 from app.db.session import get_db
 from app.modules.auth.schemas import (
     User, UserCreate, UserUpdate, Token, LoginRequest, RefreshTokenRequest,
@@ -15,6 +16,8 @@ from app.modules.auth.schemas import (
 )
 from app.modules.auth.repository import UserRepository
 from app.modules.auth.deps import get_current_active_user
+from app.modules.auth.totp import generate_totp_secret, get_totp_uri, generate_qr_code, verify_totp
+from app.core.session import SessionStore
 
 router = APIRouter()
 
@@ -68,15 +71,35 @@ async def login_json(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
+    # Если включен 2FA — требуем TOTP token
+    if user.totp_enabled:
+        totp_token = request.query_params.get("totp_token")
+        if not totp_token or not verify_totp(user.totp_secret, totp_token):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="TOTP token required or invalid",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+    
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = security.create_access_token(
         data={"sub": str(user.id)}, expires_delta=access_token_expires
     )
     refresh_token = security.create_refresh_token(data={"sub": str(user.id)})
-    
+
+    # Create Redis session
+    user_data = {
+        "email": user.email,
+        "full_name": user.full_name,
+        "role": user.role,
+        "is_active": user.is_active,
+        "is_superuser": user.is_superuser,
+    }
+    session_id = SessionStore.create_session(user.id, user_data)
+
     # Проверка: использовать cookies или JSON response
     response_type = request.query_params.get("response_type")
-    
+
     if response_type == "json":
         # Возвращаем токены в body (для совместимости)
         return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
@@ -84,7 +107,16 @@ async def login_json(
         # Устанавливаем HttpOnly cookies (рекомендуется для production)
         from app.modules.auth.cookies import set_auth_cookies
         set_auth_cookies(response, access_token, refresh_token)
-        
+        response.set_cookie(
+            key="session_id",
+            value=session_id,
+            max_age=SessionStore.EXPIRE_DAYS * 24 * 60 * 60,
+            httponly=True,
+            secure=True,
+            samesite="lax",
+            path="/",
+        )
+
         return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
 
 
@@ -98,7 +130,7 @@ async def login_oauth2(
     form_data: OAuth2PasswordRequestForm = Depends(),
 ):
     """OAuth2 совместимый вход (для Swagger UI).
-    
+
     По умолчанию устанавливает HttpOnly cookies.
     Для JSON response используйте query параметр ?response_type=json
     """
@@ -110,27 +142,56 @@ async def login_oauth2(
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
+    # Если включен 2FA — требуем TOTP token
+    if user.totp_enabled:
+        totp_token = request.query_params.get("totp_token")
+        if not totp_token or not verify_totp(user.totp_secret, totp_token):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="TOTP token required or invalid",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = security.create_access_token(
         data={"sub": str(user.id)}, expires_delta=access_token_expires
     )
     refresh_token = security.create_refresh_token(data={"sub": str(user.id)})
-    
+
+    # Create Redis session
+    user_data = {
+        "email": user.email,
+        "full_name": user.full_name,
+        "role": user.role,
+        "is_active": user.is_active,
+        "is_superuser": user.is_superuser,
+    }
+    session_id = SessionStore.create_session(user.id, user_data)
+
     # Проверка: использовать cookies или JSON response
     response_type = request.query_params.get("response_type")
-    
+
     if response_type == "json":
         return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
     else:
         from app.modules.auth.cookies import set_auth_cookies
         set_auth_cookies(response, access_token, refresh_token)
-        
+        response.set_cookie(
+            key="session_id",
+            value=session_id,
+            max_age=SessionStore.EXPIRE_DAYS * 24 * 60 * 60,
+            httponly=True,
+            secure=True,
+            samesite="lax",
+            path="/",
+        )
+
         return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
 
 
 @router.post("/refresh", response_model=Token)
-@limiter.limit("10/minute")
+@rate_limit_refresh_route()
 async def refresh_token(
     *,
     request: Request,
@@ -190,13 +251,31 @@ async def refresh_token(
 
 
 @router.get("/me", response_model=User)
-async def read_users_me(current_user: User = Depends(get_current_active_user)):
+@rate_limit_standard()
+async def read_users_me(
+    request: Request,
+    current_user: User = Depends(get_current_active_user),
+):
     """Получить данные текущего пользователя."""
     return current_user
 
 
+@router.post("/users/me/telegram")
+async def link_telegram(
+    chat_id: str,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Привязать Telegram chat_id к текущему пользователю."""
+    current_user.telegram_chat_id = chat_id
+    await db.commit()
+    return {"status": "linked"}
+
+
 @router.get("/users", response_model=list[User])
+@rate_limit_standard()
 async def list_users(
+    request: Request,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -212,7 +291,9 @@ async def list_users(
 
 
 @router.patch("/users/{user_id}", response_model=User)
+@rate_limit_standard()
 async def update_user(
+    request: Request,
     user_id: int,
     updates: UserUpdate,
     db: AsyncSession = Depends(get_db),
@@ -240,11 +321,62 @@ async def update_user(
 
 
 @router.post("/logout")
-async def logout(response: Response = None):
+async def logout(request: Request, response: Response = None):
     """Выйти из системы и очистить cookies."""
     from app.modules.auth.cookies import clear_auth_cookies
     clear_auth_cookies(response)
+    session_id = request.cookies.get("session_id")
+    if session_id:
+        SessionStore.delete_session(session_id)
+    response.delete_cookie(key="session_id", path="/")
     return {"detail": "Successfully logged out"}
+
+
+@router.post("/2fa/setup")
+async def setup_2fa(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Настроить 2FA: сгенерировать секрет и вернуть QR-код."""
+    secret = generate_totp_secret()
+    current_user.totp_secret = secret
+    await db.commit()
+    uri = get_totp_uri(secret, current_user.email)
+    qr = generate_qr_code(uri)
+    return {"secret": secret, "qr_code": f"data:image/png;base64,{qr}"}
+
+
+@router.post("/2fa/verify")
+async def verify_2fa_setup(
+    token: str,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Подтвердить настройку 2FA, введя TOTP token."""
+    if not current_user.totp_secret:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "2FA not set up")
+    if verify_totp(current_user.totp_secret, token):
+        current_user.totp_enabled = True
+        await db.commit()
+        return {"status": "enabled"}
+    raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid token")
+
+
+@router.post("/2fa/disable")
+async def disable_2fa(
+    token: str,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Отключить 2FA, введя TOTP token."""
+    if not current_user.totp_secret or not current_user.totp_enabled:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "2FA is not enabled")
+    if verify_totp(current_user.totp_secret, token):
+        current_user.totp_enabled = False
+        current_user.totp_secret = None
+        await db.commit()
+        return {"status": "disabled"}
+    raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid token")
 
 
 @router.post("/forgot-password", response_model=PasswordResetResponse)
@@ -272,10 +404,8 @@ async def forgot_password(
     await db.commit()
 
     # TODO: отправить email с токеном через SMTP
-    # В демо-режиме возвращаем токен в ответе для удобства тестирования
     return PasswordResetResponse(
-        message="Password reset token generated (demo mode: check response)",
-        reset_token=reset_token,
+        message="If the email exists, a reset link has been sent",
     )
 
 
@@ -317,3 +447,70 @@ async def reset_password(
     await db.commit()
 
     return {"message": "Password has been reset successfully"}
+
+
+# ---------------------------------------------------------------------------
+# SAML / SSO endpoints
+# ---------------------------------------------------------------------------
+
+
+def _create_tokens_for_user(user) -> dict:
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = security.create_access_token(
+        data={"sub": str(user.id)}, expires_delta=access_token_expires
+    )
+    refresh_token = security.create_refresh_token(data={"sub": str(user.id)})
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+    }
+
+
+async def get_or_create_user_by_email(db: AsyncSession, email: str) -> User:
+    repo = UserRepository(db)
+    user = await repo.get_by_email(email)
+    if user:
+        return user
+    # Create a new user without password for SAML auth
+    from app.core.security import get_password_hash
+    import secrets
+    db_user = User(
+        email=email,
+        username=email.split("@")[0],
+        hashed_password=get_password_hash(secrets.token_urlsafe(32)),
+        full_name=email.split("@")[0],
+        is_active=True,
+        is_superuser=False,
+    )
+    db.add(db_user)
+    await db.commit()
+    await db.refresh(db_user)
+    return db_user
+
+
+@router.get("/saml/login")
+async def saml_login(request: Request):
+    from app.modules.auth.saml import init_saml_auth, prepare_request
+    auth = init_saml_auth(prepare_request(request))
+    return RedirectResponse(auth.login())
+
+
+@router.post("/saml/acs")
+async def saml_acs(request: Request, db: AsyncSession = Depends(get_db)):
+    from app.modules.auth.saml import init_saml_auth, prepare_request
+    auth = init_saml_auth(prepare_request(request))
+    auth.process_response()
+    if auth.is_authenticated():
+        email = auth.get_nameid()
+        user = await get_or_create_user_by_email(db, email)
+        tokens = _create_tokens_for_user(user)
+        return RedirectResponse(f"/login?token={tokens['access_token']}")
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="SAML authentication failed")
+
+
+@router.get("/saml/metadata")
+async def saml_metadata():
+    from app.modules.auth.saml import init_saml_auth
+    auth = init_saml_auth({})
+    return Response(auth.get_settings().get_sp_metadata(), media_type="text/xml")

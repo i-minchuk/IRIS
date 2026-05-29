@@ -1,18 +1,18 @@
-import client from '@/shared/api/client';
+import apiClient from '@/shared/api/client';
 import type { LeaderboardEntry, GamificationProfile, Badge, DailyQuest } from '../types';
 
 export const getLeaderboard = async (): Promise<LeaderboardEntry[]> => {
-  const { data } = await client.get('/api/gamification/leaderboard');
+  const { data } = await apiClient.get('/gamification/leaderboard');
   return data;
 };
 
 export const getMyGamification = async (): Promise<GamificationProfile> => {
-  const { data } = await client.get('/api/gamification/me');
+  const { data } = await apiClient.get('/gamification/me');
   return data;
 };
 
 export const getBadges = async (): Promise<Badge[]> => {
-  const { data } = await client.get('/api/gamification/badges');
+  const { data } = await apiClient.get('/gamification/badges');
   return data;
 };
 
@@ -26,25 +26,25 @@ export interface Notification {
 }
 
 export const getNotifications = async (): Promise<Notification[]> => {
-  const { data } = await client.get('/api/gamification/notifications');
+  const { data } = await apiClient.get('/gamification/notifications');
   return data;
 };
 
 export const markNotificationRead = async (notificationId: number): Promise<void> => {
-  await client.put(`/api/gamification/notifications/${notificationId}/read`);
+  await apiClient.put(`/gamification/notifications/${notificationId}/read`);
 };
 
 export const getUnreadNotificationCount = async (): Promise<{ count: number }> => {
-  const { data } = await client.get('/api/gamification/notifications/unread-count');
+  const { data } = await apiClient.get('/gamification/notifications/unread-count');
   return data;
 };
 
 export const getDailyQuests = async (): Promise<DailyQuest[]> => {
-  const { data } = await client.get('/api/gamification/daily-quests');
+  const { data } = await apiClient.get('/gamification/daily-quests');
   return data;
 };
 
 export const updateQuestProgress = async (questType: string): Promise<DailyQuest> => {
-  const { data } = await client.post(`/api/gamification/daily-quests/${questType}/progress`);
+  const { data } = await apiClient.post(`/gamification/daily-quests/${questType}/progress`);
   return data;
 };

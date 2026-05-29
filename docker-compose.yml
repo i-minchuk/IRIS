@@ -28,6 +28,20 @@ services:
     environment:
       - QDRANT__SERVICE__HTTP_PORT=6333
 
+  redis:
+    image: redis:7-alpine
+    container_name: iris_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   backend:
     build:
       context: .
@@ -42,6 +56,7 @@ services:
       IRIS_LOG_LEVEL: ${IRIS_LOG_LEVEL:-INFO}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       QDRANT_HOST: qdrant
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
     volumes:
       - storage_data:/app/storage
       - ./project-root/backend/app:/app/app
@@ -54,6 +69,8 @@ services:
         condition: service_healthy
       qdrant:
         condition: service_started
+      redis:
+        condition: service_healthy
     command: ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"]
 
   frontend:
@@ -68,7 +85,50 @@ services:
     depends_on:
       - backend
 
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: iris_celery
+    restart: unless-stopped
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://iris:iris_secret_change_me@db:5432/iris}
+    depends_on:
+      - redis
+      - db
+    command: ["celery", "-A", "app.tasks.celery_app", "worker", "--loglevel=info", "--concurrency=2"]
+
+  celery_beat:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: iris_celery_beat
+    restart: unless-stopped
+    environment:
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      - redis
+    command: ["celery", "-A", "app.tasks.celery_app", "beat", "--loglevel=info"]
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: iris_prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: iris_grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+
 volumes:
   postgres_data:
   storage_data:
   qdrant_storage:
+  redis_data:

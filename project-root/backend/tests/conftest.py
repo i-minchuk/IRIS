@@ -37,6 +37,8 @@ def mock_user():
     user.role = "engineer"
     user.is_active = True
     user.is_superuser = False
+    from unittest.mock import PropertyMock
+    type(user).telegram_chat_id = PropertyMock(return_value=None)
     return user
 
 

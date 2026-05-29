@@ -27,6 +27,9 @@ def mock_user():
     user.is_active = True
     user.is_superuser = False
     user.hashed_password = "hashed_secret"
+    user.telegram_chat_id = None
+    user.totp_enabled = False
+    user.totp_secret = None
     return user
 
 
@@ -59,6 +62,7 @@ class TestAuthRegister:
                 mock_created.full_name = "New User"
                 mock_created.role = "engineer"
                 mock_created.is_active = True
+                mock_created.telegram_chat_id = None
                 mock_create.return_value = mock_created
 
                 response = client.post(
@@ -101,6 +105,36 @@ class TestAuthLogin:
                 assert data["access_token"] == "access_123"
                 assert data["refresh_token"] == "refresh_456"
                 assert data["token_type"] == "bearer"
+
+    def test_login_with_totp(self, client_with_auth, mock_user):
+        mock_user.totp_enabled = True
+        mock_user.totp_secret = "SECRET123"
+        with client_with_auth as client:
+            with patch.object(UserRepository, "get_by_email", return_value=mock_user), \
+                 patch("app.modules.auth.router.security.verify_password", return_value=True), \
+                 patch("app.modules.auth.router.verify_totp", return_value=True), \
+                 patch("app.modules.auth.router.security.create_access_token", return_value="access_123"), \
+                 patch("app.modules.auth.router.security.create_refresh_token", return_value="refresh_456"):
+                response = client.post(
+                    "/api/v1/auth/login?totp_token=123456",
+                    json={"email": "test@example.com", "password": "secret123"},
+                )
+                assert response.status_code == 200
+                data = response.json()
+                assert data["access_token"] == "access_123"
+
+    def test_login_totp_missing(self, client_with_auth, mock_user):
+        mock_user.totp_enabled = True
+        mock_user.totp_secret = "SECRET123"
+        with client_with_auth as client:
+            with patch.object(UserRepository, "get_by_email", return_value=mock_user), \
+                 patch("app.modules.auth.router.security.verify_password", return_value=True):
+                response = client.post(
+                    "/api/v1/auth/login",
+                    json={"email": "test@example.com", "password": "secret123"},
+                )
+                assert response.status_code == 401
+                assert "TOTP" in response.json()["detail"]
 
     def test_login_wrong_password(self, client_with_auth, mock_user):
         with client_with_auth as client:
@@ -177,8 +211,7 @@ class TestForgotPassword:
                 )
                 assert response.status_code == 200
                 data = response.json()
-                assert "token generated" in data["message"].lower() or "reset link" in data["message"].lower()
-                assert data["reset_token"] == "reset_token_123"
+                assert "reset link has been sent" in data["message"]
 
     def test_forgot_password_nonexistent_email(self, client_with_auth):
         with client_with_auth as client:

@@ -1,5 +1,5 @@
-import React from 'react';
-import { Calendar, AlertCircle } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Calendar, AlertCircle, Play, Square } from 'lucide-react';
 import { Task, TaskStatus, TaskPriority } from '../types';
 
 interface TaskTableProps {
@@ -11,6 +11,10 @@ interface TaskTableProps {
   currentPage: number;
   pageSize: number;
   totalCount: number;
+  onStartTask?: (taskId: number) => void;
+  onStopTask?: (taskId: number) => void;
+  activeTaskId?: number | null;
+  taskTimers?: Record<number, number>;
 }
 
 const statusConfig: Record<TaskStatus, { label: string; color: string }> = {
@@ -39,6 +43,10 @@ export const TaskTable: React.FC<TaskTableProps> = ({
   currentPage,
   pageSize,
   totalCount,
+  onStartTask,
+  onStopTask,
+  activeTaskId,
+  taskTimers = {},
 }) => {
   const totalPages = Math.ceil(totalCount / pageSize);
 
@@ -59,13 +67,28 @@ export const TaskTable: React.FC<TaskTableProps> = ({
     );
   };
 
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    if (activeTaskId == null) return;
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, [activeTaskId]);
+
+  const formatDuration = (seconds: number) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
   const getProgressIndicator = (task: Task) => {
     if (task.percentComplete === 0 || task.status === 'new') return null;
     return (
       <div className="flex items-center gap-2">
         <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--iris-bg-app)' }}>
           <div className="h-full rounded-full transition-all"
-            style={{ 
+            style={{
               width: `${task.percentComplete}%`,
               background: task.status === 'done' ? 'var(--iris-accent-green)' : 'var(--iris-accent-blue)'
             }}
@@ -73,6 +96,20 @@ export const TaskTable: React.FC<TaskTableProps> = ({
         </div>
         <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{task.percentComplete}%</span>
       </div>
+    );
+  };
+
+  const getTimerDisplay = (task: Task) => {
+    const base = taskTimers[task.id] || 0;
+    const isActive = activeTaskId === task.id;
+    const elapsed = isActive ? Math.floor((now - (task.startedAt ? new Date(task.startedAt).getTime() : now)) / 1000) : 0;
+    const total = base + (isActive ? elapsed : 0);
+    if (total <= 0 && !isActive) return null;
+    return (
+      <span className="text-xs font-mono" style={{ color: isActive ? 'var(--iris-accent-green)' : 'var(--text-muted)' }}>
+        {isActive && <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-500 mr-1 animate-pulse" />}
+        {formatDuration(total)}
+      </span>
     );
   };
 
@@ -94,6 +131,8 @@ export const TaskTable: React.FC<TaskTableProps> = ({
               <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Исполнитель</th>
               <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Дедлайн</th>
               <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Прогресс</th>
+              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Время</th>
+              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Действия</th>
             </tr>
           </thead>
           <tbody>
@@ -203,6 +242,38 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                 </td>
                 <td className="px-4 py-3">
                   {getProgressIndicator(task)}
+                </td>
+                <td className="px-4 py-3">
+                  {getTimerDisplay(task)}
+                </td>
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-1">
+                    {activeTaskId === task.id ? (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onStopTask?.(task.id);
+                        }}
+                        className="p-1.5 rounded-md transition-colors hover:bg-red-100"
+                        style={{ color: 'var(--iris-accent-red)' }}
+                        title="Стоп"
+                      >
+                        <Square size={14} />
+                      </button>
+                    ) : (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onStartTask?.(task.id);
+                        }}
+                        className="p-1.5 rounded-md transition-colors hover:bg-green-100"
+                        style={{ color: 'var(--iris-accent-green)' }}
+                        title="Старт"
+                      >
+                        <Play size={14} />
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}

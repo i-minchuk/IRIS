@@ -1,6 +1,7 @@
 """Workflow models for document approval routing."""
 from typing import Optional, List
 from datetime import datetime
+import uuid
 
 from sqlalchemy import (
     Column,
@@ -118,6 +119,9 @@ class WorkflowInstance(Base):
     
     # Привязка к проекту (опционально)
     project_id: Mapped[Optional[int]] = mapped_column(ForeignKey('projects.id'), nullable=True)
+    
+    # Привязка к замечанию (опционально)
+    remark_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey('remarks.id'), nullable=True)
     
     status: Mapped[WorkflowStatus] = mapped_column(SQLEnum(WorkflowStatus), default=WorkflowStatus.DRAFT, nullable=False)
     

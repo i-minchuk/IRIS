@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Loader2, Shield, UserCheck, UserX, Mail, Calendar } from 'lucide-react';
 import { adminApi, type AdminUser, type UserUpdatePayload } from '@/features/auth/api/adminApi';
+import { useAuthStore } from '@/features/auth/store/authStore';
 
 export const AdminPage: React.FC = () => {
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -60,7 +61,7 @@ export const AdminPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-3 md:px-6 py-4 md:py-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
@@ -175,7 +176,8 @@ export const AdminPage: React.FC = () => {
                     <div className="flex items-center justify-end gap-2">
                       <button
                         onClick={() => setEditingUser(user)}
-                        className="px-2 py-1 rounded text-xs font-medium transition-colors hover:opacity-80"
+                        disabled={saving}
+                        className="px-2 py-1 rounded text-xs font-medium transition-colors hover:opacity-80 disabled:opacity-50"
                         style={{ backgroundColor: 'var(--bg-surface-2)', color: 'var(--text-secondary)' }}
                       >
                         Изменить роль
@@ -213,6 +215,8 @@ export const AdminPage: React.FC = () => {
   );
 };
 
+export default AdminPage;
+
 interface EditUserModalProps {
   user: AdminUser;
   onClose: () => void;
@@ -221,8 +225,47 @@ interface EditUserModalProps {
 }
 
 function EditUserModal({ user, onClose, onSave, saving }: EditUserModalProps) {
+  const currentUser = useAuthStore((state) => state.user);
   const [role, setRole] = useState(user.role);
   const [fullName, setFullName] = useState(user.full_name || '');
+  const [isActive, setIsActive] = useState(user.is_active);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const validate = (): boolean => {
+    const errors: Record<string, string> = {};
+    const trimmed = fullName.trim();
+    if (!trimmed) {
+      errors.fullName = 'Полное имя обязательно';
+    } else if (trimmed.length < 2) {
+      errors.fullName = 'Минимум 2 символа';
+    }
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSave = () => {
+    if (!validate()) return;
+
+    if (role === 'admin' && user.role !== 'admin') {
+      if (!confirm('Вы уверены, что хотите назначить пользователя администратором?')) return;
+    }
+
+    if (!isActive && user.is_active) {
+      if (!confirm('Деактивировать пользователя? Он потеряет доступ.')) return;
+    }
+
+    if (!isActive && currentUser && currentUser.id === user.id) {
+      setFieldErrors({ general: 'Вы не можете деактивировать самого себя' });
+      return;
+    }
+
+    const payload: UserUpdatePayload = {
+      role,
+      full_name: fullName.trim() || undefined,
+      is_active: isActive,
+    };
+    onSave(payload);
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
@@ -239,10 +282,26 @@ function EditUserModal({ user, onClose, onSave, saving }: EditUserModalProps) {
             <input
               type="text"
               value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
+              onChange={(e) => {
+                setFullName(e.target.value);
+                if (fieldErrors.fullName) {
+                  setFieldErrors((prev) => {
+                    const next = { ...prev };
+                    delete next.fullName;
+                    return next;
+                  });
+                }
+              }}
               className="w-full px-3 py-2 rounded-lg border text-sm"
-              style={{ backgroundColor: 'var(--bg-surface-2)', borderColor: 'var(--border-default)', color: 'var(--text-primary)' }}
+              style={{
+                backgroundColor: 'var(--bg-surface-2)',
+                borderColor: fieldErrors.fullName ? 'var(--error)' : 'var(--border-default)',
+                color: 'var(--text-primary)',
+              }}
             />
+            {fieldErrors.fullName && (
+              <p className="text-xs mt-1" style={{ color: 'var(--error)' }}>{fieldErrors.fullName}</p>
+            )}
           </div>
           <div>
             <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Роль</label>
@@ -258,21 +317,44 @@ function EditUserModal({ user, onClose, onSave, saving }: EditUserModalProps) {
               <option value="admin">Администратор</option>
             </select>
           </div>
+          <div className="flex items-center gap-2">
+            <input
+              id="isActive"
+              type="checkbox"
+              checked={isActive}
+              onChange={(e) => setIsActive(e.target.checked)}
+              className="rounded border"
+              style={{ borderColor: 'var(--border-default)' }}
+            />
+            <label htmlFor="isActive" className="text-sm" style={{ color: 'var(--text-primary)' }}>
+              Активен
+            </label>
+          </div>
+          {fieldErrors.general && (
+            <div
+              className="rounded-lg border p-3 text-sm"
+              style={{ borderColor: 'var(--error)', backgroundColor: 'var(--error-bg, #fef2f2)', color: 'var(--error)' }}
+            >
+              {fieldErrors.general}
+            </div>
+          )}
         </div>
         <div className="flex justify-end gap-2 mt-6">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-lg text-sm font-medium transition-colors hover:opacity-80"
+            disabled={saving}
+            className="px-4 py-2 rounded-lg text-sm font-medium transition-colors hover:opacity-80 disabled:opacity-50"
             style={{ backgroundColor: 'var(--bg-surface-2)', color: 'var(--text-secondary)' }}
           >
             Отмена
           </button>
           <button
-            onClick={() => onSave({ role, full_name: fullName || undefined })}
+            onClick={handleSave}
             disabled={saving}
-            className="px-4 py-2 rounded-lg text-sm font-medium transition-colors hover:opacity-80 disabled:opacity-50"
+            className="px-4 py-2 rounded-lg text-sm font-medium transition-colors hover:opacity-80 disabled:opacity-50 inline-flex items-center gap-2"
             style={{ backgroundColor: 'var(--accent-engineering)', color: 'var(--text-inverse)' }}
           >
+            {saving && <Loader2 size={16} className="animate-spin" />}
             {saving ? 'Сохранение...' : 'Сохранить'}
           </button>
         </div>

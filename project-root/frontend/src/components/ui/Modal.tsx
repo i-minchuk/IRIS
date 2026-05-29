@@ -9,6 +9,7 @@ interface ModalProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
   showCloseButton?: boolean;
   footer?: React.ReactNode;
+  className?: string;
 }
 
 export default function Modal({
@@ -19,6 +20,7 @@ export default function Modal({
   size = 'md',
   showCloseButton = true,
   footer,
+  className = '',
 }: ModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -84,12 +86,12 @@ export default function Modal({
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
         <div
-          className={`relative w-full ${sizes[size]} rounded-xl border transition-all`}
+          className={`relative w-full ${sizes[size]} rounded-xl border transition-all ${className}`}
           style={{
-            backgroundColor: 'var(--bg-surface)',
-            borderColor: 'var(--border-default)',
-            boxShadow: 'var(--shadow-lg)',
-            color: 'var(--text-primary)',
+            backgroundColor: 'var(--bg-surface, #ffffff)',
+            borderColor: 'var(--border-default, #e2e8f0)',
+            boxShadow: 'var(--shadow-lg, 0 10px 40px rgba(0,0,0,0.15))',
+            color: 'inherit',
           }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -101,7 +103,7 @@ export default function Modal({
             <h2
               id="modal-title"
               className="text-lg font-semibold"
-              style={{ color: 'var(--text-primary)' }}
+              style={{ color: 'inherit' }}
             >
               {title}
             </h2>
@@ -111,16 +113,16 @@ export default function Modal({
                 onClick={onClose}
                 className="rounded-lg p-2 transition-colors"
                 style={{
-                  color: 'var(--text-secondary)',
+                  color: 'var(--text-secondary, #64748b)',
                   backgroundColor: 'transparent',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'var(--bg-surface-2)';
-                  e.currentTarget.style.color = 'var(--brand-iris)';
+                  e.currentTarget.style.backgroundColor = 'var(--bg-surface-2, #f8fafc)';
+                  e.currentTarget.style.color = 'var(--brand-iris, #2563eb)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.backgroundColor = 'transparent';
-                  e.currentTarget.style.color = 'var(--text-secondary)';
+                  e.currentTarget.style.color = 'var(--text-secondary, #64748b)';
                 }}
                 aria-label="Закрыть"
               >
@@ -132,7 +134,7 @@ export default function Modal({
           {/* Content */}
           <div
             className="px-6 py-4"
-            style={{ color: 'var(--text-primary)' }}
+            style={{ color: 'inherit' }}
           >
             {children}
           </div>
@@ -142,8 +144,8 @@ export default function Modal({
             <div
               className="flex items-center justify-end gap-3 rounded-b-xl px-6 py-4"
               style={{
-                borderTop: '1px solid var(--border-default)',
-                backgroundColor: 'var(--bg-surface-2)',
+                borderTop: '1px solid var(--border-default, #e2e8f0)',
+                backgroundColor: 'var(--bg-surface-2, #f8fafc)',
               }}
             >
               {footer}

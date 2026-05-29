@@ -177,4 +177,8 @@ export const ProductionControlPage: React.FC = () => {
       </div>
     </div>
   );
-};
+}
+
+
+
+export default ProductionControlPage;

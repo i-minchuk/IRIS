@@ -37,6 +37,7 @@ class Project(Base):
     documents: Mapped[list["Document"]] = relationship(back_populates="project")
     routes: Mapped[list["Route"]] = relationship(back_populates="project")
     tasks: Mapped[list["Task"]] = relationship(back_populates="project")
+    tenders: Mapped[list["Tender"]] = relationship("Tender", back_populates="project")
     manager: Mapped[Optional["User"]] = relationship(foreign_keys=[manager_id])
 
 
@@ -52,6 +53,7 @@ class Stage(Base):
 
     project: Mapped["Project"] = relationship(back_populates="stages")
     kits: Mapped[list["Kit"]] = relationship(back_populates="stage", cascade="all, delete-orphan")
+    documents: Mapped[list["Document"]] = relationship(back_populates="stage")
 
 
 class Kit(Base):
@@ -66,6 +68,7 @@ class Kit(Base):
 
     stage: Mapped["Stage"] = relationship(back_populates="kits")
     sections: Mapped[list["Section"]] = relationship(back_populates="kit", cascade="all, delete-orphan")
+    documents: Mapped[list["Document"]] = relationship(back_populates="kit")
 
 
 class Section(Base):
@@ -79,4 +82,4 @@ class Section(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
 
     kit: Mapped["Kit"] = relationship(back_populates="sections")
-    # documents relationship removed — Document model has no section_id
+    documents: Mapped[list["Document"]] = relationship(back_populates="section")

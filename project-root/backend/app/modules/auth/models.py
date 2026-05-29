@@ -3,6 +3,7 @@ from sqlalchemy import String, Boolean, DateTime
 from sqlalchemy.orm import Mapped, mapped_column
 from datetime import datetime, timezone
 from app.db.base import Base
+from app.core.encryption import encrypt, decrypt
 
 
 class User(Base):
@@ -17,9 +18,23 @@ class User(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_superuser: Mapped[bool] = mapped_column(Boolean, default=False)
     email_verified: Mapped[bool] = mapped_column(Boolean, default=False)
+    email_notifications_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     reset_token: Mapped[str | None] = mapped_column(String(255), nullable=True)
     reset_token_expires: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    telegram_chat_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    totp_secret: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    totp_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc)
     )
+
+    _phone: Mapped[str | None] = mapped_column("phone", String(255), nullable=True)
+
+    @property
+    def phone(self):
+        return decrypt(self._phone) if self._phone else None
+
+    @phone.setter
+    def phone(self, value):
+        self._phone = encrypt(value) if value else None

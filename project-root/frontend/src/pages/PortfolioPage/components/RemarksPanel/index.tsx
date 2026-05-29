@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Document, Remark } from '../../types/portfolio';
 import { AUTHOR_COLORS } from '../../constants/statusColors';
-import { getAllRemarks } from '@/api/documents';
+import { getRemarks } from '@/api/remarks';
 
 interface RemarksPanelProps {
   document: Document | null;
@@ -27,19 +27,23 @@ export const RemarksPanel: React.FC<RemarksPanelProps> = ({ document }) => {
     const doc = document;
     async function fetchRemarks() {
       try {
-        const data = await getAllRemarks({ project_id: Number(doc.projectId) });
+        const response = await getRemarks({
+          project_id: Number(doc.projectId),
+          page: 1,
+          page_size: 100,
+        });
         if (cancelled) return;
         // Filter remarks for this document if possible, otherwise show all
-        const filtered = data.filter((r: any) =>
+        const filtered = response.items.filter((r: any) =>
           (doc.documentId && r.document_id === doc.documentId) ||
-          (doc.code && r.document_number === doc.code)
+          (doc.code && r.document_name === doc.code)
         );
         setRemarks(filtered.map((r: any) => ({
           id: String(r.id),
           documentId: doc.id,
           author: {
             type: 'customer' as const,
-            name: r.created_by_name || 'Система',
+            name: r.author_name || 'Система',
             color: AUTHOR_COLORS.customer,
           },
           text: r.description || r.title || '',

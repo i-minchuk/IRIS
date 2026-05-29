@@ -1,16 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/providers/ThemeProvider';
 import { ChromeBot } from '@/components/ChromeBot';
+import AddTenderModal from '@/features/tenders/components/AddTenderModal';
 import {
   FolderKanban, FileCheck, Clock, AlertTriangle,
   ArrowRight, Users, ChevronRight, ChevronDown,
   Link as LinkIcon, Gavel, Search,
   Calendar, TrendingUp, TrendingDown,
   CheckCircle2, XCircle, Clock3, Send, Sparkles,
-  FileText, HardHat, Layers, Bookmark, Eye, Download
+  FileText, HardHat, Layers, Bookmark, Eye, Download,
+  Plus
 } from 'lucide-react';
-import { DepartmentLoad } from './DashboardWidgets';
+// import { DepartmentLoad } from './DashboardWidgets';
+import { getTenders } from '@/features/tenders/api/tenders';
+import type { Tender } from '@/features/tenders/types/tender';
 
 /* ═══════════════════════════════════════════════════════════
    TYPES
@@ -88,15 +92,6 @@ const projectData: ProjectItem[] = [
       { name: 'ОВиК-02-008.docx', status: 'Утверждён', date: '07.05.2026' },
     ]
   },
-];
-
-const tenderData: TenderItem[] = [
-  { id: 't1', number: 'Т-2026-044', name: 'Строительство ЖК «Северный»', customer: 'ООО «СеверСтрой»', status: 'review', deadline: '25.05.2026', budget: '₽ 420 млн', daysLeft: 4, winChance: 65 },
-  { id: 't2', number: 'Т-2026-045', name: 'Реконструкция ТЭЦ-5', customer: 'ПАО «МосЭнерго»', status: 'preparation', deadline: '30.06.2026', budget: '₽ 180 млн', daysLeft: 40, winChance: 45 },
-  { id: 't3', number: 'Т-2026-046', name: 'Офисный комплекс «Гамма»', customer: 'ООО «ГаммаДев»', status: 'submitted', deadline: '15.05.2026', budget: '₽ 95 млн', daysLeft: -6, winChance: 30 },
-  { id: 't4', number: 'Т-2026-042', name: 'Склад А-12 — электрика', customer: 'ООО «ЛогистикПро»', status: 'won', deadline: '01.04.2026', budget: '₽ 38 млн', daysLeft: 0, winChance: 100 },
-  { id: 't5', number: 'Т-2026-043', name: 'ТЦ «Меридиан» — ОВиК', customer: 'ООО «МеридианГрупп»', status: 'lost', deadline: '10.04.2026', budget: '₽ 62 млн', daysLeft: 0, winChance: 0 },
-  { id: 't6', number: 'Т-2026-047', name: 'ЖК «Южный парк»', customer: 'ООО «ЮжПарк»', status: 'preparation', deadline: '12.07.2026', budget: '₽ 550 млн', daysLeft: 52, winChance: 55 },
 ];
 
 interface TemplateDoc {
@@ -208,14 +203,64 @@ function FilterBar({
 /* ═══════════════════════════════════════════════════════════
    TENDER VIEW
    ═══════════════════════════════════════════════════════════ */
+function mapTenderToItem(t: Tender): TenderItem {
+  const deadline = t.deadline ? new Date(t.deadline) : null;
+  const now = new Date();
+  const daysLeft = deadline ? Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : 0;
+  const stage = t.stage || 'new';
+  const statusMap: Record<string, TenderItem['status']> = {
+    'new': 'preparation',
+    'qualification': 'preparation',
+    'preparation': 'preparation',
+    'approval': 'preparation',
+    'submitted': 'submitted',
+    'auction': 'submitted',
+    'waiting': 'review',
+    'won': 'won',
+    'lost': 'lost',
+    'contract': 'won',
+  };
+  const budget = t.nmc ? `₽ ${(t.nmc / 1e6).toFixed(0)} млн` : '—';
+  return {
+    id: String(t.id),
+    number: `Т-${t.id.toString().padStart(4, '0')}`,
+    name: t.name,
+    customer: t.customer_name,
+    status: statusMap[stage] || 'preparation',
+    deadline: deadline ? deadline.toLocaleDateString('ru-RU') : '—',
+    budget,
+    daysLeft,
+    winChance: t.probability || 0,
+  };
+}
+
 function TendersView() {
   const navigate = useNavigate();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   const [filter, setFilter] = useState<string>('all');
   const [search, setSearch] = useState('');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [tenders, setTenders] = useState<TenderItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filtered = tenderData.filter(t => {
+  const fetchTenders = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await getTenders();
+      setTenders(data.map(mapTenderToItem));
+    } catch {
+      setTenders([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchTenders();
+  }, [fetchTenders]);
+
+  const filtered = tenders.filter(t => {
     if (filter !== 'all' && t.status !== filter) return false;
     if (search && !t.name.toLowerCase().includes(search.toLowerCase()) && !t.number.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
@@ -229,11 +274,16 @@ function TendersView() {
     lost:        { label: 'Проиграна',  color: '#DC2626', icon: <XCircle size={12} /> },
   };
 
+  const activeCount = tenders.filter(t => t.status === 'preparation' || t.status === 'submitted' || t.status === 'review').length;
+  const reviewCount = tenders.filter(t => t.status === 'review').length;
+  const wonCount = tenders.filter(t => t.status === 'won').length;
+  const lostCount = tenders.filter(t => t.status === 'lost').length;
+
   const kpi = [
-    { label: 'Активные', value: '12', sub: 'в работе', color: '#2563EB', icon: <Clock3 size={14} /> },
-    { label: 'На рассмотрении', value: '3', sub: 'ожидание', color: '#0EA5E9', icon: <Search size={14} /> },
-    { label: 'Выиграно', value: '8', sub: 'в этом году', color: '#0C7205', icon: <TrendingUp size={14} /> },
-    { label: 'Проиграно', value: '4', sub: 'в этом году', color: '#DC2626', icon: <TrendingDown size={14} /> },
+    { label: 'Активные', value: String(activeCount), sub: 'в работе', color: '#2563EB', icon: <Clock3 size={14} /> },
+    { label: 'На рассмотрении', value: String(reviewCount), sub: 'ожидание', color: '#0EA5E9', icon: <Search size={14} /> },
+    { label: 'Выиграно', value: String(wonCount), sub: 'всего', color: '#0C7205', icon: <TrendingUp size={14} /> },
+    { label: 'Проиграно', value: String(lostCount), sub: 'всего', color: '#DC2626', icon: <TrendingDown size={14} /> },
   ];
 
   const filterOptions = [
@@ -281,7 +331,18 @@ function TendersView() {
             style={{ color: 'var(--text-primary)' }}
           />
         </div>
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md transition-colors cursor-pointer"
+          style={{ background: '#2563EB', color: '#ffffff' }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = '#1d4ed8'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = '#2563EB'; }}
+        >
+          <Plus size={13} /> Добавить тендер
+        </button>
       </div>
+
+      <AddTenderModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} onCreated={fetchTenders} />
 
       <FilterBar options={filterOptions} active={filter} onChange={setFilter} count={filtered.length} />
 
@@ -297,44 +358,50 @@ function TendersView() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((t) => {
-                const meta = statusMeta[t.status];
-                return (
-                  <tr key={t.id} className="transition-colors cursor-pointer" style={{ borderBottom: '1px solid var(--border-color)' }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-                  >
-                    <td className="px-3 py-2.5 text-[11px] font-mono font-medium" style={{ color: 'var(--text-secondary)' }}>{t.number}</td>
-                    <td className="px-3 py-2.5 text-[11px] font-medium" style={{ color: 'var(--text-primary)' }}>{t.name}</td>
-                    <td className="px-3 py-2.5 text-[11px]" style={{ color: 'var(--text-secondary)' }}>{t.customer}</td>
-                    <td className="px-3 py-2.5">
-                      <span className="inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-full font-medium"
-                        style={{ background: meta.color + '15', color: meta.color, border: `1px solid ${meta.color}30` }}>
-                        {meta.icon} {meta.label}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2.5 text-[11px]" style={{ color: t.daysLeft < 0 ? '#DC2626' : t.daysLeft <= 3 ? '#D4AF37' : 'var(--text-secondary)' }}>
-                      <span className="flex items-center gap-1"><Calendar size={10} /> {t.deadline} {t.daysLeft < 0 && `(${t.daysLeft} дн.)`}</span>
-                    </td>
-                    <td className="px-3 py-2.5 text-[11px] font-medium" style={{ color: 'var(--text-primary)' }}>{t.budget}</td>
-                    <td className="px-3 py-2.5">
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-12 h-1.5 rounded-full overflow-hidden" style={{ background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }}>
-                          <div className="h-full rounded-full" style={{ width: `${t.winChance}%`, background: t.winChance >= 70 ? '#0C7205' : t.winChance >= 40 ? '#D4AF37' : '#DC2626' }} />
-                        </div>
-                        <span className="text-[10px] font-medium" style={{ color: 'var(--text-secondary)' }}>{t.winChance}%</span>
-                      </div>
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <button onClick={() => navigate('/documents')} className="text-[9px] px-2 py-1 rounded transition-colors cursor-pointer" style={{ color: '#2563EB', background: 'rgba(37,99,235,0.1)' }}>
-                        Открыть
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-              {filtered.length === 0 && (
-                <tr><td colSpan={8} className="px-3 py-8 text-center text-xs" style={{ color: 'var(--text-muted)' }}>Ничего не найдено</td></tr>
+              {loading ? (
+                <tr><td colSpan={8} className="px-3 py-8 text-center text-xs" style={{ color: 'var(--text-muted)' }}>Загрузка...</td></tr>
+              ) : (
+                <>
+                  {filtered.map((t) => {
+                    const meta = statusMeta[t.status];
+                    return (
+                      <tr key={t.id} className="transition-colors cursor-pointer" style={{ borderBottom: '1px solid var(--border-color)' }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                      >
+                        <td className="px-3 py-2.5 text-[11px] font-mono font-medium" style={{ color: 'var(--text-secondary)' }}>{t.number}</td>
+                        <td className="px-3 py-2.5 text-[11px] font-medium" style={{ color: 'var(--text-primary)' }}>{t.name}</td>
+                        <td className="px-3 py-2.5 text-[11px]" style={{ color: 'var(--text-secondary)' }}>{t.customer}</td>
+                        <td className="px-3 py-2.5">
+                          <span className="inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-full font-medium"
+                            style={{ background: meta.color + '15', color: meta.color, border: `1px solid ${meta.color}30` }}>
+                            {meta.icon} {meta.label}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2.5 text-[11px]" style={{ color: t.daysLeft < 0 ? '#DC2626' : t.daysLeft <= 3 ? '#D4AF37' : 'var(--text-secondary)' }}>
+                          <span className="flex items-center gap-1"><Calendar size={10} /> {t.deadline} {t.daysLeft < 0 && `(${t.daysLeft} дн.)`}</span>
+                        </td>
+                        <td className="px-3 py-2.5 text-[11px] font-medium" style={{ color: 'var(--text-primary)' }}>{t.budget}</td>
+                        <td className="px-3 py-2.5">
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-12 h-1.5 rounded-full overflow-hidden" style={{ background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }}>
+                              <div className="h-full rounded-full" style={{ width: `${t.winChance}%`, background: t.winChance >= 70 ? '#0C7205' : t.winChance >= 40 ? '#D4AF37' : '#DC2626' }} />
+                            </div>
+                            <span className="text-[10px] font-medium" style={{ color: 'var(--text-secondary)' }}>{t.winChance}%</span>
+                          </div>
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <button onClick={() => navigate('/documents')} className="text-[9px] px-2 py-1 rounded transition-colors cursor-pointer" style={{ color: '#2563EB', background: 'rgba(37,99,235,0.1)' }}>
+                            Открыть
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {filtered.length === 0 && (
+                    <tr><td colSpan={8} className="px-3 py-8 text-center text-xs" style={{ color: 'var(--text-muted)' }}>Ничего не найдено</td></tr>
+                  )}
+                </>
               )}
             </tbody>
           </table>
@@ -634,7 +701,7 @@ function ProjectsView() {
 
             {/* Загрузка по отделам */}
             <div className="p-3 rounded-xl min-w-0" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
-              <DepartmentLoad />
+              {/* <DepartmentLoad /> */}
             </div>
           </div>
         </div>

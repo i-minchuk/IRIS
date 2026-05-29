@@ -1,4 +1,4 @@
-﻿import axios from 'axios';
+import axios from 'axios';
 import * as Sentry from '@sentry/react';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/features/auth/store/authStore';
@@ -10,9 +10,10 @@ const apiClient = axios.create({
     'Content-Type': 'application/json',
   },
   timeout: 30000,
+  withCredentials: true,
 });
 
-// Attach access token to every request
+// Attach access token to every request (fallback when session cookie is not enough)
 apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem('access_token');
   if (token) {
@@ -27,7 +28,7 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Retry РґР»СЏ СЃРµС‚РµРІС‹С… РѕС€РёР±РѕРє (РґРѕ 3 СЂР°Р· СЃ СЌРєСЃРїРѕРЅРµРЅС†РёР°Р»СЊРЅРѕР№ Р·Р°РґРµСЂР¶РєРѕР№)
+    // Retry для сетевых ошибок (до 3 раз с экспоненциальной задержкой)
     if (
       (error.code === 'ECONNREFUSED' || error.code === 'ECONNRESET') &&
       originalRequest._retryCount !== undefined &&
@@ -39,16 +40,16 @@ apiClient.interceptors.response.use(
       return apiClient(originalRequest);
     }
 
-    // Sentry: Р»РѕРіРёСЂСѓРµРј 5xx Рё СЃРµС‚РµРІС‹Рµ РѕС€РёР±РєРё
+    // Sentry: логируем 5xx и сетевые ошибки
     if (error.response?.status >= 500 || !error.response) {
       Sentry.captureException(error);
     }
 
-    // User-facing toast for API errors (skip 401 вЂ” handled by redirect)
+    // User-facing toast for API errors (skip 401 — handled by redirect)
     if (error.response && error.response.status !== 401) {
       const status = error.response.status;
       const data = error.response.data;
-      let message = 'РџСЂРѕРёР·РѕС€Р»Р° РѕС€РёР±РєР°';
+      let message = 'Произошла ошибка';
       if (typeof data?.detail === 'string') {
         message = data.detail;
       } else if (Array.isArray(data?.detail) && data.detail.length > 0) {
@@ -57,22 +58,22 @@ apiClient.interceptors.response.use(
       } else if (typeof data?.message === 'string') {
         message = data.message;
       } else if (status === 403) {
-        message = 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰С‘РЅ';
+        message = 'Доступ запрещён';
       } else if (status === 404) {
-        message = 'РќРµ РЅР°Р№РґРµРЅРѕ';
+        message = 'Не найдено';
       } else if (status === 422) {
-        message = 'РћС€РёР±РєР° РІР°Р»РёРґР°С†РёРё';
+        message = 'Ошибка валидации';
       } else if (status === 429) {
-        message = 'РЎР»РёС€РєРѕРј РјРЅРѕРіРѕ Р·Р°РїСЂРѕСЃРѕРІ. РџРѕРїСЂРѕР±СѓР№С‚Рµ РїРѕР·Р¶Рµ.';
+        message = 'Слишком много запросов. Попробуйте позже.';
       } else if (status >= 500) {
-        message = 'РћС€РёР±РєР° СЃРµСЂРІРµСЂР°. РџРѕРїСЂРѕР±СѓР№С‚Рµ РїРѕР·Р¶Рµ.';
+        message = 'Ошибка сервера. Попробуйте позже.';
       }
       toast.error(message);
     } else if (!error.response) {
-      toast.error('РќРµС‚ СЃРѕРµРґРёРЅРµРЅРёСЏ СЃ СЃРµСЂРІРµСЂРѕРј');
+      toast.error('Нет соединения с сервером');
     }
 
-    // 401 auth handling вЂ” РїСЂРѕР±СѓРµРј refresh token
+    // 401 auth handling — пробуем refresh token
     if (error.response?.status === 401) {
       const refreshToken = localStorage.getItem('refresh_token');
       if (refreshToken && !originalRequest._retry) {
@@ -80,19 +81,19 @@ apiClient.interceptors.response.use(
         try {
           const { data } = await axios.post('/api/v1/auth/refresh', {
             refresh_token: refreshToken,
-          });
+          }, { withCredentials: true });
           localStorage.setItem('access_token', data.access_token);
           originalRequest.headers.Authorization = `Bearer ${data.access_token}`;
           return apiClient(originalRequest);
         } catch {
-          // Refresh failed вЂ” clear auth state and redirect to login
+          // Refresh failed — clear auth state and redirect to login
           useAuthStore.getState().logout();
           if (window.location.pathname !== '/login') {
             window.location.href = '/login';
           }
         }
       } else {
-        // No refresh token or already retried вЂ” clear auth state and redirect
+        // No refresh token or already retried — clear auth state and redirect
         useAuthStore.getState().logout();
         if (window.location.pathname !== '/login') {
           window.location.href = '/login';

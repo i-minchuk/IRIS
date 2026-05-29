@@ -45,6 +45,9 @@ class UserInDB(UserBase):
 class User(UserBase):
     id: int
     is_active: bool
+    role: str
+    telegram_chat_id: Optional[str] = None
+    totp_enabled: bool = False
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)
 
@@ -103,5 +106,3 @@ class ResetPasswordRequest(BaseModel):
 
 class PasswordResetResponse(BaseModel):
     message: str
-    # В демо-режиме токен возвращается в ответе для удобства тестирования
-    reset_token: Optional[str] = None

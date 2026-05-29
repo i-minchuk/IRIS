@@ -1,1 +1,1 @@
-export { RemarksPage } from './RemarksPage/index';
+export { RemarksPage as default } from './RemarksPage/index';

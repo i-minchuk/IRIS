@@ -17,7 +17,7 @@ def set_auth_cookies(response: Response, access_token: str, refresh_token: str) 
         httponly=True,  # Недоступен для JS
         secure=True,    # Только HTTPS (в production)
         samesite="lax", # Защита от CSRF
-        path="/api/auth",
+        path="/api/v1",
     )
     
     # Refresh token cookie (долгоживущий)
@@ -28,7 +28,7 @@ def set_auth_cookies(response: Response, access_token: str, refresh_token: str) 
         httponly=True,  # Недоступен для JS
         secure=True,    # Только HTTPS (в production)
         samesite="lax", # Защита от CSRF
-        path="/api/auth",
+        path="/api/v1",
     )
 
 
@@ -36,9 +36,9 @@ def clear_auth_cookies(response: Response) -> None:
     """Clear auth cookies."""
     response.delete_cookie(
         key="access_token",
-        path="/api/auth",
+        path="/api/v1",
     )
     response.delete_cookie(
         key="refresh_token",
-        path="/api/auth",
+        path="/api/v1",
     )

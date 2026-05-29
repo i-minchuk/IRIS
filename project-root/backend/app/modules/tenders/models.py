@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import String, Text, ForeignKey, DateTime, Integer, Float, JSON, Boolean
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 
@@ -40,7 +40,10 @@ class Tender(Base):
     team_size: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     team_composition: Mapped[Optional[dict]] = mapped_column(JSON, default=dict)
 
-    status: Mapped[str] = mapped_column(String(50), default="draft")  # draft, review, approved, sent, won, lost, archived
+    status: Mapped[str] = mapped_column(String(50), default="draft")  # draft, review, approved, sent, won, lost, cancelled, archived
+    project_id: Mapped[Optional[int]] = mapped_column(ForeignKey("projects.id"), nullable=True)
+    project: Mapped[Optional["Project"]] = relationship("Project", back_populates="tenders")
+
     created_by_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(

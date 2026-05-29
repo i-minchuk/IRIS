@@ -1,5 +1,6 @@
 // src/pages/ProjectPortfolioPage/components/ProjectForm/index.tsx
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import { Project, ProjectStatus, ProjectPriority } from '../../types/project';
 import { PROJECT_STATUS_CONFIG } from '../../constants/projectStatuses';
 import { PROJECT_PRIORITY_CONFIG } from '../../constants/projectStatuses';
@@ -32,8 +33,19 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
     tenderManager: project?.tenderManager || '',
   });
 
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+
+    if (formData.deadline && formData.startDate && formData.deadline <= formData.startDate) {
+      setError('Дедлайн должен быть позже даты начала');
+      return;
+    }
+
+    setLoading(true);
     try {
       if (!project) {
         await createProject({
@@ -46,8 +58,18 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
         });
       }
       onSave();
-    } catch (err) {
-      console.error('Failed to save project:', err);
+    } catch (err: any) {
+      const status = err?.response?.status;
+      let message = 'Не удалось сохранить проект';
+      if (status === 400) message = 'Ошибка в данных';
+      else if (status === 403) message = 'Доступ запрещён';
+      else if (status === 404) message = 'Не найдено';
+      else if (status === 422) message = 'Ошибка валидации';
+      else if (status >= 500) message = 'Ошибка сервера';
+      toast.error(message);
+      setError(message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -157,6 +179,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
                 </label>
                 <input
                   type="number"
+                  min={0}
                   value={formData.contractSum}
                   onChange={(e) =>
                     setFormData({ ...formData, contractSum: parseFloat(e.target.value) || 0 })
@@ -171,6 +194,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
                 </label>
                 <input
                   type="number"
+                  min={0}
                   value={formData.spentBudget}
                   onChange={(e) =>
                     setFormData({ ...formData, spentBudget: parseFloat(e.target.value) || 0 })
@@ -185,6 +209,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
                 </label>
                 <input
                   type="number"
+                  min={0}
                   value={formData.plannedBudget}
                   onChange={(e) =>
                     setFormData({ ...formData, plannedBudget: parseFloat(e.target.value) || 0 })
@@ -268,20 +293,26 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
             </div>
           </div>
 
+          {error && (
+            <div className="text-red-400 text-sm">{error}</div>
+          )}
+
           {/* Actions */}
           <div className="flex justify-end gap-3 pt-4 border-t border-[#334155]">
             <button
               type="button"
               onClick={onCancel}
-              className="px-4 py-2 bg-[#334155] text-[#e2e8f0] rounded-lg hover:bg-[#475569] transition-colors"
+              disabled={loading}
+              className="px-4 py-2 bg-[#334155] text-[#e2e8f0] rounded-lg hover:bg-[#475569] transition-colors disabled:opacity-50"
             >
               Отмена
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-[#22c55e] text-white rounded-lg hover:bg-[#16a34a] transition-colors"
+              disabled={loading}
+              className="px-4 py-2 bg-[#22c55e] text-white rounded-lg hover:bg-[#16a34a] transition-colors disabled:opacity-50"
             >
-              {project ? 'Сохранить' : 'Создать'}
+              {loading ? 'Сохранение...' : project ? 'Сохранить' : 'Создать'}
             </button>
           </div>
         </form>

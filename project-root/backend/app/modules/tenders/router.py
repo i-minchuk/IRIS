@@ -11,7 +11,9 @@ from app.modules.auth.deps import get_current_active_user
 from app.modules.auth.models import User
 from app.modules.tenders.models import Tender, TenderDocumentPreview
 from app.modules.tenders.calculator import calculate_tender
+from app.modules.projects.models import Project
 from app.modules.tasks.models import Task
+from app.core.cache import invalidate_cache
 
 router = APIRouter(tags=["tenders"])
 
@@ -94,6 +96,20 @@ async def portfolio_summary(
     }
 
 
+def _parse_date(value):
+    """Преобразует строку даты в datetime для SQLAlchemy / PostgreSQL."""
+    if not value:
+        return None
+    if isinstance(value, datetime):
+        return value
+    if isinstance(value, str):
+        # HTML date input: '2025-08-01' или ISO: '2025-08-01T00:00:00'
+        if len(value) == 10:
+            return datetime.strptime(value, "%Y-%m-%d")
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    return None
+
+
 @router.post("", response_model=dict)
 async def create_tender(
     data: dict,
@@ -108,8 +124,8 @@ async def create_tender(
         volume_unit=data.get("volume_unit"),
         complexity=data.get("complexity", "medium"),
         standards=data.get("standards", []),
-        start_date=data.get("start_date"),
-        deadline=data.get("deadline"),
+        start_date=_parse_date(data.get("start_date")),
+        deadline=_parse_date(data.get("deadline")),
         duration_months=data.get("duration_months"),
         nmc=data.get("nmc"),
         our_price=data.get("our_price"),
@@ -118,7 +134,7 @@ async def create_tender(
         platform=data.get("platform"),
         region=data.get("region"),
         responsible_id=data.get("responsible_id"),
-        auction_end_time=data.get("auction_end_time"),
+        auction_end_time=_parse_date(data.get("auction_end_time")),
         stage=data.get("stage", "new"),
         calculated_hours=data.get("calculated_hours"),
         calculated_cost=data.get("calculated_cost"),
@@ -130,6 +146,8 @@ async def create_tender(
     db.add(tender)
     await db.commit()
     await db.refresh(tender)
+    await invalidate_cache("cache:*trend*")
+    await invalidate_cache("cache:*dashboard*")
     return {
         "id": tender.id,
         "name": tender.name,
@@ -150,10 +168,12 @@ async def update_tender_stage(
     tender = result.scalar_one_or_none()
     if not tender:
         raise HTTPException(status_code=404, detail="Tender not found")
-    if "stage" in data:
-        tender.stage = data["stage"]
-    if "status" in data:
-        tender.status = data["status"]
+    new_stage = data.get("stage")
+    new_status = data.get("status")
+    if new_stage:
+        tender.stage = new_stage
+    if new_status:
+        tender.status = new_status
     if "our_price" in data:
         tender.our_price = data["our_price"]
     if "margin_pct" in data:
@@ -161,7 +181,37 @@ async def update_tender_stage(
     if "probability" in data:
         tender.probability = data["probability"]
     await db.commit()
-    return {"id": tender.id, "stage": tender.stage, "status": tender.status}
+
+    # Auto-create project when tender is won and no project linked yet
+    project_created = None
+    if new_stage == "won" and tender.project_id is None:
+        today = datetime.utcnow()
+        project = Project(
+            name=tender.name,
+            code=f"PRJ-{tender.id:04d}",
+            customer_name=tender.customer_name,
+            status="active",
+            stage=tender.project_type,
+            planned_finish=tender.deadline,
+            created_by_id=current_user.id,
+        )
+        db.add(project)
+        await db.commit()
+        await db.refresh(project)
+        tender.project_id = project.id
+        await db.commit()
+        project_created = {
+            "id": project.id,
+            "name": project.name,
+            "code": project.code,
+        }
+
+    await invalidate_cache("cache:*trend*")
+    await invalidate_cache("cache:*dashboard*")
+    result_payload = {"id": tender.id, "stage": tender.stage, "status": tender.status}
+    if project_created:
+        result_payload["project_created"] = project_created
+    return result_payload
 
 
 @router.get("/{tender_id}", response_model=dict)
@@ -257,6 +307,52 @@ async def calculate_tender_endpoint(
         "tender_id": tender.id,
         "name": tender.name,
         **calc,
+    }
+
+
+@router.post("/{tender_id}/create-project", response_model=dict)
+async def create_project_from_tender(
+    tender_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Create a Project from a won/contract tender and link them."""
+    result = await db.execute(select(Tender).where(Tender.id == tender_id))
+    tender = result.scalar_one_or_none()
+    if not tender:
+        raise HTTPException(status_code=404, detail="Tender not found")
+
+    if tender.project_id is not None:
+        raise HTTPException(status_code=409, detail="Project already created for this tender")
+
+    today = datetime.utcnow()
+    project = Project(
+        name=tender.name,
+        code=f"PRJ-{tender.id:04d}",
+        customer_name=tender.customer_name,
+        status="active",
+        stage=tender.project_type,
+        planned_finish=tender.deadline,
+        created_by_id=current_user.id,
+    )
+    db.add(project)
+    await db.commit()
+    await db.refresh(project)
+
+    tender.project_id = project.id
+    await db.commit()
+    await invalidate_cache("cache:*portfolio*")
+    await invalidate_cache("cache:*dashboard*")
+
+    return {
+        "id": project.id,
+        "name": project.name,
+        "code": project.code,
+        "customer_name": project.customer_name,
+        "status": project.status,
+        "stage": project.stage,
+        "planned_finish": project.planned_finish.isoformat() if project.planned_finish else None,
+        "created_at": project.created_at.isoformat() if project.created_at else None,
     }
 
 

@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, WebSocket, Query, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
@@ -13,13 +14,15 @@ from app.core.config import settings
 from app.core.exceptions import register_exception_handlers
 from app.core.logging_config import setup_logging
 from app.core.middleware import PerformanceMiddleware
-from app.core.security_utils import limiter
-from app.db.session import get_db, AsyncSessionLocal
+from app.core.metrics import http_requests_total, http_request_duration, get_metrics
+from app.core.security_utils import is_secure_secret_key, limiter
+from app.db.session import get_db, AsyncSessionLocal, primary_engine as engine
 from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
 from sqlalchemy import text
 from app.modules.collaboration import collaboration_websocket
 from app.modules.collaboration.ws_manager import manager as ws_manager
+from app.websocket.redis_pubsub import redis_pubsub
 
 
 setup_logging()
@@ -70,6 +73,9 @@ def add_middlewares(app: FastAPI) -> None:
     app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(PerformanceMiddleware, threshold=1.0)
 
+    # Gzip compression for responses > 1KB
+    app.add_middleware(GZipMiddleware, minimum_size=1000)
+
     if settings.BACKEND_CORS_ORIGINS:
         app.add_middleware(
             CORSMiddleware,
@@ -84,6 +90,7 @@ def add_middlewares(app: FastAPI) -> None:
 async def lifespan(app: FastAPI):
     logger.info("Starting %s v%s", settings.PROJECT_NAME, settings.VERSION)
     app.state.started = True
+    await redis_pubsub.connect()
     yield
     logger.info("Shutting down %s", settings.PROJECT_NAME)
 
@@ -103,6 +110,32 @@ register_exception_handlers(app)
 
 # Подключаем основные роуты (включая все модули через api_router)
 app.include_router(api_router)
+
+
+@app.middleware("http")
+async def metrics_middleware(request, call_next):
+    start = time.time()
+    response = await call_next(request)
+    duration = time.time() - start
+
+    http_requests_total.labels(
+        method=request.method,
+        endpoint=request.url.path,
+        status=response.status_code
+    ).inc()
+
+    http_request_duration.labels(
+        method=request.method,
+        endpoint=request.url.path
+    ).observe(duration)
+
+    return response
+
+
+@app.get("/metrics")
+async def metrics():
+    return get_metrics()
+
 
 @app.websocket("/ws/ai/inline/{client_id}")
 async def ai_inline_ws(websocket: WebSocket, client_id: str):
@@ -181,4 +214,34 @@ async def api_health_check():
         "version": settings.VERSION,
         "api_base": settings.API_V1_STR,
         "database": db_check,
+    }
+
+
+@app.get("/health/security")
+async def security_health_check():
+    return {
+        "secret_key_valid": is_secure_secret_key(settings.SECRET_KEY),
+        "rate_limiter": "redis" if "redis" in str(limiter._storage) else "memory",
+        "recommendations": [],
+    }
+
+
+@app.get("/health/db")
+async def health_db(db: AsyncSession = Depends(get_db)):
+    try:
+        await db.execute(text("SELECT 1"))
+        pool_status = engine.pool.status() if hasattr(engine.pool, "status") else None
+        return {"status": "ok", "pool": pool_status}
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
+
+
+@app.get("/metrics/db")
+async def db_metrics():
+    pool = engine.pool
+    return {
+        "pool_size": pool.size() if hasattr(pool, "size") else None,
+        "checked_in": pool.checkedin() if hasattr(pool, "checkedin") else None,
+        "checked_out": pool.checkedout() if hasattr(pool, "checkedout") else None,
+        "overflow": pool.overflow() if hasattr(pool, "overflow") else None,
     }

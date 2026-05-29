@@ -28,6 +28,7 @@ export interface Tender {
   team_size?: number;
   team_composition: Record<string, unknown>;
   status: string;
+  project_id?: number;
   created_at: string;
 }
 

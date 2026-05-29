@@ -42,7 +42,7 @@ export default function Select({
         <label
           htmlFor={id}
           className="mb-1 block text-sm font-medium"
-          style={{ color: 'var(--text-primary)' }}
+          style={{ color: 'inherit' }}
         >
           {label}
           {required ? (
@@ -63,23 +63,23 @@ export default function Select({
           disabled={disabled}
           className="w-full appearance-none rounded-md border px-3 py-2 pr-10 text-sm outline-none transition-colors duration-150"
           style={{
-            backgroundColor: disabled ? 'var(--bg-surface)' : 'var(--bg-surface-2)',
-            borderColor: hasError ? 'var(--error)' : 'var(--border-default)',
-            color: disabled ? 'var(--text-tertiary)' : 'var(--text-primary)',
+            backgroundColor: disabled ? 'var(--bg-surface, #ffffff)' : 'var(--bg-surface-2, #f8fafc)',
+            borderColor: hasError ? 'var(--error, #dc2626)' : 'var(--border-default, #e2e8f0)',
+            color: disabled ? 'var(--text-tertiary, #94a3b8)' : 'inherit',
             boxShadow: 'none',
             cursor: disabled ? 'not-allowed' : 'pointer',
           }}
           onFocus={(e) => {
             e.currentTarget.style.borderColor = hasError
-              ? 'var(--error)'
-              : 'var(--brand-iris)';
+              ? 'var(--error, #dc2626)'
+              : 'var(--brand-iris, #2563eb)';
             e.currentTarget.style.boxShadow =
-              '0 0 0 1px color-mix(in srgb, var(--brand-iris) 40%, transparent)';
+              '0 0 0 1px color-mix(in srgb, var(--brand-iris, #2563eb) 40%, transparent)';
           }}
           onBlur={(e) => {
             e.currentTarget.style.borderColor = hasError
-              ? 'var(--error)'
-              : 'var(--border-default)';
+              ? 'var(--error, #dc2626)'
+              : 'var(--border-default, #e2e8f0)';
             e.currentTarget.style.boxShadow = 'none';
           }}
         >
@@ -95,7 +95,7 @@ export default function Select({
         <span
           aria-hidden="true"
           className="pointer-events-none absolute inset-y-0 right-3 flex items-center"
-          style={{ color: 'var(--text-tertiary)' }}
+          style={{ color: 'inherit' }}
         >
           <svg
             width="16"
@@ -116,7 +116,7 @@ export default function Select({
       </div>
 
       {error ? (
-        <p className="mt-1 text-xs" style={{ color: 'var(--error)' }}>
+        <p className="mt-1 text-xs" style={{ color: 'var(--error, #dc2626)' }}>
           {error}
         </p>
       ) : null}

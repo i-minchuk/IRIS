@@ -2,10 +2,13 @@
 import { create } from 'zustand';
 import { authApi } from '../api/authApi';
 
-interface User {
+export type UserRole = 'director' | 'deputy_director' | 'department_head' | 'gip' | 'site_manager' | 'engineer' | 'manager' | 'norm_controller' | 'admin';
+
+export interface User {
   id: number;
   email: string;
   full_name: string | null;
+  role: UserRole;
   is_active: boolean;
 }
 
@@ -30,6 +33,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   hasHydrated: true, // сразу true, т.к. нет persist
 
   setAuth: (user, token) => {
+    // Token is stored in HttpOnly cookie by backend; keep localStorage as fallback
     localStorage.setItem('access_token', token);
     set({ user, token, isAuthenticated: true, isLoading: false });
   },
@@ -51,7 +55,14 @@ export const useAuthStore = create<AuthState>((set) => ({
       return;
     }
     try {
-      const user = await authApi.getCurrentUser();
+      const apiUser = await authApi.getCurrentUser();
+      const user: User = {
+        id: apiUser.id,
+        email: apiUser.email,
+        full_name: apiUser.full_name,
+        role: apiUser.role as UserRole,
+        is_active: apiUser.is_active,
+      };
       set({ user, token, isAuthenticated: true, isLoading: false });
     } catch {
       localStorage.removeItem('access_token');

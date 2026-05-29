@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import type { WSMessage } from '@/shared/hooks/useWebSocket';
+import type { WSMessage } from '@/features/collaboration/hooks/useWebSocket';
 
-export interface UserPresence {
+export interface OnlineUser {
   user_id: number;
   full_name: string;
   email: string;
@@ -16,66 +16,77 @@ export interface LockInfo {
   locked_at?: string;
 }
 
-export type { WSMessage };
-
 interface CollaborationState {
-  onlineUsers: Map<number, UserPresence>;
-  lockedDocuments: Map<number, LockInfo>;
-  currentSubscribers: UserPresence[];
+  // Список подключённых пользователей
+  onlineUsers: OnlineUser[];
+  // Текущий редактируемый документ
+  currentDocumentId: number | null;
+  // Статус блокировки документа
+  lockInfo: LockInfo | null;
+  // WebSocket состояние
   isConnected: boolean;
   sendMessage: (msg: WSMessage) => void;
-  // actions
-  setUserPresence: (user: UserPresence) => void;
-  removeUserPresence: (userId: number) => void;
-  setDocumentLock: (lock: LockInfo) => void;
-  removeDocumentLock: (documentId: number) => void;
-  setCurrentSubscribers: (subscribers: UserPresence[]) => void;
+  // Legacy compatibility
+  lockedDocuments: Map<number, LockInfo>;
+
+  // Actions
+  setOnlineUsers: (users: OnlineUser[]) => void;
+  addOnlineUser: (user: OnlineUser) => void;
+  removeOnlineUser: (userId: number) => void;
+  setCurrentDocument: (documentId: number | null) => void;
+  setLockInfo: (lock: LockInfo | null) => void;
   setWsState: (state: { isConnected?: boolean; sendMessage?: (msg: WSMessage) => void }) => void;
   reset: () => void;
 }
 
 const initialState = {
-  onlineUsers: new Map<number, UserPresence>(),
-  lockedDocuments: new Map<number, LockInfo>(),
-  currentSubscribers: [],
+  onlineUsers: [],
+  currentDocumentId: null,
+  lockInfo: null,
   isConnected: false,
   sendMessage: (_msg: WSMessage) => {},
+  lockedDocuments: new Map<number, LockInfo>(),
 };
 
 export const useCollaborationStore = create<CollaborationState>((set) => ({
   ...initialState,
 
-  setUserPresence: (user) =>
+  setOnlineUsers: (users) => set({ onlineUsers: users }),
+
+  addOnlineUser: (user) =>
     set((state) => {
-      const next = new Map(state.onlineUsers);
-      next.set(user.user_id, user);
-      return { onlineUsers: next };
+      const exists = state.onlineUsers.some((u) => u.user_id === user.user_id);
+      if (exists) {
+        return {
+          onlineUsers: state.onlineUsers.map((u) =>
+            u.user_id === user.user_id ? user : u
+          ),
+        };
+      }
+      return { onlineUsers: [...state.onlineUsers, user] };
     }),
 
-  removeUserPresence: (userId) =>
-    set((state) => {
-      const next = new Map(state.onlineUsers);
-      next.delete(userId);
-      return { onlineUsers: next };
-    }),
+  removeOnlineUser: (userId) =>
+    set((state) => ({
+      onlineUsers: state.onlineUsers.filter((u) => u.user_id !== userId),
+    })),
 
-  setDocumentLock: (lock) =>
+  setCurrentDocument: (documentId) => set({ currentDocumentId: documentId }),
+
+  setLockInfo: (lock) =>
     set((state) => {
       const next = new Map(state.lockedDocuments);
-      next.set(lock.document_id, lock);
-      return { lockedDocuments: next };
+      if (lock) {
+        next.set(lock.document_id, lock);
+      }
+      return { lockInfo: lock, lockedDocuments: next };
     }),
 
-  removeDocumentLock: (documentId) =>
-    set((state) => {
-      const next = new Map(state.lockedDocuments);
-      next.delete(documentId);
-      return { lockedDocuments: next };
-    }),
-
-  setCurrentSubscribers: (subscribers) => set({ currentSubscribers: subscribers }),
-
-  setWsState: (updates) => set((state) => ({ ...state, ...updates })),
+  setWsState: (updates) =>
+    set((state) => ({
+      ...state,
+      ...updates,
+    })),
 
   reset: () => set({ ...initialState }),
 }));

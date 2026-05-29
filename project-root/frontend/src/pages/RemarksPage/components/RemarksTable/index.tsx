@@ -1,5 +1,7 @@
 import React from 'react';
+import { Send } from 'lucide-react';
 import { RemarkListItem, RemarkPriority, RemarkStatus } from '@/types/remarks';
+import { useRemarksStore } from '@/stores/remarksStore';
 
 interface RemarksTableProps {
   remarks: RemarkListItem[];
@@ -10,6 +12,15 @@ interface RemarksTableProps {
   getPriorityIcon: (priority: RemarkPriority) => string;
 }
 
+const workflowStatusColors: Record<string, string> = {
+  draft: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200',
+  running: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+  completed: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+  paused: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+  cancelled: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+  failed: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+};
+
 export const RemarksTable: React.FC<RemarksTableProps> = ({
   remarks,
   selectedRemarks,
@@ -18,6 +29,7 @@ export const RemarksTable: React.FC<RemarksTableProps> = ({
   statusColors,
   getPriorityIcon,
 }) => {
+  const { startWorkflow } = useRemarksStore();
   const toggleSelect = (id: string) => {
     const newSet = new Set(selectedRemarks);
     if (newSet.has(id)) {
@@ -68,6 +80,7 @@ export const RemarksTable: React.FC<RemarksTableProps> = ({
             <th className="px-3 py-2 text-left text-xs font-medium text-[#94a3b8]">Категория</th>
             <th className="px-3 py-2 text-left text-xs font-medium text-[#94a3b8]">Автор</th>
             <th className="px-3 py-2 text-left text-xs font-medium text-[#94a3b8]">Назначено</th>
+            <th className="px-3 py-2 text-left text-xs font-medium text-[#94a3b8]">Согласование</th>
             <th className="px-3 py-2 text-left text-xs font-medium text-[#94a3b8]">Дедлайн</th>
             <th className="px-3 py-2 text-left text-xs font-medium text-[#94a3b8]">Действия</th>
           </tr>
@@ -107,6 +120,26 @@ export const RemarksTable: React.FC<RemarksTableProps> = ({
               </td>
               <td className="px-3 py-3 text-xs text-[#94a3b8]">
                 {remark.assignee_name || '—'}
+              </td>
+              <td className="px-3 py-3">
+                {remark.workflow_status ? (
+                  <span className={`px-2 py-0.5 rounded text-xs ${workflowStatusColors[remark.workflow_status] || 'bg-gray-100 text-gray-800'}`}>
+                    {remark.workflow_status}
+                  </span>
+                ) : remark.workflow_instance_id ? (
+                  <span className="px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
+                    —
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => startWorkflow(remark.id)}
+                    className="flex items-center gap-1 px-2 py-0.5 bg-[#3b82f6] text-white rounded text-xs hover:bg-[#2563eb] transition-colors"
+                    title="Отправить на согласование"
+                  >
+                    <Send className="w-3 h-3" />
+                    На согласование
+                  </button>
+                )}
               </td>
               <td className="px-3 py-3 text-xs text-[#94a3b8]">
                 {remark.due_date ? (

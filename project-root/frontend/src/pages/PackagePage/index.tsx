@@ -141,4 +141,8 @@ export const PackagePage: React.FC = () => {
       </div>
     </div>
   );
-};
+}
+
+
+
+export default PackagePage;

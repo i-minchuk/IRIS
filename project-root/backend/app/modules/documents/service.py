@@ -7,9 +7,10 @@ from fastapi import HTTPException, status
 
 from app.modules.documents.repository import (
     DocumentRepository, RevisionRepository, 
-    RemarkRepository, ApprovalWorkflowRepository
+    ApprovalWorkflowRepository
 )
 from app.modules.documents.variable_engine import render_document, cascade_update
+from app.modules.gamification.service import GamificationService
 
 
 class DocumentService:
@@ -19,7 +20,6 @@ class DocumentService:
         self.db = db
         self.doc_repo = DocumentRepository(db)
         self.revision_repo = RevisionRepository(db)
-        self.remark_repo = RemarkRepository(db)
         self.workflow_repo = ApprovalWorkflowRepository(db)
     
     async def list_documents(
@@ -74,6 +74,8 @@ class DocumentService:
             "variables_snapshot": doc.variables_snapshot,
             "author_id": doc.author_id,
             "locked_by_user": locked_by_user,
+            "ai_classified_type": doc.ai_classified_type,
+            "ai_confidence": doc.ai_confidence,
             "created_at": doc.created_at.isoformat() if doc.created_at else None,
             "revisions": [
                 {
@@ -85,17 +87,7 @@ class DocumentService:
                 }
                 for r in doc.revisions
             ],
-            "remarks": [
-                {
-                    "id": rm.id,
-                    "title": rm.title,
-                    "severity": rm.severity,
-                    "status": rm.status,
-                    "remark_type": rm.remark_type,
-                    "created_at": rm.created_at.isoformat() if rm.created_at else None,
-                }
-                for rm in doc.document_remarks
-            ],
+            "remarks": [],
         }
     
     async def create_document(
@@ -141,6 +133,16 @@ class DocumentService:
             )
         
         doc = await self.doc_repo.update(doc, data)
+        
+        # Gamification: award XP when document is approved
+        if data.get('status') == 'approved' and doc.author_id:
+            gamification = GamificationService(self.db)
+            await gamification.award_event(
+                user_id=doc.author_id,
+                event_type="document_approved",
+                points=20,
+                xp=25,
+            )
         
         return {
             "id": doc.id,
@@ -244,58 +246,6 @@ class DocumentService:
             "number": revision.number,
             "status": revision.status
         }
-    
-    async def create_remark(
-        self,
-        document_id: int,
-        data: Dict[str, Any],
-        user_id: int
-    ) -> Dict[str, Any]:
-        """Create new remark."""
-        remark_data = {
-            "document_id": document_id,
-            "revision_id": data.get("revision_id"),
-            "remark_type": data.get("remark_type", "internal"),
-            "source_author_id": user_id,
-            "source_organization": data.get("source_organization"),
-            "source_department": data.get("source_department"),
-            "target_page": data.get("target_page"),
-            "target_coordinates": data.get("target_coordinates"),
-            "target_element_id": data.get("target_element_id"),
-            "target_text_selection": data.get("target_text_selection"),
-            "title": data.get("title"),
-            "description": data.get("description"),
-            "severity": data.get("severity", "minor"),
-            "category": data.get("category", "other"),
-            "status": data.get("status", "new"),
-            "deadline": data.get("deadline"),
-        }
-        
-        remark = await self.remark_repo.create(remark_data)
-        
-        return {
-            "id": remark.id,
-            "title": remark.title,
-            "severity": remark.severity,
-            "status": remark.status,
-        }
-    
-    async def update_remark_status(
-        self,
-        remark_id: int,
-        data: Dict[str, Any],
-    ) -> Dict[str, Any]:
-        """Update remark status."""
-        remark = await self.remark_repo.get_by_id(remark_id)
-        if not remark:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Remark not found"
-            )
-        
-        remark = await self.remark_repo.update_status(remark, data)
-        
-        return {"id": remark.id, "status": remark.status}
     
     async def start_approval_workflow(
         self,
@@ -421,34 +371,4 @@ class DocumentService:
             "document_ids": list(snapshots.keys()),
         }
     
-    async def list_all_remarks(
-        self,
-        project_id: Optional[int] = None,
-        severity: Optional[str] = None,
-        status: Optional[str] = None,
-        remark_type: Optional[str] = None,
-        category: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
-        """List all remarks with filters."""
-        remarks = await self.doc_repo.get_all_remarks(
-            project_id, severity, status, remark_type, category
-        )
-        
-        return [
-            {
-                "id": r.id,
-                "title": r.title,
-                "description": r.description,
-                "severity": r.severity,
-                "status": r.status,
-                "remark_type": r.remark_type,
-                "category": r.category,
-                "deadline": r.deadline.isoformat() if r.deadline else None,
-                "created_at": r.created_at.isoformat() if r.created_at else None,
-                "document_id": r.document_id,
-                "document_number": r.document.number if r.document else None,
-                "document_name": r.document.name if r.document else None,
-                "project_id": r.document.project_id if r.document else None,
-            }
-            for r in remarks
-        ]
+

@@ -1,69 +1,66 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+
+/* ── Prefetch часто используемых страниц ── */
+const prefetchDashboard = () => import('@/pages/Dashboard');
+const prefetchDocuments = () => import('@/pages/DocumentsPage');
 import {
-  Sun, Moon, Bell, User, LogOut, ChevronDown,
+  Sun, Moon, User, LogOut, ChevronDown, Menu, X,
   BarChart3, FolderKanban, FileText, ArrowLeftRight, Archive,
-  Search, X,
+  Search, Trophy, Shield, Gavel, Package, Factory, Briefcase, CheckSquare,
+  Calendar, BookOpen, Settings,
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useLanguageContext } from "@/features/profile/i18n/LanguageContext";
 import { t } from "@/features/profile/i18n/translations";
 import { useZoomStore, MIN_SCALE, MAX_SCALE } from "@/features/zoom/store/zoomStore";
+import { useAuth } from '@/context/useAuth';
+import Breadcrumbs from '@/components/Breadcrumbs';
+import NotificationBell from '@/features/notifications/components/NotificationBell';
+import type { UserRole } from '@/features/auth/store/authStore';
 
-/* ── Nav items ── */
-const navItems = [
-  { to: '/dashboard', label: 'Панель аналитики', icon: <BarChart3 size={16} />, color: '#3B82F6', bgActive: 'rgba(59, 130, 246, 0.15)' },
-  { to: '/projects', label: 'Портфель заказов', icon: <FolderKanban size={16} />, color: '#8B5CF6', bgActive: 'rgba(139, 92, 246, 0.15)' },
-  { to: '/documents', label: 'Документация', icon: <FileText size={16} />, color: '#4F7A4C', bgActive: 'rgba(79, 122, 76, 0.15)' },
-  { to: '/workflow', label: 'Документооборот', icon: <ArrowLeftRight size={16} />, color: '#D4AF37', bgActive: 'rgba(212, 175, 55, 0.15)' },
-  { to: '/archive', label: 'Архив', icon: <Archive size={16} />, color: '#6B7280', bgActive: 'rgba(107, 114, 128, 0.15)' },
+/* ── Role-based nav config ── */
+const ALL_NAV_ITEMS = [
+  { to: '/dashboard', label: 'Панель аналитики', icon: <BarChart3 size={16} />, color: '#3B82F6', bgActive: 'rgba(59, 130, 246, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'site_manager', 'engineer', 'norm_controller', 'admin'] },
+  { to: '/tenders', label: 'Тендеры', icon: <Gavel size={16} />, color: '#2563EB', bgActive: 'rgba(37, 99, 235, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'admin'] },
+  { to: '/portfolio', label: 'Портфель заказов', icon: <FolderKanban size={16} />, color: '#8B5CF6', bgActive: 'rgba(139, 92, 246, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
+  { to: '/project-portfolio', label: 'Портфель проектов', icon: <Briefcase size={16} />, color: '#7C3AED', bgActive: 'rgba(124, 58, 237, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
+  { to: '/project-tasks', label: 'Задачи по проектам', icon: <CheckSquare size={16} />, color: '#059669', bgActive: 'rgba(5, 150, 105, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
+  { to: '/package', label: 'Пакет документации', icon: <Package size={16} />, color: '#0EA5E9', bgActive: 'rgba(14, 165, 233, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
+  { to: '/documents', label: 'Документация', icon: <FileText size={16} />, color: '#4F7A4C', bgActive: 'rgba(79, 122, 76, 0.15)', roles: ['department_head', 'gip', 'site_manager', 'engineer', 'norm_controller', 'manager', 'admin'] },
+  { to: '/production', label: 'Производственный контроль', icon: <Factory size={16} />, color: '#F59E0B', bgActive: 'rgba(245, 158, 11, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
+  { to: '/workflow', label: 'Документооборот', icon: <ArrowLeftRight size={16} />, color: '#D4AF37', bgActive: 'rgba(212, 175, 55, 0.15)', roles: ['department_head', 'gip', 'site_manager', 'engineer', 'norm_controller', 'manager', 'admin'] },
+  { to: '/archive', label: 'Архив', icon: <Archive size={16} />, color: '#6B7280', bgActive: 'rgba(107, 114, 128, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'site_manager', 'engineer', 'norm_controller', 'manager', 'admin'] },
+  { to: '/achievements', label: 'Достижения', icon: <Trophy size={16} />, color: '#D4AF37', bgActive: 'rgba(212, 175, 55, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'site_manager', 'engineer', 'norm_controller', 'manager', 'admin'] },
+  { to: '/calendar', label: 'Календарь', icon: <Calendar size={16} />, color: '#EC4899', bgActive: 'rgba(236, 72, 153, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
+  { to: '/admin', label: 'Администрирование', icon: <Shield size={16} />, color: '#FF6B6B', bgActive: 'rgba(255, 107, 107, 0.15)', roles: ['admin'] },
+  { to: '/references', label: 'Справочники', icon: <BookOpen size={16} />, color: '#14B8A6', bgActive: 'rgba(20, 184, 166, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
+  { to: '/reports', label: 'Отчёты', icon: <FileText size={16} />, color: '#8B5CF6', bgActive: 'rgba(139, 92, 246, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
 ];
 
-/* ── Notifications ── */
-interface Notification {
-  id: string;
-  type: 'remark' | 'approval' | 'deadline' | 'tender' | 'system';
-  title: string;
-  description: string;
-  time: string;
-  read: boolean;
-  link?: string;
+function getNavItems(role: UserRole | undefined) {
+  if (!role || role === 'admin') return ALL_NAV_ITEMS;
+  return ALL_NAV_ITEMS.filter(item => item.roles.includes(role));
 }
 
-const notificationsData: Notification[] = [
-  { id: 'n7', type: 'remark',    title: 'Новое замечание',      description: 'КЖ-02-014: критичное замечание требует проверки', time: '10 мин назад',  read: false, link: '/workflow' },
-  { id: 'n8', type: 'approval',  title: 'Документ согласован',  description: 'АР-03-015 утверждён и готов к выпуску',          time: '1 ч назад',    read: false, link: '/documents' },
-  { id: 'n9', type: 'system',    title: 'Упоминание в проекте', description: 'Вас упомянули в обсуждении ТЭЦ-5',               time: '2 ч назад',    read: false, link: '/projects' },
-  { id: 'n1', type: 'remark',    title: 'Новое замечание',      description: 'КЖ-01-001: несоответствие арматуры в узле',     time: '5 мин назад',  read: true, link: '/workflow' },
-  { id: 'n2', type: 'approval',  title: 'Документ согласован',  description: 'АР-03-015 утверждён ГИП',                        time: '30 мин назад', read: true, link: '/documents' },
-  { id: 'n3', type: 'deadline',  title: 'Дедлайн приближается', description: 'Тендер ТЭЦ-5 — раскрытие через 2 дня',          time: '2 ч назад',    read: true, link: '/projects' },
-  { id: 'n4', type: 'tender',    title: 'Тендер выигран!',      description: 'ЖК «Северный» — победа в конкурсе',              time: 'Вчера',        read: true,  link: '/projects' },
-  { id: 'n5', type: 'system',    title: 'Обновление системы',   description: 'DokPotok IRIS v1.1 — новые фильтры в архиве',  time: '2 дня назад',  read: true },
-  { id: 'n6', type: 'remark',    title: 'Замечание закрыто',    description: 'ОВиК-02-008: исправления проверены',            time: '3 дня назад',  read: true,  link: '/workflow' },
-];
 
-const notifConfig: Record<Notification['type'], { color: string }> = {
-  remark:   { color: '#FF6B6B' },
-  approval: { color: '#4F7A4C' },
-  deadline: { color: '#D4AF37' },
-  tender:   { color: '#6B5B95' },
-  system:   { color: '#3B82F6' },
-};
 
 export default function Layout() {
   const { theme, toggleTheme } = useTheme();
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>(notificationsData);
   const [searchQuery, setSearchQuery] = useState('');
   const [isDraggingZoom, setIsDraggingZoom] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const zoomSliderRef = useRef<HTMLDivElement | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const userMenuRef = useRef<HTMLDivElement | null>(null);
-  const notifRef = useRef<HTMLDivElement | null>(null);
+  const mobileMenuRef = useRef<HTMLDivElement | null>(null);
+  const mobileMenuButtonRef = useRef<HTMLButtonElement | null>(null);
   const isDark = theme === 'dark';
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const { user } = useAuth();
+  const navItems = getNavItems(user?.role);
 
   const scale = useZoomStore((state) => state.scale);
   const setScale = useZoomStore((state) => state.setScale);
@@ -96,14 +93,19 @@ export default function Layout() {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setShowUserMenu(false);
       }
-      if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
-        setShowNotifications(false);
+      if (
+        mobileMenuRef.current &&
+        !mobileMenuRef.current.contains(event.target as Node) &&
+        mobileMenuButtonRef.current &&
+        !mobileMenuButtonRef.current.contains(event.target as Node)
+      ) {
+        setShowMobileMenu(false);
       }
     };
     const handleEsc = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setShowUserMenu(false);
-        setShowNotifications(false);
+        setShowMobileMenu(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -114,20 +116,25 @@ export default function Layout() {
     };
   }, []);
 
-  const markAsRead = (id: string) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-  };
-  const markAllRead = () => setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  useEffect(() => {
+    setShowMobileMenu(false);
+  }, [location.pathname]);
+
+  /* Prefetch после монтирования Layout (пользователь залогинен) */
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      prefetchDashboard();
+      prefetchDocuments();
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
   const handleLogout = () => { setShowUserMenu(false); navigate('/login'); };
   const { lang } = useLanguageContext();
   const isActive = (path: string) =>
     location.pathname === path || location.pathname.startsWith(`${path}/`);
 
   return (
-    /* ═══════════════════════════════════════
-       КОРЕНЬ: zoom вместо transform: scale
-       + h-screen для sticky внутри
-       ═══════════════════════════════════════ */
     <div
       className="flex flex-col min-h-screen"
       style={{
@@ -136,7 +143,7 @@ export default function Layout() {
         color: 'var(--text-primary)',
       }}
     >
-      {/* ═══ STICKY ШАПКА — закрепляется при скролле ═══ */}
+      {/* ═══ STICKY ШАПКА ═══ */}
       <div className="sticky top-0 z-50 shrink-0" style={{ background: 'var(--header-bg)' }}>
         
         {/* ===== ВЕРХНИЙ БАР ===== */}
@@ -207,6 +214,7 @@ export default function Layout() {
                 onClick={toggleTheme}
                 className="flex h-10 w-10 items-center justify-center rounded-lg transition-all duration-150"
                 style={{ color: 'var(--text-secondary)' }}
+                title={`${isDark ? 'Включить светлую тему' : 'Включить тёмную тему'} (Ctrl+T)`}
                 aria-label={isDark ? 'Включить светлую тему' : 'Включить тёмную тему'}
                 onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
@@ -215,62 +223,7 @@ export default function Layout() {
               </button>
 
               {/* Notifications */}
-              <div className="relative" ref={notifRef}>
-                <button
-                  type="button"
-                  onClick={() => setShowNotifications(prev => !prev)}
-                  className="relative flex h-10 w-10 items-center justify-center rounded-lg transition-all duration-150"
-                  style={{ color: 'var(--text-secondary)' }}
-                  aria-label="Уведомления"
-                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
-                >
-                  <Bell size={18} />
-                  {unreadCount > 0 && (
-                    <span className="absolute right-1 top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-bold leading-none" style={{ background: '#FF6B6B', color: '#FFFFFF' }}>
-                      {unreadCount > 9 ? '9+' : unreadCount}
-                    </span>
-                  )}
-                </button>
-
-                {showNotifications && (
-                  <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-xl border shadow-lg overflow-hidden" style={{ background: 'var(--iris-bg-surface)', borderColor: 'var(--iris-border-subtle)', boxShadow: 'var(--iris-shadow-lg)', zIndex: 50 }}>
-                    <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: 'var(--iris-border-subtle)' }}>
-                      <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Уведомления</span>
-                      {unreadCount > 0 && (
-                        <button onClick={markAllRead} className="text-xs hover:underline" style={{ color: 'var(--iris-accent-blue)' }}>Прочитать все</button>
-                      )}
-                    </div>
-                    <div className="max-h-[360px] overflow-y-auto">
-                      {notifications.map((n) => {
-                        const cfg = notifConfig[n.type];
-                        return (
-                          <div key={n.id}
-                            onClick={() => { markAsRead(n.id); if (n.link) { navigate(n.link); setShowNotifications(false); } }}
-                            className="flex gap-3 px-4 py-3 cursor-pointer transition-colors border-b"
-                            style={{ borderColor: 'var(--iris-border-subtle)', background: n.read ? 'transparent' : 'var(--iris-bg-hover)' }}
-                            onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--iris-bg-hover)'; }}
-                            onMouseLeave={(e) => { if (!n.read) e.currentTarget.style.background = 'var(--iris-bg-hover)'; else e.currentTarget.style.background = 'transparent'; }}
-                          >
-                            <div className="mt-0.5 shrink-0"><div className="w-2 h-2 rounded-full" style={{ background: cfg.color }} /></div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-0.5">
-                                <span className="text-xs font-medium" style={{ color: n.read ? 'var(--text-secondary)' : 'var(--text-primary)' }}>{n.title}</span>
-                                {!n.read && <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#FF6B6B' }} />}
-                              </div>
-                              <p className="text-xs line-clamp-2" style={{ color: 'var(--text-muted)' }}>{n.description}</p>
-                              <span className="text-[10px] mt-1 block" style={{ color: 'var(--text-muted)' }}>{n.time}</span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <div className="px-4 py-2 border-t text-center" style={{ borderColor: 'var(--iris-border-subtle)' }}>
-                      <button onClick={() => { navigate('/workflow'); setShowNotifications(false); }} className="text-xs hover:underline" style={{ color: 'var(--iris-accent-blue)' }}>Все уведомления →</button>
-                    </div>
-                  </div>
-                )}
-              </div>
+              <NotificationBell />
 
               {/* User menu */}
               <div className="relative" ref={userMenuRef}>
@@ -292,10 +245,11 @@ export default function Layout() {
                 </button>
 
                 {showUserMenu && (
-                  <div className="absolute right-0 mt-2 w-64 rounded-xl border shadow-lg" style={{ background: 'var(--iris-bg-surface)', borderColor: 'var(--iris-border-subtle)', color: 'var(--text-primary)', boxShadow: 'var(--iris-shadow-lg)' }} role="menu">
+                  <div className="absolute right-0 mt-2 w-64 rounded-xl border shadow-lg" style={{ background: 'var(--iris-bg-surface)', backgroundColor: isDark ? '#1e1e2e' : '#ffffff', borderColor: 'var(--iris-border-subtle)', color: 'var(--text-primary)', boxShadow: 'var(--iris-shadow-lg)', zIndex: 100 }} role="menu">
                     <div className="border-b px-4 py-3" style={{ borderColor: 'var(--iris-border-subtle)' }}>
-                      <div className="font-semibold">Администратор</div>
-                      <div className="text-sm" style={{ color: 'var(--text-muted)' }}>admin@iris-demo.com</div>
+                      <div className="font-semibold">{user?.full_name || user?.username || 'Пользователь'}</div>
+                      <div className="text-sm" style={{ color: 'var(--text-muted)' }}>{user?.email || ''}</div>
+                      <div className="text-[10px] mt-0.5 px-1.5 py-0.5 rounded-full inline-block" style={{ background: 'var(--iris-bg-hover)', color: 'var(--text-muted)' }}>{user?.role || 'engineer'}</div>
                     </div>
                     <div className="p-2">
                       <button type="button" onClick={() => { navigate('/profile'); setShowUserMenu(false); }}
@@ -304,7 +258,7 @@ export default function Layout() {
                         onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)'; }}
                         onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                       >
-                        <User size={16} style={{ color: '#3B82F6' }} /> Профиль
+                        <Settings size={16} style={{ color: '#3B82F6' }} /> Настройки профиля
                       </button>
                       <button type="button"
                         className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-all"
@@ -326,6 +280,20 @@ export default function Layout() {
         <div className="shrink-0 border-b" style={{ borderColor: 'var(--header-border)' }}>
           <div className="w-full px-4 md:px-6 flex items-center justify-between gap-4">
             <nav className="flex items-center gap-1 overflow-x-auto py-2" aria-label="Главная навигация">
+              {/* Mobile hamburger */}
+              <button
+                ref={mobileMenuButtonRef}
+                type="button"
+                onClick={() => setShowMobileMenu(prev => !prev)}
+                className="sm:hidden flex h-9 w-9 items-center justify-center rounded-lg transition-all"
+                style={{ color: 'var(--text-secondary)' }}
+                title="Меню (Ctrl+M)"
+                aria-label="Меню"
+                aria-expanded={showMobileMenu}
+              >
+                {showMobileMenu ? <X size={20} /> : <Menu size={20} />}
+              </button>
+
               {navItems.map((item) => {
                 const active = isActive(item.to);
                 return (
@@ -354,11 +322,13 @@ export default function Layout() {
                 style={{ color: 'var(--text-muted)' }}
               />
               <input
+                id="global-search"
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Escape') setSearchQuery(''); }}
-                placeholder="Поиск..."
+                placeholder="Поиск (Ctrl+K)"
+                title="Глобальный поиск (Ctrl+K)"
                 className="w-full rounded-lg border pl-8 pr-7 py-1.5 text-sm outline-none transition-colors"
                 style={{
                   background: 'var(--bg-surface)',
@@ -383,6 +353,44 @@ export default function Layout() {
           </div>
         </div>
 
+        {/* ===== BREADCRUMBS ===== */}
+        {location.pathname !== '/dashboard' && <Breadcrumbs />}
+
+        {/* ===== MOBILE MENU ===== */}
+        <AnimatePresence>
+          {showMobileMenu && (
+            <motion.div
+              ref={mobileMenuRef}
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+              className="sm:hidden border-b overflow-hidden"
+              style={{ borderColor: 'var(--header-border)', background: 'var(--header-bg)' }}
+            >
+              <div className="px-4 py-2 space-y-1">
+                {navItems.map((item) => {
+                  const active = isActive(item.to);
+                  return (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      onClick={() => setShowMobileMenu(false)}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors"
+                      style={{
+                        color: active ? item.color : 'var(--text-secondary)',
+                        backgroundColor: active ? item.bgActive : 'transparent',
+                      }}
+                    >
+                      <span style={{ color: item.color }}>{item.icon}</span>
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* ===== КОНТЕНТ ===== */}

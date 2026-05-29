@@ -48,8 +48,8 @@ class ArchiveEntry(Base):
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     content_snapshot: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
-    author_id: Mapped[Optional[UUID]] = mapped_column(
-        PG_UUID(as_uuid=True),
+    author_id: Mapped[Optional[int]] = mapped_column(
+        Integer,
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True
     )
@@ -101,11 +101,11 @@ class ArchiveEntry(Base):
     )
 
     # Relationships
-    project = relationship("Project", backref="archive_entries")
-    author = relationship("User", backref="archive_entries")
-    materials = relationship("ArchiveMaterial", backref="entry", lazy="joined")
-    constructions = relationship("ArchiveConstruction", backref="entry", lazy="joined")
-    search_index = relationship("ArchiveSearchIndex", backref="entry", uselist=False)
+    project = relationship("Project", backref="project_archive_entries")
+    author = relationship("User", backref="user_archive_entries")
+    materials = relationship("ArchiveMaterial", backref="material_entry", lazy="joined")
+    constructions = relationship("ArchiveConstruction", backref="construction_entry", lazy="joined")
+    search_index = relationship("ArchiveSearchIndex", backref="search_entry", uselist=False)
 
     def __repr__(self) -> str:
         return f"<ArchiveEntry(id={self.id}, type={self.entry_type.value}, title='{self.title}')>"

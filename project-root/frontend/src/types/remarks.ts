@@ -73,6 +73,7 @@ export interface Remark {
   document_name?: string;
   revision_id?: number;
   workflow_step_id?: number;
+  workflow_instance_id?: number;
   
   source: RemarkSource;
   status: RemarkStatus;
@@ -124,6 +125,9 @@ export interface RemarkListItem {
   assignee_id?: number;
   assignee_name?: string;
   
+  workflow_instance_id?: number;
+  workflow_status?: string;
+  
   due_date?: string;
   
   created_at: string;
@@ -171,6 +175,7 @@ export interface RemarkCreateInput {
   document_id?: number;
   revision_id?: number;
   workflow_step_id?: number;
+  workflow_instance_id?: number;
   
   source: RemarkSource;
   priority: RemarkPriority;

@@ -18,6 +18,7 @@ from sqlalchemy import (
     Table,
     select,
     event,
+    func,
 )
 from sqlalchemy.dialects.postgresql import UUID, ARRAY, JSONB
 from sqlalchemy.orm import relationship, Mapped, mapped_column
@@ -89,6 +90,10 @@ class Remark(Base):
     )
     workflow_step_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey('workflow_steps.id', ondelete='SET NULL'),
+        nullable=True
+    )
+    workflow_instance_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey('workflow_instances.id', ondelete='SET NULL'),
         nullable=True
     )
 
@@ -168,24 +173,25 @@ class Remark(Base):
         server_default='[]'
     )
 
-    # Timestamps (using String for SQLite compatibility)
+    # Timestamps
     created_at: Mapped[datetime] = mapped_column(
-        String(35),
-        default=lambda: datetime.utcnow().isoformat(),
+        DateTime(timezone=True),
+        default=func.now(),
         nullable=False
     )
     updated_at: Mapped[datetime] = mapped_column(
-        String(35),
-        default=lambda: datetime.utcnow().isoformat(),
-        onupdate=lambda: datetime.utcnow().isoformat(),
+        DateTime(timezone=True),
+        default=func.now(),
+        onupdate=func.now(),
         nullable=False
     )
 
     # Relationships
-    project = relationship('Project', backref='remarks')
-    document = relationship('Document', backref='remarks')
-    revision = relationship('Revision', backref='remarks')
-    workflow_step = relationship('WorkflowStep', backref='remarks')
+    project = relationship('Project', backref='project_remarks')
+    document = relationship('Document', backref='remark_documents')
+    revision = relationship('Revision', backref='revision_remarks')
+    workflow_step = relationship('WorkflowStep', backref='step_remarks')
+    workflow_instance = relationship('WorkflowInstance', foreign_keys=[workflow_instance_id], backref='remark_instances')
     author = relationship('User', foreign_keys=[author_id], backref='authored_remarks')
     assignee = relationship('User', foreign_keys=[assignee_id], backref='assigned_remarks')
     resolved_by_user = relationship('User', foreign_keys=[resolved_by], backref='resolved_remarks')

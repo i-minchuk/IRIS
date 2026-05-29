@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import String, Text, ForeignKey, DateTime, Integer, Float, JSON, Boolean, Index
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 
@@ -15,6 +15,7 @@ class TimeSession(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     document_id: Mapped[Optional[int]] = mapped_column(ForeignKey("documents.id"), nullable=True, index=True)
     project_id: Mapped[Optional[int]] = mapped_column(ForeignKey("projects.id"), nullable=True, index=True)
+    task_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tasks.id"), nullable=True, index=True)
 
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, index=True)
     ended_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -37,10 +38,13 @@ class TimeSession(Base):
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
 
+    task: Mapped[Optional["Task"]] = relationship(back_populates="time_sessions")
+
     __table_args__ = (
         Index("ix_timesession_user_started", "user_id", "started_at"),
         Index("ix_timesession_project_started", "project_id", "started_at"),
         Index("ix_timesession_user_project", "user_id", "project_id"),
+        Index("ix_timesession_task_started", "task_id", "started_at"),
     )
 
 

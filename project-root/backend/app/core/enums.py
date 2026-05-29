@@ -50,3 +50,38 @@ class DocumentStatus(str, Enum):
     REJECTED = "rejected"
     ARCHIVED = "archived"
     OVERDUE = "overdue"
+
+
+class UserRole(str, Enum):
+    """User roles for RBAC."""
+    DIRECTOR = "director"                    # Генеральный директор
+    DEPUTY_DIRECTOR = "deputy_director"      # Заместитель ГД
+    DEPARTMENT_HEAD = "department_head"      # Начальник отдела
+    GIP = "gip"                              # ГИП
+    SITE_MANAGER = "site_manager"            # Начальник участка / Мастер
+    ENGINEER = "engineer"                    # Инженер
+    MANAGER = "manager"                      # Менеджер
+    NORM_CONTROLLER = "norm_controller"      # Нормоконтролёр
+    ADMIN = "admin"                          # Администратор
+
+
+class UserRoleGroup:
+    """Role groups for permission checks."""
+    MANAGERS = {
+        UserRole.DIRECTOR,
+        UserRole.DEPUTY_DIRECTOR,
+        UserRole.DEPARTMENT_HEAD,
+        UserRole.GIP,
+        UserRole.MANAGER,
+        UserRole.ADMIN,
+    }
+    ENGINEERS = {
+        UserRole.ENGINEER,
+        UserRole.NORM_CONTROLLER,
+        UserRole.GIP,
+    }
+    EXECUTIVES = {
+        UserRole.DIRECTOR,
+        UserRole.DEPUTY_DIRECTOR,
+        UserRole.ADMIN,
+    }

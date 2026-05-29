@@ -50,6 +50,7 @@ export default function DocumentCreate() {
   const [step, setStep] = useState<'category' | 'template' | 'details'>('category');
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState({
     code: '',
     title: '',
@@ -64,28 +65,67 @@ export default function DocumentCreate() {
       doc_type: template.docType,
       discipline: template.discipline,
     }));
+    setErrors({});
     setStep('details');
   };
 
+  const validate = (): Record<string, string> => {
+    const errs: Record<string, string> = {};
+
+    if (!formData.code.trim()) {
+      errs.code = 'Код обязателен';
+    } else if (formData.code.length > 20) {
+      errs.code = 'Максимум 20 символов';
+    } else if (!/^[А-ЯA-Z0-9\-]+$/.test(formData.code)) {
+      errs.code = 'Только заглавные буквы, цифры и дефис';
+    }
+
+    if (!formData.title.trim()) {
+      errs.title = 'Название обязательно';
+    } else if (formData.title.length > 100) {
+      errs.title = 'Максимум 100 символов';
+    }
+
+    if (!formData.doc_type) {
+      errs.doc_type = 'Тип документа обязателен';
+    }
+
+    if (!formData.discipline) {
+      errs.discipline = 'Дисциплина обязательна';
+    }
+
+    const pid = projectId ? Number(projectId) : 0;
+    if (!pid || pid <= 0) {
+      errs.project_id = 'Проект не выбран';
+    }
+
+    return errs;
+  };
+
   const handleCreate = async () => {
-    if (!formData.code || !formData.title || !formData.doc_type || !formData.discipline) {
+    const validationErrors = validate();
+    setErrors(validationErrors);
+
+    if (Object.keys(validationErrors).length > 0) {
       return;
     }
 
     setLoading(true);
     try {
+      const pid = projectId ? Number(projectId) : 0;
       const doc = await createDocument({
-        project_id: projectId ? Number(projectId) : 1,
+        project_id: pid,
         ...formData,
       });
-      // Переход на DocumentWorkspace вместо старого DocumentDetail
-      navigate(`/documents/workspace/${doc.project_id || 1}`);
+      navigate(`/documents/workspace/${doc.project_id || pid}`);
     } catch (err) {
       console.error('Ошибка создания:', err);
     } finally {
       setLoading(false);
     }
   };
+
+  const hasErrors = Object.keys(errors).length > 0;
 
   return (
     <div className="max-w-2xl mx-auto py-8">
@@ -250,56 +290,77 @@ export default function DocumentCreate() {
           )}
 
           <div className="space-y-4">
-            <Input
-              label="Код документа"
-              placeholder="Например: НПЗ-КМ-001"
-              value={formData.code}
-              onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-              helpText="Уникальный идентификатор"
-            />
+            <div>
+              <Input
+                label="Код документа"
+                placeholder="Например: НПЗ-КМ-001"
+                value={formData.code}
+                onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                helpText="Уникальный идентификатор"
+              />
+              {errors.code && <span className="text-red-500 text-sm">{errors.code}</span>}
+            </div>
 
-            <Input
-              label="Название"
-              placeholder="Краткое описание содержимого"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            />
+            <div>
+              <Input
+                label="Название"
+                placeholder="Краткое описание содержимого"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              />
+              {errors.title && <span className="text-red-500 text-sm">{errors.title}</span>}
+            </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <Select
-                label="Дисциплина"
-                options={[
-                  { value: 'КМ', label: 'Конструкции металлические' },
-                  { value: 'КЖ', label: 'Конструкции железобетонные' },
-                  { value: 'ЭС', label: 'Электроснабжение' },
-                  { value: 'ТМ', label: 'Тепломеханика' },
-                  { value: 'АР', label: 'Архитектурные решения' },
-                  { value: 'ТХ', label: 'Технологические решения' },
-                ]}
-                value={formData.discipline}
-                onChange={(e) => setFormData({ ...formData, discipline: e.target.value })}
-              />
+              <div>
+                <Select
+                  label="Дисциплина"
+                  options={[
+                    { value: 'КМ', label: 'Конструкции металлические' },
+                    { value: 'КЖ', label: 'Конструкции железобетонные' },
+                    { value: 'ЭС', label: 'Электроснабжение' },
+                    { value: 'ТМ', label: 'Тепломеханика' },
+                    { value: 'АР', label: 'Архитектурные решения' },
+                    { value: 'ТХ', label: 'Технологические решения' },
+                  ]}
+                  value={formData.discipline}
+                  onChange={(e) => setFormData({ ...formData, discipline: e.target.value })}
+                />
+                {errors.discipline && <span className="text-red-500 text-sm">{errors.discipline}</span>}
+              </div>
 
-              <Select
-                label="Тип документа"
-                options={[
-                  { value: 'Чертеж', label: 'Чертеж' },
-                  { value: 'Схема', label: 'Схема' },
-                  { value: 'Спецификация', label: 'Спецификация' },
-                  { value: 'Расчет', label: 'Расчет' },
-                  { value: 'Пояснительная записка', label: 'Пояснительная записка' },
-                ]}
-                value={formData.doc_type}
-                onChange={(e) => setFormData({ ...formData, doc_type: e.target.value })}
-              />
+              <div>
+                <Select
+                  label="Тип документа"
+                  options={[
+                    { value: 'Чертеж', label: 'Чертеж' },
+                    { value: 'Схема', label: 'Схема' },
+                    { value: 'Спецификация', label: 'Спецификация' },
+                    { value: 'Расчет', label: 'Расчет' },
+                    { value: 'Пояснительная записка', label: 'Пояснительная записка' },
+                  ]}
+                  value={formData.doc_type}
+                  onChange={(e) => setFormData({ ...formData, doc_type: e.target.value })}
+                />
+                {errors.doc_type && <span className="text-red-500 text-sm">{errors.doc_type}</span>}
+              </div>
             </div>
+
+            {errors.project_id && (
+              <span className="text-red-500 text-sm">{errors.project_id}</span>
+            )}
           </div>
 
           <div className="flex gap-3 mt-6">
             <Button variant="secondary" onClick={() => setStep('template')}>
               Отмена
             </Button>
-            <Button variant="primary" onClick={handleCreate} isLoading={loading}>
+            <Button
+              variant="primary"
+              onClick={handleCreate}
+              isLoading={loading}
+              disabled={hasErrors}
+            >
               Создать документ
             </Button>
           </div>

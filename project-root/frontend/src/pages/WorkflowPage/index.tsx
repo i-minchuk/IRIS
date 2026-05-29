@@ -1,29 +1,57 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { getTasks } from '@/api/tasks';
 import { getRemarks } from '@/api/remarks';
 import type { Task } from '@/types';
 import type { RemarkListItem } from '@/types/remarks';
 import { Loader2, CheckCircle2, Circle, AlertCircle, ArrowRight, Upload, Search, FileCheck, Archive, Plus, Filter } from 'lucide-react';
+import {
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  LineChart,
+  Line,
+} from 'recharts';
 
 /* ── Mock fallback data ── */
 const mockTasks: Task[] = [
-  { id: 1, title: 'Согласовать КЖ-01-001 ЖК «Северный»', status: 'NEW', priority: 'HIGH', due_date: '2026-05-25', project_id: 1, assignee_id: 2, author_id: 1, created_at: '2026-05-20', updated_at: '2026-05-20' },
-  { id: 2, title: 'Проверить АР-03-015 ТЦ «Меридиан»', status: 'IN_PROGRESS', priority: 'NORMAL', due_date: '2026-05-28', project_id: 2, assignee_id: 3, author_id: 1, created_at: '2026-05-18', updated_at: '2026-05-21' },
-  { id: 3, title: 'Утвердить ОВиК-02-008 Склад А-12', status: 'DONE', priority: 'LOW', due_date: '2026-05-20', project_id: 3, assignee_id: 4, author_id: 2, created_at: '2026-05-15', updated_at: '2026-05-22' },
-  { id: 4, title: 'Согласовать ЭОМ-05-003 ТЭЦ-5', status: 'NEW', priority: 'HIGH', due_date: '2026-05-30', project_id: 4, assignee_id: 2, author_id: 3, created_at: '2026-05-22', updated_at: '2026-05-22' },
-  { id: 5, title: 'Проверить КР-01-002 ТЭЦ-5 (расчёт)', status: 'IN_PROGRESS', priority: 'NORMAL', due_date: '2026-06-05', project_id: 4, assignee_id: 5, author_id: 1, created_at: '2026-05-19', updated_at: '2026-05-21' },
-  { id: 6, title: 'Утвердить АР-04-001 Офис «Гамма»', status: 'DONE', priority: 'LOW', due_date: '2026-05-18', project_id: 5, assignee_id: 3, author_id: 2, created_at: '2026-05-10', updated_at: '2026-05-18' },
+  { id: 1, title: 'Согласовать КЖ-01-001 ЖК «Северный»', status: 'NEW', priority: 'HIGH', due_date: '2026-05-25', project_id: 1, assignee_id: 2, creator_id: 1, document_id: null, type: null, description: null, started_at: null, completed_at: null, planned_start: null, planned_finish: null, planned_hours: 0, actual_hours: 0, percent_complete: 0, engineer: null, is_critical: false, es: null, ef: null, ls: null, lf: null, slack: null },
+  { id: 2, title: 'Проверить АР-03-015 ТЦ «Меридиан»', status: 'IN_PROGRESS', priority: 'NORMAL', due_date: '2026-05-28', project_id: 2, assignee_id: 3, creator_id: 1, document_id: null, type: null, description: null, started_at: null, completed_at: null, planned_start: null, planned_finish: null, planned_hours: 0, actual_hours: 0, percent_complete: 0, engineer: null, is_critical: false, es: null, ef: null, ls: null, lf: null, slack: null },
+  { id: 3, title: 'Утвердить ОВиК-02-008 Склад А-12', status: 'DONE', priority: 'LOW', due_date: '2026-05-20', project_id: 3, assignee_id: 4, creator_id: 2, document_id: null, type: null, description: null, started_at: null, completed_at: null, planned_start: null, planned_finish: null, planned_hours: 0, actual_hours: 0, percent_complete: 100, engineer: null, is_critical: false, es: null, ef: null, ls: null, lf: null, slack: null },
+  { id: 4, title: 'Согласовать ЭОМ-05-003 ТЭЦ-5', status: 'NEW', priority: 'HIGH', due_date: '2026-05-30', project_id: 4, assignee_id: 2, creator_id: 3, document_id: null, type: null, description: null, started_at: null, completed_at: null, planned_start: null, planned_finish: null, planned_hours: 0, actual_hours: 0, percent_complete: 0, engineer: null, is_critical: false, es: null, ef: null, ls: null, lf: null, slack: null },
+  { id: 5, title: 'Проверить КР-01-002 ТЭЦ-5 (расчёт)', status: 'IN_PROGRESS', priority: 'NORMAL', due_date: '2026-06-05', project_id: 4, assignee_id: 5, creator_id: 1, document_id: null, type: null, description: null, started_at: null, completed_at: null, planned_start: null, planned_finish: null, planned_hours: 0, actual_hours: 0, percent_complete: 0, engineer: null, is_critical: false, es: null, ef: null, ls: null, lf: null, slack: null },
+  { id: 6, title: 'Утвердить АР-04-001 Офис «Гамма»', status: 'DONE', priority: 'LOW', due_date: '2026-05-18', project_id: 5, assignee_id: 3, creator_id: 2, document_id: null, type: null, description: null, started_at: null, completed_at: null, planned_start: null, planned_finish: null, planned_hours: 0, actual_hours: 0, percent_complete: 100, engineer: null, is_critical: false, es: null, ef: null, ls: null, lf: null, slack: null },
 ];
 
 const mockRemarks: RemarkListItem[] = [
-  { id: 'r1', title: 'Несоответствие арматуры в КЖ-01-001', status: 'new', priority: 'high', category: 'КЖ', author_name: 'Иванов А.С.', created_at: '2026-05-22', project_name: 'ЖК «Северный»', document_code: 'КЖ-01-001', assignee_name: 'Петров В.К.', status_label: 'Новое' },
-  { id: 'r2', title: 'Уточнение вентфасада ТЦ «Меридиан»', status: 'in_progress', priority: 'medium', category: 'АР', author_name: 'Сидорова Е.М.', created_at: '2026-05-21', project_name: 'ТЦ «Меридиан»', document_code: 'АР-03-015', assignee_name: 'Козлов Д.А.', status_label: 'В работе' },
-  { id: 'r3', title: 'Замечания по гидроизоляции подвала', status: 'resolved', priority: 'high', category: 'КР', author_name: 'Новикова И.П.', created_at: '2026-05-20', project_name: 'ЖК «Северный»', document_code: 'КР-01-002', assignee_name: 'Петров В.К.', status_label: 'Устранено' },
-  { id: 'r4', title: 'Корректировка однолинейной схемы', status: 'new', priority: 'low', category: 'ЭОМ', author_name: 'Козлов Д.А.', created_at: '2026-05-23', project_name: 'ТЭЦ-5', document_code: 'ЭОМ-05-003', assignee_name: 'Иванов А.С.', status_label: 'Новое' },
-  { id: 'r5', title: 'Узел балка-колонна: уточнить защитный слой', status: 'in_progress', priority: 'medium', category: 'КЖ', author_name: 'Петров В.К.', created_at: '2026-05-19', project_name: 'ЖК «Южный парк»', document_code: 'КЖ-02-004', assignee_name: 'Сидорова Е.М.', status_label: 'В работе' },
+  { id: 'r1', title: 'Несоответствие арматуры в КЖ-01-001', status: 'new', priority: 'high', category: 'design_error', author_id: 1, author_name: 'Иванов А.С.', created_at: '2026-05-22', updated_at: '2026-05-22', project_name: 'ЖК «Северный»', document_name: 'КЖ-01-001', assignee_name: 'Петров В.К.' },
+  { id: 'r2', title: 'Уточнение вентфасада ТЦ «Меридиан»', status: 'in_progress', priority: 'medium', category: 'discrepancy', author_id: 2, author_name: 'Сидорова Е.М.', created_at: '2026-05-21', updated_at: '2026-05-21', project_name: 'ТЦ «Меридиан»', document_name: 'АР-03-015', assignee_name: 'Козлов Д.А.' },
+  { id: 'r3', title: 'Замечания по гидроизоляции подвала', status: 'resolved', priority: 'high', category: 'norm_violation', author_id: 3, author_name: 'Новикова И.П.', created_at: '2026-05-20', updated_at: '2026-05-20', project_name: 'ЖК «Северный»', document_name: 'КР-01-002', assignee_name: 'Петров В.К.' },
+  { id: 'r4', title: 'Корректировка однолинейной схемы', status: 'new', priority: 'low', category: 'incompleteness', author_id: 4, author_name: 'Козлов Д.А.', created_at: '2026-05-23', updated_at: '2026-05-23', project_name: 'ТЭЦ-5', document_name: 'ЭОМ-05-003', assignee_name: 'Иванов А.С.' },
+  { id: 'r5', title: 'Узел балка-колонна: уточнить защитный слой', status: 'in_progress', priority: 'medium', category: 'design_error', author_id: 5, author_name: 'Петров В.К.', created_at: '2026-05-19', updated_at: '2026-05-19', project_name: 'ЖК «Южный парк»', document_name: 'КЖ-02-004', assignee_name: 'Сидорова Е.М.' },
 ];
 
 const TAB_COLOR = '#F59E0B';
+
+const PIE_COLORS = ['#3B82F6', '#10B981', '#EF4444', '#F59E0B', '#8B5CF6', '#EC4899'];
+const LINE_COLORS = ['#3B82F6', '#10B981', '#EF4444'];
+
+function tooltipStyle() {
+  return {
+    backgroundColor: 'var(--iris-bg-tooltip, rgba(11,14,20,0.95))',
+    border: '1px solid var(--iris-border-subtle, rgba(255,255,255,0.1))',
+    borderRadius: '8px',
+    color: 'var(--iris-text-inverse, #E2E8F0)',
+    fontSize: '12px',
+    boxShadow: '0 4px 24px rgba(0,0,0,0.50)',
+  };
+}
 
 export function WorkflowPage() {
   const [tab, setTab] = useState<'tasks' | 'remarks'>('tasks');
@@ -122,6 +150,48 @@ export function WorkflowPage() {
     { icon: <Archive size={20} />, count: tasks.filter(t => t.status === 'DONE').length, label: 'Архив', color: '#6B7280' },
   ];
 
+  // ── Chart data ──
+  const statusPieData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    tasks.forEach(t => {
+      const label = t.status === 'NEW' ? 'Новые' : t.status === 'IN_PROGRESS' ? 'В работе' : t.status === 'DONE' ? 'Выполнены' : t.status;
+      counts[label] = (counts[label] || 0) + 1;
+    });
+    return Object.entries(counts).map(([name, value]) => ({ name, value }));
+  }, [tasks]);
+
+  const templateBarData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    tasks.forEach(t => {
+      const template = t.title.split(':')[0] || 'Без шаблона';
+      counts[template] = (counts[template] || 0) + 1;
+    });
+    return Object.entries(counts).map(([name, value]) => ({ name, value }));
+  }, [tasks]);
+
+  const monthlyLineData = useMemo(() => {
+    const months = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
+    const counts: Record<string, number> = {};
+    months.forEach(m => counts[m] = 0);
+    tasks.forEach(t => {
+      const date = t.due_date ? new Date(t.due_date) : null;
+      if (date) {
+        const m = months[date.getMonth()];
+        counts[m] = (counts[m] || 0) + 1;
+      }
+    });
+    // Fallback: distribute mock tasks across months if no real dates
+    if (Object.values(counts).every(v => v === 0)) {
+      counts['Май'] = 2;
+      counts['Июн'] = 3;
+      counts['Июл'] = 1;
+    }
+    return months.map(m => ({ month: m, count: counts[m] || 0 }));
+  }, [tasks]);
+
+  const chartTextColor = 'var(--text-secondary, #8892A8)';
+  const chartGridColor = 'var(--border-divider, rgba(255,255,255,0.06))';
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -151,6 +221,73 @@ export function WorkflowPage() {
             )}
           </div>
         ))}
+      </div>
+
+      {/* Charts */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* PieChart: статусы */}
+        <div className="p-3 rounded-lg" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-default)' }}>
+          <h3 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Распределение по статусам</h3>
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={statusPieData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={40}
+                  outerRadius={70}
+                  paddingAngle={3}
+                  dataKey="value"
+                  nameKey="name"
+                  label={({ name, percent }) => `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`}
+                  labelLine={{ stroke: chartTextColor, strokeOpacity: 0.4 }}
+                >
+                  {statusPieData.map((_entry, index) => (
+                    <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} fillOpacity={0.85} stroke="var(--card-bg)" strokeWidth={2} />
+                  ))}
+                </Pie>
+                <Tooltip contentStyle={tooltipStyle()} formatter={(value, _name, props: any) => [`${value}`, props?.payload?.name ?? '']} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* BarChart: шаблоны */}
+        <div className="p-3 rounded-lg" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-default)' }}>
+          <h3 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>По шаблонам</h3>
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={templateBarData} margin={{ top: 4, right: 8, left: -12, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} />
+                <XAxis dataKey="name" tick={{ fill: chartTextColor, fontSize: 10 }} axisLine={{ stroke: chartGridColor }} tickLine={false} />
+                <YAxis tick={{ fill: chartTextColor, fontSize: 11 }} axisLine={{ stroke: chartGridColor }} tickLine={false} />
+                <Tooltip contentStyle={tooltipStyle()} formatter={(value) => [`${value}`, 'Количество']} />
+                <Bar dataKey="value" name="Количество" radius={[4, 4, 0, 0]}>
+                  {templateBarData.map((_entry, index) => (
+                    <Cell key={`bar-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} fillOpacity={0.8} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* LineChart: динамика по месяцам */}
+        <div className="p-3 rounded-lg" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-default)' }}>
+          <h3 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Динамика запусков</h3>
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={monthlyLineData} margin={{ top: 4, right: 8, left: -12, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} />
+                <XAxis dataKey="month" tick={{ fill: chartTextColor, fontSize: 11 }} axisLine={{ stroke: chartGridColor }} tickLine={false} />
+                <YAxis tick={{ fill: chartTextColor, fontSize: 11 }} axisLine={{ stroke: chartGridColor }} tickLine={false} />
+                <Tooltip contentStyle={tooltipStyle()} formatter={(value) => [`${value}`, 'Запуски']} />
+                <Line type="monotone" dataKey="count" name="Запуски" stroke={LINE_COLORS[0]} strokeWidth={2} dot={{ r: 3, strokeWidth: 2, fill: 'var(--card-bg)' }} activeDot={{ r: 5 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
       </div>
 
       {/* Sub-tabs */}
@@ -289,7 +426,7 @@ export function WorkflowPage() {
                     <div className="flex items-center gap-2 mt-1 text-xs" style={{ color: 'var(--text-muted)' }}>
                       <span>{remark.project_name}</span>
                       <span>·</span>
-                      <span>{remark.document_code}</span>
+                      <span>{remark.document_name}</span>
                       <span>·</span>
                       <span>Приоритет: {remark.priority}</span>
                     </div>
@@ -304,3 +441,5 @@ export function WorkflowPage() {
     </div>
   );
 }
+
+export default WorkflowPage;

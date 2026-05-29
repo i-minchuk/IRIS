@@ -15,6 +15,9 @@ from app.modules.remarks.schemas import (
     RemarkCreate, RemarkUpdate, RemarkFilter, RemarkAction, RemarkStatistics
 )
 from app.modules.auth.models import User
+from app.modules.gamification.service import GamificationService
+from app.modules.workflow.service import WorkflowService
+from app.modules.workflow.schemas import WorkflowInstanceCreate
 
 logger = logging.getLogger(__name__)
 
@@ -91,6 +94,9 @@ class RemarkService:
             await self.db.refresh(remark)
             await self.db.refresh(remark, ['tags'])
             
+            # Auto-start workflow for new/open remarks
+            await self._maybe_start_workflow(remark, author_id)
+            
             logger.info(f"Remark created: {remark.id}")
             return remark
             
@@ -98,6 +104,45 @@ class RemarkService:
             await self.db.rollback()
             logger.error(f"Error creating remark: {e}")
             raise RemarkServiceError(f"Failed to create remark: {e}")
+
+    async def _maybe_start_workflow(self, remark: Remark, user_id: int) -> None:
+        """Start approval workflow for a remark if applicable."""
+        # Only start workflow for remarks that are new/open and have a project or document
+        if remark.status not in (RemarkStatus.NEW, RemarkStatus.IN_PROGRESS):
+            return
+        
+        workflow_service = WorkflowService(self.db)
+        
+        # Find default template
+        from app.modules.workflow.models import WorkflowTemplate
+        result = await self.db.execute(
+            select(WorkflowTemplate)
+            .where(WorkflowTemplate.is_active == True)
+            .order_by(WorkflowTemplate.is_default.desc())
+            .limit(1)
+        )
+        template = result.scalar_one_or_none()
+        
+        if not template:
+            logger.info(f"No workflow template found for remark {remark.id}")
+            return
+        
+        try:
+            instance_data = WorkflowInstanceCreate(
+                template_id=template.id,
+                document_id=remark.document_id,
+                project_id=remark.project_id,
+                launch_comment=f"Автоматический запуск по замечанию: {remark.title}"
+            )
+            instance = await workflow_service.create_instance(instance_data, user_id)
+            
+            remark.workflow_instance_id = instance.id
+            await self.db.commit()
+            
+            logger.info(f"Workflow {instance.id} started for remark {remark.id}")
+        except Exception as e:
+            logger.error(f"Failed to start workflow for remark {remark.id}: {e}")
+            # Don't fail remark creation if workflow fails
 
     async def get_remark(self, remark_id: UUID) -> Optional[Remark]:
         """Get remark by ID with all relationships."""
@@ -255,6 +300,23 @@ class RemarkService:
             remark.resolution = update_dict.get('resolution')
             remark.resolved_by = updated_by
             remark.resolved_at = datetime.now(timezone.utc)
+            
+            # Gamification: award XP for resolving a remark
+            if remark.assignee_id:
+                gamification = GamificationService(self.db)
+                await gamification.award_event(
+                    user_id=remark.assignee_id,
+                    event_type="remark_resolved",
+                    points=15,
+                    xp=20,
+                )
+            
+            # Auto-approve linked workflow
+            await self._maybe_approve_workflow(remark, updated_by)
+        
+        # Handle rejection
+        if update_dict.get('status') == RemarkStatus.REJECTED:
+            await self._maybe_reject_workflow(remark, updated_by)
         
         # Add history entry
         if history_entry:
@@ -277,6 +339,60 @@ class RemarkService:
             await self.db.rollback()
             logger.error(f"Error updating remark: {e}")
             raise RemarkServiceError(f"Failed to update remark: {e}")
+
+    async def _maybe_approve_workflow(self, remark: Remark, user_id: int) -> None:
+        """Approve linked workflow when remark is resolved."""
+        if not remark.workflow_instance_id:
+            return
+        
+        workflow_service = WorkflowService(self.db)
+        instance = await workflow_service.get_instance(remark.workflow_instance_id)
+        if not instance:
+            return
+        
+        from app.modules.workflow.models import WorkflowStatus, WorkflowStepStatus
+        if instance.status != WorkflowStatus.RUNNING:
+            return
+        
+        # Find current active step
+        if instance.current_step_id:
+            from app.modules.workflow.schemas import ApprovalAction
+            try:
+                await workflow_service.approve_step(
+                    instance.current_step_id,
+                    user_id,
+                    ApprovalAction(comment="Авто-утверждение: замечание решено")
+                )
+                logger.info(f"Workflow {instance.id} auto-approved for resolved remark {remark.id}")
+            except Exception as e:
+                logger.error(f"Failed to auto-approve workflow {instance.id}: {e}")
+
+    async def _maybe_reject_workflow(self, remark: Remark, user_id: int) -> None:
+        """Reject linked workflow when remark is rejected."""
+        if not remark.workflow_instance_id:
+            return
+        
+        workflow_service = WorkflowService(self.db)
+        instance = await workflow_service.get_instance(remark.workflow_instance_id)
+        if not instance:
+            return
+        
+        from app.modules.workflow.models import WorkflowStatus, WorkflowStepStatus
+        if instance.status != WorkflowStatus.RUNNING:
+            return
+        
+        # Find current active step
+        if instance.current_step_id:
+            from app.modules.workflow.schemas import RejectionAction
+            try:
+                await workflow_service.reject_step(
+                    instance.current_step_id,
+                    user_id,
+                    RejectionAction(reason="Замечание отклонено", return_to_author=True)
+                )
+                logger.info(f"Workflow {instance.id} auto-rejected for rejected remark {remark.id}")
+            except Exception as e:
+                logger.error(f"Failed to auto-reject workflow {instance.id}: {e}")
 
     async def delete_remark(self, remark_id: UUID, deleted_by: int) -> bool:
         """Delete remark (hard delete)."""
@@ -380,11 +496,13 @@ class RemarkService:
             remark.resolved_at = datetime.now(timezone.utc)
             history_entry['old_status'] = remark.status.value
             history_entry['new_status'] = RemarkStatus.RESOLVED.value
+            await self._maybe_approve_workflow(remark, user_id)
         
         elif action.action == 'reject':
             remark.status = RemarkStatus.REJECTED
             history_entry['old_status'] = remark.status.value
             history_entry['new_status'] = RemarkStatus.REJECTED.value
+            await self._maybe_reject_workflow(remark, user_id)
         
         elif action.action == 'defer':
             remark.status = RemarkStatus.DEFERRED

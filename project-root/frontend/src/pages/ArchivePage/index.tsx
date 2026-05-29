@@ -4,10 +4,11 @@ import { Timeline } from './components/Timeline';
 import { ArchiveSearch } from './components/ArchiveSearch';
 import { MaterialsList } from './components/MaterialsList';
 import { ConstructionsList } from './components/ConstructionsList';
+import { ArchiveStatistics } from './components/ArchiveStatistics';
 import { useArchiveStore } from './store/archiveStore';
 import { TimelineEvent } from './types/archive';
 
-export const ArchivePage: React.FC = () => {
+const ArchivePage: React.FC = () => {
   const [viewMode, setViewMode] = useState<'timeline' | 'search' | 'materials' | 'constructions' | 'statistics'>('timeline');
   const { 
     timeline, 
@@ -166,9 +167,29 @@ export const ArchivePage: React.FC = () => {
         )}
 
         {viewMode === 'statistics' && (
-          <div className="text-center text-[#94a3b8] py-12">
-            <p>Статистика в разработке</p>
-          </div>
+          <ArchiveStatistics
+            statistics={statistics}
+            entries={timeline.map((e) => ({
+              id: e.id,
+              project_id: '',
+              entry_type: e.type as any,
+              source_table: '',
+              source_id: e.id,
+              title: e.title,
+              description: null,
+              content_snapshot: e.data,
+              author_id: null,
+              occurred_at: e.occurred_at,
+              tags: [],
+              attachments: [],
+              related_entry_ids: [],
+              is_pinned: false,
+              is_deleted: false,
+              created_at: e.occurred_at,
+              updated_at: e.occurred_at,
+            }))}
+            timeline={timeline}
+          />
         )}
       </div>
 
@@ -278,3 +299,5 @@ export const ArchivePage: React.FC = () => {
     </div>
   );
 };
+
+export default ArchivePage;
