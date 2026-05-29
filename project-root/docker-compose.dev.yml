@@ -1,7 +1,7 @@
 <<<<<<< HEAD
 version: '3.8'
 =======
-version: '4.0.0'
+version: '4.1.0'
 >>>>>>> mvp-sqlite-stable
 
 services:
