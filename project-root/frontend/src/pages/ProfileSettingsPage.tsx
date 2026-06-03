@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -64,6 +64,25 @@ export default function ProfileSettingsPage() {
 
   /* Tabs */
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'notifications' | 'gamification'>('profile');
+
+  /* Load saved profile data */
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const savedFullName = localStorage.getItem('iris_profile_full_name');
+    const savedEmail = localStorage.getItem('iris_profile_email');
+    const savedPhone = localStorage.getItem('iris_profile_phone');
+    const savedPosition = localStorage.getItem('iris_profile_position');
+    const savedDepartment = localStorage.getItem('iris_profile_department');
+    const savedLocation = localStorage.getItem('iris_profile_location');
+    const savedBio = localStorage.getItem('iris_profile_bio');
+    if (savedFullName) setProfile((p) => ({ ...p, full_name: savedFullName }));
+    if (savedEmail) setProfile((p) => ({ ...p, email: savedEmail }));
+    if (savedPhone) setProfile((p) => ({ ...p, phone: savedPhone }));
+    if (savedPosition) setProfile((p) => ({ ...p, position: savedPosition }));
+    if (savedDepartment) setProfile((p) => ({ ...p, department: savedDepartment }));
+    if (savedLocation) setProfile((p) => ({ ...p, location: savedLocation }));
+    if (savedBio) setProfile((p) => ({ ...p, bio: savedBio }));
+  }, []);
 
   /* Profile form */
   const [profile, setProfile] = useState<ProfileForm>({
@@ -190,7 +209,7 @@ export default function ProfileSettingsPage() {
     { id: 'profile' as const, label: 'Профиль', icon: <User size={16} /> },
     { id: 'security' as const, label: 'Безопасность', icon: <Shield size={16} /> },
     { id: 'notifications' as const, label: 'Уведомления', icon: <Bell size={16} /> },
-    { id: 'gamification' as const, label: 'Игровой профиль', icon: <Gamepad2 size={16} /> },
+    { id: 'gamification' as const, label: 'Рабочий профиль', icon: <Gamepad2 size={16} /> },
   ];
 
   return (
@@ -530,7 +549,7 @@ export default function ProfileSettingsPage() {
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Игровой профиль</h2>
+                      <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Рабочий профиль</h2>
                       <Badge variant="leaders" leftIcon={<Crown size={12} />}>{levelInfo.title}</Badge>
                     </div>
                     <div className="mt-2">
@@ -673,8 +692,8 @@ export default function ProfileSettingsPage() {
             </div>
           )}
 
-          {/* Save button (only for profile/security tabs) */}
-          {(activeTab === 'profile' || activeTab === 'security') && (
+          {/* Save button (profile/security/notifications tabs) */}
+          {(activeTab === 'profile' || activeTab === 'security' || activeTab === 'notifications') && (
             <div className="flex items-center gap-3 sticky bottom-4 py-3 px-4 rounded-xl border" style={{ backgroundColor: 'var(--iris-bg-surface-elevated)', borderColor: 'var(--iris-border-default)', boxShadow: 'var(--iris-shadow-lg)' }}>
               <Button variant="primary" onClick={handleSave} isLoading={loading} leftIcon={<Save size={16} />} className="shadow-lg">
                 Сохранить изменения
