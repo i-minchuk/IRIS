@@ -1,52 +1,89 @@
 // frontend/src/providers/ThemeProvider.tsx
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 
-type Theme = 'light' | 'dark';
+export type Theme = 'light' | 'dark' | 'contrast' | 'sepia' | 'midnight';
+
+const THEME_ORDER: Theme[] = ['light', 'dark', 'contrast', 'sepia', 'midnight'];
+
+const THEME_ICONS: Record<Theme, string> = {
+  light: '☀️',
+  dark: '🌙',
+  contrast: '🔲',
+  sepia: '📜',
+  midnight: '🌌',
+};
+
+const THEME_LABELS: Record<Theme, string> = {
+  light: 'Светлая',
+  dark: 'Тёмная',
+  contrast: 'Контрастная',
+  sepia: 'Сепия',
+  midnight: 'Полночь',
+};
 
 interface ThemeContextType {
   theme: Theme;
-  toggleTheme: () => void;
+  setTheme: (theme: Theme) => void;
+  cycleTheme: () => void;
+  themeIcon: string;
+  themeLabel: string;
 }
 
 const ThemeContext = createContext<ThemeContextType>({
   theme: 'light',
-  toggleTheme: () => {},
+  setTheme: () => {},
+  cycleTheme: () => {},
+  themeIcon: '☀️',
+  themeLabel: 'Светлая',
 });
 
+function isValidTheme(value: string): value is Theme {
+  return THEME_ORDER.includes(value as Theme);
+}
+
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, setTheme] = useState<Theme>(() => {
-    const saved = localStorage.getItem('iris-theme') as Theme;
-    if (saved) return saved;
+  const [theme, setThemeState] = useState<Theme>(() => {
+    const saved = localStorage.getItem('iris-theme');
+    if (saved && isValidTheme(saved)) return saved;
     const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     return systemDark ? 'dark' : 'light';
   });
 
   useEffect(() => {
     const root = document.documentElement;
-    // Устанавливаем data-theme атрибут
     root.setAttribute('data-theme', theme);
-    
-    // Управляем классами для совместимости с CSS
-    if (theme === 'dark') {
-      root.classList.add('dark', 'theme-dark');
-      root.classList.remove('theme-light');
-    } else {
-      root.classList.add('theme-light');
-      root.classList.remove('dark', 'theme-dark');
+
+    // Remove all theme classes
+    root.classList.remove('theme-light', 'theme-dark', 'theme-contrast', 'theme-sepia', 'theme-midnight', 'dark');
+
+    // Add current theme class
+    root.classList.add(`theme-${theme}`);
+    if (theme === 'dark' || theme === 'midnight') {
+      root.classList.add('dark');
     }
-    
+
     localStorage.setItem('iris-theme', theme);
   }, [theme]);
 
-  const toggleTheme = () => {
-    setTheme(prev => {
-      const next = prev === 'light' ? 'dark' : 'light';
-      return next;
+  const setTheme = useCallback((newTheme: Theme) => {
+    setThemeState(newTheme);
+  }, []);
+
+  const cycleTheme = useCallback(() => {
+    setThemeState(prev => {
+      const idx = THEME_ORDER.indexOf(prev);
+      return THEME_ORDER[(idx + 1) % THEME_ORDER.length];
     });
-  };
+  }, []);
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{
+      theme,
+      setTheme,
+      cycleTheme,
+      themeIcon: THEME_ICONS[theme],
+      themeLabel: THEME_LABELS[theme],
+    }}>
       {children}
     </ThemeContext.Provider>
   );

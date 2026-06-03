@@ -5,7 +5,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.crud import archive as archive_crud
-from app.models.archive import ArchiveEntryType, ArchiveMaterialType, ArchiveConstructionType
+from app.schemas.archive import ArchiveEntryType, ArchiveMaterialType, ArchiveConstructionType
 
 
 async def archive_document_event(

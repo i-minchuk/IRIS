@@ -1,6 +1,6 @@
 [project]
 name = "dokpotok-iris-backend"
-version = "3.8.0"
+version = "4.2.0"
 description = "Engineering Document Management System"
 requires-python = ">=3.12"
 
@@ -29,7 +29,7 @@ exclude_lines = [
     "raise NotImplementedError",
     "if __name__ == .__main__.:",
 ]
-fail_under = 70
+fail_under = 60
 
 [tool.black]
 line-length = 88

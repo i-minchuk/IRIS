@@ -17,7 +17,7 @@ from app.schemas.archive import (
     ArchiveExport, TimelineResponse, TimelineEvent, SearchResultItem
 )
 from app.crud import archive as archive_crud
-from app.models.archive import ArchiveEntryType, ArchiveConstructionStatus
+from app.schemas.archive import ArchiveEntryType, ArchiveConstructionStatus
 
 
 router = APIRouter(tags=["Archive"])
@@ -33,7 +33,7 @@ async def list_entries(
     date_to: Optional[datetime] = Query(None, description="Дата до"),
     is_pinned: Optional[bool] = Query(None, description="Только закрепленные"),
     has_attachments: bool = Query(False, description="Только с вложениями"),
-    author_id: Optional[UUID] = Query(None, description="Автор"),
+    author_id: Optional[int] = Query(None, description="Автор"),
     page: int = Query(1, ge=1, description="Страница"),
     limit: int = Query(20, ge=1, le=100, description="Лимит"),
     sort_by: str = Query("occurred_at", description="Сортировка по"),

@@ -3,6 +3,8 @@ import pytest
 from unittest.mock import MagicMock, patch
 from datetime import timedelta
 
+from fastapi.testclient import TestClient
+
 from app.main import app
 from app.modules.auth.deps import get_current_active_user
 from app.modules.auth.repository import UserRepository
@@ -10,13 +12,13 @@ from app.modules.auth.schemas import UserCreate
 from app.db.session import get_db
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def mock_db():
     from sqlalchemy.ext.asyncio import AsyncSession
     return MagicMock(spec=AsyncSession)
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def mock_user():
     user = MagicMock()
     user.id = 1
@@ -33,7 +35,7 @@ def mock_user():
     return user
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def client_with_auth(mock_db, mock_user):
     async def override_get_db():
         yield mock_db
@@ -43,8 +45,8 @@ def client_with_auth(mock_db, mock_user):
 
     app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[get_current_active_user] = override_get_current_user
-    from fastapi.testclient import TestClient
-    yield TestClient(app)
+    client = TestClient(app)
+    yield client
     app.dependency_overrides.clear()
 
 

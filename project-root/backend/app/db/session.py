@@ -78,3 +78,13 @@ async def get_db(read_only: bool = False) -> AsyncSession:
     else:
         async with AsyncSessionLocal() as session:
             yield session
+
+
+async def get_db_read_only() -> AsyncSession:
+    """Зависимость для получения read-only сессии БД."""
+    if AsyncSessionReplica is not None:
+        async with AsyncSessionReplica() as session:
+            yield session
+    else:
+        async with AsyncSessionLocal() as session:
+            yield session

@@ -42,7 +42,7 @@ class Tender(Base):
 
     status: Mapped[str] = mapped_column(String(50), default="draft")  # draft, review, approved, sent, won, lost, cancelled, archived
     project_id: Mapped[Optional[int]] = mapped_column(ForeignKey("projects.id"), nullable=True)
-    project: Mapped[Optional["Project"]] = relationship("Project", back_populates="tenders")
+    project: Mapped[Optional["Project"]] = relationship()
 
     created_by_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)

@@ -1,14 +1,27 @@
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, User, Lock, Bell } from 'lucide-react';
-import { Button, Input, Card } from '@/components/ui';
+import {
+  ArrowLeft, Save, User, Lock, Bell, Shield, Palette, Globe,
+  Star, Flame, Coins, Trophy, Award, Zap, Crown, Gamepad2,
+  ChevronRight, BarChart3,
+} from 'lucide-react';
+import { Button, Input, Card, Badge } from '@/components/ui';
 import apiClient from '@/shared/api/client';
 import { useAuth } from '@/context/useAuth';
+import { useGamificationStore } from '@/stores/gamificationStore';
+import { getLevelInfo } from '@/lib/levelSystem';
+import { formatXP } from '@/lib/xpEngine';
 
+/* ─── Types ─── */
 interface ProfileForm {
   full_name: string;
   email: string;
+  phone: string;
+  position: string;
+  department: string;
+  location: string;
+  bio: string;
 }
 
 interface PasswordForm {
@@ -17,109 +30,119 @@ interface PasswordForm {
   confirm_password: string;
 }
 
-interface NotificationSettings {
-  email: boolean;
-  push: boolean;
+interface NotificationChannel {
+  id: string;
+  label: string;
+  description: string;
+  enabled: boolean;
 }
 
+/* ─── Rarity colours for badges ─── */
+const RARITY_COLORS: Record<string, string> = {
+  common: '#6B7280',
+  rare: '#3B82F6',
+  epic: '#8B5CF6',
+  legendary: '#D4AF37',
+};
+
+/* ─── Component ─── */
 export default function ProfileSettingsPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
+  /* Gamification */
+  const { xp, coins, streak, badges, quests, getCurrentLevel, getLevelProgress } = useGamificationStore();
+  const level = getCurrentLevel();
+  const progress = getLevelProgress();
+  const levelInfo = getLevelInfo(level);
+  const earnedBadges = badges.filter((b) => b.earnedAt);
+  const activeQuests = quests.filter((q) => !q.claimed && !q.completed);
+
+  /* Tabs */
+  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'notifications' | 'gamification'>('profile');
+
+  /* Profile form */
   const [profile, setProfile] = useState<ProfileForm>({
     full_name: user?.full_name || '',
     email: user?.email || '',
+    phone: '+7 (999) 123-45-67',
+    position: 'Главный инженер',
+    department: 'Отдел КМ',
+    location: 'Москва, офис 304',
+    bio: 'Инженер-конструктор с 8-летним опытом в проектировании металлоконструкций.',
   });
 
+  /* Password form */
   const [password, setPassword] = useState<PasswordForm>({
     current_password: '',
     new_password: '',
     confirm_password: '',
   });
 
-  const [notifications, setNotifications] = useState<NotificationSettings>({
-    email: true,
-    push: false,
-  });
+  /* Notifications */
+  const [channels, setChannels] = useState<NotificationChannel[]>([
+    { id: 'email_digest', label: 'Ежедневный дайджест', description: 'Сводка событий за день', enabled: true },
+    { id: 'document_approval', label: 'Согласование документов', description: 'Когда документ требует вашего согласия', enabled: true },
+    { id: 'task_deadline', label: 'Дедлайны задач', description: 'Напоминания за 24 и 4 часа', enabled: true },
+    { id: 'mentions', label: 'Упоминания', description: 'Когда кто-то упомянул вас', enabled: true },
+    { id: 'system', label: 'Системные', description: 'Обновления, бэкапы, инциденты', enabled: false },
+    { id: 'marketing', label: 'Новости продукта', description: 'Новые функции и обновления', enabled: false },
+  ]);
 
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  /* ─── Validation ─── */
   const validate = useCallback((): boolean => {
     const nextErrors: Record<string, string> = {};
+    if (!profile.full_name.trim()) nextErrors.full_name = 'Укажите имя';
+    if (!profile.email.trim()) nextErrors.email = 'Укажите email';
+    else if (!/^\S+@\S+\.\S+$/.test(profile.email)) nextErrors.email = 'Некорректный email';
 
-    if (!profile.full_name.trim()) {
-      nextErrors.full_name = 'Укажите имя';
-    }
-    if (!profile.email.trim()) {
-      nextErrors.email = 'Укажите email';
-    } else if (!/^\S+@\S+\.\S+$/.test(profile.email)) {
-      nextErrors.email = 'Некорректный email';
-    }
-
-    const changingPassword =
-      password.current_password || password.new_password || password.confirm_password;
-
+    const changingPassword = password.current_password || password.new_password || password.confirm_password;
     if (changingPassword) {
-      if (!password.current_password) {
-        nextErrors.current_password = 'Введите текущий пароль';
-      }
-      if (!password.new_password || password.new_password.length < 6) {
-        nextErrors.new_password = 'Минимум 6 символов';
-      }
-      if (password.new_password !== password.confirm_password) {
-        nextErrors.confirm_password = 'Пароли не совпадают';
-      }
+      if (!password.current_password) nextErrors.current_password = 'Введите текущий пароль';
+      if (!password.new_password || password.new_password.length < 6) nextErrors.new_password = 'Минимум 6 символов';
+      if (password.new_password !== password.confirm_password) nextErrors.confirm_password = 'Пароли не совпадают';
     }
-
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   }, [profile, password]);
 
+  /* ─── Save ─── */
   const handleSave = async () => {
     if (!validate()) return;
-
     setLoading(true);
     setSaved(false);
-
     try {
-      const payload: Record<string, unknown> = {
-        full_name: profile.full_name,
-        email: profile.email,
-        notifications,
-      };
-
-      const changingPassword =
-        password.current_password && password.new_password;
+      const payload: Record<string, unknown> = { full_name: profile.full_name, email: profile.email };
+      const changingPassword = password.current_password && password.new_password;
       if (changingPassword) {
         payload.current_password = password.current_password;
         payload.new_password = password.new_password;
       }
-
       await apiClient.put('/users/me', payload);
-
       setSaved(true);
-      if (changingPassword) {
-        setPassword({ current_password: '', new_password: '', confirm_password: '' });
-      }
+      if (changingPassword) setPassword({ current_password: '', new_password: '', confirm_password: '' });
       setTimeout(() => setSaved(false), 3000);
     } catch (err: any) {
-      const status = err?.response?.status;
-      let message = 'Не удалось сохранить профиль';
-      if (status === 400) message = 'Ошибка в данных';
-      else if (status === 403) message = 'Доступ запрещён';
-      else if (status === 404) message = 'Не найдено';
-      else if (status === 422) message = 'Ошибка валидации';
-      else if (status >= 500) message = 'Ошибка сервера';
-      toast.error(message);
+      toast.error('Не удалось сохранить профиль');
     } finally {
       setLoading(false);
     }
   };
 
+  /* ─── Tabs config ─── */
+  const tabs = [
+    { id: 'profile' as const, label: 'Профиль', icon: <User size={16} /> },
+    { id: 'security' as const, label: 'Безопасность', icon: <Shield size={16} /> },
+    { id: 'notifications' as const, label: 'Уведомления', icon: <Bell size={16} /> },
+    { id: 'gamification' as const, label: 'Игровой профиль', icon: <Gamepad2 size={16} /> },
+  ];
+
   return (
-    <div className="max-w-2xl mx-auto py-8 px-4">
+    <div className="max-w-5xl mx-auto py-6 px-4">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <button
@@ -127,144 +150,378 @@ export default function ProfileSettingsPage() {
           onClick={() => navigate(-1)}
           className="p-2 rounded-lg transition-colors"
           style={{ color: 'var(--text-secondary)' }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'transparent';
-          }}
+          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
         >
           <ArrowLeft size={18} />
         </button>
-        <h1 className="text-2xl font-semibold" style={{ color: 'var(--text-primary)' }}>
-          Настройки профиля
-        </h1>
+        <div>
+          <h1 className="text-2xl font-semibold" style={{ color: 'var(--text-primary)' }}>Настройки профиля</h1>
+          <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
+            Управление аккаунтом, безопасностью и игровым прогрессом
+          </p>
+        </div>
       </div>
 
-      <div className="space-y-6">
-        {/* Profile info */}
-        <Card className="p-6 space-y-4">
-          <div className="flex items-center gap-2 mb-2">
-            <User size={18} style={{ color: 'var(--brand-iris)' }} />
-            <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
-              Основная информация
-            </h2>
-          </div>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Sidebar */}
+        <div className="lg:col-span-1">
+          <Card padding="sm" className="sticky top-4">
+            <div className="space-y-1">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all"
+                  style={{
+                    backgroundColor: activeTab === tab.id ? 'var(--brand-iris)' : 'transparent',
+                    color: activeTab === tab.id ? 'var(--text-inverse)' : 'var(--text-secondary)',
+                  }}
+                >
+                  {tab.icon}
+                  {tab.label}
+                  {tab.id === 'gamification' && (
+                    <span className="ml-auto text-xs px-1.5 py-0.5 rounded-full" style={{ backgroundColor: activeTab === tab.id ? 'rgba(255,255,255,0.2)' : 'var(--bg-surface-2)' }}>
+                      Lv.{level}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
 
-          <Input
-            label="Имя"
-            placeholder="Ваше полное имя"
-            value={profile.full_name}
-            onChange={(e) => setProfile((p) => ({ ...p, full_name: e.target.value }))}
-            error={errors.full_name}
-          />
+            {/* Mini gamification preview in sidebar */}
+            <div className="mt-4 pt-4 border-t" style={{ borderColor: 'var(--border-default)' }}>
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold"
+                  style={{ backgroundColor: `${levelInfo.tierColor}20`, color: levelInfo.tierColor, border: `2px solid ${levelInfo.tierColor}` }}
+                >
+                  {level}
+                </div>
+                <div>
+                  <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{profile.full_name || 'Пользователь'}</div>
+                  <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{levelInfo.title}</div>
+                </div>
+              </div>
+              <div className="mt-2 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--bg-surface-2)' }}>
+                <div className="h-full rounded-full" style={{ width: `${progress}%`, backgroundColor: levelInfo.tierColor }} />
+              </div>
+            </div>
+          </Card>
+        </div>
 
-          <Input
-            label="Email"
-            type="email"
-            placeholder="email@example.com"
-            value={profile.email}
-            onChange={(e) => setProfile((p) => ({ ...p, email: e.target.value }))}
-            error={errors.email}
-          />
-        </Card>
+        {/* Content */}
+        <div className="lg:col-span-3 space-y-6">
+          {/* ═══ TAB: PROFILE ═══ */}
+          {activeTab === 'profile' && (
+            <div className="space-y-6">
+              {/* Avatar + Basic */}
+              <Card padding="lg" className="space-y-6">
+                <div className="flex items-center gap-4">
+                  <div
+                    className="w-20 h-20 rounded-full flex items-center justify-center text-2xl font-bold"
+                    style={{ backgroundColor: `${levelInfo.tierColor}20`, color: levelInfo.tierColor, border: `3px solid ${levelInfo.tierColor}` }}
+                  >
+                    {profile.full_name.charAt(0) || '?'}
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Основная информация</h2>
+                    <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Эти данные видны другим пользователям</p>
+                  </div>
+                </div>
 
-        {/* Password */}
-        <Card className="p-6 space-y-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Lock size={18} style={{ color: 'var(--brand-iris)' }} />
-            <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
-              Смена пароля
-            </h2>
-          </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input label="Полное имя" value={profile.full_name} onChange={(e) => setProfile((p) => ({ ...p, full_name: e.target.value }))} error={errors.full_name} />
+                  <Input label="Email" type="email" value={profile.email} onChange={(e) => setProfile((p) => ({ ...p, email: e.target.value }))} error={errors.email} />
+                  <Input label="Телефон" value={profile.phone} onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))} />
+                  <Input label="Должность" value={profile.position} onChange={(e) => setProfile((p) => ({ ...p, position: e.target.value }))} />
+                  <Input label="Отдел" value={profile.department} onChange={(e) => setProfile((p) => ({ ...p, department: e.target.value }))} />
+                  <Input label="Локация" value={profile.location} onChange={(e) => setProfile((p) => ({ ...p, location: e.target.value }))} />
+                </div>
 
-          <Input
-            label="Текущий пароль"
-            type="password"
-            placeholder="••••••••"
-            value={password.current_password}
-            onChange={(e) =>
-              setPassword((p) => ({ ...p, current_password: e.target.value }))
-            }
-            error={errors.current_password}
-          />
+                <div>
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>О себе</label>
+                  <textarea
+                    value={profile.bio}
+                    onChange={(e) => setProfile((p) => ({ ...p, bio: e.target.value }))}
+                    rows={3}
+                    className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 resize-none"
+                    style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-default)', color: 'var(--text-primary)' }}
+                  />
+                </div>
+              </Card>
 
-          <Input
-            label="Новый пароль"
-            type="password"
-            placeholder="Минимум 6 символов"
-            value={password.new_password}
-            onChange={(e) =>
-              setPassword((p) => ({ ...p, new_password: e.target.value }))
-            }
-            error={errors.new_password}
-          />
+              {/* Preferences */}
+              <Card padding="lg" className="space-y-4">
+                <h2 className="text-lg font-semibold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+                  <Palette size={18} style={{ color: 'var(--brand-iris)' }} /> Предпочтения
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-3 rounded-lg border" style={{ borderColor: 'var(--border-default)' }}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Язык интерфейса</span>
+                      <span className="text-xs px-2 py-1 rounded" style={{ backgroundColor: 'var(--bg-surface-2)', color: 'var(--text-secondary)' }}>Русский</span>
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-lg border" style={{ borderColor: 'var(--border-default)' }}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Часовой пояс</span>
+                      <span className="text-xs px-2 py-1 rounded" style={{ backgroundColor: 'var(--bg-surface-2)', color: 'var(--text-secondary)' }}>Europe/Moscow</span>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          )}
 
-          <Input
-            label="Подтверждение пароля"
-            type="password"
-            placeholder="Повторите новый пароль"
-            value={password.confirm_password}
-            onChange={(e) =>
-              setPassword((p) => ({ ...p, confirm_password: e.target.value }))
-            }
-            error={errors.confirm_password}
-          />
-        </Card>
+          {/* ═══ TAB: SECURITY ═══ */}
+          {activeTab === 'security' && (
+            <div className="space-y-6">
+              <Card padding="lg" className="space-y-4">
+                <h2 className="text-lg font-semibold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+                  <Lock size={18} style={{ color: 'var(--brand-iris)' }} /> Смена пароля
+                </h2>
+                <Input label="Текущий пароль" type="password" value={password.current_password} onChange={(e) => setPassword((p) => ({ ...p, current_password: e.target.value }))} error={errors.current_password} />
+                <Input label="Новый пароль" type="password" value={password.new_password} onChange={(e) => setPassword((p) => ({ ...p, new_password: e.target.value }))} error={errors.new_password} />
+                <Input label="Подтверждение пароля" type="password" value={password.confirm_password} onChange={(e) => setPassword((p) => ({ ...p, confirm_password: e.target.value }))} error={errors.confirm_password} />
+              </Card>
 
-        {/* Notifications */}
-        <Card className="p-6 space-y-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Bell size={18} style={{ color: 'var(--brand-iris)' }} />
-            <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
-              Уведомления
-            </h2>
-          </div>
+              <Card padding="lg" className="space-y-4">
+                <h2 className="text-lg font-semibold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+                  <Shield size={18} style={{ color: 'var(--brand-iris)' }} /> Двухфакторная аутентификация
+                </h2>
+                <div className="flex items-center justify-between p-3 rounded-lg border" style={{ borderColor: 'var(--border-default)' }}>
+                  <div>
+                    <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>TOTP (Google Authenticator)</div>
+                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>Защитите аккаунт дополнительным кодом</div>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => navigate('/profile/2fa')}>Настроить</Button>
+                </div>
+              </Card>
 
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              className="h-4 w-4 rounded border-gray-300"
-              checked={notifications.email}
-              onChange={(e) =>
-                setNotifications((n) => ({ ...n, email: e.target.checked }))
-              }
-            />
-            <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
-              Email-уведомления
-            </span>
-          </label>
+              <Card padding="lg" className="space-y-4">
+                <h2 className="text-lg font-semibold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+                  <Globe size={18} style={{ color: 'var(--brand-iris)' }} /> Активные сессии
+                </h2>
+                <div className="space-y-2">
+                  {[
+                    { device: 'Chrome / Windows', ip: '192.168.1.45', location: 'Москва, Россия', current: true },
+                    { device: 'Safari / macOS', ip: '192.168.1.32', location: 'Москва, Россия', current: false },
+                  ].map((session, i) => (
+                    <div key={i} className="flex items-center justify-between p-3 rounded-lg border" style={{ borderColor: 'var(--border-default)' }}>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'var(--bg-surface-2)' }}>
+                          <Globe size={14} style={{ color: 'var(--text-secondary)' }} />
+                        </div>
+                        <div>
+                          <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                            {session.device} {session.current && <Badge variant="success" className="ml-2 text-[10px]">Текущая</Badge>}
+                          </div>
+                          <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{session.ip} • {session.location}</div>
+                        </div>
+                      </div>
+                      {!session.current && (
+                        <Button variant="ghost" size="sm" className="text-xs" style={{ color: 'var(--error)' }}>Завершить</Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </div>
+          )}
 
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              className="h-4 w-4 rounded border-gray-300"
-              checked={notifications.push}
-              onChange={(e) =>
-                setNotifications((n) => ({ ...n, push: e.target.checked }))
-              }
-            />
-            <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
-              Push-уведомления
-            </span>
-          </label>
-        </Card>
+          {/* ═══ TAB: NOTIFICATIONS ═══ */}
+          {activeTab === 'notifications' && (
+            <div className="space-y-6">
+              <Card padding="lg" className="space-y-4">
+                <h2 className="text-lg font-semibold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+                  <Bell size={18} style={{ color: 'var(--brand-iris)' }} /> Каналы уведомлений
+                </h2>
+                <div className="space-y-3">
+                  {channels.map((ch) => (
+                    <label key={ch.id} className="flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors hover:opacity-90" style={{ borderColor: 'var(--border-default)' }}>
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 rounded mt-0.5"
+                        checked={ch.enabled}
+                        onChange={(e) => setChannels((prev) => prev.map((c) => (c.id === ch.id ? { ...c, enabled: e.target.checked } : c)))}
+                      />
+                      <div className="flex-1">
+                        <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{ch.label}</div>
+                        <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{ch.description}</div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </Card>
+            </div>
+          )}
 
-        {/* Actions */}
-        <div className="flex items-center gap-3">
-          <Button
-            variant="primary"
-            onClick={handleSave}
-            isLoading={loading}
-            leftIcon={<Save size={16} />}
-          >
-            Сохранить
-          </Button>
+          {/* ═══ TAB: GAMIFICATION ═══ */}
+          {activeTab === 'gamification' && (
+            <div className="space-y-6">
+              {/* Level Header */}
+              <Card padding="lg">
+                <div className="flex items-center gap-4">
+                  <div
+                    className="w-20 h-20 rounded-full flex items-center justify-center text-2xl font-bold"
+                    style={{ backgroundColor: `${levelInfo.tierColor}20`, color: levelInfo.tierColor, border: `3px solid ${levelInfo.tierColor}` }}
+                  >
+                    {level}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Игровой профиль</h2>
+                      <Badge variant="leaders" leftIcon={<Crown size={12} />}>{levelInfo.title}</Badge>
+                    </div>
+                    <div className="mt-2">
+                      <div className="flex justify-between text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>
+                        <span>Уровень {level}</span>
+                        <span>{progress}%</span>
+                      </div>
+                      <div className="h-3 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--bg-surface-2)' }}>
+                        <div className="h-full rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: levelInfo.tierColor }} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Card>
 
-          {saved && (
-            <span className="text-sm" style={{ color: 'var(--accent-leaders)' }}>
-              Сохранено
-            </span>
+              {/* Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <Card padding="sm" className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${levelInfo.tierColor}18` }}>
+                    <Star size={18} style={{ color: levelInfo.tierColor }} />
+                  </div>
+                  <div>
+                    <div className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{formatXP(xp)}</div>
+                    <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>XP</div>
+                  </div>
+                </Card>
+                <Card padding="sm" className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'color-mix(in srgb, #F59E0B 10%, var(--bg-surface))' }}>
+                    <Coins size={18} style={{ color: '#F59E0B' }} />
+                  </div>
+                  <div>
+                    <div className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{coins}</div>
+                    <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Монет</div>
+                  </div>
+                </Card>
+                <Card padding="sm" className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'color-mix(in srgb, #EF4444 10%, var(--bg-surface))' }}>
+                    <Flame size={18} style={{ color: '#EF4444' }} />
+                  </div>
+                  <div>
+                    <div className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{streak}</div>
+                    <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Streak 🔥</div>
+                  </div>
+                </Card>
+                <Card padding="sm" className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'color-mix(in srgb, #D4AF37 10%, var(--bg-surface))' }}>
+                    <Trophy size={18} style={{ color: '#D4AF37' }} />
+                  </div>
+                  <div>
+                    <div className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{earnedBadges.length}</div>
+                    <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Бейджей</div>
+                  </div>
+                </Card>
+              </div>
+
+              {/* Active Quests */}
+              <Card padding="lg">
+                <h3 className="text-sm font-medium mb-3 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+                  <Zap size={16} style={{ color: 'var(--brand-iris)' }} /> Активные квесты
+                </h3>
+                <div className="space-y-3">
+                  {activeQuests.map((quest) => (
+                    <div key={quest.id} className="p-3 rounded-lg" style={{ backgroundColor: 'var(--bg-surface-2)' }}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{quest.title}</span>
+                        <Badge variant={quest.type === 'daily' ? 'info' : 'warning'}>{quest.type === 'daily' ? 'Ежедневный' : 'Еженедельный'}</Badge>
+                      </div>
+                      <p className="text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>{quest.description}</p>
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs" style={{ color: 'var(--text-secondary)' }}>
+                          <span>{quest.current} / {quest.target}</span>
+                          <span>{Math.round((quest.current / quest.target) * 100)}%</span>
+                        </div>
+                        <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--bg-surface)' }}>
+                          <div className="h-full rounded-full transition-all" style={{ width: `${(quest.current / quest.target) * 100}%`, backgroundColor: quest.completed ? 'var(--success)' : 'var(--brand-iris)' }} />
+                        </div>
+                      </div>
+                      {quest.completed && !quest.claimed && (
+                        <Button size="sm" className="mt-2" onClick={() => useGamificationStore.getState().claimQuestReward(quest.id)}>
+                          Получить: {quest.xpReward} XP + {quest.coinReward} 🪙
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </Card>
+
+              {/* Badges */}
+              <Card padding="lg">
+                <h3 className="text-sm font-medium mb-3 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+                  <Award size={16} style={{ color: '#D4AF37' }} /> Полученные бейджи
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {earnedBadges.map((badge) => (
+                    <div key={badge.id} className="flex items-center gap-3 p-2 rounded-lg" style={{ backgroundColor: 'var(--bg-surface-2)' }}>
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: `${RARITY_COLORS[badge.rarity]}18` }}>
+                        <Award size={14} style={{ color: RARITY_COLORS[badge.rarity] }} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>{badge.name}</div>
+                        <div className="text-xs truncate" style={{ color: 'var(--text-secondary)' }}>{badge.description}</div>
+                      </div>
+                      <Badge variant={badge.rarity === 'legendary' ? 'leaders' : badge.rarity === 'epic' ? 'engineering' : 'info'} className="text-[10px]">
+                        {badge.rarity === 'legendary' ? 'Легендарный' : badge.rarity === 'epic' ? 'Эпический' : badge.rarity === 'rare' ? 'Редкий' : 'Обычный'}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+
+              {/* Level Perks */}
+              <Card padding="lg">
+                <h3 className="text-sm font-medium mb-3" style={{ color: 'var(--text-primary)' }}>Бонусы уровня</h3>
+                <div className="space-y-2">
+                  {levelInfo.perks.length > 0 ? (
+                    levelInfo.perks.map((perk, idx) => (
+                      <div key={idx} className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                        <Star size={14} style={{ color: levelInfo.tierColor }} /> {perk}
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Бонусы начинаются с 5 уровня</p>
+                  )}
+                </div>
+              </Card>
+
+              {/* Leaderboard link */}
+              <Card padding="lg" className="cursor-pointer hover:opacity-90 transition-opacity" onClick={() => navigate('/gamification/leaderboard')}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <BarChart3 size={18} style={{ color: 'var(--brand-iris)' }} />
+                    <div>
+                      <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Лидерборд</div>
+                      <div className="text-xs" style={{ color: 'var(--text-muted)' }}>Сравните свой прогресс с коллегами</div>
+                    </div>
+                  </div>
+                  <ChevronRight size={16} style={{ color: 'var(--text-tertiary)' }} />
+                </div>
+              </Card>
+            </div>
+          )}
+
+          {/* Save button (only for profile/security tabs) */}
+          {(activeTab === 'profile' || activeTab === 'security') && (
+            <div className="flex items-center gap-3">
+              <Button variant="primary" onClick={handleSave} isLoading={loading} leftIcon={<Save size={16} />}>
+                Сохранить изменения
+              </Button>
+              {saved && <span className="text-sm" style={{ color: 'var(--accent-leaders)' }}>Сохранено</span>}
+            </div>
           )}
         </div>
       </div>

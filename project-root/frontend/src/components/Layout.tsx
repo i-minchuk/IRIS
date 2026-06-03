@@ -8,7 +8,8 @@ import {
   Sun, Moon, User, LogOut, ChevronDown, Menu, X,
   BarChart3, FolderKanban, FileText, ArrowLeftRight, Archive,
   Search, Trophy, Shield, Gavel, Package, Factory, Briefcase, CheckSquare,
-  Calendar, BookOpen, Settings,
+  Calendar, BookOpen, Settings, Eye, Coffee, Sparkles,
+  ShoppingCart,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/providers/ThemeProvider';
@@ -16,6 +17,7 @@ import { useLanguageContext } from "@/features/profile/i18n/LanguageContext";
 import { t } from "@/features/profile/i18n/translations";
 import { useZoomStore, MIN_SCALE, MAX_SCALE } from "@/features/zoom/store/zoomStore";
 import { useAuth } from '@/context/useAuth';
+import { useAuthStore } from '@/features/auth/store/authStore';
 import Breadcrumbs from '@/components/Breadcrumbs';
 import NotificationBell from '@/features/notifications/components/NotificationBell';
 import type { UserRole } from '@/features/auth/store/authStore';
@@ -34,21 +36,25 @@ const ALL_NAV_ITEMS = [
   { to: '/archive', label: 'Архив', icon: <Archive size={16} />, color: '#6B7280', bgActive: 'rgba(107, 114, 128, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'site_manager', 'engineer', 'norm_controller', 'manager', 'admin'] },
   { to: '/achievements', label: 'Достижения', icon: <Trophy size={16} />, color: '#D4AF37', bgActive: 'rgba(212, 175, 55, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'site_manager', 'engineer', 'norm_controller', 'manager', 'admin'] },
   { to: '/calendar', label: 'Календарь', icon: <Calendar size={16} />, color: '#EC4899', bgActive: 'rgba(236, 72, 153, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
-  { to: '/admin', label: 'Администрирование', icon: <Shield size={16} />, color: '#FF6B6B', bgActive: 'rgba(255, 107, 107, 0.15)', roles: ['admin'] },
+  { to: '/admin', label: 'Администрирование', icon: <Shield size={16} />, color: '#FF6B6B', bgActive: 'rgba(255, 107, 107, 0.15)', roles: ['admin', 'product_owner', 'system_admin', 'tech_support', 'content_editor'] },
   { to: '/references', label: 'Справочники', icon: <BookOpen size={16} />, color: '#14B8A6', bgActive: 'rgba(20, 184, 166, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
   { to: '/reports', label: 'Отчёты', icon: <FileText size={16} />, color: '#8B5CF6', bgActive: 'rgba(139, 92, 246, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
+  { to: '/srm/suppliers', label: 'SRM / Закупки', icon: <ShoppingCart size={16} />, color: '#F97316', bgActive: 'rgba(249, 115, 22, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'admin'] },
+  { to: '/gamification/leaderboard', label: 'Лидерборд', icon: <Trophy size={16} />, color: '#D4AF37', bgActive: 'rgba(212, 175, 55, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
 ];
 
 function getNavItems(role: UserRole | undefined) {
-  if (!role || role === 'admin') return ALL_NAV_ITEMS;
+  if (!role) return ALL_NAV_ITEMS.filter(item => item.to === '/dashboard');
+  if (role === 'admin') return ALL_NAV_ITEMS;
   return ALL_NAV_ITEMS.filter(item => item.roles.includes(role));
 }
 
 
 
 export default function Layout() {
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme, themeLabel } = useTheme();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showThemeMenu, setShowThemeMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isDraggingZoom, setIsDraggingZoom] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -56,9 +62,10 @@ export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const userMenuRef = useRef<HTMLDivElement | null>(null);
+  const themeMenuRef = useRef<HTMLDivElement | null>(null);
   const mobileMenuRef = useRef<HTMLDivElement | null>(null);
   const mobileMenuButtonRef = useRef<HTMLButtonElement | null>(null);
-  const isDark = theme === 'dark';
+  const isDark = theme === 'dark' || theme === 'midnight';
   const { user } = useAuth();
   const navItems = getNavItems(user?.role);
 
@@ -93,6 +100,9 @@ export default function Layout() {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setShowUserMenu(false);
       }
+      if (themeMenuRef.current && !themeMenuRef.current.contains(event.target as Node)) {
+        setShowThemeMenu(false);
+      }
       if (
         mobileMenuRef.current &&
         !mobileMenuRef.current.contains(event.target as Node) &&
@@ -105,6 +115,7 @@ export default function Layout() {
     const handleEsc = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setShowUserMenu(false);
+        setShowThemeMenu(false);
         setShowMobileMenu(false);
       }
     };
@@ -129,7 +140,11 @@ export default function Layout() {
     return () => clearTimeout(timer);
   }, []);
 
-  const handleLogout = () => { setShowUserMenu(false); navigate('/login'); };
+  const handleLogout = () => {
+    setShowUserMenu(false);
+    useAuthStore.getState().logout();
+    navigate('/login');
+  };
   const { lang } = useLanguageContext();
   const isActive = (path: string) =>
     location.pathname === path || location.pathname.startsWith(`${path}/`);
@@ -151,7 +166,7 @@ export default function Layout() {
           <div className="w-full flex min-h-14 items-center justify-between gap-4 px-4 md:px-6">
             {/* Logo */}
             <Link to="/dashboard" className="flex items-center gap-3 no-underline shrink-0">
-              <img src="/Иконка ДокПоток IRIS.png" alt="ДокПоток IRIS" className="h-9 w-9 rounded-lg object-contain" />
+              <img src="/icon-iris.png" alt="ДокПоток IRIS" className="h-9 w-9 rounded-lg object-contain" />
               <div className="flex items-baseline gap-2">
                 <span className="text-lg font-bold tracking-tight" style={{ color: 'var(--text-primary)', letterSpacing: '2px' }}>ДокПоток</span>
                 <span className="text-xs font-bold px-2 py-0.5 rounded" style={{ background: '#3B82F6', color: '#FFFFFF', letterSpacing: '1px' }}>IRIS</span>
@@ -209,18 +224,57 @@ export default function Layout() {
                 </span>
               </div>
 
-              <button
-                type="button"
-                onClick={toggleTheme}
-                className="flex h-10 w-10 items-center justify-center rounded-lg transition-all duration-150"
-                style={{ color: 'var(--text-secondary)' }}
-                title={`${isDark ? 'Включить светлую тему' : 'Включить тёмную тему'} (Ctrl+T)`}
-                aria-label={isDark ? 'Включить светлую тему' : 'Включить тёмную тему'}
-                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
-              >
-                {isDark ? <Sun size={18} /> : <Moon size={18} />}
-              </button>
+              {/* Theme selector dropdown */}
+              <div className="relative" ref={themeMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => setShowThemeMenu(prev => !prev)}
+                  className="flex h-10 w-10 items-center justify-center rounded-lg transition-all duration-150"
+                  style={{ color: 'var(--text-secondary)' }}
+                  title={`Тема: ${themeLabel} (Ctrl+T)`}
+                  aria-label={`Текущая тема: ${themeLabel}`}
+                  aria-haspopup="menu"
+                  aria-expanded={showThemeMenu}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
+                  onMouseLeave={(e) => { if (!showThemeMenu) { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; }}}
+                >
+                  {theme === 'light' && <Sun size={18} />}
+                  {theme === 'dark' && <Moon size={18} />}
+                  {theme === 'contrast' && <Eye size={18} />}
+                  {theme === 'sepia' && <Coffee size={18} />}
+                  {theme === 'midnight' && <Sparkles size={18} />}
+                </button>
+
+                {showThemeMenu && (
+                  <div className="absolute right-0 mt-2 w-48 rounded-xl border shadow-lg" style={{ background: 'var(--iris-bg-surface)', borderColor: 'var(--iris-border-subtle)', boxShadow: 'var(--iris-shadow-lg)', zIndex: 100 }} role="menu">
+                    {[
+                      { id: 'light' as const, label: 'Светлая', icon: <Sun size={14} /> },
+                      { id: 'dark' as const, label: 'Тёмная', icon: <Moon size={14} /> },
+                      { id: 'contrast' as const, label: 'Контрастная', icon: <Eye size={14} /> },
+                      { id: 'sepia' as const, label: 'Сепия', icon: <Coffee size={14} /> },
+                      { id: 'midnight' as const, label: 'Полночь', icon: <Sparkles size={14} /> },
+                    ].map((t) => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => { setTheme(t.id); setShowThemeMenu(false); }}
+                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-all"
+                        style={{
+                          color: theme === t.id ? 'var(--iris-accent-cyan)' : 'var(--text-primary)',
+                          backgroundColor: theme === t.id ? 'var(--iris-bg-hover)' : 'transparent',
+                        }}
+                        role="menuitem"
+                        onMouseEnter={(e) => { if (theme !== t.id) e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)'; }}
+                        onMouseLeave={(e) => { if (theme !== t.id) e.currentTarget.style.backgroundColor = 'transparent'; }}
+                      >
+                        <span style={{ color: theme === t.id ? 'var(--iris-accent-cyan)' : 'var(--text-muted)' }}>{t.icon}</span>
+                        <span>{t.label}</span>
+                        {theme === t.id && <span className="ml-auto text-xs">✓</span>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               {/* Notifications */}
               <NotificationBell />

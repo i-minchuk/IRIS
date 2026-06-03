@@ -12,7 +12,7 @@ import {
   FileText, HardHat, Layers, Bookmark, Eye, Download,
   Plus
 } from 'lucide-react';
-// import { DepartmentLoad } from './DashboardWidgets';
+import { DepartmentLoad } from '@/components/DepartmentLoad';
 import { getTenders } from '@/features/tenders/api/tenders';
 import type { Tender } from '@/features/tenders/types/tender';
 
@@ -701,7 +701,7 @@ function ProjectsView() {
 
             {/* Загрузка по отделам */}
             <div className="p-3 rounded-xl min-w-0" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
-              {/* <DepartmentLoad /> */}
+              <DepartmentLoad />
             </div>
           </div>
         </div>

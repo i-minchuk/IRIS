@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
-from app.db.session import get_db
+from app.db.session import get_db, get_db_read_only
 from app.modules.auth.deps import get_current_active_user
 from app.modules.auth.models import User
 from app.modules.documents.dependencies import router as deps_router
@@ -21,20 +21,39 @@ router.include_router(deps_router, prefix="/dependencies")
 async def list_documents(
     project_id: int = None,
     section_id: int = None,
+    status: str = Query(None, description="Filter by status"),
+    document_type: str = Query(None, description="Filter by document type"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    db: AsyncSession = Depends(lambda: get_db(read_only=True)),
+    db: AsyncSession = Depends(get_db_read_only),
     service: DocumentService = Depends(get_document_service),
 ):
-    offset = (page - 1) * page_size
-    query = select(Document)
+    """List documents with optional filters and pagination."""
+    from app.modules.documents.crud import get_documents
+    
+    skip = (page - 1) * page_size
+    docs = await get_documents(
+        db,
+        project_id=project_id,
+        status=status,
+        document_type=document_type,
+        skip=skip,
+        limit=page_size
+    )
+    
+    # Count total for pagination
+    count_query = select(func.count()).select_from(Document)
+    filters = []
     if project_id:
-        query = query.where(Document.project_id == project_id)
-    if section_id:
-        query = query.where(Document.section_id == section_id)
-    total = await db.scalar(select(func.count()).select_from(query.subquery()))
-    result = await db.execute(query.order_by(Document.created_at.desc()).offset(offset).limit(page_size))
-    docs = result.scalars().all()
+        filters.append(Document.project_id == project_id)
+    if status:
+        filters.append(Document.status == status)
+    if document_type:
+        filters.append(Document.doc_type == document_type)
+    if filters:
+        count_query = count_query.where(and_(*filters))
+    total = await db.scalar(count_query)
+    
     items = [
         {
             "id": d.id,
@@ -59,7 +78,7 @@ async def list_documents(
     }
 
 
-@router.post("", response_model=dict)
+@router.post("", response_model=dict, status_code=201)
 async def create_document(
     data: dict,
     current_user: User = Depends(get_current_active_user),

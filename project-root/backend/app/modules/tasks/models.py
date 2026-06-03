@@ -72,10 +72,10 @@ class Task(Base):
     # Relationships
     creator: Mapped["User"] = relationship(foreign_keys=[creator_id])
     assignee: Mapped[Optional["User"]] = relationship(foreign_keys=[assignee_id])
-    project: Mapped[Optional["Project"]] = relationship(back_populates="tasks")
+    project: Mapped[Optional["Project"]] = relationship()
     route: Mapped[Optional["Route"]] = relationship(back_populates="tasks")
     operation: Mapped[Optional["Operation"]] = relationship(back_populates="tasks")
-    document: Mapped[Optional["Document"]] = relationship(back_populates="tasks")
+    document: Mapped[Optional["Document"]] = relationship()
     work_center: Mapped[Optional["WorkCenter"]] = relationship()
     time_sessions: Mapped[list["TimeSession"]] = relationship(back_populates="task")
     

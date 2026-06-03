@@ -14,11 +14,17 @@ class DocumentIndexer:
             host=settings.QDRANT_HOST,
             port=settings.QDRANT_PORT
         )
-        self.embedder = EmbeddingService()
+        self._embedder = None
         self.collection = settings.QDRANT_COLLECTION
         self.chunk_size = settings.CHUNK_SIZE
         self.chunk_overlap = settings.CHUNK_OVERLAP
         self._ensure_collection()
+
+    @property
+    def embedder(self):
+        if self._embedder is None:
+            self._embedder = EmbeddingService()
+        return self._embedder
     
     def _ensure_collection(self):
         """Создаёт коллекцию, если не существует"""

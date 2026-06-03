@@ -19,7 +19,7 @@ router = APIRouter(tags=["projects"])
 async def list_projects(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    db: AsyncSession = Depends(lambda: get_db(read_only=True)),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
     offset = (page - 1) * page_size

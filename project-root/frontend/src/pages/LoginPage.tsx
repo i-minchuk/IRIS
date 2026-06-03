@@ -3,8 +3,9 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useTheme } from '@/providers/ThemeProvider';
 import { Eye, EyeOff, ArrowLeft, LogIn, User, Lock, Shield } from 'lucide-react';
 import { useZoomStore } from '@/features/zoom/store/zoomStore';
-import { authApi } from '@/features/auth/api/authApi';
 import { useAuthStore } from '@/features/auth/store/authStore';
+import { useAuth } from '@/context/useAuth';
+
 
 export default function LoginPage() {
   const { theme } = useTheme();
@@ -15,23 +16,24 @@ export default function LoginPage() {
     return () => setHidden(false); // показать зум при уходе
   }, [setHidden]);
   const navigate = useNavigate();
-  const [login, setLogin] = useState('');
+  const [loginValue, setLoginValue] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const setAuth = useAuthStore((state) => state.setAuth);
+  const { login: doLogin } = useAuth();
+  const enableDemo = useAuthStore((state) => state.enableDemo);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    if (!login.trim() || !password.trim()) {
+    if (!loginValue.trim() || !password.trim()) {
       setError('Введите логин и пароль.');
       return;
     }
-    if (login.trim().length < 3) {
+    if (loginValue.trim().length < 3) {
       setError('Логин должен содержать минимум 3 символа.');
       return;
     }
@@ -43,20 +45,7 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const tokenResponse = await authApi.login({ username: login.trim(), password });
-
-      localStorage.setItem('access_token', tokenResponse.access_token);
-      localStorage.setItem('refresh_token', tokenResponse.refresh_token);
-
-      const apiUser = await authApi.getCurrentUser();
-      const user = {
-        id: apiUser.id,
-        email: apiUser.email,
-        full_name: apiUser.full_name,
-        role: (apiUser.role || 'engineer') as import('@/features/auth/store/authStore').UserRole,
-        is_active: apiUser.is_active,
-      };
-      setAuth(user, tokenResponse.access_token);
+      await doLogin(loginValue.trim(), password);
       navigate('/dashboard', { replace: true });
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Ошибка входа. Проверьте соединение с сервером.');
@@ -126,7 +115,7 @@ export default function LoginPage() {
               <label htmlFor="login" className="block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: isDark ? '#8B92A8' : '#6B7280' }}>Логин</label>
               <div className="relative">
                 <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: isDark ? '#5A6270' : '#A0A8B8' }} />
-                <input id="login" type="text" value={login} onChange={(e) => setLogin(e.target.value)} placeholder="Введите логин" autoComplete="username" required minLength={3}
+                <input id="login" type="text" value={loginValue} onChange={(e) => setLoginValue(e.target.value)} placeholder="Введите логин" autoComplete="username" required minLength={3}
                   className="w-full h-11 pl-10 pr-3 rounded-lg text-sm outline-none"
                   style={{ background: isDark ? '#1A1F2E' : '#FFFFFF', border: `1px solid ${isDark ? '#3D4554' : '#CED2DD'}`, color: isDark ? '#E2E5EC' : '#1E2230' }} />
               </div>
@@ -160,7 +149,7 @@ export default function LoginPage() {
           <div className="mt-6 pt-5" style={{ borderTop: `1px solid ${isDark ? '#3D4554' : '#CED2DD'}` }}>
             <a
               href="/api/v1/auth/saml/login"
-              className="w-full h-11 rounded-lg font-semibold text-sm flex items-center justify-center gap-2"
+              className="w-full h-11 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 mb-3"
               style={{
                 background: isDark ? '#1A1F2E' : '#F5F6FA',
                 color: isDark ? '#E2E5EC' : '#1E2230',
@@ -169,6 +158,17 @@ export default function LoginPage() {
             >
               <Shield size={16} /> Войти через SSO
             </a>
+            <button
+              onClick={() => { enableDemo(); navigate('/dashboard', { replace: true }); }}
+              className="w-full h-11 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition-all hover:brightness-110"
+              style={{
+                background: isDark ? 'rgba(12,114,5,0.2)' : 'rgba(12,114,5,0.1)',
+                color: '#0C7205',
+                border: `1px solid ${isDark ? 'rgba(12,114,5,0.4)' : 'rgba(12,114,5,0.3)'}`,
+              }}
+            >
+              🚀 Демо-режим (без сервера)
+            </button>
           </div>
         </div>
       </div>

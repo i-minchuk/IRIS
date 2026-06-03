@@ -9,6 +9,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
+# Ensure all models are imported so SQLAlchemy mappers are configured
+import app.models  # noqa: F401
+
 from app.api.router import api_router
 from app.core.config import settings
 from app.core.exceptions import register_exception_handlers
@@ -90,6 +93,8 @@ def add_middlewares(app: FastAPI) -> None:
 async def lifespan(app: FastAPI):
     logger.info("Starting %s v%s", settings.PROJECT_NAME, settings.VERSION)
     app.state.started = True
+    # Import all models to ensure SQLAlchemy mappers are configured
+    import app.models  # noqa: F401
     await redis_pubsub.connect()
     yield
     logger.info("Shutting down %s", settings.PROJECT_NAME)
@@ -244,4 +249,6 @@ async def db_metrics():
         "checked_in": pool.checkedin() if hasattr(pool, "checkedin") else None,
         "checked_out": pool.checkedout() if hasattr(pool, "checkedout") else None,
         "overflow": pool.overflow() if hasattr(pool, "overflow") else None,
+        "max_overflow": getattr(pool, '_max_overflow', None),
+        "pool_timeout": getattr(pool, '_timeout', None),
     }

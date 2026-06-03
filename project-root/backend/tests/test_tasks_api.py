@@ -114,9 +114,12 @@ class TestListTasks:
                 response = client.get("/api/v1/tasks")
                 assert response.status_code == 200
                 data = response.json()
-                assert len(data) == 1
-                assert data[0]["title"] == "Test Task"
-                assert data[0]["status"] == "new"
+                assert "items" in data
+                assert len(data["items"]) == 1
+                assert data["items"][0]["title"] == "Test Task"
+                assert data["items"][0]["status"] == "new"
+                assert data["total"] == 1
+                assert data["page"] == 1
             finally:
                 app.dependency_overrides.pop(get_db, None)
 
@@ -136,13 +139,14 @@ class TestListTasks:
                         "status": "new",
                         "priority": "normal",
                         "type": "production",
-                        "limit": 50,
-                        "offset": 0,
+                        "page": 1,
+                        "page_size": 50,
                     },
                 )
                 assert response.status_code == 200
                 data = response.json()
-                assert len(data) == 1
+                assert "items" in data
+                assert len(data["items"]) == 1
             finally:
                 app.dependency_overrides.pop(get_db, None)
 
@@ -160,7 +164,8 @@ class TestListTasks:
                 response = client.get("/api/v1/tasks", params={"overdue_only": "true"})
                 assert response.status_code == 200
                 data = response.json()
-                assert len(data) == 1
+                assert "items" in data
+                assert len(data["items"]) == 1
             finally:
                 app.dependency_overrides.pop(get_db, None)
 
@@ -176,7 +181,8 @@ class TestListTasks:
                 response = client.get("/api/v1/tasks", params={"search": "Test"})
                 assert response.status_code == 200
                 data = response.json()
-                assert len(data) == 1
+                assert "items" in data
+                assert len(data["items"]) == 1
             finally:
                 app.dependency_overrides.pop(get_db, None)
 

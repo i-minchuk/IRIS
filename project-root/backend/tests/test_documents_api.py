@@ -5,7 +5,8 @@ from unittest.mock import MagicMock, AsyncMock, patch
 
 from app.main import app
 from app.modules.auth.deps import get_current_active_user
-from app.db.session import get_db
+from app.db.session import get_db, get_db_read_only
+from app.modules.documents.deps import get_document_service
 
 
 @pytest.fixture
@@ -32,6 +33,8 @@ def mock_doc(mock_user):
     doc.crs_approved_date = None
     doc.content = {"body": "<p>hello</p>"}
     doc.variables_snapshot = {}
+    doc.ai_classified_type = None
+    doc.ai_confidence = None
     doc.author_id = mock_user.id
     doc.project_id = 1
     doc.section_id = None
@@ -58,9 +61,20 @@ def client_with_auth(mock_user):
 
 def _make_mock_db(doc=None, docs=None, user_doc=None):
     from sqlalchemy.ext.asyncio import AsyncSession
+    from datetime import datetime, timezone
     mock_db = AsyncMock(spec=AsyncSession)
     mock_db.commit = AsyncMock()
-    mock_db.refresh = AsyncMock()
+
+    async def refresh_side_effect(obj, *args, **kwargs):
+        # Simulate DB assigning id and timestamps after insert
+        if getattr(obj, "id", None) is None:
+            obj.id = 42
+        if getattr(obj, "created_at", None) is None:
+            obj.created_at = datetime.now(timezone.utc)
+        if getattr(obj, "updated_at", None) is None:
+            obj.updated_at = datetime.now(timezone.utc)
+
+    mock_db.refresh = AsyncMock(side_effect=refresh_side_effect)
 
     doc_result = MagicMock()
     doc_result.scalar_one_or_none.return_value = doc
@@ -70,6 +84,9 @@ def _make_mock_db(doc=None, docs=None, user_doc=None):
     user_result = MagicMock()
     user_result.scalar_one_or_none.return_value = user_doc or doc
 
+    count_result = MagicMock()
+    count_result.scalar.return_value = len(docs) if docs else (1 if doc else 0)
+
     call_count = [0]
 
     async def execute_side_effect(query):
@@ -78,9 +95,12 @@ def _make_mock_db(doc=None, docs=None, user_doc=None):
         qstr = str(query)
         if "users" in qstr.lower():
             return user_result
+        if "count" in qstr.lower():
+            return count_result
         return doc_result
 
     mock_db.execute = AsyncMock(side_effect=execute_side_effect)
+    mock_db.scalar = AsyncMock(return_value=len(docs) if docs else (1 if doc else 0))
     return mock_db
 
 
@@ -89,18 +109,26 @@ class TestListDocuments:
         with client_with_auth as client:
             mock_db = _make_mock_db(docs=[mock_doc])
 
+            async def override_service():
+                from app.modules.documents.service import DocumentService
+                return DocumentService(mock_db)
+
             async def override_get_db():
                 yield mock_db
 
-            app.dependency_overrides[get_db] = override_get_db
+            app.dependency_overrides[get_document_service] = override_service
+            app.dependency_overrides[get_db_read_only] = override_get_db
             try:
                 response = client.get("/api/v1/documents")
                 assert response.status_code == 200
                 data = response.json()
-                assert len(data) == 1
-                assert data[0]["number"] == "DOC-001"
+                assert "items" in data
+                assert len(data["items"]) == 1
+                assert data["items"][0]["number"] == "DOC-001"
+                assert data["total"] == 1
             finally:
-                app.dependency_overrides.pop(get_db, None)
+                app.dependency_overrides.pop(get_document_service, None)
+                app.dependency_overrides.pop(get_db_read_only, None)
 
 
 class TestGetDocument:
@@ -117,7 +145,7 @@ class TestGetDocument:
                 assert response.status_code == 200
                 data = response.json()
                 assert data["number"] == "DOC-001"
-                assert data["locked_by_id"] is None
+                assert data.get("locked_by_user") is None
             finally:
                 app.dependency_overrides.pop(get_db, None)
 
@@ -139,7 +167,7 @@ class TestGetDocument:
                 response = client.get("/api/v1/documents/1")
                 assert response.status_code == 200
                 data = response.json()
-                assert data["locked_by_id"] == 2
+                assert data.get("locked_by_user", {}).get("id") == 2
             finally:
                 app.dependency_overrides.pop(get_db, None)
 
@@ -172,7 +200,7 @@ class TestCreateDocument:
                     "/api/v1/documents",
                     json={"number": "DOC-002", "name": "New Doc", "doc_type": "PD", "project_id": 1, "author_id": 1},
                 )
-                assert response.status_code == 200
+                assert response.status_code == 201
                 data = response.json()
                 assert data["number"] == "DOC-002"
                 assert data["status"] == "draft"
@@ -271,39 +299,66 @@ class TestUnlockDocument:
 
 
 class TestSubmitForApproval:
-    def test_submit_for_approval_success(self, client_with_auth):
+    def test_submit_for_approval_success(self, client_with_auth, mock_doc):
         with client_with_auth as client:
-            with patch("app.modules.documents.service.DocumentService.submit_for_approval", new_callable=AsyncMock) as mock_submit:
-                mock_submit.return_value = {"document_id": 1, "status": "crs_pending", "workflow_id": 10}
+            mock_db = _make_mock_db(doc=mock_doc)
+
+            async def override_get_db():
+                yield mock_db
+
+            app.dependency_overrides[get_db] = override_get_db
+            try:
                 response = client.post("/api/v1/documents/1/submit-for-approval")
                 assert response.status_code == 200
                 data = response.json()
                 assert data["status"] == "crs_pending"
-                assert data["workflow_id"] == 10
+            finally:
+                app.dependency_overrides.pop(get_db, None)
 
-    def test_submit_for_approval_conflict(self, client_with_auth):
+    def test_submit_for_approval_conflict(self, client_with_auth, mock_doc):
         with client_with_auth as client:
-            with patch("app.modules.documents.service.DocumentService.submit_for_approval", new_callable=AsyncMock) as mock_submit:
-                from fastapi import HTTPException
-                mock_submit.side_effect = HTTPException(status_code=409, detail="Document already in status 'crs_pending'")
+            mock_doc.status = "crs_pending"
+            mock_db = _make_mock_db(doc=mock_doc)
+
+            async def override_get_db():
+                yield mock_db
+
+            app.dependency_overrides[get_db] = override_get_db
+            try:
                 response = client.post("/api/v1/documents/1/submit-for-approval")
                 assert response.status_code == 409
+            finally:
+                app.dependency_overrides.pop(get_db, None)
 
 
 class TestSubmitForReview:
-    def test_submit_for_review_success(self, client_with_auth):
+    def test_submit_for_review_success(self, client_with_auth, mock_doc):
         with client_with_auth as client:
-            with patch("app.modules.documents.service.DocumentService.submit_for_review", new_callable=AsyncMock) as mock_submit:
-                mock_submit.return_value = {"document_id": 1, "status": "in_review"}
+            mock_db = _make_mock_db(doc=mock_doc)
+
+            async def override_get_db():
+                yield mock_db
+
+            app.dependency_overrides[get_db] = override_get_db
+            try:
                 response = client.post("/api/v1/documents/1/submit-for-review")
                 assert response.status_code == 200
                 data = response.json()
                 assert data["status"] == "in_review"
+            finally:
+                app.dependency_overrides.pop(get_db, None)
 
-    def test_submit_for_review_conflict(self, client_with_auth):
+    def test_submit_for_review_conflict(self, client_with_auth, mock_doc):
         with client_with_auth as client:
-            with patch("app.modules.documents.service.DocumentService.submit_for_review", new_callable=AsyncMock) as mock_submit:
-                from fastapi import HTTPException
-                mock_submit.side_effect = HTTPException(status_code=409, detail="Cannot submit for review from status 'approved'")
+            mock_doc.status = "approved"
+            mock_db = _make_mock_db(doc=mock_doc)
+
+            async def override_get_db():
+                yield mock_db
+
+            app.dependency_overrides[get_db] = override_get_db
+            try:
                 response = client.post("/api/v1/documents/1/submit-for-review")
                 assert response.status_code == 409
+            finally:
+                app.dependency_overrides.pop(get_db, None)

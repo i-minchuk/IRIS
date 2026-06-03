@@ -1,16 +1,13 @@
-"""CRUD operations for Archive"""
+"""CRUD operations for Archive — cross-database compatible (PostgreSQL + SQLite)"""
 from datetime import datetime, timezone
 from typing import Optional, List, Tuple
 from uuid import UUID
 from sqlalchemy import select, func, text, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from sqlalchemy.dialects.postgresql import to_tsvector, plainto_tsquery
 
 from app.models.archive import (
-    ArchiveEntry, ArchiveMaterial, ArchiveConstruction,
-    ArchiveEntryType, ArchiveMaterialType, ArchiveConstructionType,
-    ArchiveConstructionStatus
+    ArchiveEntry, ArchiveMaterial, ArchiveConstruction
 )
 from app.modules.projects.models import Project
 from app.modules.auth.models import User
@@ -18,14 +15,14 @@ from app.modules.auth.models import User
 
 async def create_entry(
     db: AsyncSession,
-    project_id: UUID,
-    entry_type: ArchiveEntryType,
+    project_id: int,
+    entry_type: str,
     source_table: str,
     source_id: UUID,
     title: str,
     description: Optional[str] = None,
     content_snapshot: Optional[dict] = None,
-    author_id: Optional[UUID] = None,
+    author_id: Optional[int] = None,
     occurred_at: Optional[datetime] = None,
     tags: List[str] = None,
     attachments: List[dict] = None,
@@ -71,13 +68,13 @@ async def get_entry(db: AsyncSession, entry_id: UUID) -> Optional[ArchiveEntry]:
 
 async def list_entries(
     db: AsyncSession,
-    project_id: UUID,
-    entry_types: List[ArchiveEntryType] = None,
+    project_id: int,
+    entry_types: List[str] = None,
     date_from: datetime = None,
     date_to: datetime = None,
     is_pinned: bool = None,
     has_attachments: bool = False,
-    author_id: UUID = None,
+    author_id: int = None,
     page: int = 1,
     limit: int = 20,
     sort_by: str = "occurred_at",
@@ -98,7 +95,7 @@ async def list_entries(
     if is_pinned is not None:
         query = query.where(ArchiveEntry.is_pinned == is_pinned)
     if has_attachments:
-        query = query.where(func.jsonb_array_length(ArchiveEntry.attachments) > 0)
+        query = query.where(func.length(ArchiveEntry.attachments) > 2)  # '[]' = 2 chars
     if author_id:
         query = query.where(ArchiveEntry.author_id == author_id)
 
@@ -122,29 +119,33 @@ async def list_entries(
 
     query = query.offset(offset).limit(limit)
     result = await db.execute(query)
-    entries = result.scalars().all()
+    entries = result.unique().scalars().all()
 
     return entries, total
 
 
 async def search(
     db: AsyncSession,
-    project_id: UUID,
+    project_id: int,
     query_text: str,
-    entry_types: List[ArchiveEntryType] = None,
+    entry_types: List[str] = None,
     date_from: datetime = None,
     date_to: datetime = None,
     limit: int = 20,
 ) -> Tuple[List[ArchiveEntry], List[ArchiveMaterial], List[ArchiveConstruction]]:
-    """Полнотекстовый поиск по архиву"""
-    # Поиск по entry
-    search_query = plainto_tsquery('russian', query_text)
-    
+    """Поиск по архиву (cross-database, без полнотекстового поиска)"""
+    # Поиск по entry — простой LIKE вместо tsvector
+    search_pattern = f"%{query_text}%"
     entries_query = (
         select(ArchiveEntry)
         .where(ArchiveEntry.project_id == project_id)
         .where(ArchiveEntry.is_deleted == False)
-        .where(ArchiveEntry.search_vector.op("@@")(search_query))
+        .where(
+            or_(
+                ArchiveEntry.title.ilike(search_pattern),
+                ArchiveEntry.description.ilike(search_pattern),
+            )
+        )
     )
 
     if entry_types:
@@ -154,10 +155,7 @@ async def search(
     if date_to:
         entries_query = entries_query.where(ArchiveEntry.occurred_at <= date_to)
 
-    # Ранжирование
-    rank = func.ts_rank_cd(ArchiveEntry.search_vector, search_query)
-    entries_query = entries_query.order_by(rank.desc()).limit(limit)
-
+    entries_query = entries_query.order_by(ArchiveEntry.occurred_at.desc()).limit(limit)
     entries_result = await db.execute(entries_query)
     entries = entries_result.scalars().all()
 
@@ -167,9 +165,9 @@ async def search(
         .where(ArchiveMaterial.project_id == project_id)
         .where(
             or_(
-                ArchiveMaterial.name.ilike(f"%{query_text}%"),
-                ArchiveMaterial.specification.ilike(f"%{query_text}%"),
-                ArchiveMaterial.manufacturer.ilike(f"%{query_text}%"),
+                ArchiveMaterial.name.ilike(search_pattern),
+                ArchiveMaterial.specification.ilike(search_pattern),
+                ArchiveMaterial.manufacturer.ilike(search_pattern),
             )
         )
         .limit(limit)
@@ -183,9 +181,9 @@ async def search(
         .where(ArchiveConstruction.project_id == project_id)
         .where(
             or_(
-                ArchiveConstruction.name.ilike(f"%{query_text}%"),
-                ArchiveConstruction.designation.ilike(f"%{query_text}%"),
-                ArchiveConstruction.location.ilike(f"%{query_text}%"),
+                ArchiveConstruction.name.ilike(search_pattern),
+                ArchiveConstruction.designation.ilike(search_pattern),
+                ArchiveConstruction.location.ilike(search_pattern),
             )
         )
         .limit(limit)
@@ -198,8 +196,8 @@ async def search(
 
 async def create_material(
     db: AsyncSession,
-    project_id: UUID,
-    material_type: ArchiveMaterialType,
+    project_id: int,
+    material_type: str,
     name: str,
     specification: Optional[str] = None,
     manufacturer: Optional[str] = None,
@@ -262,9 +260,9 @@ async def delete_material(db: AsyncSession, material_id: UUID) -> bool:
 
 async def create_construction(
     db: AsyncSession,
-    project_id: UUID,
+    project_id: int,
     name: str,
-    construction_type: ArchiveConstructionType,
+    construction_type: str,
     designation: Optional[str] = None,
     location: Optional[str] = None,
     materials_used: List[UUID] = None,
@@ -363,7 +361,7 @@ async def soft_delete_entry(db: AsyncSession, entry_id: UUID) -> bool:
     return True
 
 
-async def get_statistics(db: AsyncSession, project_id: UUID) -> dict:
+async def get_statistics(db: AsyncSession, project_id: int) -> dict:
     """Статистика по проекту"""
     # Общее количество записей
     total_result = await db.execute(
@@ -384,20 +382,21 @@ async def get_statistics(db: AsyncSession, project_id: UUID) -> dict:
             ArchiveEntry.is_deleted == False
         ).group_by(ArchiveEntry.entry_type)
     )
-    by_type = {row[0].value: row[1] for row in by_type_result}
+    by_type = {row[0]: row[1] for row in by_type_result}
 
-    # По месяцам
-    by_month_result = await db.execute(
-        select(
-            func.to_char(ArchiveEntry.occurred_at, 'YYYY-MM'),
-            func.count()
-        ).where(
+    # По месяцам — группировка в Python для кросс-базовой совместимости
+    entries_for_month = await db.execute(
+        select(ArchiveEntry.occurred_at).where(
             ArchiveEntry.project_id == project_id,
             ArchiveEntry.is_deleted == False
-        ).group_by(func.to_char(ArchiveEntry.occurred_at, 'YYYY-MM'))
-        .order_by(func.to_char(ArchiveEntry.occurred_at, 'YYYY-MM').desc())
+        )
     )
-    by_month = {row[0]: row[1] for row in by_month_result}
+    from collections import Counter
+    month_counts = Counter()
+    for (occurred_at,) in entries_for_month:
+        month_key = occurred_at.strftime('%Y-%m')
+        month_counts[month_key] += 1
+    by_month = dict(sorted(month_counts.items(), reverse=True))
 
     # Материалы и конструкции
     materials_result = await db.execute(
@@ -433,7 +432,7 @@ async def link_entries(
     if not entry:
         return None
 
-    existing_ids = set(entry.related_entry_ids)
+    existing_ids = set(entry.related_entry_ids or [])
     existing_ids.update(related_entry_ids)
     entry.related_entry_ids = list(existing_ids)
 

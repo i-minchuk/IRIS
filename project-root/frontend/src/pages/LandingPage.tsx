@@ -43,8 +43,8 @@ const FeatureCard = ({ icon, title, lines }: { icon: React.ReactNode; title: str
 };
 
 export default function LandingPage() {
-  const { theme, toggleTheme } = useTheme();
-  const isDark = theme === 'dark';
+  const { theme, cycleTheme, themeLabel } = useTheme();
+  const isDark = theme === 'dark' || theme === 'midnight';
 
   const features = [
     { icon: <FileText size={20} />, title: 'Документооборот', lines: ['Единое пространство', 'для ИТД и ИИД'] },
@@ -61,14 +61,14 @@ export default function LandingPage() {
       {/* Theme toggle */}
       <div className="fixed top-4 right-4 z-[100]">
         <button
-          onClick={toggleTheme}
+          onClick={cycleTheme}
           className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-150"
           style={{
             background: isDark ? '#151B38' : '#FFFFFF',
             border: `1px solid ${isDark ? '#3D4554' : '#CED2DD'}`,
             color: isDark ? '#8B92A8' : '#6B7280',
           }}
-          title={isDark ? 'Светлая тема' : 'Тёмная тема'}
+          title={`Тема: ${themeLabel}`}
         >
           {isDark ? (
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

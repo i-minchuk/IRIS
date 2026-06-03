@@ -45,12 +45,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const storeUser = useAuthStore((state) => state.user);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isDemoMode = useAuthStore((state) => state.isDemoMode);
   const setAuth = useAuthStore((state) => state.setAuth);
   const storeLogout = useAuthStore((state) => state.logout);
 
   useEffect(() => {
     let mounted = true;
     const restore = async () => {
+      // Skip backend check in demo mode
+      if (isDemoMode || localStorage.getItem('demo_mode') === '1') {
+        if (mounted) setLoading(false);
+        return;
+      }
       try {
         const currentUser = await authApi.getCurrentUser();
         if (!mounted) return;
@@ -66,30 +72,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       mounted = false;
     };
-  }, [setAuth, storeLogout]);
+  }, [setAuth, storeLogout, isDemoMode]);
 
   const login = useCallback(
-    async (email: string, password: string) => {
-      const tokenResponse = await authApi.login({ email, password });
-      const currentUser = await authApi.getCurrentUser();
+    async (usernameOrEmail: string, password: string) => {
+      const tokenResponse = await authApi.login({ username: usernameOrEmail, password });
+      // Сохраняем токен ДО вызова getCurrentUser, чтобы apiClient подставил Authorization header
       localStorage.setItem('access_token', tokenResponse.access_token);
       localStorage.setItem('refresh_token', tokenResponse.refresh_token);
+      const currentUser = await authApi.getCurrentUser();
       setAuth(normalizeUser(currentUser), tokenResponse.access_token);
     },
     [setAuth]
   );
 
   const loginDemo = useCallback(async () => {
-    const demoUser: User = {
-      id: 1,
-      email: 'demo@stdo.local',
-      full_name: 'Demo User',
-      username: 'demo',
-      role: 'admin',
-      is_active: true,
-    };
-    setAuth(demoUser, 'demo-token');
-  }, [setAuth]);
+    useAuthStore.getState().enableDemo();
+  }, []);
 
   const logout = useCallback(async () => {
     try {
@@ -101,6 +100,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [storeLogout]);
 
   const refreshUser = useCallback(async () => {
+    // Skip backend check in demo mode
+    if (localStorage.getItem('demo_mode') === '1') return;
     try {
       const currentUser = await authApi.getCurrentUser();
       const token = useAuthStore.getState().token || '';

@@ -71,9 +71,10 @@ class TestListProjects:
                 response = client.get("/api/v1/projects")
                 assert response.status_code == 200
                 data = response.json()
-                assert len(data) == 1
-                assert data[0]["name"] == "Project A"
-                assert data[0]["code"] == "PRJ-A"
+                assert "items" in data
+                assert len(data["items"]) == 1
+                assert data["items"][0]["name"] == "Project A"
+                assert data["items"][0]["code"] == "PRJ-A"
             finally:
                 app.dependency_overrides.pop(get_db, None)
 

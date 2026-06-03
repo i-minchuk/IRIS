@@ -35,9 +35,7 @@ class Project(Base):
 
     stages: Mapped[list["Stage"]] = relationship(back_populates="project", cascade="all, delete-orphan")
     documents: Mapped[list["Document"]] = relationship(back_populates="project")
-    routes: Mapped[list["Route"]] = relationship(back_populates="project")
-    tasks: Mapped[list["Task"]] = relationship(back_populates="project")
-    tenders: Mapped[list["Tender"]] = relationship("Tender", back_populates="project")
+    # routes, tasks, tenders relationships defined in their respective models
     manager: Mapped[Optional["User"]] = relationship(foreign_keys=[manager_id])
 
 

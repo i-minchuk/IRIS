@@ -1,26 +1,18 @@
-"""SQLAlchemy models for Archive"""
+"""SQLAlchemy models for Archive — cross-database compatible (PostgreSQL + SQLite)"""
 from datetime import datetime, date
 from typing import Optional, List
-from uuid import UUID
+from uuid import UUID, uuid4
 from decimal import Decimal
 from enum import Enum as PyEnum
 
 from sqlalchemy import (
-    Column, String, Text, DateTime, Date, Float, Boolean, Integer,
-    ForeignKey, Numeric, ARRAY, event
+    String, Text, DateTime, Date, Float, Boolean, Integer,
+    ForeignKey, Numeric, event, JSON, Uuid
 )
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID, JSONB
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.sql import func
 
 from app.db.base import Base
-
-
-# PostgreSQL enum types - defined as strings for now, will be created via migration
-ArchiveEntryType = "archive_entry_type"
-ArchiveMaterialType = "archive_material_type"
-ArchiveConstructionType = "archive_construction_type"
-ArchiveConstructionStatus = "archive_construction_status"
 
 
 class ArchiveEntry(Base):
@@ -28,9 +20,9 @@ class ArchiveEntry(Base):
     __tablename__ = "archive_entries"
 
     id: Mapped[UUID] = mapped_column(
-        PG_UUID(as_uuid=True),
+        Uuid,
         primary_key=True,
-        default=func.gen_random_uuid()
+        default=uuid4
     )
     project_id: Mapped[int] = mapped_column(
         Integer,
@@ -44,10 +36,10 @@ class ArchiveEntry(Base):
         index=True
     )
     source_table: Mapped[str] = mapped_column(String(100), nullable=False)
-    source_id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), nullable=False)
+    source_id: Mapped[UUID] = mapped_column(Uuid, nullable=False)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    content_snapshot: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    content_snapshot: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     author_id: Mapped[Optional[int]] = mapped_column(
         Integer,
         ForeignKey("users.id", ondelete="SET NULL"),
@@ -59,33 +51,30 @@ class ArchiveEntry(Base):
         index=True
     )
     tags: Mapped[List[str]] = mapped_column(
-        ARRAY(String),
+        JSON,
         nullable=False,
-        server_default="{}"
+        default=list
     )
-    # search_vector will be created via database trigger
     attachments: Mapped[List[dict]] = mapped_column(
-        JSONB,
+        JSON,
         nullable=False,
-        server_default="[]"
+        default=list
     )
     related_entry_ids: Mapped[List[UUID]] = mapped_column(
-        ARRAY(PG_UUID(as_uuid=True)),
+        JSON,
         nullable=False,
-        server_default="{}"
+        default=list
     )
     is_pinned: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,
         default=False,
-        server_default="false",
         index=True
     )
     is_deleted: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,
         default=False,
-        server_default="false",
         index=True
     )
     created_at: Mapped[datetime] = mapped_column(
@@ -108,7 +97,7 @@ class ArchiveEntry(Base):
     search_index = relationship("ArchiveSearchIndex", backref="search_entry", uselist=False)
 
     def __repr__(self) -> str:
-        return f"<ArchiveEntry(id={self.id}, type={self.entry_type.value}, title='{self.title}')>"
+        return f"<ArchiveEntry(id={self.id}, type={self.entry_type}, title='{self.title}')>"
 
 
 class ArchiveMaterial(Base):
@@ -116,9 +105,9 @@ class ArchiveMaterial(Base):
     __tablename__ = "archive_materials"
 
     id: Mapped[UUID] = mapped_column(
-        PG_UUID(as_uuid=True),
+        Uuid,
         primary_key=True,
-        default=func.gen_random_uuid()
+        default=uuid4
     )
     project_id: Mapped[int] = mapped_column(
         Integer,
@@ -136,22 +125,22 @@ class ArchiveMaterial(Base):
     quantity: Mapped[Optional[Decimal]] = mapped_column(Numeric(precision=15, scale=3), nullable=True)
     unit: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     used_in_constructions: Mapped[List[UUID]] = mapped_column(
-        ARRAY(PG_UUID(as_uuid=True)),
+        JSON,
         nullable=False,
-        server_default="{}"
+        default=list
     )
     certificates: Mapped[List[dict]] = mapped_column(
-        JSONB,
+        JSON,
         nullable=False,
-        server_default="[]"
+        default=list
     )
     attached_files: Mapped[List[dict]] = mapped_column(
-        JSONB,
+        JSON,
         nullable=False,
-        server_default="[]"
+        default=list
     )
     entry_id: Mapped[Optional[UUID]] = mapped_column(
-        PG_UUID(as_uuid=True),
+        Uuid,
         ForeignKey("archive_entries.id", ondelete="SET NULL"),
         nullable=True
     )
@@ -171,7 +160,7 @@ class ArchiveMaterial(Base):
     project = relationship("Project", backref="archive_materials")
 
     def __repr__(self) -> str:
-        return f"<ArchiveMaterial(id={self.id}, type={self.material_type.value}, name='{self.name}')>"
+        return f"<ArchiveMaterial(id={self.id}, type={self.material_type}, name='{self.name}')>"
 
 
 class ArchiveConstruction(Base):
@@ -179,9 +168,9 @@ class ArchiveConstruction(Base):
     __tablename__ = "archive_constructions"
 
     id: Mapped[UUID] = mapped_column(
-        PG_UUID(as_uuid=True),
+        Uuid,
         primary_key=True,
-        default=func.gen_random_uuid()
+        default=uuid4
     )
     project_id: Mapped[int] = mapped_column(
         Integer,
@@ -197,30 +186,30 @@ class ArchiveConstruction(Base):
     designation: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     location: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     materials_used: Mapped[List[UUID]] = mapped_column(
-        ARRAY(PG_UUID(as_uuid=True)),
+        JSON,
         nullable=False,
-        server_default="{}"
+        default=list
     )
     documents_related: Mapped[List[UUID]] = mapped_column(
-        ARRAY(PG_UUID(as_uuid=True)),
+        JSON,
         nullable=False,
-        server_default="{}"
+        default=list
     )
     status: Mapped[str] = mapped_column(
         String(50),
         nullable=False,
-        server_default="planned"
+        default="planned"
     )
     installed_at: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     tested_at: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     accepted_at: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     photos: Mapped[List[dict]] = mapped_column(
-        JSONB,
+        JSON,
         nullable=False,
-        server_default="[]"
+        default=list
     )
     entry_id: Mapped[Optional[UUID]] = mapped_column(
-        PG_UUID(as_uuid=True),
+        Uuid,
         ForeignKey("archive_entries.id", ondelete="SET NULL"),
         nullable=True
     )
@@ -240,7 +229,7 @@ class ArchiveConstruction(Base):
     project = relationship("Project", backref="archive_constructions")
 
     def __repr__(self) -> str:
-        return f"<ArchiveConstruction(id={self.id}, type={self.construction_type.value}, name='{self.name}')>"
+        return f"<ArchiveConstruction(id={self.id}, type={self.construction_type}, name='{self.name}')>"
 
 
 class ArchiveSearchIndex(Base):
@@ -248,9 +237,9 @@ class ArchiveSearchIndex(Base):
     __tablename__ = "archive_search_index"
 
     id: Mapped[UUID] = mapped_column(
-        PG_UUID(as_uuid=True),
+        Uuid,
         primary_key=True,
-        default=func.gen_random_uuid()
+        default=uuid4
     )
     project_id: Mapped[int] = mapped_column(
         Integer,
@@ -259,18 +248,18 @@ class ArchiveSearchIndex(Base):
         index=True
     )
     entry_id: Mapped[Optional[UUID]] = mapped_column(
-        PG_UUID(as_uuid=True),
+        Uuid,
         ForeignKey("archive_entries.id", ondelete="CASCADE"),
         nullable=True,
         index=True
     )
     material_id: Mapped[Optional[UUID]] = mapped_column(
-        PG_UUID(as_uuid=True),
+        Uuid,
         ForeignKey("archive_materials.id", ondelete="CASCADE"),
         nullable=True
     )
     construction_id: Mapped[Optional[UUID]] = mapped_column(
-        PG_UUID(as_uuid=True),
+        Uuid,
         ForeignKey("archive_constructions.id", ondelete="CASCADE"),
         nullable=True
     )

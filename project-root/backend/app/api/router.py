@@ -6,7 +6,7 @@ from app.modules.ai.router import router as ai_chatbot_router
 from app.modules.analytics import router as analytics_router
 from app.modules.auth import router as auth_router
 from app.modules.collaboration import router as collaboration_router
-from app.modules.documents.router_simple import router as documents_router
+from app.modules.documents.router import router as documents_router
 from app.modules.gamification import router as gamification_router
 from app.modules.projects import router as projects_router
 from app.modules.resources import router as resources_router

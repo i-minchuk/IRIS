@@ -25,6 +25,6 @@ class Route(Base):
     )
 
     # Relationships
-    project: Mapped["Project"] = relationship(back_populates="routes")
+    project: Mapped["Project"] = relationship()
     operations: Mapped[list["Operation"]] = relationship(back_populates="route", cascade="all, delete-orphan")
     tasks: Mapped[list["Task"]] = relationship(back_populates="route")

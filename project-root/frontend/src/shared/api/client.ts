@@ -75,6 +75,11 @@ apiClient.interceptors.response.use(
 
     // 401 auth handling — пробуем refresh token
     if (error.response?.status === 401) {
+      // Skip logout for demo mode
+      if (localStorage.getItem('demo_mode') === '1') {
+        return Promise.reject(error);
+      }
+
       const refreshToken = localStorage.getItem('refresh_token');
       if (refreshToken && !originalRequest._retry) {
         originalRequest._retry = true;
@@ -86,18 +91,12 @@ apiClient.interceptors.response.use(
           originalRequest.headers.Authorization = `Bearer ${data.access_token}`;
           return apiClient(originalRequest);
         } catch {
-          // Refresh failed — clear auth state and redirect to login
+          // Refresh failed — clear auth state
           useAuthStore.getState().logout();
-          if (window.location.pathname !== '/login') {
-            window.location.href = '/login';
-          }
         }
       } else {
-        // No refresh token or already retried — clear auth state and redirect
+        // No refresh token or already retried — clear auth state
         useAuthStore.getState().logout();
-        if (window.location.pathname !== '/login') {
-          window.location.href = '/login';
-        }
       }
     }
 
@@ -106,4 +105,3 @@ apiClient.interceptors.response.use(
 );
 
 export default apiClient;
-

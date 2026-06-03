@@ -183,6 +183,9 @@ body {
     --button-hover-bg: var(--iris-bg-hover);
     --content-bg: var(--iris-bg-surface);
     --content-border: var(--iris-border-subtle);
+    --bg-surface: var(--iris-bg-surface);
+    --border-default: var(--iris-border-default);
+    --accent-engineering: var(--iris-accent-cyan);
 
     /* Fonts */
     --font-heading: 'Montserrat', 'Segoe UI', sans-serif;
@@ -275,6 +278,240 @@ body {
     --content-border: var(--iris-border-subtle);
   }
 
+  /* ── HIGH CONTRAST THEME ── */
+  .theme-contrast {
+    --app-bg: #000000;
+    --app-text: #FFFFFF;
+    --app-text-muted: #CCCCCC;
+    --app-border: #FFFFFF;
+
+    --iris-bg-app: #000000;
+    --iris-bg-surface: #000000;
+    --iris-bg-surface-elevated: #111111;
+    --iris-bg-header: #000000;
+    --iris-bg-card: #000000;
+    --iris-bg-hover: rgba(255, 255, 255, 0.15);
+    --iris-bg-active: rgba(255, 255, 255, 0.25);
+    --iris-bg-subtle: rgba(255, 255, 255, 0.08);
+    --iris-bg-tertiary: rgba(255, 255, 255, 0.04);
+    --iris-bg-skeleton: rgba(255, 255, 255, 0.10);
+    --iris-bg-backdrop: rgba(0, 0, 0, 0.90);
+    --iris-bg-tooltip: #000000;
+
+    --iris-text-primary: #FFFFFF;
+    --iris-text-secondary: #EEEEEE;
+    --iris-text-muted: #AAAAAA;
+    --iris-text-inverse: #000000;
+    --iris-text-on-accent: #000000;
+
+    --iris-border-subtle: #FFFFFF;
+    --iris-border-default: #FFFFFF;
+    --iris-border-strong: #FFFFFF;
+    --iris-border-dashed: #FFFFFF;
+
+    --iris-accent-cyan: #00FFFF;
+    --iris-accent-amber: #FFFF00;
+    --iris-accent-coral: #FF6666;
+    --iris-accent-blue: #66B2FF;
+    --iris-accent-purple: #FF66FF;
+    --iris-accent-magenta: #FF99FF;
+
+    --iris-glow-cyan: rgba(0, 255, 255, 0.40);
+    --iris-glow-amber: rgba(255, 255, 0, 0.40);
+    --iris-glow-coral: rgba(255, 102, 102, 0.40);
+    --iris-glow-blue: rgba(102, 178, 255, 0.40);
+    --iris-glow-purple: rgba(255, 102, 255, 0.40);
+    --iris-glow-magenta: rgba(255, 153, 255, 0.40);
+
+    --iris-status-bg-cyan: rgba(0, 255, 255, 0.15);
+    --iris-status-bg-amber: rgba(255, 255, 0, 0.15);
+    --iris-status-bg-coral: rgba(255, 102, 102, 0.15);
+    --iris-status-bg-blue: rgba(102, 178, 255, 0.15);
+    --iris-status-bg-purple: rgba(255, 102, 255, 0.15);
+    --iris-status-bg-magenta: rgba(255, 153, 255, 0.15);
+    --iris-status-bg-slate: rgba(170, 170, 170, 0.15);
+
+    --iris-shadow-sm: 0 0 0 1px #FFFFFF;
+    --iris-shadow-md: 0 0 0 2px #FFFFFF;
+    --iris-shadow-lg: 0 0 0 2px #FFFFFF;
+    --iris-shadow-xl: 0 0 0 3px #FFFFFF;
+    --iris-shadow-inset: inset 0 0 0 1px #FFFFFF;
+    --iris-shadow-card: 0 0 0 1px #FFFFFF;
+    --iris-shadow-tooltip: 0 0 0 2px #FFFFFF;
+
+    --iris-header-height: 56px;
+
+    --layout-bg: var(--iris-bg-app);
+    --header-bg: var(--iris-bg-header);
+    --header-border: var(--iris-border-subtle);
+    --text-primary: var(--iris-text-primary);
+    --text-secondary: var(--iris-text-secondary);
+    --text-muted: var(--iris-text-muted);
+    --button-bg: var(--iris-bg-subtle);
+    --button-hover-bg: var(--iris-bg-hover);
+    --content-bg: var(--iris-bg-surface);
+    --content-border: var(--iris-border-subtle);
+    --bg-surface: var(--iris-bg-surface);
+    --border-default: var(--iris-border-default);
+    --accent-engineering: var(--iris-accent-cyan);
+  }
+
+  /* ── SEPIA THEME ── */
+  .theme-sepia {
+    --app-bg: #F4ECD8;
+    --app-text: #433422;
+    --app-text-muted: #8B7355;
+    --app-border: rgba(67, 52, 34, 0.12);
+
+    --iris-bg-app: #F4ECD8;
+    --iris-bg-surface: #E8DCC8;
+    --iris-bg-surface-elevated: #F0E6D0;
+    --iris-bg-header: #E8DCC8;
+    --iris-bg-card: #E8DCC8;
+    --iris-bg-hover: rgba(139, 105, 20, 0.08);
+    --iris-bg-active: rgba(139, 105, 20, 0.12);
+    --iris-bg-subtle: rgba(67, 52, 34, 0.04);
+    --iris-bg-tertiary: rgba(67, 52, 34, 0.02);
+    --iris-bg-skeleton: rgba(67, 52, 34, 0.06);
+    --iris-bg-backdrop: rgba(67, 52, 34, 0.50);
+    --iris-bg-tooltip: #433422;
+
+    --iris-text-primary: #433422;
+    --iris-text-secondary: #6B5637;
+    --iris-text-muted: #8B7355;
+    --iris-text-inverse: #F4ECD8;
+    --iris-text-on-accent: #FFFFFF;
+
+    --iris-border-subtle: rgba(67, 52, 34, 0.10);
+    --iris-border-default: rgba(67, 52, 34, 0.18);
+    --iris-border-strong: rgba(67, 52, 34, 0.28);
+    --iris-border-dashed: rgba(67, 52, 34, 0.14);
+
+    --iris-accent-cyan: #8B6914;
+    --iris-accent-amber: #B8860B;
+    --iris-accent-coral: #A0522D;
+    --iris-accent-blue: #5D4E37;
+    --iris-accent-purple: #6B4C3D;
+    --iris-accent-magenta: #8B5A2B;
+
+    --iris-glow-cyan: rgba(139, 105, 20, 0.25);
+    --iris-glow-amber: rgba(184, 134, 11, 0.25);
+    --iris-glow-coral: rgba(160, 82, 45, 0.25);
+    --iris-glow-blue: rgba(93, 78, 55, 0.25);
+    --iris-glow-purple: rgba(107, 76, 61, 0.25);
+    --iris-glow-magenta: rgba(139, 90, 43, 0.25);
+
+    --iris-status-bg-cyan: rgba(139, 105, 20, 0.10);
+    --iris-status-bg-amber: rgba(184, 134, 11, 0.10);
+    --iris-status-bg-coral: rgba(160, 82, 45, 0.10);
+    --iris-status-bg-blue: rgba(93, 78, 55, 0.10);
+    --iris-status-bg-purple: rgba(107, 76, 61, 0.10);
+    --iris-status-bg-magenta: rgba(139, 90, 43, 0.10);
+    --iris-status-bg-slate: rgba(139, 115, 85, 0.10);
+
+    --iris-shadow-sm: 0 1px 3px rgba(67, 52, 34, 0.08);
+    --iris-shadow-md: 0 4px 12px rgba(67, 52, 34, 0.10);
+    --iris-shadow-lg: 0 8px 24px rgba(67, 52, 34, 0.12);
+    --iris-shadow-xl: 0 12px 40px rgba(67, 52, 34, 0.16);
+    --iris-shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.50);
+    --iris-shadow-card: 0 2px 8px rgba(67, 52, 34, 0.06), 0 1px 2px rgba(67, 52, 34, 0.04);
+    --iris-shadow-tooltip: 0 4px 24px rgba(67, 52, 34, 0.20);
+
+    --iris-header-height: 56px;
+
+    --layout-bg: var(--iris-bg-app);
+    --header-bg: var(--iris-bg-header);
+    --header-border: var(--iris-border-subtle);
+    --text-primary: var(--iris-text-primary);
+    --text-secondary: var(--iris-text-secondary);
+    --text-muted: var(--iris-text-muted);
+    --button-bg: var(--iris-bg-subtle);
+    --button-hover-bg: var(--iris-bg-hover);
+    --content-bg: var(--iris-bg-surface);
+    --content-border: var(--iris-border-subtle);
+    --bg-surface: var(--iris-bg-surface);
+    --border-default: var(--iris-border-default);
+    --accent-engineering: var(--iris-accent-cyan);
+  }
+
+  /* ── MIDNIGHT THEME ── */
+  .theme-midnight {
+    --app-bg: #0A0E1A;
+    --app-text: #C9D6E3;
+    --app-text-muted: #5A6B80;
+    --app-border: rgba(96, 165, 250, 0.08);
+
+    --iris-bg-app: #0A0E1A;
+    --iris-bg-surface: #111827;
+    --iris-bg-surface-elevated: #172554;
+    --iris-bg-header: #0A0E1A;
+    --iris-bg-card: #111827;
+    --iris-bg-hover: rgba(96, 165, 250, 0.08);
+    --iris-bg-active: rgba(96, 165, 250, 0.12);
+    --iris-bg-subtle: rgba(96, 165, 250, 0.04);
+    --iris-bg-tertiary: rgba(96, 165, 250, 0.02);
+    --iris-bg-skeleton: rgba(96, 165, 250, 0.04);
+    --iris-bg-backdrop: rgba(0, 0, 0, 0.75);
+    --iris-bg-tooltip: #0A0E1A;
+
+    --iris-text-primary: #C9D6E3;
+    --iris-text-secondary: #8BA3BE;
+    --iris-text-muted: #5A6B80;
+    --iris-text-inverse: #0A0E1A;
+    --iris-text-on-accent: #0A0E1A;
+
+    --iris-border-subtle: rgba(96, 165, 250, 0.08);
+    --iris-border-default: rgba(96, 165, 250, 0.14);
+    --iris-border-strong: rgba(96, 165, 250, 0.24);
+    --iris-border-dashed: rgba(96, 165, 250, 0.10);
+
+    --iris-accent-cyan: #60A5FA;
+    --iris-accent-amber: #FBBF24;
+    --iris-accent-coral: #F87171;
+    --iris-accent-blue: #3B82F6;
+    --iris-accent-purple: #A78BFA;
+    --iris-accent-magenta: #C084FC;
+
+    --iris-glow-cyan: rgba(96, 165, 250, 0.30);
+    --iris-glow-amber: rgba(251, 191, 36, 0.30);
+    --iris-glow-coral: rgba(248, 113, 113, 0.30);
+    --iris-glow-blue: rgba(59, 130, 246, 0.30);
+    --iris-glow-purple: rgba(167, 139, 250, 0.30);
+    --iris-glow-magenta: rgba(192, 132, 252, 0.30);
+
+    --iris-status-bg-cyan: rgba(96, 165, 250, 0.10);
+    --iris-status-bg-amber: rgba(251, 191, 36, 0.10);
+    --iris-status-bg-coral: rgba(248, 113, 113, 0.10);
+    --iris-status-bg-blue: rgba(59, 130, 246, 0.10);
+    --iris-status-bg-purple: rgba(167, 139, 250, 0.10);
+    --iris-status-bg-magenta: rgba(192, 132, 252, 0.10);
+    --iris-status-bg-slate: rgba(90, 107, 128, 0.10);
+
+    --iris-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.40);
+    --iris-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.50);
+    --iris-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.60);
+    --iris-shadow-xl: 0 12px 40px rgba(0, 0, 0, 0.70);
+    --iris-shadow-inset: inset 0 1px 0 rgba(96, 165, 250, 0.04);
+    --iris-shadow-card: 0 4px 24px rgba(0, 0, 0, 0.45);
+    --iris-shadow-tooltip: 0 4px 24px rgba(0, 0, 0, 0.55);
+
+    --iris-header-height: 56px;
+
+    --layout-bg: var(--iris-bg-app);
+    --header-bg: var(--iris-bg-header);
+    --header-border: var(--iris-border-subtle);
+    --text-primary: var(--iris-text-primary);
+    --text-secondary: var(--iris-text-secondary);
+    --text-muted: var(--iris-text-muted);
+    --button-bg: var(--iris-bg-subtle);
+    --button-hover-bg: var(--iris-bg-hover);
+    --content-bg: var(--iris-bg-surface);
+    --content-border: var(--iris-border-subtle);
+    --bg-surface: var(--iris-bg-surface);
+    --border-default: var(--iris-border-default);
+    --accent-engineering: var(--iris-accent-cyan);
+  }
+
   html {
     background-color: var(--iris-bg-app);
     transition: background-color 0.5s ease;
@@ -289,9 +526,10 @@ body {
     transition: background-color 0.5s ease, color 0.5s ease;
   }
 
-  /* Smooth theme transition — only background, text changes instantly */
-    body, body * {
-    transition: all 0.5s ease-out;  }
+  /* Smooth theme transition — only background and color */
+  body {
+    transition: background-color 0.5s ease, color 0.5s ease;
+  }
 
 
   /* Disable autofill color flash */

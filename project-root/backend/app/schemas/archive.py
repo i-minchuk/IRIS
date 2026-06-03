@@ -131,7 +131,7 @@ class ArchiveEntryResponse(BaseModel):
     title: str
     description: Optional[str]
     content_snapshot: Optional[dict]
-    author_id: Optional[UUID]
+    author_id: Optional[int]
     occurred_at: datetime
     tags: List[str]
     attachments: List[AttachmentResponse]

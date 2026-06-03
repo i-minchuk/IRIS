@@ -1,7 +1,7 @@
 """Document models - aligned with migration 6bb361a0f4ae."""
 from __future__ import annotations
 from datetime import datetime
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 from sqlalchemy import (
     String, DateTime, ForeignKey, func, Index, Text, JSON, Integer, Float
@@ -9,6 +9,9 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+
+if TYPE_CHECKING:
+    from app.modules.operations.models import Operation
 
 
 class Document(Base):
@@ -108,7 +111,7 @@ class Document(Base):
     stage: Mapped[Optional["Stage"]] = relationship(back_populates="documents")
     kit: Mapped[Optional["Kit"]] = relationship(back_populates="documents")
     section: Mapped[Optional["Section"]] = relationship(back_populates="documents")
-    operation: Mapped[Optional["Operation"]] = relationship(back_populates="documents")
+    # Operation relationship loaded dynamically to avoid circular imports
     author: Mapped["User"] = relationship(foreign_keys=[author_id])
     checker: Mapped[Optional["User"]] = relationship(foreign_keys=[checker_id])
     approver: Mapped[Optional["User"]] = relationship(foreign_keys=[approver_id])
@@ -117,7 +120,7 @@ class Document(Base):
     approval_workflows: Mapped[list["ApprovalWorkflow"]] = relationship(
         back_populates="document"
     )
-    tasks: Mapped[list["Task"]] = relationship(back_populates="document")
+    # tasks relationship defined in Task model to avoid circular imports
 
     __table_args__ = (
         Index("idx_documents_operation", "operation_id"),

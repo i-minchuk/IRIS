@@ -52,8 +52,8 @@ class TestArchitecture:
             text=True
         )
         
-        # Check that documents has auth, projects, variables dependencies
-        assert "documents: auth, projects, variables" in result.stdout
+        # Check that documents has auth, gamification, operations, projects, variables dependencies
+        assert "documents: auth, gamification, operations, projects, variables" in result.stdout
     
     def test_analytics_module_dependencies(self):
         """Test that analytics module has expected dependencies."""
@@ -65,8 +65,8 @@ class TestArchitecture:
             text=True
         )
         
-        # Check that analytics has auth, documents, projects, time_tracking, tenders dependencies
-        assert "analytics: auth, documents, projects, tenders, time_tracking" in result.stdout
+        # Check that analytics has auth, documents, projects, remarks, tasks, tenders, time_tracking dependencies
+        assert "analytics: auth, documents, projects, remarks, tasks, tenders, time_tracking" in result.stdout
 
     def test_resources_module_dependencies(self):
         """Test that resources module has expected dependencies."""

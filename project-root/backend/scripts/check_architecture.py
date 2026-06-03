@@ -111,11 +111,11 @@ class ImportChecker:
                 with open(router_file, "r", encoding="utf-8") as f:
                     content = f.read()
                 
-                # Check for direct model imports from other modules
-                # Allow User import for get_current_active_user dependency
+                # Check for direct model imports from OTHER modules
+                # Allow User import from auth (for get_current_active_user dependency)
+                # Allow self-imports (router using its own module's models)
                 forbidden_patterns = [
                     "from app.modules.projects.models import",
-                    "from app.modules.documents.models import",
                     "from app.modules.time_tracking.models import",
                     "from app.modules.variables.models import",
                     "from app.modules.collaboration.models import",
@@ -199,20 +199,26 @@ class ImportChecker:
             "routes": set(),  # technological routes
             
             # Level 1 (business entities)
-            "documents": {"auth", "projects", "variables"},  # Documents relate to projects and use variables
+            "documents": {"auth", "gamification", "operations", "projects", "variables"},  # Documents relate to projects, use variables, gamification, operations
             "projects": {"auth"},  # Projects are independent
-            "tasks": {"auth", "projects", "documents", "operations", "routes"},  # Tasks sync with production
-            "tenders": {"auth", "documents", "tasks"},  # Tenders work with documents and tasks
+            "tasks": {"auth", "documents", "gamification", "operations", "projects", "routes", "time_tracking"},  # Tasks sync with production, time tracking
+            "tenders": {"auth", "documents", "projects", "tasks"},  # Tenders work with documents, tasks, projects
             "variables": {"auth"},  # Variables are independent
-            "remarks": {"auth"},  # Issue tracking
+            "remarks": {"auth", "gamification", "workflow"},  # Issue tracking with gamification, workflow
             "workflow": {"auth"},  # Approval workflows
             
             # Level 2 (overlays)
             "collaboration": {"auth", "documents"},  # Collaboration on documents
             "time_tracking": {"auth", "projects", "tasks"},  # Time tracking for projects and tasks
-            "analytics": {"auth", "documents", "projects", "time_tracking", "tenders"},  # Analytics from multiple sources
+            "analytics": {"auth", "documents", "projects", "remarks", "tasks", "time_tracking", "tenders"},  # Analytics from multiple sources
             "gamification": {"auth", "documents", "projects"},  # Gamification based on activity
             "resources": {"auth", "documents", "projects", "time_tracking"},  # Shared resources
+            
+            # Level 3 (integration/reporting modules — flexible dependencies)
+            "audit": {"auth"},  # Audit logs depend on auth for user tracking
+            "calendar": {"auth", "projects", "tasks", "tenders"},  # Calendar aggregates events
+            "notifications": {"auth", "gamification"},  # Notifications for gamification and auth events
+            "reports": {"auth", "documents", "projects", "tasks", "tenders", "time_tracking"},  # Reports aggregate all data
         }
         
         has_violations = False

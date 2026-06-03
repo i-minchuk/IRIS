@@ -18,9 +18,10 @@ from app.core.cache import cache_response
 import hashlib
 
 
-def _get_db(read_only: bool = True):
+async def _get_db(read_only: bool = True):
     """Return get_db dependency with read_only flag for analytics endpoints."""
-    return get_db(read_only=read_only)
+    async for session in get_db(read_only=read_only):
+        yield session
 
 router = APIRouter(tags=["analytics"])
 
@@ -66,34 +67,41 @@ async def get_dashboard(
     avg_efficiency = efficiency_result.scalar() or 0
 
     # --- Project Scorecard ---
+    # Single query for all project document stats
+    from sqlalchemy import literal_column
+    
+    doc_stats_result = await db.execute(
+        select(
+            Document.project_id,
+            func.count().label("total"),
+            func.sum(case((Document.status == "approved", 1), else_=0)).label("approved"),
+        ).group_by(Document.project_id)
+    )
+    doc_stats_by_project = {row.project_id: row for row in doc_stats_result.mappings().all()}
+    
+    # Single query for all project remark counts
+    rem_stats_result = await db.execute(
+        select(
+            Document.project_id,
+            func.count().label("open_remarks"),
+        )
+        .select_from(Remark)
+        .join(Document, Remark.document_id == Document.id)
+        .where(~Remark.status.in_(["closed", "resolved"]))
+        .group_by(Document.project_id)
+    )
+    rem_stats_by_project = {row.project_id: row.open_remarks for row in rem_stats_result.mappings().all()}
+    
     projects_result = await db.execute(select(Project))
     projects = projects_result.scalars().all()
 
     scorecard = []
     for project in projects:
-        doc_stats = await db.execute(
-            select(
-                func.count().label("total"),
-                func.sum(case((Document.status == "approved", 1), else_=0)).label("approved"),
-            ).where(Document.project_id == project.id)
-        )
-        doc_row = doc_stats.mappings().one()
-        total = doc_row.total or 0
-        approved = doc_row.approved or 0
+        doc_row = doc_stats_by_project.get(project.id)
+        total = doc_row.total if doc_row else 0
+        approved = doc_row.approved if doc_row else 0
         progress = round((approved / total * 100), 1) if total > 0 else 0
-
-        rem_count = await db.execute(
-            select(func.count())
-            .select_from(Remark)
-            .join(Document)
-            .where(
-                and_(
-                    Document.project_id == project.id,
-                    ~Remark.status.in_(["closed", "resolved"]),
-                )
-            )
-        )
-        proj_remarks = rem_count.scalar() or 0
+        proj_remarks = rem_stats_by_project.get(project.id, 0)
 
         # Simple health score
         health = "green"
@@ -116,47 +124,50 @@ async def get_dashboard(
         })
 
     # --- Team Performance ---
+    # Batch queries for team stats
+    doc_counts_result = await db.execute(
+        select(Document.author_id, func.count().label("count"))
+        .group_by(Document.author_id)
+    )
+    doc_counts = {row.author_id: row.count for row in doc_counts_result.all()}
+    
+    rem_counts_result = await db.execute(
+        select(Document.author_id, func.count().label("count"))
+        .select_from(Remark)
+        .join(Document, Remark.document_id == Document.id)
+        .where(~Remark.status.in_(["closed", "resolved"]))
+        .group_by(Document.author_id)
+    )
+    rem_counts = {row.author_id: row.count for row in rem_counts_result.all()}
+    
+    session_stats_result = await db.execute(
+        select(
+            TimeSession.user_id,
+            func.count().label("count"),
+            func.coalesce(func.avg(TimeSession.efficiency_score), 0).label("eff"),
+            func.coalesce(func.sum(TimeSession.active_time), 0).label("active"),
+        ).group_by(TimeSession.user_id)
+    )
+    session_stats = {
+        row.user_id: row 
+        for row in session_stats_result.mappings().all()
+    }
+    
     users_result = await db.execute(select(User))
     users = users_result.scalars().all()
 
     team = []
     for user in users:
-        user_docs = await db.execute(
-            select(func.count()).where(Document.author_id == user.id)
-        )
-        doc_count = user_docs.scalar() or 0
-
-        user_remarks = await db.execute(
-            select(func.count())
-            .select_from(Remark)
-            .join(Document)
-            .where(
-                and_(
-                    Document.author_id == user.id,
-                    ~Remark.status.in_(["closed", "resolved"]),
-                )
-            )
-        )
-        rem_count = user_remarks.scalar() or 0
-
-        sessions_result = await db.execute(
-            select(
-                func.count().label("count"),
-                func.coalesce(func.avg(TimeSession.efficiency_score), 0).label("eff"),
-                func.coalesce(func.sum(TimeSession.active_time), 0).label("active"),
-            ).where(TimeSession.user_id == user.id)
-        )
-        sess = sessions_result.mappings().one()
-
+        sess = session_stats.get(user.id)
         team.append({
             "id": user.id,
             "full_name": user.full_name or user.email,
             "role": user.role,
-            "documents_count": doc_count,
-            "open_remarks": rem_count,
-            "sessions": sess.count or 0,
-            "efficiency": round((sess.eff or 0) * 100, 1),
-            "active_time_hours": round((sess.active or 0) / 3600, 1),
+            "documents_count": doc_counts.get(user.id, 0),
+            "open_remarks": rem_counts.get(user.id, 0),
+            "sessions": sess.count if sess else 0,
+            "efficiency": round((sess.eff if sess else 0) * 100, 1),
+            "active_time_hours": round((sess.active if sess else 0) / 3600, 1),
         })
 
     return {
@@ -679,46 +690,46 @@ async def get_tender_pipeline(
 
 
 @router.get("/documents-by-project", response_model=dict)
+@cache_response(expire_seconds=300)
 async def get_documents_by_project(
     db: AsyncSession = Depends(_get_db),
     current_user: User = Depends(get_current_active_user),
 ):
     """Return document counts grouped by project and status."""
 
+    # Single batch query for all project document stats
+    stats_result = await db.execute(
+        select(
+            Document.project_id,
+            func.count().label("total"),
+            func.sum(case((Document.status == "draft", 1), else_=0)).label("draft"),
+            func.sum(case((Document.status == "in_review", 1), else_=0)).label("in_review"),
+            func.sum(case((Document.status == "approved", 1), else_=0)).label("approved"),
+            func.sum(case((
+                and_(
+                    Document.status != "approved",
+                    Document.created_at < datetime.now(timezone.utc) - timedelta(days=30),
+                ),
+                1,
+            ), else_=0)).label("overdue"),
+        ).group_by(Document.project_id)
+    )
+    stats_by_project = {row.project_id: row for row in stats_result.mappings().all()}
+    
     projects_result = await db.execute(select(Project).where(~Project.status.in_(["archived"])))
     projects = projects_result.scalars().all()
 
     data = []
     for project in projects:
-        doc_stats = await db.execute(
-            select(
-                func.count().label("total"),
-                func.sum(case((Document.status == "draft", 1), else_=0)).label("draft"),
-                func.sum(case((Document.status == "in_review", 1), else_=0)).label("in_review"),
-                func.sum(case((Document.status == "approved", 1), else_=0)).label("approved"),
-            ).where(Document.project_id == project.id)
-        )
-        row = doc_stats.mappings().one()
-
-        overdue_stats = await db.execute(
-            select(func.count()).where(
-                and_(
-                    Document.project_id == project.id,
-                    Document.status != "approved",
-                    Document.created_at < datetime.now(timezone.utc) - timedelta(days=30),
-                )
-            )
-        )
-        overdue = overdue_stats.scalar() or 0
-
+        row = stats_by_project.get(project.id)
         data.append({
             "project_id": project.id,
             "project_name": project.name,
             "project_code": project.code,
-            "draft": row.draft or 0,
-            "in_review": row.in_review or 0,
-            "approved": row.approved or 0,
-            "overdue": overdue,
+            "draft": row.draft if row else 0,
+            "in_review": row.in_review if row else 0,
+            "approved": row.approved if row else 0,
+            "overdue": row.overdue if row else 0,
         })
 
     return {

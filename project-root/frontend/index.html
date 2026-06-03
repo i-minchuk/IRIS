@@ -15,7 +15,7 @@
     <!-- ✅ Мгновенное применение темы (без белой вспышки) -->
     <script>
       (function() {
-        const saved = localStorage.getItem('theme')
+        const saved = localStorage.getItem('iris-theme')
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
         if (saved === 'dark' || (!saved && prefersDark)) {
           document.documentElement.classList.add('dark')

@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/providers/ThemeProvider';
 import { ChromeBot } from '@/components/ChromeBot';
+import { GamificationWidget } from '@/components/gamification/GamificationWidget';
 import {
   analyticsApi,
   type ScorecardProject,
@@ -800,6 +801,9 @@ export default function Dashboard() {
               ))}
             </div>
           </div>
+
+          {/* Gamification Widget */}
+          <GamificationWidget />
 
           {/* IRIS — изумрудный агент со звёздами */}
           <div className="p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>

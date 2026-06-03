@@ -1,0 +1,8 @@
+[run]
+concurrency = multiprocessing
+parallel = true
+source = app
+omit = 
+    tests/*
+    alembic/*
+    __pycache__/*

@@ -40,12 +40,20 @@ def cache_response(expire_seconds: int = 300):
                 return await func(*args, **kwargs)
 
             cache_key = f"cache:{func.__name__}:{hash(str(args) + str(kwargs))}"
-            cached = await r.get(cache_key)
-            if cached:
-                return json.loads(cached)
+            try:
+                cached = await r.get(cache_key)
+                if cached:
+                    return json.loads(cached)
+            except Exception:
+                # Redis unavailable — fall through to direct execution
+                pass
 
             result = await func(*args, **kwargs)
-            await r.setex(cache_key, expire_seconds, json.dumps(result, default=str))
+            try:
+                await r.setex(cache_key, expire_seconds, json.dumps(result, default=str))
+            except Exception:
+                # Redis unavailable — skip caching
+                pass
             return result
 
         return wrapper
@@ -57,5 +65,9 @@ async def invalidate_cache(pattern: str = "cache:*"):
     r = get_redis_client()
     if r is None:
         return
-    async for key in r.scan_iter(match=pattern):
-        await r.delete(key)
+    try:
+        async for key in r.scan_iter(match=pattern):
+            await r.delete(key)
+    except Exception:
+        # Redis unavailable — skip invalidation
+        pass
