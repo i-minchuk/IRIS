@@ -5,10 +5,10 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 const prefetchDashboard = () => import('@/pages/Dashboard');
 const prefetchDocuments = () => import('@/pages/DocumentsPage');
 import {
-  Sun, Moon, User, LogOut, ChevronDown, Menu, X,
+  User, LogOut, ChevronDown, Menu, X,
   BarChart3, FolderKanban, FileText, ArrowLeftRight, Archive,
   Search, Trophy, Shield, Gavel, Package, Factory, Briefcase, CheckSquare,
-  Calendar, BookOpen, Settings, Eye, Coffee, Sparkles,
+  Calendar, BookOpen, Settings,
   ShoppingCart,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -52,9 +52,8 @@ function getNavItems(role: UserRole | undefined) {
 
 
 export default function Layout() {
-  const { theme, setTheme, themeLabel } = useTheme();
+  const { theme } = useTheme();
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showThemeMenu, setShowThemeMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isDraggingZoom, setIsDraggingZoom] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -62,7 +61,6 @@ export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const userMenuRef = useRef<HTMLDivElement | null>(null);
-  const themeMenuRef = useRef<HTMLDivElement | null>(null);
   const mobileMenuRef = useRef<HTMLDivElement | null>(null);
   const mobileMenuButtonRef = useRef<HTMLButtonElement | null>(null);
   const isDark = theme === 'dark' || theme === 'midnight';
@@ -100,9 +98,7 @@ export default function Layout() {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setShowUserMenu(false);
       }
-      if (themeMenuRef.current && !themeMenuRef.current.contains(event.target as Node)) {
-        setShowThemeMenu(false);
-      }
+
       if (
         mobileMenuRef.current &&
         !mobileMenuRef.current.contains(event.target as Node) &&
@@ -115,7 +111,6 @@ export default function Layout() {
     const handleEsc = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setShowUserMenu(false);
-        setShowThemeMenu(false);
         setShowMobileMenu(false);
       }
     };
@@ -222,58 +217,6 @@ export default function Layout() {
                 <span className="text-[11px] font-sans tabular-nums select-none min-w-[28px] text-right" style={{ color: 'var(--text-secondary)' }}>
                   {Math.round(scale * 100)}%
                 </span>
-              </div>
-
-              {/* Theme selector dropdown */}
-              <div className="relative" ref={themeMenuRef}>
-                <button
-                  type="button"
-                  onClick={() => setShowThemeMenu(prev => !prev)}
-                  className="flex h-10 w-10 items-center justify-center rounded-lg transition-all duration-150"
-                  style={{ color: 'var(--text-secondary)' }}
-                  title={`Тема: ${themeLabel} (Ctrl+T)`}
-                  aria-label={`Текущая тема: ${themeLabel}`}
-                  aria-haspopup="menu"
-                  aria-expanded={showThemeMenu}
-                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
-                  onMouseLeave={(e) => { if (!showThemeMenu) { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; }}}
-                >
-                  {theme === 'light' && <Sun size={18} />}
-                  {theme === 'dark' && <Moon size={18} />}
-                  {theme === 'contrast' && <Eye size={18} />}
-                  {theme === 'sepia' && <Coffee size={18} />}
-                  {theme === 'midnight' && <Sparkles size={18} />}
-                </button>
-
-                {showThemeMenu && (
-                  <div className="absolute right-0 mt-2 w-48 rounded-xl border shadow-lg" style={{ background: 'var(--iris-bg-surface)', borderColor: 'var(--iris-border-subtle)', boxShadow: 'var(--iris-shadow-lg)', zIndex: 100 }} role="menu">
-                    {[
-                      { id: 'light' as const, label: 'Светлая', icon: <Sun size={14} /> },
-                      { id: 'dark' as const, label: 'Тёмная', icon: <Moon size={14} /> },
-                      { id: 'contrast' as const, label: 'Контрастная', icon: <Eye size={14} /> },
-                      { id: 'sepia' as const, label: 'Сепия', icon: <Coffee size={14} /> },
-                      { id: 'midnight' as const, label: 'Полночь', icon: <Sparkles size={14} /> },
-                    ].map((t) => (
-                      <button
-                        key={t.id}
-                        type="button"
-                        onClick={() => { setTheme(t.id); setShowThemeMenu(false); }}
-                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-all"
-                        style={{
-                          color: theme === t.id ? 'var(--iris-accent-cyan)' : 'var(--text-primary)',
-                          backgroundColor: theme === t.id ? 'var(--iris-bg-hover)' : 'transparent',
-                        }}
-                        role="menuitem"
-                        onMouseEnter={(e) => { if (theme !== t.id) e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)'; }}
-                        onMouseLeave={(e) => { if (theme !== t.id) e.currentTarget.style.backgroundColor = 'transparent'; }}
-                      >
-                        <span style={{ color: theme === t.id ? 'var(--iris-accent-cyan)' : 'var(--text-muted)' }}>{t.icon}</span>
-                        <span>{t.label}</span>
-                        {theme === t.id && <span className="ml-auto text-xs">✓</span>}
-                      </button>
-                    ))}
-                  </div>
-                )}
               </div>
 
               {/* Notifications */}
