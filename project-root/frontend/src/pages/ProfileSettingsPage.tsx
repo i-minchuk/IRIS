@@ -695,7 +695,7 @@ export default function ProfileSettingsPage() {
 const THEME_OPTIONS: Array<{ id: 'light' | 'dark' | 'sepia' | 'contrast' | 'midnight'; label: string; icon: string; preview: { bg: string; surface: string; text: string; accent: string } }> = [
   { id: 'light', label: 'Светлая', icon: '☀️', preview: { bg: '#F0F2F5', surface: '#FFFFFF', text: '#1E2230', accent: '#0088AA' } },
   { id: 'dark', label: 'Тёмная', icon: '🌙', preview: { bg: '#1E2230', surface: '#2A3042', text: '#E2E8F0', accent: '#00F0FF' } },
-  { id: 'sepia', label: 'Сепия', icon: '📜', preview: { bg: '#F4ECD8', surface: '#E8DCC8', text: '#433422', accent: '#8B6914' } },
+  { id: 'sepia', label: 'Сепия', icon: '☕', preview: { bg: '#F4ECD8', surface: '#E8DCC8', text: '#433422', accent: '#8B6914' } },
   { id: 'contrast', label: 'Контрастная', icon: '🔲', preview: { bg: '#000000', surface: '#000000', text: '#FFFFFF', accent: '#00FFFF' } },
   { id: 'midnight', label: 'Полночь', icon: '🌌', preview: { bg: '#0A0E1A', surface: '#111827', text: '#C9D6E3', accent: '#60A5FA' } },
 ];
