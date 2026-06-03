@@ -9,6 +9,7 @@ import {
 import { Button, Input, Card, Badge } from '@/components/ui';
 import apiClient from '@/shared/api/client';
 import { useAuth } from '@/context/useAuth';
+import { useAuthStore } from '@/features/auth/store/authStore';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useGamificationStore } from '@/stores/gamificationStore';
 import { getLevelInfo } from '@/lib/levelSystem';
@@ -50,6 +51,7 @@ const RARITY_COLORS: Record<string, string> = {
 export default function ProfileSettingsPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const isDemoMode = useAuthStore((state) => state.isDemoMode);
 
   /* Gamification */
   const { xp, coins, streak, badges, quests, getCurrentLevel, getLevelProgress } = useGamificationStore();
@@ -74,12 +76,21 @@ export default function ProfileSettingsPage() {
   });
 
   /* Avatar */
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem('iris_profile_avatar');
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   /* Language & Timezone */
-  const [language, setLanguage] = useState<'ru' | 'en'>('ru');
-  const [timezone, setTimezone] = useState('Europe/Moscow');
+  const [language, setLanguage] = useState<'ru' | 'en'>(() => {
+    if (typeof window === 'undefined') return 'ru';
+    return (localStorage.getItem('iris_profile_language') as 'ru' | 'en') || 'ru';
+  });
+  const [timezone, setTimezone] = useState(() => {
+    if (typeof window === 'undefined') return 'Europe/Moscow';
+    return localStorage.getItem('iris_profile_timezone') || 'Europe/Moscow';
+  });
 
   /* Password form */
   const [password, setPassword] = useState<PasswordForm>({
@@ -125,13 +136,44 @@ export default function ProfileSettingsPage() {
     setLoading(true);
     setSaved(false);
     try {
-      const payload: Record<string, unknown> = { full_name: profile.full_name, email: profile.email };
+      const payload: Record<string, unknown> = {
+        full_name: profile.full_name,
+        email: profile.email,
+        phone: profile.phone,
+        position: profile.position,
+        department: profile.department,
+        location: profile.location,
+        bio: profile.bio,
+        language,
+        timezone,
+        avatar_url: avatarUrl,
+      };
       const changingPassword = password.current_password && password.new_password;
       if (changingPassword) {
         payload.current_password = password.current_password;
         payload.new_password = password.new_password;
       }
-      await apiClient.put('/users/me', payload);
+
+      if (isDemoMode) {
+        // Demo mode: save to localStorage only
+        localStorage.setItem('iris_profile_full_name', profile.full_name);
+        localStorage.setItem('iris_profile_email', profile.email);
+        localStorage.setItem('iris_profile_phone', profile.phone);
+        localStorage.setItem('iris_profile_position', profile.position);
+        localStorage.setItem('iris_profile_department', profile.department);
+        localStorage.setItem('iris_profile_location', profile.location);
+        localStorage.setItem('iris_profile_bio', profile.bio);
+        localStorage.setItem('iris_profile_language', language);
+        localStorage.setItem('iris_profile_timezone', timezone);
+        if (avatarUrl) localStorage.setItem('iris_profile_avatar', avatarUrl);
+        else localStorage.removeItem('iris_profile_avatar');
+        toast.success('Профиль сохранён (демо-режим)');
+      } else {
+        // Real mode: send to backend
+        await apiClient.put('/users/me', payload);
+        toast.success('Профиль сохранён');
+      }
+
       setSaved(true);
       if (changingPassword) setPassword({ current_password: '', new_password: '', confirm_password: '' });
       setTimeout(() => setSaved(false), 3000);
