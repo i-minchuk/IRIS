@@ -1,10 +1,10 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Save, User, Lock, Bell, Shield, Palette, Globe,
   Star, Flame, Coins, Trophy, Award, Zap, Crown, Gamepad2,
-  ChevronRight, BarChart3,
+  ChevronRight, BarChart3, Camera, Trash2,
 } from 'lucide-react';
 import { Button, Input, Card, Badge } from '@/components/ui';
 import apiClient from '@/shared/api/client';
@@ -72,6 +72,10 @@ export default function ProfileSettingsPage() {
     location: 'Москва, офис 304',
     bio: 'Инженер-конструктор с 8-летним опытом в проектировании металлоконструкций.',
   });
+
+  /* Avatar */
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   /* Language & Timezone */
   const [language, setLanguage] = useState<'ru' | 'en'>('ru');
@@ -222,16 +226,77 @@ export default function ProfileSettingsPage() {
             <div className="space-y-6">
               {/* Avatar + Basic */}
               <Card padding="lg" className="space-y-6">
-                <div className="flex items-center gap-4">
-                  <div
-                    className="w-20 h-20 rounded-full flex items-center justify-center text-2xl font-bold"
-                    style={{ backgroundColor: `${levelInfo.tierColor}20`, color: levelInfo.tierColor, border: `3px solid ${levelInfo.tierColor}` }}
-                  >
-                    {profile.full_name.charAt(0) || '?'}
+                <div className="flex items-center gap-5">
+                  {/* Avatar with upload */}
+                  <div className="relative group">
+                    <div
+                      className="w-24 h-24 rounded-full flex items-center justify-center text-3xl font-bold overflow-hidden transition-transform group-hover:scale-[1.02]"
+                      style={{
+                        backgroundColor: avatarUrl ? 'transparent' : `${levelInfo.tierColor}20`,
+                        color: levelInfo.tierColor,
+                        border: `3px solid ${levelInfo.tierColor}`,
+                      }}
+                    >
+                      {avatarUrl ? (
+                        <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        profile.full_name.charAt(0) || '?'
+                      )}
+                    </div>
+                    {/* Overlay button */}
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="absolute inset-0 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      style={{ backgroundColor: 'rgba(0,0,0,0.45)' }}
+                      title="Загрузить фото"
+                    >
+                      <Camera size={20} style={{ color: '#fff' }} />
+                    </button>
+                    {avatarUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setAvatarUrl(null)}
+                        className="absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        style={{ backgroundColor: 'var(--error)', color: '#fff' }}
+                        title="Удалить фото"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    )}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          if (file.size > 5 * 1024 * 1024) {
+                            toast.error('Файл слишком большой (макс. 5 МБ)');
+                            return;
+                          }
+                          const reader = new FileReader();
+                          reader.onload = (ev) => setAvatarUrl(ev.target?.result as string);
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
                   </div>
-                  <div>
+
+                  <div className="flex-1">
                     <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Основная информация</h2>
                     <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Эти данные видны другим пользователям</p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Button variant="outline" size="sm" leftIcon={<Camera size={14} />} onClick={() => fileInputRef.current?.click()}>
+                        Загрузить фото
+                      </Button>
+                      {avatarUrl && (
+                        <Button variant="ghost" size="sm" leftIcon={<Trash2 size={14} />} onClick={() => setAvatarUrl(null)} style={{ color: 'var(--error)' }}>
+                          Удалить
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
 
