@@ -184,6 +184,7 @@ body {
     --content-bg: var(--iris-bg-surface);
     --content-border: var(--iris-border-subtle);
     --bg-surface: var(--iris-bg-surface);
+    --bg-surface-2: #F3F4F6;
     --border-default: var(--iris-border-default);
     --accent-engineering: var(--iris-accent-cyan);
 
@@ -276,6 +277,9 @@ body {
     --button-hover-bg: var(--iris-bg-hover);
     --content-bg: var(--iris-bg-surface);
     --content-border: var(--iris-border-subtle);
+    --bg-surface: var(--iris-bg-surface);
+    --bg-surface-2: #252B3D;
+    --border-default: var(--iris-border-default);
   }
 
   /* ── HIGH CONTRAST THEME ── */
@@ -352,6 +356,7 @@ body {
     --content-bg: var(--iris-bg-surface);
     --content-border: var(--iris-border-subtle);
     --bg-surface: var(--iris-bg-surface);
+    --bg-surface-2: #111111;
     --border-default: var(--iris-border-default);
     --accent-engineering: var(--iris-accent-cyan);
   }
@@ -430,6 +435,7 @@ body {
     --content-bg: var(--iris-bg-surface);
     --content-border: var(--iris-border-subtle);
     --bg-surface: var(--iris-bg-surface);
+    --bg-surface-2: #DDD0B8;
     --border-default: var(--iris-border-default);
     --accent-engineering: var(--iris-accent-cyan);
   }
@@ -508,6 +514,7 @@ body {
     --content-bg: var(--iris-bg-surface);
     --content-border: var(--iris-border-subtle);
     --bg-surface: var(--iris-bg-surface);
+    --bg-surface-2: #0F1623;
     --border-default: var(--iris-border-default);
     --accent-engineering: var(--iris-accent-cyan);
   }

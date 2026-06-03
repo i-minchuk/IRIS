@@ -9,6 +9,7 @@ import {
 import { Button, Input, Card, Badge } from '@/components/ui';
 import apiClient from '@/shared/api/client';
 import { useAuth } from '@/context/useAuth';
+import { useTheme } from '@/providers/ThemeProvider';
 import { useGamificationStore } from '@/stores/gamificationStore';
 import { getLevelInfo } from '@/lib/levelSystem';
 import { formatXP } from '@/lib/xpEngine';
@@ -256,6 +257,13 @@ export default function ProfileSettingsPage() {
                 <h2 className="text-lg font-semibold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
                   <Palette size={18} style={{ color: 'var(--brand-iris)' }} /> Предпочтения
                 </h2>
+
+                {/* Theme selector */}
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>Тема оформления</label>
+                  <ThemeSelector />
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="p-3 rounded-lg border" style={{ borderColor: 'var(--border-default)' }}>
                     <div className="flex items-center justify-between">
@@ -525,6 +533,64 @@ export default function ProfileSettingsPage() {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ─── Theme Selector Sub-component ─── */
+const THEME_OPTIONS: Array<{ id: 'dark' | 'sepia' | 'contrast' | 'midnight'; label: string; icon: string; preview: { bg: string; surface: string; text: string; accent: string } }> = [
+  { id: 'dark', label: 'Тёмная', icon: '🌙', preview: { bg: '#1E2230', surface: '#2A3042', text: '#E2E8F0', accent: '#00F0FF' } },
+  { id: 'sepia', label: 'Сепия', icon: '📜', preview: { bg: '#F4ECD8', surface: '#E8DCC8', text: '#433422', accent: '#8B6914' } },
+  { id: 'contrast', label: 'Контрастная', icon: '🔲', preview: { bg: '#000000', surface: '#000000', text: '#FFFFFF', accent: '#00FFFF' } },
+  { id: 'midnight', label: 'Полночь', icon: '🌌', preview: { bg: '#0A0E1A', surface: '#111827', text: '#C9D6E3', accent: '#60A5FA' } },
+];
+
+function ThemeSelector() {
+  const { theme, setTheme } = useTheme();
+
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {THEME_OPTIONS.map((t) => {
+        const active = theme === t.id;
+        return (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => setTheme(t.id)}
+            className="relative rounded-xl border-2 p-3 text-left transition-all hover:scale-[1.02]"
+            style={{
+              borderColor: active ? t.preview.accent : 'var(--border-default)',
+              backgroundColor: t.preview.surface,
+            }}
+          >
+            {/* Preview window */}
+            <div
+              className="mb-2 h-12 rounded-lg border p-2 space-y-1.5"
+              style={{
+                backgroundColor: t.preview.bg,
+                borderColor: active ? t.preview.accent : 'rgba(128,128,128,0.2)',
+              }}
+            >
+              <div className="h-1.5 w-3/4 rounded" style={{ backgroundColor: t.preview.text, opacity: 0.3 }} />
+              <div className="h-1.5 w-1/2 rounded" style={{ backgroundColor: t.preview.text, opacity: 0.2 }} />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-base">{t.icon}</span>
+              <span className="text-xs font-medium" style={{ color: t.preview.text }}>{t.label}</span>
+            </div>
+
+            {active && (
+              <div
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px]"
+                style={{ backgroundColor: t.preview.accent, color: t.preview.bg }}
+              >
+                ✓
+              </div>
+            )}
+          </button>
+        );
+      })}
     </div>
   );
 }
