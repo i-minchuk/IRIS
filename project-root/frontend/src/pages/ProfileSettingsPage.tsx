@@ -230,7 +230,7 @@ export default function ProfileSettingsPage() {
                   {/* Avatar with upload */}
                   <div className="relative group">
                     <div
-                      className="w-24 h-24 rounded-full flex items-center justify-center text-3xl font-bold overflow-hidden transition-transform group-hover:scale-[1.02]"
+                      className="w-24 h-24 rounded-full flex items-center justify-center text-sm font-bold overflow-hidden transition-transform group-hover:scale-[1.02]"
                       style={{
                         backgroundColor: avatarUrl ? 'transparent' : `${levelInfo.tierColor}20`,
                         color: levelInfo.tierColor,
@@ -240,7 +240,11 @@ export default function ProfileSettingsPage() {
                       {avatarUrl ? (
                         <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
                       ) : (
-                        profile.full_name.charAt(0) || '?'
+                        (() => {
+                          const parts = profile.full_name.trim().split(/\s+/);
+                          const initials = parts.slice(0, 2).map(p => p.charAt(0)).join('');
+                          return initials || '?';
+                        })()
                       )}
                     </div>
                     {/* Overlay button */}
