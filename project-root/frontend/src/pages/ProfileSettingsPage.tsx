@@ -5,7 +5,7 @@ import {
   ArrowLeft, Save, User, Lock, Bell, Shield, Palette, Globe,
   Star, Flame, Coins, Trophy, Award, Zap, Crown, Gamepad2,
   ChevronRight, BarChart3, Camera, Trash2,
-  Sun, Moon, Coffee, Contrast, Sparkles,
+  Sun, Moon, Coffee, Contrast, Sparkles, TrendingUp,
 } from 'lucide-react';
 import { Button, Input, Card, Badge } from '@/components/ui';
 import apiClient from '@/shared/api/client';
@@ -209,7 +209,7 @@ export default function ProfileSettingsPage() {
     { id: 'profile' as const, label: 'Профиль', icon: <User size={16} /> },
     { id: 'security' as const, label: 'Безопасность', icon: <Shield size={16} /> },
     { id: 'notifications' as const, label: 'Уведомления', icon: <Bell size={16} /> },
-    { id: 'gamification' as const, label: 'Рабочий уровень', icon: <Gamepad2 size={16} /> },
+    { id: 'gamification' as const, label: 'Достижения', icon: <Gamepad2 size={16} /> },
   ];
 
   return (
@@ -549,7 +549,7 @@ export default function ProfileSettingsPage() {
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Рабочий профиль</h2>
+                      <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Достижения</h2>
                       <Badge variant="leaders" leftIcon={<Crown size={12} />}>{levelInfo.title}</Badge>
                     </div>
                     <div className="mt-2">
@@ -605,6 +605,28 @@ export default function ProfileSettingsPage() {
                 </Card>
               </div>
 
+              {/* Next level progress */}
+              <Card padding="lg">
+                <h3 className="text-sm font-medium mb-3 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+                  <TrendingUp size={16} style={{ color: 'var(--brand-iris)' }} /> До следующего уровня
+                </h3>
+                <div className="flex items-center gap-4">
+                  <div className="flex-1">
+                    <div className="flex justify-between text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>
+                      <span>Уровень {level}</span>
+                      <span>{progress}%</span>
+                    </div>
+                    <div className="h-3 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--bg-surface-2)' }}>
+                      <div className="h-full rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: levelInfo.tierColor }} />
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{formatXP(xp)}</div>
+                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>XP набрано</div>
+                  </div>
+                </div>
+              </Card>
+
               {/* Active Quests */}
               <Card padding="lg">
                 <h3 className="text-sm font-medium mb-3 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
@@ -637,27 +659,55 @@ export default function ProfileSettingsPage() {
                 </div>
               </Card>
 
-              {/* Badges */}
-              <Card padding="lg">
-                <h3 className="text-sm font-medium mb-3 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
-                  <Award size={16} style={{ color: '#D4AF37' }} /> Полученные бейджи
+              {/* Badges by category */}
+              <Card padding="lg" className="space-y-4">
+                <h3 className="text-sm font-medium flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+                  <Award size={16} style={{ color: '#D4AF37' }} /> Бейджи
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  {earnedBadges.map((badge) => (
-                    <div key={badge.id} className="flex items-center gap-3 p-2 rounded-lg" style={{ backgroundColor: 'var(--bg-surface-2)' }}>
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: `${RARITY_COLORS[badge.rarity]}18` }}>
-                        <Award size={14} style={{ color: RARITY_COLORS[badge.rarity] }} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>{badge.name}</div>
-                        <div className="text-xs truncate" style={{ color: 'var(--text-secondary)' }}>{badge.description}</div>
-                      </div>
-                      <Badge variant={badge.rarity === 'legendary' ? 'leaders' : badge.rarity === 'epic' ? 'engineering' : 'info'} className="text-[10px]">
-                        {badge.rarity === 'legendary' ? 'Легендарный' : badge.rarity === 'epic' ? 'Эпический' : badge.rarity === 'rare' ? 'Редкий' : 'Обычный'}
-                      </Badge>
+
+                {/* Earned badges */}
+                {earnedBadges.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Полученные ({earnedBadges.length})</div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {earnedBadges.map((badge) => (
+                        <div key={badge.id} className="flex items-center gap-3 p-2 rounded-lg border" style={{ backgroundColor: 'var(--bg-surface-2)', borderColor: 'var(--border-default)' }}>
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: `${RARITY_COLORS[badge.rarity]}18` }}>
+                            <Award size={14} style={{ color: RARITY_COLORS[badge.rarity] }} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>{badge.name}</div>
+                            <div className="text-xs truncate" style={{ color: 'var(--text-secondary)' }}>{badge.description}</div>
+                          </div>
+                          <Badge variant={badge.rarity === 'legendary' ? 'leaders' : badge.rarity === 'epic' ? 'engineering' : 'info'} className="text-[10px]">
+                            {badge.rarity === 'legendary' ? 'Легендарный' : badge.rarity === 'epic' ? 'Эпический' : badge.rarity === 'rare' ? 'Редкий' : 'Обычный'}
+                          </Badge>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </div>
+                )}
+
+                {/* Locked badges */}
+                {badges.filter((b) => !b.earnedAt).length > 0 && (
+                  <div className="space-y-2">
+                    <div className="text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Заблокированные</div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {badges.filter((b) => !b.earnedAt).map((badge) => (
+                        <div key={badge.id} className="flex items-center gap-3 p-2 rounded-lg opacity-60" style={{ backgroundColor: 'var(--bg-surface-2)' }}>
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--bg-surface)' }}>
+                            <Award size={14} style={{ color: 'var(--text-muted)' }} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium truncate" style={{ color: 'var(--text-secondary)' }}>{badge.name}</div>
+                            <div className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{badge.description}</div>
+                          </div>
+                          <Badge variant="neutral" className="text-[10px]">Заблокирован</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </Card>
 
               {/* Level Perks */}

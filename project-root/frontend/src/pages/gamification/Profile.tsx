@@ -51,7 +51,7 @@ export default function GamificationProfilePage() {
         </div>
         <div>
           <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
-            Рабочий профиль
+            Достижения
           </h1>
           <div className="flex items-center gap-2 mt-1">
             <Badge variant="leaders" leftIcon={<Crown size={12} />}>
