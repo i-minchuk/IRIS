@@ -209,7 +209,7 @@ export default function ProfileSettingsPage() {
     { id: 'profile' as const, label: 'Профиль', icon: <User size={16} /> },
     { id: 'security' as const, label: 'Безопасность', icon: <Shield size={16} /> },
     { id: 'notifications' as const, label: 'Уведомления', icon: <Bell size={16} /> },
-    { id: 'gamification' as const, label: 'Рабочий профиль', icon: <Gamepad2 size={16} /> },
+    { id: 'gamification' as const, label: 'Рабочий уровень', icon: <Gamepad2 size={16} /> },
   ];
 
   return (
@@ -249,8 +249,8 @@ export default function ProfileSettingsPage() {
                     color: activeTab === tab.id ? 'var(--text-inverse)' : 'var(--text-secondary)',
                   }}
                 >
-                  {tab.icon}
-                  {tab.label}
+                  <span style={{ color: activeTab === tab.id ? 'var(--text-inverse)' : 'var(--text-secondary)' }}>{tab.icon}</span>
+                  <span className="flex-1 text-left">{tab.label}</span>
                   {tab.id === 'gamification' && (
                     <span className="ml-auto text-xs px-1.5 py-0.5 rounded-full" style={{ backgroundColor: activeTab === tab.id ? 'rgba(255,255,255,0.2)' : 'var(--bg-surface-2)' }}>
                       Lv.{level}
