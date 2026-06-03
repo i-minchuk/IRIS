@@ -73,6 +73,10 @@ export default function ProfileSettingsPage() {
     bio: 'Инженер-конструктор с 8-летним опытом в проектировании металлоконструкций.',
   });
 
+  /* Language & Timezone */
+  const [language, setLanguage] = useState<'ru' | 'en'>('ru');
+  const [timezone, setTimezone] = useState('Europe/Moscow');
+
   /* Password form */
   const [password, setPassword] = useState<PasswordForm>({
     current_password: '',
@@ -265,17 +269,52 @@ export default function ProfileSettingsPage() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-3 rounded-lg border" style={{ borderColor: 'var(--border-default)' }}>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Язык интерфейса</span>
-                      <span className="text-xs px-2 py-1 rounded" style={{ backgroundColor: 'var(--bg-surface-2)', color: 'var(--text-secondary)' }}>Русский</span>
-                    </div>
+                  {/* Language selector */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>Язык интерфейса</label>
+                    <select
+                      value={language}
+                      onChange={(e) => setLanguage(e.target.value as 'ru' | 'en')}
+                      className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2"
+                      style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-default)', color: 'var(--text-primary)' }}
+                    >
+                      <option value="ru">Русский</option>
+                      <option value="en">English</option>
+                    </select>
                   </div>
-                  <div className="p-3 rounded-lg border" style={{ borderColor: 'var(--border-default)' }}>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Часовой пояс</span>
-                      <span className="text-xs px-2 py-1 rounded" style={{ backgroundColor: 'var(--bg-surface-2)', color: 'var(--text-secondary)' }}>Europe/Moscow</span>
-                    </div>
+
+                  {/* Timezone selector */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>Часовой пояс</label>
+                    <select
+                      value={timezone}
+                      onChange={(e) => setTimezone(e.target.value)}
+                      className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2"
+                      style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-default)', color: 'var(--text-primary)' }}
+                    >
+                      <option value="UTC">UTC (Coordinated Universal Time)</option>
+                      <option value="Europe/London">GMT — London</option>
+                      <option value="Europe/Paris">CET — Paris, Berlin, Rome</option>
+                      <option value="Europe/Helsinki">EET — Helsinki, Athens, Bucharest</option>
+                      <option value="Europe/Moscow">MSK — Moscow, Minsk</option>
+                      <option value="Asia/Dubai">GST — Dubai</option>
+                      <option value="Asia/Tashkent">UZT — Tashkent</option>
+                      <option value="Asia/Almaty">ALMT — Almaty</option>
+                      <option value="Asia/Tbilisi">GET — Tbilisi</option>
+                      <option value="Asia/Yerevan">AMT — Yerevan</option>
+                      <option value="Asia/Tehran">IRST — Tehran</option>
+                      <option value="Asia/Delhi">IST — Delhi, Mumbai</option>
+                      <option value="Asia/Shanghai">CST — Shanghai, Beijing</option>
+                      <option value="Asia/Tokyo">JST — Tokyo, Seoul</option>
+                      <option value="Asia/Singapore">SGT — Singapore</option>
+                      <option value="Australia/Sydney">AEST — Sydney, Melbourne</option>
+                      <option value="America/New_York">EST — New York, Miami</option>
+                      <option value="America/Chicago">CST — Chicago, Dallas</option>
+                      <option value="America/Denver">MST — Denver, Phoenix</option>
+                      <option value="America/Los_Angeles">PST — Los Angeles, Seattle</option>
+                      <option value="America/Toronto">EST — Toronto</option>
+                      <option value="America/Sao_Paulo">BRT — São Paulo</option>
+                    </select>
                   </div>
                 </div>
               </Card>
@@ -524,11 +563,15 @@ export default function ProfileSettingsPage() {
 
           {/* Save button (only for profile/security tabs) */}
           {(activeTab === 'profile' || activeTab === 'security') && (
-            <div className="flex items-center gap-3">
-              <Button variant="primary" onClick={handleSave} isLoading={loading} leftIcon={<Save size={16} />}>
+            <div className="flex items-center gap-3 sticky bottom-4 py-3 px-4 rounded-xl border" style={{ backgroundColor: 'var(--iris-bg-surface-elevated)', borderColor: 'var(--iris-border-default)', boxShadow: 'var(--iris-shadow-lg)' }}>
+              <Button variant="primary" onClick={handleSave} isLoading={loading} leftIcon={<Save size={16} />} className="shadow-lg">
                 Сохранить изменения
               </Button>
-              {saved && <span className="text-sm" style={{ color: 'var(--accent-leaders)' }}>Сохранено</span>}
+              {saved && (
+                <span className="text-sm font-medium flex items-center gap-1.5" style={{ color: 'var(--accent-leaders)' }}>
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--accent-leaders)' }} /> Сохранено
+                </span>
+              )}
             </div>
           )}
         </div>
