@@ -39,6 +39,7 @@ export interface LeaderboardEntry {
   level: number;
   badges: number;
   streak: number;
+  isMe?: boolean;
 }
 
 export interface PlayerState {
@@ -93,6 +94,7 @@ const MOCK_LEADERBOARD: LeaderboardEntry[] = [
   { rank: 5, userId: 7, userName: 'Анна Лебедева', xp: 8450, level: 13, badges: 7, streak: 3 },
   { rank: 6, userId: 4, userName: 'Дмитрий Волков', xp: 7200, level: 12, badges: 6, streak: 0 },
   { rank: 7, userId: 8, userName: 'Ольга Новикова', xp: 6100, level: 11, badges: 5, streak: 2 },
+  { rank: 8, userId: 999, userName: 'Вы', xp: 1250, level: 5, badges: 3, streak: 5, isMe: true },
 ];
 
 export const useGamificationStore = create<GamificationState>((set, get) => ({

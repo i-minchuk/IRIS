@@ -1,9 +1,19 @@
 import { Card } from '@/components/ui';
 import { useGamificationStore } from '@/stores/gamificationStore';
 import { Trophy, Medal, Award, Flame, Star } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 export default function LeaderboardPage() {
   const entries = useGamificationStore(s => s.getLeaderboard('global_xp'));
+  const [myAvatarUrl, setMyAvatarUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    setMyAvatarUrl(localStorage.getItem('iris_profile_avatar'));
+    const handleStorage = () => setMyAvatarUrl(localStorage.getItem('iris_profile_avatar'));
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
 
   const getRankIcon = (rank: number) => {
     if (rank === 1) return <Trophy size={20} style={{ color: '#D4AF37' }} />;
@@ -57,13 +67,19 @@ export default function LeaderboardPage() {
             >
               <div className="w-8 flex justify-center">{getRankIcon(entry.rank)}</div>
 
-              <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold"
+              <div
+                className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold overflow-hidden"
                 style={{
-                  backgroundColor: entry.rank === 1 ? '#D4AF3720' : entry.rank === 2 ? '#C0C0C020' : entry.rank === 3 ? '#CD7F3220' : 'var(--bg-surface-2)',
+                  backgroundColor: entry.isMe && myAvatarUrl ? 'transparent' : entry.rank === 1 ? '#D4AF3720' : entry.rank === 2 ? '#C0C0C020' : entry.rank === 3 ? '#CD7F3220' : 'var(--bg-surface-2)',
                   color: entry.rank === 1 ? '#D4AF37' : entry.rank === 2 ? '#9CA3AF' : entry.rank === 3 ? '#CD7F32' : 'var(--text-secondary)',
+                  border: entry.isMe && myAvatarUrl ? '2px solid var(--border-default)' : 'none',
                 }}
               >
-                {entry.userName.charAt(0)}
+                {entry.isMe && myAvatarUrl ? (
+                  <img src={myAvatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  entry.userName.charAt(0)
+                )}
               </div>
 
               <div className="flex-1">

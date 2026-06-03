@@ -54,6 +54,10 @@ function getNavItems(role: UserRole | undefined) {
 export default function Layout() {
   const { theme } = useTheme();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [avatarUrl] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem('iris_profile_avatar');
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const [isDraggingZoom, setIsDraggingZoom] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -234,8 +238,19 @@ export default function Layout() {
                   onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)'; }}
                   onMouseLeave={(e) => { if (!showUserMenu) e.currentTarget.style.backgroundColor = 'transparent'; }}
                 >
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full" style={{ background: '#3B82F6' }}>
-                    <User size={16} color="white" />
+                  <div
+                    className="flex h-8 w-8 items-center justify-center rounded-full overflow-hidden text-xs font-bold"
+                    style={{
+                      background: avatarUrl ? 'transparent' : '#3B82F6',
+                      color: 'white',
+                      border: avatarUrl ? '2px solid var(--border-default)' : 'none',
+                    }}
+                  >
+                    {avatarUrl ? (
+                      <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      <User size={16} color="white" />
+                    )}
                   </div>
                   <span className="hidden md:inline">{t("admin", lang)}</span>
                   <ChevronDown size={16} />
