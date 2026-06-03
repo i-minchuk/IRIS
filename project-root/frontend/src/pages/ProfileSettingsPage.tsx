@@ -5,6 +5,7 @@ import {
   ArrowLeft, Save, User, Lock, Bell, Shield, Palette, Globe,
   Star, Flame, Coins, Trophy, Award, Zap, Crown, Gamepad2,
   ChevronRight, BarChart3, Camera, Trash2,
+  Sun, Moon, Coffee, Contrast, Sparkles,
 } from 'lucide-react';
 import { Button, Input, Card, Badge } from '@/components/ui';
 import apiClient from '@/shared/api/client';
@@ -692,12 +693,17 @@ export default function ProfileSettingsPage() {
 }
 
 /* ─── Theme Selector Sub-component ─── */
-const THEME_OPTIONS: Array<{ id: 'light' | 'dark' | 'sepia' | 'contrast' | 'midnight'; label: string; icon: string; preview: { bg: string; surface: string; text: string; accent: string } }> = [
-  { id: 'light', label: 'Светлая', icon: '☀️', preview: { bg: '#F0F2F5', surface: '#FFFFFF', text: '#1E2230', accent: '#0088AA' } },
-  { id: 'dark', label: 'Тёмная', icon: '🌙', preview: { bg: '#1E2230', surface: '#2A3042', text: '#E2E8F0', accent: '#00F0FF' } },
-  { id: 'sepia', label: 'Сепия', icon: '☕', preview: { bg: '#F4ECD8', surface: '#E8DCC8', text: '#433422', accent: '#8B6914' } },
-  { id: 'contrast', label: 'Контрастная', icon: '🔲', preview: { bg: '#000000', surface: '#000000', text: '#FFFFFF', accent: '#00FFFF' } },
-  { id: 'midnight', label: 'Полночь', icon: '🌌', preview: { bg: '#0A0E1A', surface: '#111827', text: '#C9D6E3', accent: '#60A5FA' } },
+const THEME_OPTIONS: Array<{
+  id: 'light' | 'dark' | 'sepia' | 'contrast' | 'midnight';
+  label: string;
+  Icon: React.ComponentType<{ size?: number; style?: React.CSSProperties }>;
+  preview: { bg: string; surface: string; text: string; accent: string };
+}> = [
+  { id: 'light', label: 'Светлая', Icon: Sun, preview: { bg: '#F0F2F5', surface: '#FFFFFF', text: '#1E2230', accent: '#0088AA' } },
+  { id: 'dark', label: 'Тёмная', Icon: Moon, preview: { bg: '#1E2230', surface: '#2A3042', text: '#E2E8F0', accent: '#00F0FF' } },
+  { id: 'sepia', label: 'Сепия', Icon: Coffee, preview: { bg: '#F4ECD8', surface: '#E8DCC8', text: '#433422', accent: '#8B6914' } },
+  { id: 'contrast', label: 'Контрастная', Icon: Contrast, preview: { bg: '#000000', surface: '#000000', text: '#FFFFFF', accent: '#00FFFF' } },
+  { id: 'midnight', label: 'Полночь', Icon: Sparkles, preview: { bg: '#0A0E1A', surface: '#111827', text: '#C9D6E3', accent: '#60A5FA' } },
 ];
 
 function ThemeSelector() {
@@ -731,7 +737,7 @@ function ThemeSelector() {
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-base">{t.icon}</span>
+              <t.Icon size={16} style={{ color: t.preview.text }} />
               <span className="text-xs font-medium" style={{ color: t.preview.text }}>{t.label}</span>
             </div>
 
