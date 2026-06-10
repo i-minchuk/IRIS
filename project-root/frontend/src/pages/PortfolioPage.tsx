@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Gavel, ShoppingCart, FolderKanban, PackageOpen,
 } from 'lucide-react';
-// Card removed — unused
+import { useTabState } from '@/shared/hooks/useTabState';
+import { PageHeader } from '@/shared/components/PageHeader';
 
 /* ─── Lazy tab contents ─── */
 import TendersPage from '@/pages/TendersPage';
@@ -17,11 +17,11 @@ import PackagePage from '@/pages/PackagePage';
 
 /* ─── SRM Sub-tabs ─── */
 const SRM_TABS = [
-  { id: 'suppliers', label: 'Поставщики' },
-  { id: 'purchase-requests', label: 'Заявки на закупку' },
-  { id: 'contracts', label: 'Договоры' },
-  { id: 'orders', label: 'Заказы' },
-  { id: 'invoices', label: 'Счета' },
+  { id: 'suppliers' as const, label: 'Поставщики' },
+  { id: 'purchase-requests' as const, label: 'Заявки на закупку' },
+  { id: 'contracts' as const, label: 'Договоры' },
+  { id: 'orders' as const, label: 'Заказы' },
+  { id: 'invoices' as const, label: 'Счета' },
 ];
 
 /* ─── Main tabs ─── */
@@ -37,47 +37,27 @@ type SRMTab = 'suppliers' | 'purchase-requests' | 'contracts' | 'orders' | 'invo
 
 export default function PortfolioPage() {
   const navigate = useNavigate();
-
-  /* Load saved tabs from localStorage */
-  const [activeTab, setActiveTab] = useState<MainTab>(() => {
-    if (typeof window === 'undefined') return 'tenders';
-    return (localStorage.getItem('iris_portfolio_tab') as MainTab) || 'tenders';
-  });
-  const [srmTab, setSrmTab] = useState<SRMTab>(() => {
-    if (typeof window === 'undefined') return 'suppliers';
-    return (localStorage.getItem('iris_portfolio_srm_tab') as SRMTab) || 'suppliers';
-  });
-
-  /* Persist tabs */
-  useEffect(() => {
-    localStorage.setItem('iris_portfolio_tab', activeTab);
-  }, [activeTab]);
-
-  useEffect(() => {
-    localStorage.setItem('iris_portfolio_srm_tab', srmTab);
-  }, [srmTab]);
+  const [activeTab, setActiveTab] = useTabState<MainTab>('iris_portfolio_tab', 'tenders');
+  const [srmTab, setSrmTab] = useTabState<SRMTab>('iris_portfolio_srm_tab', 'suppliers');
 
   return (
     <div className="max-w-7xl mx-auto py-6 px-4">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="p-2 rounded-lg transition-colors"
-          style={{ color: 'var(--text-secondary)' }}
-          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
-        >
-          <ArrowLeft size={18} />
-        </button>
-        <div>
-          <h1 className="text-2xl font-semibold" style={{ color: 'var(--text-primary)' }}>Портфель заказов</h1>
-          <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
-            Тендеры, закупки, проекты и документация
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Портфель заказов"
+        subtitle="Тендеры, закупки, проекты и документация"
+        actions={
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="p-2 rounded-lg transition-colors"
+            style={{ color: 'var(--text-secondary)' }}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+          >
+            <ArrowLeft size={18} />
+          </button>
+        }
+      />
 
       {/* Main tabs */}
       <div className="flex items-center gap-1 mb-6 border-b pb-1" style={{ borderColor: 'var(--border-default)' }}>
@@ -109,7 +89,7 @@ export default function PortfolioPage() {
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => setSrmTab(tab.id as SRMTab)}
+                onClick={() => setSrmTab(tab.id)}
                 className="px-3 py-1.5 text-xs font-medium rounded-lg transition-all"
                 style={{
                   backgroundColor: srmTab === tab.id ? 'var(--brand-iris)' : 'var(--bg-surface-2)',

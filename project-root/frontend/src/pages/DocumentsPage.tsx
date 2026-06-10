@@ -1,4 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useTabState } from '@/shared/hooks/useTabState';
+import { PageHeader } from '@/shared/components/PageHeader';
+import { PageTabs } from '@/shared/components/PageTabs';
 import {
   FileText, Search, Upload, CheckCircle2, Clock,
   Eye, Download, Trophy, Flame, Award, Zap, Minus, Plus,
@@ -210,36 +213,7 @@ function FileIcon({ type }: { type: DocType }) {
   return <FileText size={14} style={{ color: cfg.color }} />;
 }
 
-function PageTabs({ active, onChange }: { active: TabKey; onChange: (t: TabKey) => void }) {
-  const tabs: { key: TabKey; label: string; icon: React.ReactNode; color: string }[] = [
-    { key: 'registry', label: 'Реестр документов', icon: <FileText size={16} />, color: TAB_COLOR },
-    { key: 'workflow', label: 'Согласования', icon: <ArrowRight size={16} className="rotate-180" />, color: WORKFLOW_TAB_COLOR },
-    { key: 'employees', label: 'Сотрудники', icon: <User size={16} />, color: TAB_COLOR },
-  ];
 
-  return (
-    <div className="flex items-center gap-1 border-b" style={{ borderColor: 'var(--border-divider)' }}>
-      {tabs.map((tab) => {
-        const isActive = active === tab.key;
-        const color = tab.color;
-        return (
-          <button
-            key={tab.key}
-            onClick={() => onChange(tab.key)}
-            className="relative px-4 py-2.5 text-sm font-medium transition-all flex items-center gap-2"
-            style={{
-              color: isActive ? color : 'var(--text-secondary)',
-              backgroundColor: isActive ? `${color}26` : 'transparent',
-            }}
-          >
-            {tab.icon} {tab.label}
-            {isActive && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-4/5 rounded-full" style={{ backgroundColor: color, boxShadow: `0 0 8px ${color}` }} />}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
 
 /* ═══════════════════════════════════════════
    REGISTRY VIEW — VS Code three-panel layout
@@ -1506,44 +1480,42 @@ function EmployeesView() {
   );
 }
 
+const DOC_TABS = [
+  { key: 'registry' as const, label: 'Реестр документов', icon: <FileText size={16} />, color: TAB_COLOR },
+  { key: 'workflow' as const, label: 'Согласования', icon: <ArrowRight size={16} className="rotate-180" />, color: WORKFLOW_TAB_COLOR },
+  { key: 'employees' as const, label: 'Сотрудники', icon: <User size={16} />, color: TAB_COLOR },
+];
+
 /* ── Main Page ── */
 export default function DocumentsPage() {
-  const [activeTab, setActiveTab] = useState<TabKey>(() => {
-    if (typeof window === 'undefined') return 'registry';
-    return (localStorage.getItem('iris_documents_tab') as TabKey) || 'registry';
-  });
-
-  useEffect(() => {
-    localStorage.setItem('iris_documents_tab', activeTab);
-  }, [activeTab]);
+  const [activeTab, setActiveTab] = useTabState<TabKey>('iris_documents_tab', 'registry');
 
   return (
     <div className="space-y-5 px-3 md:px-6 py-4 md:py-6">
-      {/* Header */}
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl md:text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Документы и согласования</h1>
-          <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>Управление проектной документацией, ревизиями и задачами согласования</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link
-            to="/documents/new"
-            className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md transition-colors"
-            style={{ background: TAB_COLOR, color: '#ffffff' }}
-          >
-            <FilePlus size={13} /> Создать
-          </Link>
-          <Link
-            to="/documents/import"
-            className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border transition-colors"
-            style={{ borderColor: 'var(--border-default)', color: 'var(--text-secondary)', background: 'var(--bg-surface-2)' }}
-          >
-            <FileSpreadsheet size={13} /> Импорт Excel
-          </Link>
-        </div>
-      </div>
+      <PageHeader
+        title="Документы и согласования"
+        subtitle="Управление проектной документацией, ревизиями и задачами согласования"
+        actions={
+          <>
+            <Link
+              to="/documents/new"
+              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md transition-colors"
+              style={{ background: TAB_COLOR, color: '#ffffff' }}
+            >
+              <FilePlus size={13} /> Создать
+            </Link>
+            <Link
+              to="/documents/import"
+              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border transition-colors"
+              style={{ borderColor: 'var(--border-default)', color: 'var(--text-secondary)', background: 'var(--bg-surface-2)' }}
+            >
+              <FileSpreadsheet size={13} /> Импорт Excel
+            </Link>
+          </>
+        }
+      />
 
-      <PageTabs active={activeTab} onChange={setActiveTab} />
+      <PageTabs tabs={DOC_TABS} active={activeTab} onChange={setActiveTab} color={activeTab === 'workflow' ? WORKFLOW_TAB_COLOR : TAB_COLOR} />
 
       {activeTab === 'registry' && <RegistryView />}
       {activeTab === 'workflow' && <WorkflowView />}
