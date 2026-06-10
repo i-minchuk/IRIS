@@ -1,11 +1,15 @@
-import { useEffect, useState, useRef } from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { useEffect, useState, useRef, type ReactNode } from 'react';
+import { Navigate } from 'react-router-dom';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import type { AdminRoleCode } from '@/types/admin';
 
 const ADMIN_ROLES: AdminRoleCode[] = ['product_owner', 'system_admin', 'tech_support', 'content_editor', 'admin'];
 
-export function AdminRouteGuard() {
+interface AdminRouteGuardProps {
+  children: ReactNode;
+}
+
+export function AdminRouteGuard({ children }: AdminRouteGuardProps) {
   const user = useAuthStore((state) => state.user);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const checkAuth = useAuthStore((state) => state.checkAuth);
@@ -48,5 +52,5 @@ export function AdminRouteGuard() {
     return <Navigate to="/dashboard" replace />;
   }
 
-  return <Outlet />;
+  return <>{children}</>;
 }

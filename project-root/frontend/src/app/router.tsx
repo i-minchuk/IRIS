@@ -103,6 +103,14 @@ export const router = createBrowserRouter([
           { path: '/documents/new', element: <SuspenseWrapper><DocumentCreate /></SuspenseWrapper> },
           { path: '/documents/import', element: <SuspenseWrapper><ImportExcel /></SuspenseWrapper> },
           { path: '/documents/:id', element: <SuspenseWrapper><DocumentDetail /></SuspenseWrapper> },
+          /* ── Admin routes (guarded by AdminRouteGuard inside Layout) ── */
+          { path: '/admin', element: <SuspenseWrapper><AdminRouteGuard><AdminDashboard /></AdminRouteGuard></SuspenseWrapper> },
+          { path: '/admin/users', element: <SuspenseWrapper><AdminRouteGuard><AdminPage /></AdminRouteGuard></SuspenseWrapper> },
+          { path: '/admin/audit', element: <SuspenseWrapper><AdminRouteGuard><AuditLogPage /></AdminRouteGuard></SuspenseWrapper> },
+          { path: '/admin/releases', element: <SuspenseWrapper><AdminRouteGuard><ReleasesPage /></AdminRouteGuard></SuspenseWrapper> },
+          { path: '/admin/tickets', element: <SuspenseWrapper><AdminRouteGuard><SupportTicketsPage /></AdminRouteGuard></SuspenseWrapper> },
+          { path: '/admin/incidents', element: <SuspenseWrapper><AdminRouteGuard><IncidentsPage /></AdminRouteGuard></SuspenseWrapper> },
+          { path: '/admin/kb', element: <SuspenseWrapper><AdminRouteGuard><KnowledgeBasePage /></AdminRouteGuard></SuspenseWrapper> },
         ],
       },
     ],
@@ -133,27 +141,4 @@ export const router = createBrowserRouter([
 
   // === Catch-all ===
   { path: '*', element: <SuspenseWrapper><NotFound /></SuspenseWrapper> },
-
-  // === ADMIN ONLY ===
-  {
-    element: (
-      <ErrorBoundary fallback={<RouteErrorFallback />}>
-        <AdminRouteGuard />
-      </ErrorBoundary>
-    ),
-    children: [
-      {
-        element: <Layout />,
-        children: [
-          { path: '/admin', element: <SuspenseWrapper><AdminDashboard /></SuspenseWrapper> },
-          { path: '/admin/users', element: <SuspenseWrapper><AdminPage /></SuspenseWrapper> },
-          { path: '/admin/audit', element: <SuspenseWrapper><AuditLogPage /></SuspenseWrapper> },
-          { path: '/admin/releases', element: <SuspenseWrapper><ReleasesPage /></SuspenseWrapper> },
-          { path: '/admin/tickets', element: <SuspenseWrapper><SupportTicketsPage /></SuspenseWrapper> },
-          { path: '/admin/incidents', element: <SuspenseWrapper><IncidentsPage /></SuspenseWrapper> },
-          { path: '/admin/kb', element: <SuspenseWrapper><KnowledgeBasePage /></SuspenseWrapper> },
-        ],
-      },
-    ],
-  },
 ]);
