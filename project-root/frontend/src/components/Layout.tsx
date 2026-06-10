@@ -283,18 +283,19 @@ export default function Layout() {
         </header>
 
         {/* ===== ЦВЕТНАЯ ЛИНИЯ НАВЕРХУ ===== */}
-        <div className="shrink-0 h-0.5 w-full" style={{ background: 'var(--header-border)' }}>
+        <div className="shrink-0 h-0.5 w-full relative" style={{ background: 'var(--header-border)' }}>
           {navItems.map((item) => {
             const active = isActive(item.to);
             return active ? (
               <div
                 key={`line-${item.to}`}
-                className="h-full transition-all duration-300"
+                className="absolute top-0 h-full transition-all duration-300"
                 style={{
                   backgroundColor: item.color,
                   boxShadow: `0 0 12px ${item.color}66`,
-                  width: `${100 / navItems.length}%`,
-                  marginLeft: `${navItems.findIndex(i => i.to === item.to) * (100 / navItems.length)}%`,
+                  left: 0,
+                  right: 0,
+                  width: '100%',
                 }}
               />
             ) : null;
