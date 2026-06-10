@@ -1,5 +1,5 @@
 import { lazy, Suspense, type ReactNode } from 'react';
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { ErrorBoundary } from 'react-error-boundary';
 import Layout from '@/components/Layout';
 const LoginPage = lazy(() => import('@/pages/LoginPage'));
@@ -82,6 +82,16 @@ export const router = createBrowserRouter([
           { path: '/achievements', element: <SuspenseWrapper><AchievementsPage /></SuspenseWrapper> },
           { path: '/portfolio', element: <SuspenseWrapper><PortfolioPage /></SuspenseWrapper> },
           { path: '/portfolio/*', element: <SuspenseWrapper><PortfolioPage /></SuspenseWrapper> },
+          /* ── Redirects from old standalone pages ── */
+          { path: '/tenders', element: <Navigate to="/portfolio" replace /> },
+          { path: '/project-portfolio', element: <Navigate to="/portfolio" replace /> },
+          { path: '/project-tasks', element: <Navigate to="/portfolio" replace /> },
+          { path: '/package', element: <Navigate to="/portfolio" replace /> },
+          { path: '/srm/suppliers', element: <Navigate to="/portfolio" replace /> },
+          { path: '/srm/purchase-requests', element: <Navigate to="/portfolio" replace /> },
+          { path: '/srm/contracts', element: <Navigate to="/portfolio" replace /> },
+          { path: '/srm/orders', element: <Navigate to="/portfolio" replace /> },
+          { path: '/srm/invoices', element: <Navigate to="/portfolio" replace /> },
           { path: '/calendar', element: <SuspenseWrapper><CalendarPage /></SuspenseWrapper> },
           { path: '/reports', element: <SuspenseWrapper><ReportsPage /></SuspenseWrapper> },
           { path: '/profile', element: <SuspenseWrapper><ProfileSettingsPage /></SuspenseWrapper> },
