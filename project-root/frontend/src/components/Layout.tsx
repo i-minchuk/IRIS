@@ -6,10 +6,9 @@ const prefetchDashboard = () => import('@/pages/Dashboard');
 const prefetchDocuments = () => import('@/pages/DocumentsPage');
 import {
   User, LogOut, ChevronDown, Menu, X,
-  BarChart3, FolderKanban, FileText, ArrowLeftRight, Archive,
-  Search, Trophy, Shield, Gavel, Package, Factory, Briefcase, CheckSquare,
+  BarChart3, FileText, ArrowLeftRight, Archive,
+  Search, Trophy, Shield, Briefcase, Factory,
   Calendar, BookOpen, Settings,
-  ShoppingCart,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/providers/ThemeProvider';
@@ -25,11 +24,7 @@ import type { UserRole } from '@/features/auth/store/authStore';
 /* ── Role-based nav config ── */
 const ALL_NAV_ITEMS = [
   { to: '/dashboard', label: 'Панель аналитики', icon: <BarChart3 size={16} />, color: '#3B82F6', bgActive: 'rgba(59, 130, 246, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'site_manager', 'engineer', 'norm_controller', 'admin'] },
-  { to: '/tenders', label: 'Тендеры', icon: <Gavel size={16} />, color: '#2563EB', bgActive: 'rgba(37, 99, 235, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'admin'] },
-  { to: '/portfolio', label: 'Портфель заказов', icon: <FolderKanban size={16} />, color: '#8B5CF6', bgActive: 'rgba(139, 92, 246, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
-  { to: '/project-portfolio', label: 'Портфель проектов', icon: <Briefcase size={16} />, color: '#7C3AED', bgActive: 'rgba(124, 58, 237, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
-  { to: '/project-tasks', label: 'Задачи по проектам', icon: <CheckSquare size={16} />, color: '#059669', bgActive: 'rgba(5, 150, 105, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
-  { to: '/package', label: 'Пакет документации', icon: <Package size={16} />, color: '#0EA5E9', bgActive: 'rgba(14, 165, 233, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
+  { to: '/portfolio', label: 'Портфель заказов', icon: <Briefcase size={16} />, color: '#7C3AED', bgActive: 'rgba(124, 58, 237, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
   { to: '/documents', label: 'Документация', icon: <FileText size={16} />, color: '#4F7A4C', bgActive: 'rgba(79, 122, 76, 0.15)', roles: ['department_head', 'gip', 'site_manager', 'engineer', 'norm_controller', 'manager', 'admin'] },
   { to: '/production', label: 'Производственный контроль', icon: <Factory size={16} />, color: '#F59E0B', bgActive: 'rgba(245, 158, 11, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
   { to: '/workflow', label: 'Документооборот', icon: <ArrowLeftRight size={16} />, color: '#D4AF37', bgActive: 'rgba(212, 175, 55, 0.15)', roles: ['department_head', 'gip', 'site_manager', 'engineer', 'norm_controller', 'manager', 'admin'] },
@@ -39,7 +34,7 @@ const ALL_NAV_ITEMS = [
   { to: '/admin', label: 'Администрирование', icon: <Shield size={16} />, color: '#FF6B6B', bgActive: 'rgba(255, 107, 107, 0.15)', roles: ['admin', 'product_owner', 'system_admin', 'tech_support', 'content_editor'] },
   { to: '/references', label: 'Справочники', icon: <BookOpen size={16} />, color: '#14B8A6', bgActive: 'rgba(20, 184, 166, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
   { to: '/reports', label: 'Отчёты', icon: <FileText size={16} />, color: '#8B5CF6', bgActive: 'rgba(139, 92, 246, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
-  { to: '/srm/suppliers', label: 'SRM / Закупки', icon: <ShoppingCart size={16} />, color: '#F97316', bgActive: 'rgba(249, 115, 22, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'admin'] },
+
   { to: '/gamification/leaderboard', label: 'Лидерборд', icon: <Trophy size={16} />, color: '#D4AF37', bgActive: 'rgba(212, 175, 55, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
 ];
 

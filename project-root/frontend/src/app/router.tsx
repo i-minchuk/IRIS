@@ -18,12 +18,7 @@ const RemarksPage = lazy(() => import('@/pages/RemarksPage'));
 const ArchivePage = lazy(() => import('@/pages/ArchivePage'));
 const AdminPage = lazy(() => import('@/pages/AdminPage'));
 const AchievementsPage = lazy(() => import('@/pages/Achievements'));
-const PackagePage = lazy(() => import('@/pages/PackagePage'));
-const TenderPortfolioPage = lazy(() => import('@/pages/TenderPortfolioPage'));
-const ProductionControlPage = lazy(() => import('@/pages/ProductionControl'));
-const ProjectPortfolioPage = lazy(() => import('@/pages/ProjectPortfolioPage'));
-const ProjectTasksPage = lazy(() => import('@/pages/ProjectTasksPage'));
-const TendersPage = lazy(() => import('@/pages/TendersPage'));
+const PortfolioPage = lazy(() => import('@/pages/PortfolioPage'));
 const ProfileSettingsPage = lazy(() => import('@/pages/ProfileSettingsPage'));
 const TwoFactorSettingsPage = lazy(() => import('@/pages/TwoFactorSettingsPage'));
 const ReferencePage = lazy(() => import('@/pages/ReferencePage'));
@@ -85,12 +80,8 @@ export const router = createBrowserRouter([
           { path: '/remarks', element: <SuspenseWrapper><RemarksPage /></SuspenseWrapper> },
           { path: '/archive', element: <SuspenseWrapper><ArchivePage /></SuspenseWrapper> },
           { path: '/achievements', element: <SuspenseWrapper><AchievementsPage /></SuspenseWrapper> },
-          { path: '/package', element: <SuspenseWrapper><PackagePage /></SuspenseWrapper> },
-          { path: '/portfolio', element: <SuspenseWrapper><TenderPortfolioPage /></SuspenseWrapper> },
-          { path: '/production', element: <SuspenseWrapper><ProductionControlPage /></SuspenseWrapper> },
-          { path: '/project-portfolio', element: <SuspenseWrapper><ProjectPortfolioPage /></SuspenseWrapper> },
-          { path: '/project-tasks', element: <SuspenseWrapper><ProjectTasksPage /></SuspenseWrapper> },
-          { path: '/tenders', element: <SuspenseWrapper><TendersPage /></SuspenseWrapper> },
+          { path: '/portfolio', element: <SuspenseWrapper><PortfolioPage /></SuspenseWrapper> },
+          { path: '/portfolio/*', element: <SuspenseWrapper><PortfolioPage /></SuspenseWrapper> },
           { path: '/calendar', element: <SuspenseWrapper><CalendarPage /></SuspenseWrapper> },
           { path: '/reports', element: <SuspenseWrapper><ReportsPage /></SuspenseWrapper> },
           { path: '/profile', element: <SuspenseWrapper><ProfileSettingsPage /></SuspenseWrapper> },
