@@ -691,35 +691,31 @@ function tooltipStyle() {
 
 function WorkflowView() {
   const [tab, setTab] = useState<'tasks' | 'remarks'>('tasks');
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [remarks, setRemarks] = useState<RemarkListItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [tasks, setTasks] = useState<Task[]>(mockTasks);
+  const [remarks, setRemarks] = useState<RemarkListItem[]>(mockRemarks);
+  const [loading, setLoading] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const [taskSearch, setTaskSearch] = useState('');
   const [taskFilter, setTaskFilter] = useState<'all' | 'NEW' | 'IN_PROGRESS' | 'DONE'>('all');
   const [remarkSearch, setRemarkSearch] = useState('');
   const [remarkFilter, setRemarkFilter] = useState<'all' | 'new' | 'in_progress' | 'resolved'>('all');
 
   useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+    if (loaded) return;
+    let cancelled = false;
     setLoading(true);
-    try {
-      const [tasksData, remarksData] = await Promise.all([
-        getTasks(),
-        getRemarks({ page: 1, page_size: 50 }),
-      ]);
-      setTasks(tasksData.length ? tasksData : mockTasks);
-      setRemarks(remarksData.items?.length ? remarksData.items : mockRemarks);
-    } catch (err) {
-      console.error('Failed to load workflow data:', err);
-      setTasks(mockTasks);
-      setRemarks(mockRemarks);
-    } finally {
+    Promise.all([
+      getTasks().catch(() => null),
+      getRemarks({ page: 1, page_size: 50 }).catch(() => null),
+    ]).then(([tasksData, remarksData]) => {
+      if (cancelled) return;
+      if (tasksData?.length) setTasks(tasksData);
+      if (remarksData?.items?.length) setRemarks(remarksData.items);
+      setLoaded(true);
       setLoading(false);
-    }
-  };
+    });
+    return () => { cancelled = true; };
+  }, [loaded]);
 
   const filteredTasks = tasks.filter(t => {
     const matchSearch = t.title.toLowerCase().includes(taskSearch.toLowerCase());

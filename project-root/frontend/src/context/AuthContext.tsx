@@ -2,6 +2,7 @@ import { createContext, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import { authApi } from '@/features/auth/api/authApi';
+import { authEvents } from '@/shared/api/authEvents';
 
 import type { UserRole } from '@/features/auth/store/authStore';
 
@@ -48,6 +49,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isDemoMode = useAuthStore((state) => state.isDemoMode);
   const setAuth = useAuthStore((state) => state.setAuth);
   const storeLogout = useAuthStore((state) => state.logout);
+
+  // Subscribe to logout events from apiClient
+  useEffect(() => {
+    const unsubscribe = authEvents.onLogout(() => {
+      storeLogout();
+    });
+    return unsubscribe;
+  }, [storeLogout]);
 
   useEffect(() => {
     let mounted = true;

@@ -1,6 +1,7 @@
 // frontend/src/features/auth/store/authStore.ts
 import { create } from 'zustand';
 import { authApi } from '../api/authApi';
+import { authEvents } from '@/shared/api/authEvents';
 
 export type UserRole = 'director' | 'deputy_director' | 'department_head' | 'gip' | 'site_manager' | 'engineer' | 'manager' | 'norm_controller' | 'admin';
 
@@ -115,3 +116,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ user: null, token: null, isAuthenticated: false, isLoading: false, isDemoMode: false });
   },
 }));
+
+// Subscribe to logout events from apiClient (breaks circular dependency)
+authEvents.onLogout(() => {
+  useAuthStore.getState().logout();
+});

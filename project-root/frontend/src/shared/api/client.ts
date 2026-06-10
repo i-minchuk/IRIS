@@ -1,8 +1,7 @@
 import axios from 'axios';
 import * as Sentry from '@sentry/react';
 import { toast } from 'sonner';
-import { useAuthStore } from '@/features/auth/store/authStore';
-
+import { authEvents } from './authEvents';
 
 const apiClient = axios.create({
   baseURL: '/api/v1',
@@ -13,7 +12,7 @@ const apiClient = axios.create({
   withCredentials: true,
 });
 
-// Attach access token to every request (fallback when session cookie is not enough)
+// Attach access token to every request
 apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem('access_token');
   if (token) {
@@ -28,7 +27,7 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Retry для сетевых ошибок (до 3 раз с экспоненциальной задержкой)
+    // Retry для сетевых ошибок (до 3 раз)
     if (
       (error.code === 'ECONNREFUSED' || error.code === 'ECONNRESET') &&
       originalRequest._retryCount !== undefined &&
@@ -45,7 +44,7 @@ apiClient.interceptors.response.use(
       Sentry.captureException(error);
     }
 
-    // User-facing toast for API errors (skip 401 — handled by redirect)
+    // User-facing toast for API errors (skip 401 — handled by auth events)
     if (error.response && error.response.status !== 401) {
       const status = error.response.status;
       const data = error.response.data;
@@ -91,12 +90,12 @@ apiClient.interceptors.response.use(
           originalRequest.headers.Authorization = `Bearer ${data.access_token}`;
           return apiClient(originalRequest);
         } catch {
-          // Refresh failed — clear auth state
-          useAuthStore.getState().logout();
+          // Refresh failed — emit logout event (no direct store import)
+          authEvents.emitLogout();
         }
       } else {
-        // No refresh token or already retried — clear auth state
-        useAuthStore.getState().logout();
+        // No refresh token or already retried
+        authEvents.emitLogout();
       }
     }
 
