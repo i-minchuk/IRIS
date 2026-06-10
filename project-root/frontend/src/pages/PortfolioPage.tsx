@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Gavel, ShoppingCart, FolderKanban, PackageOpen,
@@ -37,8 +37,25 @@ type SRMTab = 'suppliers' | 'purchase-requests' | 'contracts' | 'orders' | 'invo
 
 export default function PortfolioPage() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<MainTab>('tenders');
-  const [srmTab, setSrmTab] = useState<SRMTab>('suppliers');
+
+  /* Load saved tabs from localStorage */
+  const [activeTab, setActiveTab] = useState<MainTab>(() => {
+    if (typeof window === 'undefined') return 'tenders';
+    return (localStorage.getItem('iris_portfolio_tab') as MainTab) || 'tenders';
+  });
+  const [srmTab, setSrmTab] = useState<SRMTab>(() => {
+    if (typeof window === 'undefined') return 'suppliers';
+    return (localStorage.getItem('iris_portfolio_srm_tab') as SRMTab) || 'suppliers';
+  });
+
+  /* Persist tabs */
+  useEffect(() => {
+    localStorage.setItem('iris_portfolio_tab', activeTab);
+  }, [activeTab]);
+
+  useEffect(() => {
+    localStorage.setItem('iris_portfolio_srm_tab', srmTab);
+  }, [srmTab]);
 
   return (
     <div className="max-w-7xl mx-auto py-6 px-4">
