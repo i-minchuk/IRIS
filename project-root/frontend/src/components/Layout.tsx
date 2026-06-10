@@ -6,7 +6,7 @@ const prefetchDashboard = () => import('@/pages/Dashboard');
 const prefetchDocuments = () => import('@/pages/DocumentsPage');
 import {
   User, LogOut, ChevronDown, Menu, X,
-  BarChart3, FileText, ArrowLeftRight, Archive,
+  BarChart3, FileText, Archive,
   Search, Trophy, Shield, Briefcase, Factory,
   Calendar, BookOpen, Settings,
 } from 'lucide-react';
@@ -27,7 +27,6 @@ const ALL_NAV_ITEMS = [
   { to: '/portfolio', label: 'Портфель заказов', icon: <Briefcase size={16} />, color: '#7C3AED', bgActive: 'rgba(124, 58, 237, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
   { to: '/documents', label: 'Документация', icon: <FileText size={16} />, color: '#4F7A4C', bgActive: 'rgba(79, 122, 76, 0.15)', roles: ['department_head', 'gip', 'site_manager', 'engineer', 'norm_controller', 'manager', 'admin'] },
   { to: '/production', label: 'Производственный контроль', icon: <Factory size={16} />, color: '#F59E0B', bgActive: 'rgba(245, 158, 11, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
-  { to: '/workflow', label: 'Документооборот', icon: <ArrowLeftRight size={16} />, color: '#D4AF37', bgActive: 'rgba(212, 175, 55, 0.15)', roles: ['department_head', 'gip', 'site_manager', 'engineer', 'norm_controller', 'manager', 'admin'] },
   { to: '/archive', label: 'Архив', icon: <Archive size={16} />, color: '#6B7280', bgActive: 'rgba(107, 114, 128, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'site_manager', 'engineer', 'norm_controller', 'manager', 'admin'] },
 
   { to: '/calendar', label: 'Календарь', icon: <Calendar size={16} />, color: '#EC4899', bgActive: 'rgba(236, 72, 153, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },

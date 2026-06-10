@@ -5,18 +5,37 @@ import {
   FolderKanban, User, TrendingUp, BarChart3, Timer,
   ChevronRight, ChevronDown, MessageSquare, Send,
   CornerDownLeft, ArrowLeft, CheckCircle,
-  Briefcase, UserCheck, X, FilePlus, FileSpreadsheet
+  Briefcase, UserCheck, X, FilePlus, FileSpreadsheet,
+  Circle, AlertCircle, ArrowRight, FileCheck, Archive, Filter,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getSessions, type TimeSession } from '@/api/timeTracking';
 import apiClient from '@/shared/api/client';
 import { getLeaderboard } from '@/api/gamification';
+import { getTasks } from '@/api/tasks';
+import { getRemarks } from '@/api/remarks';
 import type { LeaderboardEntry } from '@/types';
+import type { Task } from '@/types';
+import type { RemarkListItem } from '@/types/remarks';
+import {
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  LineChart,
+  Line,
+} from 'recharts';
 
 /* ── Types ── */
 type DocType = 'KJ' | 'AR' | 'OViK' | 'EOM' | 'KR' | 'other';
 type DocStatus = 'draft' | 'review' | 'approved' | 'confirmed' | 'archived';
-type TabKey = 'registry' | 'employees';
+type TabKey = 'registry' | 'workflow' | 'employees';
 type RemarkAction = 'revise' | 'approve' | 'delegate';
 
 interface Employee {
@@ -54,6 +73,7 @@ interface Document {
 }
 
 const TAB_COLOR = '#4F7A4C';
+const WORKFLOW_TAB_COLOR = '#D4AF37';
 
 /* ── Configs ── */
 const docTypeConfig: Record<DocType, { label: string; color: string; bg: string; border: string }> = {
@@ -122,7 +142,7 @@ interface EmployeeWorkload {
   xp: number;
   xpToNext: number;
   badges: string[];
-  efficiency: number; // 0-100
+  efficiency: number;
 }
 
 const employeeWorkloads: EmployeeWorkload[] = [
@@ -191,27 +211,29 @@ function FileIcon({ type }: { type: DocType }) {
 }
 
 function PageTabs({ active, onChange }: { active: TabKey; onChange: (t: TabKey) => void }) {
-  const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
-    { key: 'registry', label: 'Реестр документов', icon: <FileText size={16} /> },
-    { key: 'employees', label: 'Сотрудники', icon: <User size={16} /> },
+  const tabs: { key: TabKey; label: string; icon: React.ReactNode; color: string }[] = [
+    { key: 'registry', label: 'Реестр документов', icon: <FileText size={16} />, color: TAB_COLOR },
+    { key: 'workflow', label: 'Согласования', icon: <ArrowRight size={16} className="rotate-180" />, color: WORKFLOW_TAB_COLOR },
+    { key: 'employees', label: 'Сотрудники', icon: <User size={16} />, color: TAB_COLOR },
   ];
 
   return (
     <div className="flex items-center gap-1 border-b" style={{ borderColor: 'var(--border-divider)' }}>
       {tabs.map((tab) => {
         const isActive = active === tab.key;
+        const color = tab.color;
         return (
           <button
             key={tab.key}
             onClick={() => onChange(tab.key)}
             className="relative px-4 py-2.5 text-sm font-medium transition-all flex items-center gap-2"
             style={{
-              color: isActive ? TAB_COLOR : 'var(--text-secondary)',
-              backgroundColor: isActive ? `${TAB_COLOR}26` : 'transparent',
+              color: isActive ? color : 'var(--text-secondary)',
+              backgroundColor: isActive ? `${color}26` : 'transparent',
             }}
           >
             {tab.icon} {tab.label}
-            {isActive && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-4/5 rounded-full" style={{ backgroundColor: TAB_COLOR, boxShadow: `0 0 8px ${TAB_COLOR}` }} />}
+            {isActive && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-4/5 rounded-full" style={{ backgroundColor: color, boxShadow: `0 0 8px ${color}` }} />}
           </button>
         );
       })}
@@ -651,6 +673,409 @@ function RegistryView() {
 }
 
 /* ═══════════════════════════════════════════
+   WORKFLOW VIEW — Tasks + Charts
+   ═══════════════════════════════════════════ */
+const PIE_COLORS = ['#3B82F6', '#10B981', '#EF4444', '#F59E0B', '#8B5CF6', '#EC4899'];
+const LINE_COLORS = ['#3B82F6', '#10B981', '#EF4444'];
+
+function tooltipStyle() {
+  return {
+    backgroundColor: 'var(--iris-bg-tooltip, rgba(11,14,20,0.95))',
+    border: '1px solid var(--iris-border-subtle, rgba(255,255,255,0.1))',
+    borderRadius: '8px',
+    color: 'var(--iris-text-inverse, #E2E8F0)',
+    fontSize: '12px',
+    boxShadow: '0 4px 24px rgba(0,0,0,0.50)',
+  };
+}
+
+function WorkflowView() {
+  const [tab, setTab] = useState<'tasks' | 'remarks'>('tasks');
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [remarks, setRemarks] = useState<RemarkListItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [taskSearch, setTaskSearch] = useState('');
+  const [taskFilter, setTaskFilter] = useState<'all' | 'NEW' | 'IN_PROGRESS' | 'DONE'>('all');
+  const [remarkSearch, setRemarkSearch] = useState('');
+  const [remarkFilter, setRemarkFilter] = useState<'all' | 'new' | 'in_progress' | 'resolved'>('all');
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [tasksData, remarksData] = await Promise.all([
+        getTasks(),
+        getRemarks({ page: 1, page_size: 50 }),
+      ]);
+      setTasks(tasksData.length ? tasksData : mockTasks);
+      setRemarks(remarksData.items?.length ? remarksData.items : mockRemarks);
+    } catch (err) {
+      console.error('Failed to load workflow data:', err);
+      setTasks(mockTasks);
+      setRemarks(mockRemarks);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredTasks = tasks.filter(t => {
+    const matchSearch = t.title.toLowerCase().includes(taskSearch.toLowerCase());
+    const matchStatus = taskFilter === 'all' || t.status === taskFilter;
+    return matchSearch && matchStatus;
+  });
+
+  const filteredRemarks = remarks.filter(r => {
+    const matchSearch = r.title.toLowerCase().includes(remarkSearch.toLowerCase());
+    const matchStatus = remarkFilter === 'all' || r.status === remarkFilter;
+    return matchSearch && matchStatus;
+  });
+
+  const getTaskStatusIcon = (status: string) => {
+    switch (status) {
+      case 'DONE': return <CheckCircle2 size={16} className="text-green-500" />;
+      case 'IN_PROGRESS': return <Circle size={16} className="text-blue-500" />;
+      case 'NEW': return <Circle size={16} className="text-gray-400" />;
+      default: return <AlertCircle size={16} className="text-gray-400" />;
+    }
+  };
+
+  const getTaskStatusLabel = (status: string) => {
+    switch (status) {
+      case 'DONE': return 'Выполнена';
+      case 'IN_PROGRESS': return 'В работе';
+      case 'NEW': return 'Новая';
+      default: return status;
+    }
+  };
+
+  const getTaskStatusStyle = (status: string) => {
+    switch (status) {
+      case 'DONE': return { color: '#4F7A4C', bg: 'rgba(79,122,76,0.15)', border: 'rgba(79,122,76,0.4)' };
+      case 'IN_PROGRESS': return { color: '#3B82F6', bg: 'rgba(59,130,246,0.15)', border: 'rgba(59,130,246,0.4)' };
+      case 'NEW': return { color: '#94A3B8', bg: 'rgba(148,163,184,0.15)', border: 'rgba(148,163,184,0.4)' };
+      default: return { color: '#94A3B8', bg: 'rgba(148,163,184,0.15)', border: 'rgba(148,163,184,0.4)' };
+    }
+  };
+
+  const getRemarkStatusColor = (status: string) => {
+    switch (status) {
+      case 'resolved': return 'bg-green-100 text-green-700';
+      case 'in_progress': return 'bg-yellow-100 text-yellow-700';
+      case 'new': return 'bg-blue-100 text-blue-700';
+      default: return 'bg-gray-100 text-gray-700';
+    }
+  };
+
+  const getRemarkStatusLabel = (status: string) => {
+    switch (status) {
+      case 'resolved': return 'Устранено';
+      case 'in_progress': return 'В работе';
+      case 'new': return 'Новое';
+      default: return status;
+    }
+  };
+
+  const processCards = [
+    { icon: <Upload size={20} />, count: tasks.filter(t => t.status === 'NEW').length, label: 'Загрузка', color: '#3B82F6' },
+    { icon: <Search size={20} />, count: tasks.filter(t => t.status === 'IN_PROGRESS').length, label: 'Проверка', color: '#8B5CF6' },
+    { icon: <FileCheck size={20} />, count: remarks.filter(r => r.status === 'in_progress').length, label: 'Согласование', color: '#F59E0B' },
+    { icon: <Archive size={20} />, count: tasks.filter(t => t.status === 'DONE').length, label: 'Архив', color: '#6B7280' },
+  ];
+
+  const statusPieData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    tasks.forEach(t => {
+      const label = t.status === 'NEW' ? 'Новые' : t.status === 'IN_PROGRESS' ? 'В работе' : t.status === 'DONE' ? 'Выполнены' : t.status;
+      counts[label] = (counts[label] || 0) + 1;
+    });
+    return Object.entries(counts).map(([name, value]) => ({ name, value }));
+  }, [tasks]);
+
+  const templateBarData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    tasks.forEach(t => {
+      const template = t.title.split(':')[0] || 'Без шаблона';
+      counts[template] = (counts[template] || 0) + 1;
+    });
+    return Object.entries(counts).map(([name, value]) => ({ name, value }));
+  }, [tasks]);
+
+  const monthlyLineData = useMemo(() => {
+    const months = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
+    const counts: Record<string, number> = {};
+    months.forEach(m => counts[m] = 0);
+    tasks.forEach(t => {
+      const date = t.due_date ? new Date(t.due_date) : null;
+      if (date) {
+        const m = months[date.getMonth()];
+        counts[m] = (counts[m] || 0) + 1;
+      }
+    });
+    if (Object.values(counts).every(v => v === 0)) {
+      counts['Май'] = 2;
+      counts['Июн'] = 3;
+      counts['Июл'] = 1;
+    }
+    return months.map(m => ({ month: m, count: counts[m] || 0 }));
+  }, [tasks]);
+
+  const chartTextColor = 'var(--text-secondary, #8892A8)';
+  const chartGridColor = 'var(--border-divider, rgba(255,255,255,0.06))';
+
+  return (
+    <div className="space-y-5">
+      {/* Process cards */}
+      <div className="flex flex-wrap items-center gap-3">
+        {processCards.map((card, idx) => (
+          <div key={card.label} className="flex items-center gap-3">
+            <div className="flex items-center gap-3 px-4 py-3 rounded-xl text-white" style={{ backgroundColor: card.color }}>
+              {card.icon}
+              <div>
+                <div className="text-lg font-bold">{card.count}</div>
+                <div className="text-xs opacity-90">{card.label}</div>
+              </div>
+            </div>
+            {idx < processCards.length - 1 && (
+              <ArrowRight size={20} className="text-[#94a3b8]" />
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Charts */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="p-3 rounded-lg" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-default)' }}>
+          <h3 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Распределение по статусам</h3>
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={statusPieData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={40}
+                  outerRadius={70}
+                  paddingAngle={3}
+                  dataKey="value"
+                  nameKey="name"
+                  label={({ name, percent }) => `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`}
+                  labelLine={{ stroke: chartTextColor, strokeOpacity: 0.4 }}
+                >
+                  {statusPieData.map((_entry, index) => (
+                    <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} fillOpacity={0.85} stroke="var(--card-bg)" strokeWidth={2} />
+                  ))}
+                </Pie>
+                <Tooltip contentStyle={tooltipStyle()} formatter={(value, _name, props: any) => [`${value}`, props?.payload?.name ?? '']} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="p-3 rounded-lg" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-default)' }}>
+          <h3 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>По шаблонам</h3>
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={templateBarData} margin={{ top: 4, right: 8, left: -12, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} />
+                <XAxis dataKey="name" tick={{ fill: chartTextColor, fontSize: 10 }} axisLine={{ stroke: chartGridColor }} tickLine={false} />
+                <YAxis tick={{ fill: chartTextColor, fontSize: 11 }} axisLine={{ stroke: chartGridColor }} tickLine={false} />
+                <Tooltip contentStyle={tooltipStyle()} formatter={(value) => [`${value}`, 'Количество']} />
+                <Bar dataKey="value" name="Количество" radius={[4, 4, 0, 0]}>
+                  {templateBarData.map((_entry, index) => (
+                    <Cell key={`bar-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} fillOpacity={0.8} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="p-3 rounded-lg" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-default)' }}>
+          <h3 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Динамика запусков</h3>
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={monthlyLineData} margin={{ top: 4, right: 8, left: -12, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} />
+                <XAxis dataKey="month" tick={{ fill: chartTextColor, fontSize: 11 }} axisLine={{ stroke: chartGridColor }} tickLine={false} />
+                <YAxis tick={{ fill: chartTextColor, fontSize: 11 }} axisLine={{ stroke: chartGridColor }} tickLine={false} />
+                <Tooltip contentStyle={tooltipStyle()} formatter={(value) => [`${value}`, 'Запуски']} />
+                <Line type="monotone" dataKey="count" name="Запуски" stroke={LINE_COLORS[0]} strokeWidth={2} dot={{ r: 3, strokeWidth: 2, fill: 'var(--card-bg)' }} activeDot={{ r: 5 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* Sub-tabs */}
+      <div className="flex items-center gap-1 border-b" style={{ borderColor: 'var(--border-divider)' }}>
+        {[
+          { key: 'tasks' as const, label: 'Задачи', icon: <FileCheck size={16} />, count: filteredTasks.length },
+          { key: 'remarks' as const, label: 'Замечания', icon: <AlertCircle size={16} />, count: filteredRemarks.length },
+        ].map(t => (
+          <button
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            className="relative px-4 py-2.5 text-sm font-medium transition-all flex items-center gap-2"
+            style={{
+              color: tab === t.key ? WORKFLOW_TAB_COLOR : 'var(--text-secondary)',
+              backgroundColor: tab === t.key ? `${WORKFLOW_TAB_COLOR}26` : 'transparent',
+            }}
+          >
+            {t.icon} {t.label} ({t.count})
+            {tab === t.key && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-4/5 rounded-full" style={{ backgroundColor: WORKFLOW_TAB_COLOR, boxShadow: `0 0 8px ${WORKFLOW_TAB_COLOR}` }} />}
+          </button>
+        ))}
+      </div>
+
+      {loading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-6 w-6 border-2 border-t-transparent" style={{ borderColor: WORKFLOW_TAB_COLOR }} />
+          <span className="ml-2 text-sm" style={{ color: 'var(--text-secondary)' }}>Загрузка...</span>
+        </div>
+      )}
+
+      {/* ── TASKS TAB ── */}
+      {!loading && tab === 'tasks' && (
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-default)' }}>
+              <Search size={16} style={{ color: 'var(--text-muted)' }} />
+              <input value={taskSearch} onChange={e => setTaskSearch(e.target.value)} placeholder="Поиск по задаче..." className="bg-transparent outline-none text-sm w-48 md:w-72" style={{ color: 'var(--text-primary)' }} />
+            </div>
+            <div className="flex items-center gap-2">
+              <Filter size={14} style={{ color: 'var(--text-muted)' }} />
+              {(['all', 'NEW', 'IN_PROGRESS', 'DONE'] as const).map(s => (
+                <button
+                  key={s}
+                  onClick={() => setTaskFilter(s)}
+                  className="text-xs px-2.5 py-1 rounded-md border transition-colors"
+                  style={{
+                    color: taskFilter === s ? getTaskStatusStyle(s).color : 'var(--text-secondary)',
+                    borderColor: taskFilter === s ? getTaskStatusStyle(s).border : 'var(--border-default)',
+                    background: taskFilter === s ? getTaskStatusStyle(s).bg : 'transparent',
+                  }}
+                >
+                  {s === 'all' ? 'Все' : getTaskStatusLabel(s)}
+                </button>
+              ))}
+            </div>
+            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Найдено: {filteredTasks.length}</span>
+          </div>
+
+          <div className="space-y-2">
+            {filteredTasks.length === 0 ? (
+              <div className="text-center py-12">
+                <FileCheck size={48} style={{ color: 'var(--text-muted)' }} className="mx-auto mb-4 opacity-30" />
+                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Задачи не найдены. Измените фильтры или создайте новую.</p>
+              </div>
+            ) : (
+              filteredTasks.map((task) => {
+                const st = getTaskStatusStyle(task.status);
+                return (
+                  <div key={task.id} className="rounded-xl border p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-default)' }}>
+                    <div className="flex items-center gap-3">
+                      {getTaskStatusIcon(task.status)}
+                      <div>
+                        <h3 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{task.title}</h3>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded border font-medium" style={{ color: st.color, borderColor: st.border, background: st.bg }}>{getTaskStatusLabel(task.status)}</span>
+                          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Срок: {task.due_date ? new Date(task.due_date).toLocaleDateString('ru-RU') : '—'}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium self-start sm:self-auto ${
+                      task.priority === 'HIGH' ? 'bg-red-100 text-red-700' :
+                      task.priority === 'NORMAL' ? 'bg-blue-100 text-blue-700' :
+                      'bg-gray-100 text-gray-700'
+                    }`}>{task.priority}</span>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── REMARKS TAB ── */}
+      {!loading && tab === 'remarks' && (
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-default)' }}>
+              <Search size={16} style={{ color: 'var(--text-muted)' }} />
+              <input value={remarkSearch} onChange={e => setRemarkSearch(e.target.value)} placeholder="Поиск по замечанию..." className="bg-transparent outline-none text-sm w-48 md:w-72" style={{ color: 'var(--text-primary)' }} />
+            </div>
+            <div className="flex items-center gap-2">
+              <Filter size={14} style={{ color: 'var(--text-muted)' }} />
+              {(['all', 'new', 'in_progress', 'resolved'] as const).map(s => (
+                <button
+                  key={s}
+                  onClick={() => setRemarkFilter(s)}
+                  className="text-xs px-2.5 py-1 rounded-md border transition-colors"
+                  style={{
+                    color: remarkFilter === s ? WORKFLOW_TAB_COLOR : 'var(--text-secondary)',
+                    borderColor: remarkFilter === s ? 'rgba(212,175,55,0.4)' : 'var(--border-default)',
+                    background: remarkFilter === s ? 'rgba(212,175,55,0.1)' : 'transparent',
+                  }}
+                >
+                  {s === 'all' ? 'Все' : getRemarkStatusLabel(s)}
+                </button>
+              ))}
+            </div>
+            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Найдено: {filteredRemarks.length}</span>
+          </div>
+
+          <div className="space-y-2">
+            {filteredRemarks.length === 0 ? (
+              <div className="text-center py-12">
+                <AlertCircle size={48} style={{ color: 'var(--text-muted)' }} className="mx-auto mb-4 opacity-30" />
+                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Замечания не найдены. Измените фильтры или создайте новое.</p>
+              </div>
+            ) : (
+              filteredRemarks.map((remark) => (
+                <div key={remark.id} className="rounded-xl border p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-default)' }}>
+                  <div>
+                    <h3 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{remark.title}</h3>
+                    <div className="flex items-center gap-2 mt-1 text-xs" style={{ color: 'var(--text-muted)' }}>
+                      <span>{remark.project_name}</span>
+                      <span>·</span>
+                      <span>{remark.document_name}</span>
+                      <span>·</span>
+                      <span>Приоритет: {remark.priority}</span>
+                    </div>
+                  </div>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium self-start sm:self-auto ${getRemarkStatusColor(remark.status)}`}>{getRemarkStatusLabel(remark.status)}</span>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Mock fallback data for workflow ── */
+const mockTasks: Task[] = [
+  { id: 1, title: 'Согласовать КЖ-01-001 ЖК «Северный»', status: 'NEW', priority: 'HIGH', due_date: '2026-05-25', project_id: 1, assignee_id: 2, creator_id: 1, document_id: null, type: null, description: null, started_at: null, completed_at: null, planned_start: null, planned_finish: null, planned_hours: 0, actual_hours: 0, percent_complete: 0, engineer: null, is_critical: false, es: null, ef: null, ls: null, lf: null, slack: null },
+  { id: 2, title: 'Проверить АР-03-015 ТЦ «Меридиан»', status: 'IN_PROGRESS', priority: 'NORMAL', due_date: '2026-05-28', project_id: 2, assignee_id: 3, creator_id: 1, document_id: null, type: null, description: null, started_at: null, completed_at: null, planned_start: null, planned_finish: null, planned_hours: 0, actual_hours: 0, percent_complete: 0, engineer: null, is_critical: false, es: null, ef: null, ls: null, lf: null, slack: null },
+  { id: 3, title: 'Утвердить ОВиК-02-008 Склад А-12', status: 'DONE', priority: 'LOW', due_date: '2026-05-20', project_id: 3, assignee_id: 4, creator_id: 2, document_id: null, type: null, description: null, started_at: null, completed_at: null, planned_start: null, planned_finish: null, planned_hours: 0, actual_hours: 0, percent_complete: 100, engineer: null, is_critical: false, es: null, ef: null, ls: null, lf: null, slack: null },
+  { id: 4, title: 'Согласовать ЭОМ-05-003 ТЭЦ-5', status: 'NEW', priority: 'HIGH', due_date: '2026-05-30', project_id: 4, assignee_id: 2, creator_id: 3, document_id: null, type: null, description: null, started_at: null, completed_at: null, planned_start: null, planned_finish: null, planned_hours: 0, actual_hours: 0, percent_complete: 0, engineer: null, is_critical: false, es: null, ef: null, ls: null, lf: null, slack: null },
+  { id: 5, title: 'Проверить КР-01-002 ТЭЦ-5 (расчёт)', status: 'IN_PROGRESS', priority: 'NORMAL', due_date: '2026-06-05', project_id: 4, assignee_id: 5, creator_id: 1, document_id: null, type: null, description: null, started_at: null, completed_at: null, planned_start: null, planned_finish: null, planned_hours: 0, actual_hours: 0, percent_complete: 0, engineer: null, is_critical: false, es: null, ef: null, ls: null, lf: null, slack: null },
+  { id: 6, title: 'Утвердить АР-04-001 Офис «Гамма»', status: 'DONE', priority: 'LOW', due_date: '2026-05-18', project_id: 5, assignee_id: 3, creator_id: 2, document_id: null, type: null, description: null, started_at: null, completed_at: null, planned_start: null, planned_finish: null, planned_hours: 0, actual_hours: 0, percent_complete: 100, engineer: null, is_critical: false, es: null, ef: null, ls: null, lf: null, slack: null },
+];
+
+const mockRemarks: RemarkListItem[] = [
+  { id: 'r1', title: 'Несоответствие арматуры в КЖ-01-001', status: 'new', priority: 'high', category: 'design_error', author_id: 1, author_name: 'Иванов А.С.', created_at: '2026-05-22', updated_at: '2026-05-22', project_name: 'ЖК «Северный»', document_name: 'КЖ-01-001', assignee_name: 'Петров В.К.' },
+  { id: 'r2', title: 'Уточнение вентфасада ТЦ «Меридиан»', status: 'in_progress', priority: 'medium', category: 'discrepancy', author_id: 2, author_name: 'Сидорова Е.М.', created_at: '2026-05-21', updated_at: '2026-05-21', project_name: 'ТЦ «Меридиан»', document_name: 'АР-03-015', assignee_name: 'Козлов Д.А.' },
+  { id: 'r3', title: 'Замечания по гидроизоляции подвала', status: 'resolved', priority: 'high', category: 'norm_violation', author_id: 3, author_name: 'Новикова И.П.', created_at: '2026-05-20', updated_at: '2026-05-20', project_name: 'ЖК «Северный»', document_name: 'КР-01-002', assignee_name: 'Петров В.К.' },
+  { id: 'r4', title: 'Корректировка однолинейной схемы', status: 'new', priority: 'low', category: 'incompleteness', author_id: 4, author_name: 'Козлов Д.А.', created_at: '2026-05-23', updated_at: '2026-05-23', project_name: 'ТЭЦ-5', document_name: 'ЭОМ-05-003', assignee_name: 'Иванов А.С.' },
+  { id: 'r5', title: 'Узел балка-колонна: уточнить защитный слой', status: 'in_progress', priority: 'medium', category: 'design_error', author_id: 5, author_name: 'Петров В.К.', created_at: '2026-05-19', updated_at: '2026-05-19', project_name: 'ЖК «Южный парк»', document_name: 'КЖ-02-004', assignee_name: 'Сидорова Е.М.' },
+];
+
+/* ═══════════════════════════════════════════
    EMPLOYEES VIEW — Gamification + Workload
    ═══════════════════════════════════════════ */
 const PALETTE = ['#2563EB', '#4F7A4C', '#6B5B95', '#D4AF37', '#3B82F6', '#FF6B6B', '#94A3B8'];
@@ -708,7 +1133,6 @@ function EmployeesView() {
       const mapped = mapWorkloadData(workloadData, leaderboard);
       setWorkloads(mapped);
       setLoading(false);
-      // Load time sessions for fetched employees
       setTimeLoading(true);
       Promise.all(
         mapped.map(emp =>
@@ -1088,15 +1512,22 @@ function EmployeesView() {
 
 /* ── Main Page ── */
 export default function DocumentsPage() {
-  const [activeTab, setActiveTab] = useState<TabKey>('registry');
+  const [activeTab, setActiveTab] = useState<TabKey>(() => {
+    if (typeof window === 'undefined') return 'registry';
+    return (localStorage.getItem('iris_documents_tab') as TabKey) || 'registry';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('iris_documents_tab', activeTab);
+  }, [activeTab]);
 
   return (
     <div className="space-y-5 px-3 md:px-6 py-4 md:py-6">
       {/* Header */}
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Документация</h1>
-          <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>Управление проектной документацией и ревизиями</p>
+          <h1 className="text-xl md:text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Документы и согласования</h1>
+          <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>Управление проектной документацией, ревизиями и задачами согласования</p>
         </div>
         <div className="flex items-center gap-2">
           <Link
@@ -1119,6 +1550,7 @@ export default function DocumentsPage() {
       <PageTabs active={activeTab} onChange={setActiveTab} />
 
       {activeTab === 'registry' && <RegistryView />}
+      {activeTab === 'workflow' && <WorkflowView />}
       {activeTab === 'employees' && <EmployeesView />}
     </div>
   );

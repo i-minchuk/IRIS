@@ -13,7 +13,7 @@ import { AdminRouteGuard } from '@/components/admin/AdminRouteGuard';
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
 const ProjectsPage = lazy(() => import('@/pages/ProjectsPage'));
 const DocumentsPage = lazy(() => import('@/pages/DocumentsPage'));
-const WorkflowPage = lazy(() => import('@/pages/WorkflowPage'));
+
 const RemarksPage = lazy(() => import('@/pages/RemarksPage'));
 const ArchivePage = lazy(() => import('@/pages/ArchivePage'));
 const AdminPage = lazy(() => import('@/pages/AdminPage'));
@@ -76,7 +76,7 @@ export const router = createBrowserRouter([
           { path: '/dashboard', element: <SuspenseWrapper><Dashboard /></SuspenseWrapper> },
           { path: '/projects', element: <SuspenseWrapper><ProjectsPage /></SuspenseWrapper> },
           { path: '/documents', element: <SuspenseWrapper><DocumentsPage /></SuspenseWrapper> },
-          { path: '/workflow', element: <SuspenseWrapper><WorkflowPage /></SuspenseWrapper> },
+          { path: '/workflow', element: <Navigate to="/documents" replace /> },
           { path: '/remarks', element: <SuspenseWrapper><RemarksPage /></SuspenseWrapper> },
           { path: '/archive', element: <SuspenseWrapper><ArchivePage /></SuspenseWrapper> },
           { path: '/achievements', element: <SuspenseWrapper><AchievementsPage /></SuspenseWrapper> },
