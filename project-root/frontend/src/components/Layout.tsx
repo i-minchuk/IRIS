@@ -282,10 +282,29 @@ export default function Layout() {
           </div>
         </header>
 
+        {/* ===== ЦВЕТНАЯ ЛИНИЯ НАВЕРХУ ===== */}
+        <div className="shrink-0 h-0.5 w-full" style={{ background: 'var(--header-border)' }}>
+          {navItems.map((item) => {
+            const active = isActive(item.to);
+            return active ? (
+              <div
+                key={`line-${item.to}`}
+                className="h-full transition-all duration-300"
+                style={{
+                  backgroundColor: item.color,
+                  boxShadow: `0 0 12px ${item.color}66`,
+                  width: `${100 / navItems.length}%`,
+                  marginLeft: `${navItems.findIndex(i => i.to === item.to) * (100 / navItems.length)}%`,
+                }}
+              />
+            ) : null;
+          })}
+        </div>
+
         {/* ===== ТАБЫ + ГЛОБАЛЬНЫЙ ПОИСК ===== */}
         <div className="shrink-0 border-b" style={{ borderColor: 'var(--header-border)' }}>
           <div className="w-full px-4 md:px-6 flex items-center justify-between gap-4">
-            <nav className="flex items-center gap-1 overflow-x-auto py-2" aria-label="Главная навигация">
+            <nav className="flex items-center gap-2 overflow-x-auto py-1" aria-label="Главная навигация">
               {/* Mobile hamburger */}
               <button
                 ref={mobileMenuButtonRef}
@@ -304,8 +323,13 @@ export default function Layout() {
                 const active = isActive(item.to);
                 return (
                   <Link key={item.to} to={item.to}
-                    className="relative px-2 sm:px-4 py-2.5 text-sm font-medium transition-all duration-150 whitespace-nowrap"
-                    style={{ color: active ? item.color : 'var(--text-secondary)', backgroundColor: active ? item.bgActive : 'transparent' }}
+                    className="relative px-3 sm:px-4 py-2 text-sm font-medium transition-all duration-200 whitespace-nowrap rounded-lg"
+                    style={{
+                      color: active ? item.color : 'var(--text-secondary)',
+                      backgroundColor: active ? item.bgActive : 'transparent',
+                      transform: active ? 'translateY(-2px)' : 'translateY(0)',
+                      boxShadow: active ? `0 4px 12px ${item.color}22` : 'none',
+                    }}
                     onMouseEnter={(e) => { if (!active) { e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)'; e.currentTarget.style.color = 'var(--text-primary)'; }}}
                     onMouseLeave={(e) => { if (!active) { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; }}}
                     aria-current={active ? 'page' : undefined}
@@ -314,7 +338,6 @@ export default function Layout() {
                       <span style={{ color: item.color }}>{item.icon}</span>
                       <span className="hidden sm:inline">{item.label}</span>
                     </span>
-                    {active && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-4/5 rounded-full" style={{ backgroundColor: item.color, boxShadow: `0 0 8px ${item.color}` }} />}
                   </Link>
                 );
               })}
