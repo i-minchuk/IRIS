@@ -28,6 +28,7 @@ const DocumentDetail = lazy(() => import('@/pages/DocumentDetail'));
 const NotFound = lazy(() => import('@/pages/NotFound'));
 const CalendarPage = lazy(() => import('@/pages/CalendarPage'));
 const ReportsPage = lazy(() => import('@/pages/ReportsPage'));
+const ProductionControlPage = lazy(() => import('@/pages/ProductionControl'));
 const NotificationPage = lazy(() => import('@/features/notifications/components/NotificationPage'));
 const AdminDashboard = lazy(() => import('@/pages/admin/AdminDashboard'));
 const AuditLogPage = lazy(() => import('@/pages/admin/AuditLog'));
@@ -97,6 +98,7 @@ export const router = createBrowserRouter([
           { path: '/profile', element: <SuspenseWrapper><ProfileSettingsPage /></SuspenseWrapper> },
           { path: '/profile/2fa', element: <SuspenseWrapper><TwoFactorSettingsPage /></SuspenseWrapper> },
           { path: '/notifications', element: <SuspenseWrapper><NotificationPage /></SuspenseWrapper> },
+          { path: '/production', element: <SuspenseWrapper><ProductionControlPage /></SuspenseWrapper> },
           { path: '/references', element: <SuspenseWrapper><ReferencePage /></SuspenseWrapper> },
           { path: '/documents/new', element: <SuspenseWrapper><DocumentCreate /></SuspenseWrapper> },
           { path: '/documents/import', element: <SuspenseWrapper><ImportExcel /></SuspenseWrapper> },
