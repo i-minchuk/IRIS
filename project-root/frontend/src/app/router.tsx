@@ -41,7 +41,7 @@ const PurchaseRequestsPage = lazy(() => import('@/pages/srm/PurchaseRequests'));
 const ContractsPage = lazy(() => import('@/pages/srm/Contracts'));
 const OrdersPage = lazy(() => import('@/pages/srm/Orders'));
 const InvoicesPage = lazy(() => import('@/pages/srm/Invoices'));
-const LeaderboardPage = lazy(() => import('@/pages/gamification/Leaderboard'));
+const TeamPage = lazy(() => import('@/pages/TeamPage'));
 
 function RouteFallback() {
   return <div className="flex items-center justify-center h-screen text-gray-400 text-sm">Загрузка…</div>;
@@ -132,8 +132,9 @@ export const router = createBrowserRouter([
           { path: '/srm/contracts', element: <SuspenseWrapper><ContractsPage /></SuspenseWrapper> },
           { path: '/srm/orders', element: <SuspenseWrapper><OrdersPage /></SuspenseWrapper> },
           { path: '/srm/invoices', element: <SuspenseWrapper><InvoicesPage /></SuspenseWrapper> },
-          { path: '/gamification', element: <SuspenseWrapper><LeaderboardPage /></SuspenseWrapper> },
-          { path: '/gamification/leaderboard', element: <SuspenseWrapper><LeaderboardPage /></SuspenseWrapper> },
+          { path: '/team', element: <SuspenseWrapper><TeamPage /></SuspenseWrapper> },
+          { path: '/gamification', element: <Navigate to="/team" replace /> },
+          { path: '/gamification/leaderboard', element: <Navigate to="/team" replace /> },
         ],
       },
     ],

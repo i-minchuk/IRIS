@@ -7,9 +7,10 @@ const prefetchDocuments = () => import('@/pages/DocumentsPage');
 import {
   User, LogOut, ChevronDown, Menu, X,
   BarChart3, FileText, Archive,
-  Search, Trophy, Shield, Briefcase, Factory,
-  Calendar, BookOpen, Settings,
+  Search, Shield, Briefcase, Factory,
+  Calendar, BookOpen, Settings, Users,
 } from 'lucide-react';
+
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useLanguageContext } from "@/features/profile/i18n/LanguageContext";
@@ -34,7 +35,7 @@ const ALL_NAV_ITEMS = [
   { to: '/references', label: 'Справочники', icon: <BookOpen size={16} />, color: '#14B8A6', bgActive: 'rgba(20, 184, 166, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
   { to: '/reports', label: 'Отчёты', icon: <FileText size={16} />, color: '#8B5CF6', bgActive: 'rgba(139, 92, 246, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
 
-  { to: '/gamification/leaderboard', label: 'Лидерборд', icon: <Trophy size={16} />, color: '#D4AF37', bgActive: 'rgba(212, 175, 55, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
+  { to: '/team', label: 'Сотрудники', icon: <Users size={16} />, color: '#D4AF37', bgActive: 'rgba(212, 175, 55, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
 ];
 
 function getNavItems(role: UserRole | undefined) {
@@ -305,47 +306,60 @@ export default function Layout() {
         {/* ===== ТАБЫ + ГЛОБАЛЬНЫЙ ПОИСК ===== */}
         <div className="shrink-0 border-b" style={{ borderColor: 'var(--header-border)' }}>
           <div className="w-full px-4 md:px-6 flex items-center justify-between gap-4">
-            <nav className="flex items-center gap-2 overflow-x-auto py-1" aria-label="Главная навигация">
-              {/* Mobile hamburger */}
+            <nav className="flex items-center gap-1 lg:gap-1.5 py-1" aria-label="Главная навигация">
+              {/* Hamburger — когда табы не влезают или на мобильных */}
               <button
                 ref={mobileMenuButtonRef}
                 type="button"
-                onClick={() => setShowMobileMenu(prev => !prev)}
-                className="sm:hidden flex h-9 w-9 items-center justify-center rounded-lg transition-all"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowMobileMenu(prev => !prev);
+                }}
+                className="flex h-8 w-8 items-center justify-center rounded-lg transition-all"
                 style={{ color: 'var(--text-secondary)' }}
-                title="Меню (Ctrl+M)"
+                title="Меню"
                 aria-label="Меню"
                 aria-expanded={showMobileMenu}
               >
-                {showMobileMenu ? <X size={20} /> : <Menu size={20} />}
+                {showMobileMenu ? <X size={18} /> : <Menu size={18} />}
               </button>
 
+              {/* Табы — полный текст на xl, иконки+текст на lg, скрыты на <lg */}
               {navItems.map((item) => {
                 const active = isActive(item.to);
                 return (
                   <Link key={item.to} to={item.to}
-                    className="relative px-3 sm:px-4 py-2 text-sm font-medium transition-all duration-200 whitespace-nowrap rounded-lg"
+                    className="group relative px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium transition-all duration-200 rounded-lg flex items-center gap-1.5 xl:gap-2"
                     style={{
                       color: active ? item.color : 'var(--text-secondary)',
                       backgroundColor: active ? item.bgActive : 'transparent',
                       transform: active ? 'translateY(-2px)' : 'translateY(0)',
                       boxShadow: active ? `0 4px 12px ${item.color}22` : 'none',
                     }}
-                    onMouseEnter={(e) => { if (!active) { e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)'; e.currentTarget.style.color = 'var(--text-primary)'; }}}
-                    onMouseLeave={(e) => { if (!active) { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; }}}
+                    onMouseEnter={(e) => {
+                      if (!active) {
+                        e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)';
+                        e.currentTarget.style.color = 'var(--text-primary)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!active) {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                        e.currentTarget.style.color = 'var(--text-secondary)';
+                      }
+                    }}
                     aria-current={active ? 'page' : undefined}
+                    title={item.label}
                   >
-                    <span className="flex items-center gap-2">
-                      <span style={{ color: item.color }}>{item.icon}</span>
-                      <span className="hidden sm:inline">{item.label}</span>
-                    </span>
+                    <span style={{ color: item.color }}>{item.icon}</span>
+                    <span className="hidden xl:inline-block whitespace-nowrap">{item.label}</span>
                   </Link>
                 );
               })}
             </nav>
 
             {/* Глобальный поиск */}
-            <div className="relative shrink-0 w-full max-w-[180px] sm:max-w-[240px] md:max-w-[320px]">
+            <div className="relative shrink-0 w-full max-w-[140px] sm:max-w-[200px] lg:max-w-[280px]">
               <Search
                 size={14}
                 className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
@@ -357,9 +371,9 @@ export default function Layout() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Escape') setSearchQuery(''); }}
-                placeholder="Поиск (Ctrl+K)"
+                placeholder="Поиск"
                 title="Глобальный поиск (Ctrl+K)"
-                className="w-full rounded-lg border pl-8 pr-7 py-1.5 text-sm outline-none transition-colors"
+                className="w-full rounded-lg border pl-8 pr-6 py-1.5 text-xs outline-none transition-colors"
                 style={{
                   background: 'var(--bg-surface)',
                   borderColor: 'var(--border-default)',
@@ -376,7 +390,7 @@ export default function Layout() {
                   onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-primary)'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-muted)'; }}
                 >
-                  <X size={12} />
+                  <X size={10} />
                 </button>
               )}
             </div>
@@ -386,7 +400,7 @@ export default function Layout() {
         {/* ===== BREADCRUMBS ===== */}
         {location.pathname !== '/dashboard' && <Breadcrumbs />}
 
-        {/* ===== MOBILE MENU ===== */}
+        {/* ===== DROPDOWN MENU (бургер) ===== */}
         <AnimatePresence>
           {showMobileMenu && (
             <motion.div
@@ -395,7 +409,7 @@ export default function Layout() {
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.2 }}
-              className="sm:hidden border-b overflow-hidden"
+              className="border-b overflow-hidden"
               style={{ borderColor: 'var(--header-border)', background: 'var(--header-bg)' }}
             >
               <div className="px-4 py-2 space-y-1">

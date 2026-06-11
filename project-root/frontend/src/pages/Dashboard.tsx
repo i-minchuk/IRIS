@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/providers/ThemeProvider';
 import { ChromeBot } from '@/components/ChromeBot';
-import { GamificationWidget } from '@/components/gamification/GamificationWidget';
+
 import {
   analyticsApi,
   type ScorecardProject,
@@ -19,6 +19,8 @@ import {
   Award, DollarSign, Briefcase, Users, Clock,
   ChevronRight, Zap, Sparkles, ArrowDown, Loader2
 } from 'lucide-react';
+import { BirthdayWidget } from '@/components/BirthdayWidget';
+import { LeaderboardWidget } from '@/components/gamification/LeaderboardWidget';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -115,6 +117,16 @@ const MOCK_DEADLINES = [
   { day: 'Пн', date: '25.05', projects: ['ТЦ «Меридиан»'], color: '#3B82F6', urgent: false },
   { day: 'Чт', date: '28.05', projects: ['ОВиК-02-008'], color: '#3B82F6', urgent: false },
   { day: 'Пн', date: '02.06', projects: ['ТЭЦ-5'], color: '#0C7205', urgent: false },
+];
+
+const MOCK_BIRTHDAYS = [
+  { id: 'b1', name: 'Иванов П.С.', date: '05-15', role: 'Ведущий инженер' },
+  { id: 'b2', name: 'Петрова А.М.', date: '05-11', role: 'Инженер КЖ' },
+  { id: 'b3', name: 'Сидоров В.К.', date: '06-01', role: 'Младший инженер' },
+  { id: 'b4', name: 'Новикова А.В.', date: '12-25', role: 'Главный инженер' },
+  { id: 'b5', name: 'Кузнецов Д.И.', date: '06-15', role: 'ГИП' },
+  { id: 'b6', name: 'Смирнова Е.В.', date: '07-03', role: 'Нормоконтролёр' },
+  { id: 'b7', name: 'Волков А.Н.', date: '08-20', role: 'Менеджер проектов' },
 ];
 
 /* ── Мини sparkline ── */
@@ -802,8 +814,11 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Gamification Widget */}
-          <GamificationWidget />
+          {/* Дни рождения */}
+          <BirthdayWidget birthdays={MOCK_BIRTHDAYS} />
+
+          {/* Leaderboard Widget */}
+          <LeaderboardWidget />
 
           {/* IRIS — изумрудный агент со звёздами */}
           <div className="p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>

@@ -8,7 +8,7 @@ const FeatureCard = ({ icon, title, lines }: { icon: React.ReactNode; title: str
   const isDark = theme === 'dark';
   return (
     <div
-      className="p-5 rounded-xl text-center transition-all duration-200 relative z-[2]"
+      className="p-4 md:p-5 lg:p-6 rounded-xl text-center transition-all duration-200 relative z-[2]"
       style={{
         border: `1px solid ${isDark ? '#3D4554' : '#CED2DD'}`,
         background: isDark ? 'rgba(13,17,23,0.72)' : 'rgba(255,255,255,0.72)',
@@ -26,7 +26,7 @@ const FeatureCard = ({ icon, title, lines }: { icon: React.ReactNode; title: str
       }}
     >
       <div
-        className="w-11 h-11 rounded-[10px] flex items-center justify-center mx-auto mb-2.5"
+        className="w-10 h-10 md:w-11 md:h-11 rounded-[10px] flex items-center justify-center mx-auto mb-2 md:mb-2.5"
         style={{
           background: isDark ? 'rgba(92,117,224,0.1)' : 'rgba(59,79,168,0.08)',
           color: isDark ? '#5C75E0' : '#3B4FA8',
@@ -34,8 +34,8 @@ const FeatureCard = ({ icon, title, lines }: { icon: React.ReactNode; title: str
       >
         {icon}
       </div>
-      <div className="text-[13px] font-semibold mb-1" style={{ color: isDark ? '#E2E5EC' : '#1E2230' }}>{title}</div>
-      <div className="text-[11px] leading-relaxed" style={{ color: isDark ? '#8B92A8' : '#6B7280' }}>
+      <div className="text-xs md:text-[13px] font-semibold mb-1" style={{ color: isDark ? '#E2E5EC' : '#1E2230' }}>{title}</div>
+      <div className="text-[10px] md:text-[11px] leading-relaxed" style={{ color: isDark ? '#8B92A8' : '#6B7280' }}>
         {lines.map((line, i) => (<span key={i}>{line}{i < lines.length - 1 && <br />}</span>))}
       </div>
     </div>
@@ -106,12 +106,12 @@ export default function LandingPage() {
       />
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-5 py-10">
+      <div className="landing-content flex-1 flex flex-col items-center justify-center px-5 py-10 w-full">
 
         {/* Brand Block */}
-        <div className="flex items-center justify-center gap-4 mb-2 relative z-[2]">
+        <div className="flex items-center justify-center gap-4 md:gap-6 mb-3 relative z-[2]">
           <div
-            className="w-20 h-20 rounded-2xl flex items-center justify-center"
+            className="w-16 h-16 md:w-20 md:h-20 rounded-2xl flex items-center justify-center"
             style={{
               background: isDark ? '#151B38' : '#FFFFFF',
               boxShadow: isDark
@@ -120,7 +120,7 @@ export default function LandingPage() {
               animation: isDark ? 'iconGlow 3s ease-in-out infinite' : 'none',
             }}
           >
-            <svg width="48" height="48" viewBox="0 0 36 36">
+            <svg width="40" height="40" viewBox="0 0 36 36" className="md:w-[48px] md:h-[48px]">
               <rect x="3" y="3" width="30" height="30" rx="6" fill={isDark ? '#5C75E0' : '#3B4FA8'} />
               <rect x="9" y="10" width="18" height="2.5" rx="1.25" fill="white" opacity="0.85" />
               <rect x="9" y="15" width="14" height="2.5" rx="1.25" fill="white" opacity="0.6" />
@@ -130,7 +130,7 @@ export default function LandingPage() {
           </div>
           <div>
             <div
-              className="text-[42px] font-bold tracking-tight"
+              className="text-[clamp(1.75rem,5vw,3rem)] font-bold tracking-tight"
               style={{
                 fontFamily: "'Montserrat', sans-serif",
                 color: isDark ? '#E2E5EC' : '#1E2230',
@@ -139,7 +139,7 @@ export default function LandingPage() {
             >
               ДокПоток{' '}
               <span
-                className="text-[28px] font-bold px-3 py-1 rounded-lg align-middle"
+                className="text-[clamp(1.25rem,3vw,1.75rem)] font-bold px-2 md:px-3 py-0.5 md:py-1 rounded-lg align-middle"
                 style={{
                   background: isDark ? '#5C75E0' : '#3B4FA8',
                   color: '#fff',
@@ -150,7 +150,7 @@ export default function LandingPage() {
               </span>
             </div>
             <div
-              className="w-[180px] h-1 rounded-full mt-2"
+              className="w-[140px] md:w-[180px] h-1 rounded-full mt-2"
               style={{
                 background: isDark ? '#E8C44A' : '#D4A62A',
                 boxShadow: isDark ? '0 0 12px rgba(232,196,74,0.5)' : 'none',
@@ -161,22 +161,22 @@ export default function LandingPage() {
 
         {/* Subtitle */}
         <div
-          className="text-center mt-4 mb-6 max-w-md relative z-[2]"
+          className="text-center mt-3 md:mt-4 mb-4 md:mb-6 max-w-lg md:max-w-xl relative z-[2]"
           style={{ color: isDark ? '#8B92A8' : '#6B7280' }}
         >
-          <p className="text-[15px] leading-relaxed">
+          <p className="text-sm md:text-base leading-relaxed">
             Интеллектуальная система управления инженерной документацией,
             проектами и тендерными процессами
           </p>
         </div>
 
         {/* ChromeBot */}
-        <div className="min-h-[280px] flex items-center justify-center mb-6">
-          <ChromeBot size={320} variant={isDark ? 'dark' : 'light'} />
+        <div className="flex items-center justify-center mb-4 md:mb-6">
+          <ChromeBot size={260} variant={isDark ? 'dark' : 'light'} className="md:w-[320px] md:h-[320px]" />
         </div>
 
         {/* Features Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 w-full max-w-[640px] mb-10 relative z-[2]">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 w-full max-w-[640px] lg:max-w-[720px] xl:max-w-[800px] mb-8 md:mb-10 relative z-[2]">
           {features.map((f, idx) => (
             <FeatureCard key={idx} icon={f.icon} title={f.title} lines={f.lines} />
           ))}

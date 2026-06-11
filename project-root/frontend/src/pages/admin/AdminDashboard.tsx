@@ -9,29 +9,51 @@ import {
   Users, Shield, Ticket, AlertTriangle, Activity, Server,
   Clock
 } from 'lucide-react';
-import {
-  PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer
-} from 'recharts';
 
-const COLORS = ['#3B82F6', '#F59E0B', '#EF4444'];
 
 export default function AdminDashboard() {
-  const auditStats = useAuditStore(s => s.getStats());
-  const openTickets = useSupportStore(s => s.getOpenTickets());
-  const openIncidents = useSupportStore(s => s.getOpenIncidents());
-  const slaCompliance = useSupportStore(s => s.getSLACompliance());
-  const recentAudit = useAuditStore(s => s.getRecentEntries(5));
+  // Берём данные напрямую, не через методы-геттеры (избегаем infinite loop Zustand)
+  const auditEntries = useAuditStore(s => s.entries);
+  const tickets = useSupportStore(s => s.tickets);
+  const incidents = useSupportStore(s => s.incidents);
   const releases = useReleaseStore(s => s.releases);
+
+  const auditStats = useMemo(() => ({
+    total: auditEntries.length,
+    critical: auditEntries.filter(e => e.severity === 'critical').length,
+    warning: auditEntries.filter(e => e.severity === 'warning').length,
+    info: auditEntries.filter(e => e.severity === 'info').length,
+  }), [auditEntries]);
+
+  const openTickets = useMemo(() =>
+    tickets.filter(t => ['new', 'open', 'in_progress'].includes(t.status)),
+  [tickets]);
+
+  const openIncidents = useMemo(() =>
+    incidents.filter(i => ['detected', 'investigating', 'mitigated'].includes(i.status)),
+  [incidents]);
+
+  const slaCompliance = useMemo(() => {
+    const resolved = tickets.filter(t => t.resolved_at);
+    if (resolved.length === 0) return 100;
+    const compliant = resolved.filter(t => {
+      const r = new Date(t.resolved_at!).getTime();
+      const d = new Date(t.sla_deadline).getTime();
+      return r <= d;
+    }).length;
+    return Math.round((compliant / resolved.length) * 100);
+  }, [tickets]);
+
+  const recentAudit = useMemo(() => auditEntries.slice(0, 5), [auditEntries]);
 
   const ticketPriorityData = useMemo(() => {
     const counts = { critical: 0, high: 0, medium: 0, low: 0 };
     openTickets.forEach(t => counts[t.priority]++);
     return [
-      { name: 'Критический', value: counts.critical },
-      { name: 'Высокий', value: counts.high },
-      { name: 'Средний', value: counts.medium },
-      { name: 'Низкий', value: counts.low },
+      { name: 'Критический', value: counts.critical, color: '#EF4444' },
+      { name: 'Высокий', value: counts.high, color: '#F59E0B' },
+      { name: 'Средний', value: counts.medium, color: '#3B82F6' },
+      { name: 'Низкий', value: counts.low, color: '#10B981' },
     ].filter(d => d.value > 0);
   }, [openTickets]);
 
@@ -39,14 +61,17 @@ export default function AdminDashboard() {
     const counts = { p1_critical: 0, p2_major: 0, p3_minor: 0, p4_info: 0 };
     openIncidents.forEach(i => counts[i.severity]++);
     return [
-      { name: 'P1', value: counts.p1_critical },
-      { name: 'P2', value: counts.p2_major },
-      { name: 'P3', value: counts.p3_minor },
-      { name: 'P4', value: counts.p4_info },
+      { name: 'P1', value: counts.p1_critical, color: '#EF4444' },
+      { name: 'P2', value: counts.p2_major, color: '#F59E0B' },
+      { name: 'P3', value: counts.p3_minor, color: '#3B82F6' },
+      { name: 'P4', value: counts.p4_info, color: '#10B981' },
     ].filter(d => d.value > 0);
   }, [openIncidents]);
 
-  const readyReleases = releases.filter(r => r.status === 'ready').length;
+  const readyReleases = useMemo(() => releases.filter(r => r.status === 'ready').length, [releases]);
+
+  const maxTicket = ticketPriorityData.reduce((m, d) => Math.max(m, d.value), 0) || 1;
+  const maxIncident = incidentSeverityData.reduce((m, d) => Math.max(m, d.value), 0) || 1;
 
   return (
     <div className="space-y-6 px-3 md:px-6 py-4 md:py-6">
@@ -69,28 +94,36 @@ export default function AdminDashboard() {
         <StatCard icon={<Server size={20} />} label="Uptime" value="99.9%" color="#14B8A6" />
       </div>
 
-      {/* Charts Row */}
+      {/* Charts Row — HTML/CSS instead of recharts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card padding="md">
           <h3 className="text-sm font-medium mb-4" style={{ color: 'var(--text-primary)' }}>
             Тикеты по приоритету
           </h3>
-          <div className="h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={ticketPriorityData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-default)" />
-                <XAxis dataKey="name" tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} />
-                <YAxis tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'var(--bg-surface)',
-                    border: '1px solid var(--border-default)',
-                    borderRadius: '8px',
-                  }}
-                />
-                <Bar dataKey="value" fill="var(--brand-iris)" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="h-48 flex flex-col justify-center gap-3">
+            {ticketPriorityData.length === 0 ? (
+              <div className="flex items-center justify-center h-full text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                Нет данных
+              </div>
+            ) : (
+              ticketPriorityData.map(d => (
+                <div key={d.name} className="flex items-center gap-3">
+                  <span className="text-xs w-20 flex-shrink-0" style={{ color: 'var(--text-secondary)' }}>{d.name}</span>
+                  <div className="flex-1 h-6 rounded-md overflow-hidden" style={{ backgroundColor: 'var(--bg-surface-2)' }}>
+                    <div
+                      className="h-full rounded-md transition-all duration-500 flex items-center justify-end pr-2"
+                      style={{
+                        width: `${(d.value / maxTicket) * 100}%`,
+                        backgroundColor: d.color + '33',
+                        borderRight: `3px solid ${d.color}`,
+                      }}
+                    >
+                      <span className="text-xs font-semibold" style={{ color: d.color }}>{d.value}</span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </Card>
 
@@ -98,31 +131,30 @@ export default function AdminDashboard() {
           <h3 className="text-sm font-medium mb-4" style={{ color: 'var(--text-primary)' }}>
             Инциденты по severity
           </h3>
-          <div className="h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={incidentSeverityData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={50}
-                  outerRadius={80}
-                  paddingAngle={4}
-                  dataKey="value"
-                >
-                  {incidentSeverityData.map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'var(--bg-surface)',
-                    border: '1px solid var(--border-default)',
-                    borderRadius: '8px',
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+          <div className="h-48 flex flex-col justify-center gap-3">
+            {incidentSeverityData.length === 0 ? (
+              <div className="flex items-center justify-center h-full text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                Нет данных
+              </div>
+            ) : (
+              incidentSeverityData.map(d => (
+                <div key={d.name} className="flex items-center gap-3">
+                  <span className="text-xs w-10 flex-shrink-0" style={{ color: 'var(--text-secondary)' }}>{d.name}</span>
+                  <div className="flex-1 h-6 rounded-md overflow-hidden" style={{ backgroundColor: 'var(--bg-surface-2)' }}>
+                    <div
+                      className="h-full rounded-md transition-all duration-500 flex items-center justify-end pr-2"
+                      style={{
+                        width: `${(d.value / maxIncident) * 100}%`,
+                        backgroundColor: d.color + '33',
+                        borderRight: `3px solid ${d.color}`,
+                      }}
+                    >
+                      <span className="text-xs font-semibold" style={{ color: d.color }}>{d.value}</span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </Card>
       </div>

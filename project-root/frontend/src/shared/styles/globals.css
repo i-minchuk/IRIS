@@ -719,10 +719,88 @@ body {
   }
 }
 
-/* Responsive base font size */
+/* ═══════════════════════════════════════════
+   FLUID TYPOGRAPHY & RESPONSIVE BASE
+   ═══════════════════════════════════════════ */
+
+/* Mobile: smaller base */
 @media (max-width: 640px) {
   html {
     font-size: 14px;
+  }
+}
+
+/* Tablet: normal base */
+@media (min-width: 641px) and (max-width: 1023px) {
+  html {
+    font-size: 15px;
+  }
+}
+
+/* Desktop: slightly larger for readability */
+@media (min-width: 1024px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+/* Large screens: more content visible */
+@media (min-width: 1536px) {
+  html {
+    font-size: 17px;
+  }
+}
+
+/* 4K: larger base */
+@media (min-width: 2560px) {
+  html {
+    font-size: 18px;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   LAYOUT — FULL WIDTH UTILITIES
+   ═══════════════════════════════════════════ */
+
+/* Ensure main content fills viewport */
+main {
+  min-height: calc(100vh - var(--iris-header-height, 56px));
+}
+
+/* Remove horizontal scroll on desktop */
+@media (min-width: 1024px) {
+  body {
+    overflow-x: hidden;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   NAV TABS — NO SCROLL ON DESKTOP
+   ═══════════════════════════════════════════ */
+
+@media (min-width: 1024px) {
+  nav[aria-label="Главная навигация"] {
+    overflow-x: visible !important;
+    flex-wrap: nowrap;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   LANDING PAGE — FULL WIDTH
+   ═══════════════════════════════════════════ */
+
+@media (min-width: 1024px) {
+  .landing-content {
+    max-width: 100% !important;
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+@media (min-width: 1536px) {
+  .landing-content {
+    padding-left: 4rem;
+    padding-right: 4rem;
   }
 }
 
