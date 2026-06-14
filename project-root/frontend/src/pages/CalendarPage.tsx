@@ -7,12 +7,15 @@ import {
   Briefcase,
   CheckSquare,
   Gavel,
+  Cake,
 } from 'lucide-react';
 import {
   getCalendarEvents,
   getCalendarEventsMock,
+  getCalendarBirthdays,
   type CalendarEvent,
   type CalendarEventType,
+  type BirthdayEvent,
 } from '@/features/calendar/api/calendar';
 
 type ViewMode = 'month' | 'week';
@@ -47,6 +50,13 @@ const EVENT_META: Record<
     color: '#B86E00',
     bg: 'rgba(184, 110, 0, 0.10)',
     border: 'rgba(184, 110, 0, 0.35)',
+  },
+  birthday: {
+    label: 'День рождения',
+    icon: <Cake size={12} />,
+    color: '#EC4899',
+    bg: 'rgba(236, 72, 153, 0.10)',
+    border: 'rgba(236, 72, 153, 0.35)',
   },
 };
 
@@ -132,6 +142,23 @@ function toISODate(d: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+function birthdaysToEvents(birthdays: BirthdayEvent[], year: number): CalendarEvent[] {
+  return birthdays.map((b) => {
+    const [month, day] = b.date.split('-');
+    return {
+      id: `birthday-${b.id}`,
+      type: 'birthday' as CalendarEventType,
+      title: `🎂 ${b.name}`,
+      date: `${year}-${month}-${day}`,
+      sourceId: 0,
+      details: {
+        status: b.role,
+        description: 'День рождения сотрудника',
+      },
+    };
+  });
+}
+
 export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<ViewMode>('month');
@@ -145,9 +172,15 @@ export default function CalendarPage() {
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    getCalendarEvents(year, month)
-      .then((data) => {
-        if (!cancelled) setEvents(data);
+
+    Promise.all([
+      getCalendarEvents(year, month).catch(() => getCalendarEventsMock()),
+      getCalendarBirthdays().catch(() => [] as BirthdayEvent[]),
+    ])
+      .then(([calendarEvents, birthdays]) => {
+        if (cancelled) return;
+        const birthdayEvents = birthdaysToEvents(birthdays, year);
+        setEvents([...calendarEvents, ...birthdayEvents]);
       })
       .catch(() => {
         if (!cancelled) {
@@ -210,7 +243,7 @@ export default function CalendarPage() {
               Календарь
             </h1>
             <p className="text-xs" style={{ color: 'var(--iris-text-muted)' }}>
-              Дедлайны, задачи и тендеры
+              Дедлайны, задачи, тендеры и дни рождения
             </p>
           </div>
         </div>

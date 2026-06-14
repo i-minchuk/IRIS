@@ -1,6 +1,6 @@
 import client from '@/shared/api/client';
 
-export type CalendarEventType = 'project' | 'task' | 'tender';
+export type CalendarEventType = 'project' | 'task' | 'tender' | 'birthday';
 
 export interface CalendarEvent {
   id: string;
@@ -106,6 +106,19 @@ const MOCK_EVENTS: CalendarEvent[] = [
     details: { status: 'evaluation', customer: 'ЛогистикПро' },
   },
 ];
+
+export interface BirthdayEvent {
+  id: string;
+  name: string;
+  date: string; // MM-DD
+  role: string;
+  avatar?: string;
+}
+
+export const getCalendarBirthdays = async (): Promise<BirthdayEvent[]> => {
+  const { data } = await client.get<BirthdayEvent[]>('/api/v1/calendar/birthdays');
+  return data;
+};
 
 export const getCalendarEventsMock = async (): Promise<CalendarEvent[]> => {
   // Simulate network delay

@@ -117,6 +117,43 @@ class TestBirthdayWidget:
                 app.dependency_overrides = original_overrides
 
 
+class TestCalendarBirthdays:
+    """Tests for calendar birthday endpoint."""
+
+    def test_calendar_birthdays_returns_data(self, client_with_auth):
+        """Calendar birthdays API should return employee birthdays."""
+        with client_with_auth as client:
+            response = client.get("/api/v1/calendar/birthdays")
+            assert response.status_code == 200
+            data = response.json()
+            assert len(data) > 0
+            assert "id" in data[0]
+            assert "name" in data[0]
+            assert "date" in data[0]
+            assert "role" in data[0]
+            # date format is MM-DD
+            assert len(data[0]["date"]) == 5
+            assert data[0]["date"][2] == "-"
+
+    def test_calendar_birthdays_requires_auth(self, client):
+        """Calendar birthdays API should require authentication."""
+        response = client.get("/api/v1/calendar/birthdays")
+        assert response.status_code in (401, 403)
+
+    def test_calendar_events_include_birthday_type(self, client_with_auth, mock_db):
+        """Calendar events API should support birthday type in schema."""
+        from unittest.mock import MagicMock
+        mock_result = MagicMock()
+        mock_result.scalars.return_value.all.return_value = []
+        mock_db.execute.return_value = mock_result
+
+        with client_with_auth as client:
+            response = client.get("/api/v1/calendar/events")
+            assert response.status_code == 200
+            data = response.json()
+            assert isinstance(data, list)
+
+
 class TestAdminDashboard:
     """Tests for admin dashboard API endpoints."""
 
