@@ -20,6 +20,7 @@ import {
   ChevronRight, Zap, Sparkles, ArrowDown, Loader2
 } from 'lucide-react';
 import { BirthdayWidget } from '@/components/BirthdayWidget';
+import { DepartmentLoad } from '@/components/DepartmentLoad';
 import { LeaderboardWidget } from '@/components/gamification/LeaderboardWidget';
 import {
   ResponsiveContainer,
@@ -449,7 +450,7 @@ export default function Dashboard() {
           {/* Header + фильтр */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <h1 className="text-lg md:text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Панель управления</h1>
+              <h1 className="text-lg md:text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Панель аналитики</h1>
               <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>Стратегическая сводка по финансам, тендерам и проектам</p>
             </div>
             <div className="flex items-center gap-3">
@@ -812,6 +813,11 @@ export default function Dashboard() {
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Загрузка команды */}
+          <div className="p-3 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+            <DepartmentLoad />
           </div>
 
           {/* Дни рождения */}
