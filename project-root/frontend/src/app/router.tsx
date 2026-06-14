@@ -42,6 +42,7 @@ const ContractsPage = lazy(() => import('@/pages/srm/Contracts'));
 const OrdersPage = lazy(() => import('@/pages/srm/Orders'));
 const InvoicesPage = lazy(() => import('@/pages/srm/Invoices'));
 const TeamPage = lazy(() => import('@/pages/TeamPage'));
+const AnalyticsPage = lazy(() => import('@/pages/AnalyticsPage'));
 
 function RouteFallback() {
   return <div className="flex items-center justify-center h-screen text-gray-400 text-sm">Загрузка…</div>;
@@ -99,6 +100,7 @@ export const router = createBrowserRouter([
           { path: '/profile/2fa', element: <SuspenseWrapper><TwoFactorSettingsPage /></SuspenseWrapper> },
           { path: '/notifications', element: <SuspenseWrapper><NotificationPage /></SuspenseWrapper> },
           { path: '/production', element: <SuspenseWrapper><ProductionControlPage /></SuspenseWrapper> },
+          { path: '/analytics', element: <SuspenseWrapper><AnalyticsPage /></SuspenseWrapper> },
           { path: '/references', element: <SuspenseWrapper><ReferencePage /></SuspenseWrapper> },
           { path: '/documents/new', element: <SuspenseWrapper><DocumentCreate /></SuspenseWrapper> },
           { path: '/documents/import', element: <SuspenseWrapper><ImportExcel /></SuspenseWrapper> },

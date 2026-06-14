@@ -24,6 +24,7 @@ import type { UserRole } from '@/features/auth/store/authStore';
 
 /* ── Role-based nav config ── */
 const ALL_NAV_ITEMS = [
+  { to: '/analytics', label: 'Аналитика', icon: <BarChart3 size={16} />, color: '#8B5CF6', bgActive: 'rgba(139, 92, 246, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
   { to: '/dashboard', label: 'Панель аналитики', icon: <BarChart3 size={16} />, color: '#3B82F6', bgActive: 'rgba(59, 130, 246, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'site_manager', 'engineer', 'norm_controller', 'admin'] },
   { to: '/portfolio', label: 'Портфель заказов', icon: <Briefcase size={16} />, color: '#7C3AED', bgActive: 'rgba(124, 58, 237, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
   { to: '/documents', label: 'Документация', icon: <FileText size={16} />, color: '#4F7A4C', bgActive: 'rgba(79, 122, 76, 0.15)', roles: ['department_head', 'gip', 'site_manager', 'engineer', 'norm_controller', 'manager', 'admin'] },
