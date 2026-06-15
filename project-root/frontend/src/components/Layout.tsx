@@ -8,7 +8,7 @@ import {
   User, LogOut, ChevronDown, Menu, X,
   BarChart3, FileText, Archive,
   Search, Shield, Briefcase, Factory,
-  Calendar, BookOpen, Settings, Users,
+  Calendar, BookOpen, Settings,
 } from 'lucide-react';
 
 import { motion, AnimatePresence } from 'framer-motion';
@@ -35,7 +35,6 @@ const ALL_NAV_ITEMS = [
   { to: '/references', label: 'Справочники', icon: <BookOpen size={16} />, color: '#14B8A6', bgActive: 'rgba(20, 184, 166, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
   { to: '/reports', label: 'Отчёты', icon: <FileText size={16} />, color: '#8B5CF6', bgActive: 'rgba(139, 92, 246, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
 
-  { to: '/team', label: 'Сотрудники', icon: <Users size={16} />, color: '#D4AF37', bgActive: 'rgba(212, 175, 55, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
 ];
 
 function getNavItems(role: UserRole | undefined) {
