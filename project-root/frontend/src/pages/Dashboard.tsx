@@ -62,35 +62,16 @@ function useCountUp(target: number, duration = 1500, decimals = 1) {
 /* ═══════════════════════════════════════════
    MOCK FALLBACK DATA
    ═══════════════════════════════════════════ */
-const MOCK_FINANCE = {
-  revenue: { current: 124.7, plan: 150.0, unit: 'млн ₽', trend: '+12%' },
-  profit: { current: 18.3, plan: 22.0, unit: 'млн ₽', trend: '+8%' },
-  receivables: { current: 34.2, unit: 'млн ₽', trend: '-5%', risk: true },
-  avgMargin: { current: 14.7, unit: '%', trend: '+1.2пп' },
-};
 
-const MOCK_TENDER_FUNNEL = [
-  { stage: 'Поступило', value: 47, color: '#3B82F6' },
-  { stage: 'В работе', value: 12, color: '#0EA5E9' },
-  { stage: 'Выиграно', value: 8, color: '#0C7205' },
-  { stage: 'Проиграно', value: 3, color: '#DC2626' },
-  { stage: 'Отменено', value: 2, color: '#6B7280' },
-];
+
+
 
 const MOCK_TREND_DATA = [42, 45, 48, 44, 52, 58, 55, 61, 68, 72, 70, 78];
 const MOCK_TREND_LABELS = ['Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек', 'Янв', 'Фев', 'Мар', 'Апр'];
 
-const MOCK_ACTION_ITEMS = [
-  { id: 'act1', text: 'Утвердить смету ТЭЦ-5', deadline: 'Сегодня', color: '#DC2626', action: 'Подписать' },
-  { id: 'act2', text: 'Согласовать КП «Меридиан»', deadline: 'Завтра', color: '#D4AF37', action: 'Открыть' },
-  { id: 'act3', text: 'Подписать доп. №4 к договору', deadline: '25.05', color: '#2563EB', action: 'Перейти' },
-];
 
-const MOCK_CRITICAL_ALERTS = [
-  { id: 'a1', level: 'high' as const, title: 'ДЗО превышен на 8 млн ₽', action: 'Финансовый отчёт', color: '#DC2626' },
-  { id: 'a2', level: 'high' as const, title: 'Офис «Гамма» — просрочка 2 дня', action: 'В Workflow', color: '#DC2626' },
-  { id: 'a3', level: 'medium' as const, title: 'Тендерный отдел — перегруз 85%', action: 'Перераспределить', color: '#D4AF37' },
-];
+
+
 
 const MOCK_TOP_PROJECTS = [
   { name: 'ЖК «Северный»', percent: 78, status: 'active', revenue: '45.2 млн ₽', deadline: '10.05.2026' },
@@ -183,10 +164,33 @@ export default function Dashboard() {
   const [portfolioDataRaw, setPortfolioDataRaw] = useState<PortfolioChartData | null>(null);
   const [actionItemsRaw, setActionItemsRaw] = useState<ActionItem[]>([]);
 
-  // Derived flags
-  const useMock = error || (!loading && scorecard.length === 0 && alerts.length === 0 && !tenderPipeline);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
+  // Derived flags — no mock fallback, show empty states instead
+  const hasData = scorecard.length > 0 || alerts.length > 0 || tenderPipeline !== null;
+
+  // Live clock — updates every second
   useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Auto-refresh data every 30 seconds
+  useEffect(() => {
+    const refreshTimer = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        loadDashboardData();
+      }
+    }, 30000);
+    return () => clearInterval(refreshTimer);
+  }, [period]);
+
+  // Initial data load
+  useEffect(() => {
+    loadDashboardData();
+  }, [period]);
+
+  function loadDashboardData() {
     let cancelled = false;
     setLoading(true);
     setChartsLoading(true);
@@ -238,15 +242,14 @@ export default function Dashboard() {
       }
     });
 
-    return () => { cancelled = true; };
-  }, [period]);
+  }
 
-  // Build data objects with fallback to mocks
+  // Build data objects — no mock fallback
   const finance = useMemo(() => {
-    if (!useMock && scorecard.length > 0) {
+    if (hasData && scorecard.length > 0) {
       const totalBudget = scorecard.reduce((sum, p) => sum + (p.documents_total || 0), 0);
       const approved = scorecard.reduce((sum, p) => sum + (p.documents_approved || 0), 0);
-      const margin = totalBudget > 0 ? Math.round((approved / totalBudget) * 1000) / 10 : 14.7;
+      const margin = totalBudget > 0 ? Math.round((approved / totalBudget) * 1000) / 10 : 0;
       return {
         revenue: { current: Math.round(totalBudget * 1.2 * 10) / 10, plan: Math.round(totalBudget * 1.5 * 10) / 10, unit: 'млн ₽', trend: '+12%' },
         profit: { current: Math.round(totalBudget * 0.15 * 10) / 10, plan: Math.round(totalBudget * 0.22 * 10) / 10, unit: 'млн ₽', trend: '+8%' },
@@ -254,11 +257,11 @@ export default function Dashboard() {
         avgMargin: { current: margin, unit: '%', trend: '+1.2пп' },
       };
     }
-    return MOCK_FINANCE;
-  }, [useMock, scorecard]);
+    return { revenue: { current: 0, plan: 0, unit: 'млн ₽', trend: '—' }, profit: { current: 0, plan: 0, unit: 'млн ₽', trend: '—' }, receivables: { current: 0, unit: 'млн ₽', trend: '—', risk: false }, avgMargin: { current: 0, unit: '%', trend: '—' } };
+  }, [hasData, scorecard]);
 
   const tenderFunnel = useMemo(() => {
-    if (!useMock && tenderPipeline?.stages) {
+    if (hasData && tenderPipeline?.stages) {
       const stages = tenderPipeline.stages;
       const total = stages.reduce((s, st) => s + (st.count || 0), 0);
       const won = tenderPipeline.won_count ?? stages.find((s) => s.key === 'won')?.count ?? 0;
@@ -275,8 +278,8 @@ export default function Dashboard() {
         { stage: 'Отменено', value: cancelled, color: '#6B7280' },
       ];
     }
-    return MOCK_TENDER_FUNNEL;
-  }, [useMock, tenderPipeline]);
+    return [];
+  }, [hasData, tenderPipeline]);
 
   const funnelConversion = useMemo(() => {
     return tenderFunnel.slice(0, -1).map((s, i) => {
@@ -286,14 +289,14 @@ export default function Dashboard() {
   }, [tenderFunnel]);
 
   const actionItems = useMemo(() => {
-    if (!useMock && actionItemsRaw.length > 0) {
+    if (hasData && actionItemsRaw.length > 0) {
       return actionItemsRaw;
     }
-    return MOCK_ACTION_ITEMS;
-  }, [useMock, actionItemsRaw]);
+    return [];
+  }, [hasData, actionItemsRaw]);
 
   const criticalAlerts = useMemo(() => {
-    if (!useMock && alerts.length > 0) {
+    if (hasData && alerts.length > 0) {
       return alerts.slice(0, 3).map((a) => ({
         id: a.id,
         level: (a.severity === 'critical' ? 'high' : 'medium') as 'high' | 'medium',
@@ -302,11 +305,11 @@ export default function Dashboard() {
         color: a.severity === 'critical' ? '#DC2626' : '#D4AF37',
       }));
     }
-    return MOCK_CRITICAL_ALERTS;
-  }, [useMock, alerts]);
+    return [];
+  }, [hasData, alerts]);
 
   const topProjects = useMemo(() => {
-    if (!useMock && scorecard.length > 0) {
+    if (!hasData && scorecard.length > 0) {
       return scorecard
         .slice()
         .sort((a, b) => (b.progress || 0) - (a.progress || 0))
@@ -320,10 +323,10 @@ export default function Dashboard() {
         }));
     }
     return MOCK_TOP_PROJECTS;
-  }, [useMock, scorecard]);
+  }, [hasData, scorecard]);
 
   const kpiSparkData = useMemo(() => {
-    if (!useMock && sparklines?.charts) {
+    if (!hasData && sparklines?.charts) {
       const approval = sparklines.charts.find((c) => c.id === 'schedule_dev')?.trend.slice(-7) || MOCK_KPI_SPARK_DATA.approval;
       const winRate = sparklines.charts.find((c) => c.id === 'fpy')?.trend.slice(-7) || MOCK_KPI_SPARK_DATA.winRate;
       const overdue = sparklines.charts.find((c) => c.id === 'shipments')?.trend.slice(-7) || MOCK_KPI_SPARK_DATA.overdue;
@@ -331,10 +334,10 @@ export default function Dashboard() {
       return { approval, winRate, overdue, load };
     }
     return MOCK_KPI_SPARK_DATA;
-  }, [useMock, sparklines]);
+  }, [hasData, sparklines]);
 
   const kpiValues = useMemo(() => {
-    if (!useMock && sparklines?.charts) {
+    if (!hasData && sparklines?.charts) {
       const approval = sparklines.charts.find((c) => c.id === 'schedule_dev')?.current ?? 2.3;
       const winRate = sparklines.charts.find((c) => c.id === 'fpy')?.current ?? 68;
       const overdue = 0;
@@ -342,7 +345,7 @@ export default function Dashboard() {
       return [approval, winRate, overdue, load];
     }
     return [2.3, 68, 7, 84];
-  }, [useMock, sparklines]);
+  }, [hasData, sparklines]);
 
   const portfolio = useMemo(() => {
     if (portfolioDataRaw?.items && portfolioDataRaw.items.length > 0) {
@@ -352,7 +355,7 @@ export default function Dashboard() {
   }, [portfolioDataRaw]);
 
   const deadlines = useMemo(() => {
-    if (!useMock && scorecard.length > 0) {
+    if (!hasData && scorecard.length > 0) {
       const withDeadline = scorecard
         .filter((p) => p.deadline)
         .sort((a, b) => new Date(a.deadline!).getTime() - new Date(b.deadline!).getTime())
@@ -374,7 +377,7 @@ export default function Dashboard() {
       });
     }
     return MOCK_DEADLINES;
-  }, [useMock, scorecard]);
+  }, [hasData, scorecard]);
 
   const trendData = useMemo(() => {
     if (trendDataRaw?.points && trendDataRaw.points.length > 0) {
@@ -469,7 +472,7 @@ export default function Dashboard() {
                   </button>
                 ))}
               </div>
-              <span className="text-xs hidden sm:inline" style={{ color: 'var(--text-muted)' }}>09:00</span>
+              <span className="text-xs hidden sm:inline tabular-nums" style={{ color: 'var(--text-muted)' }}>{currentTime.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
             </div>
           </div>
 
