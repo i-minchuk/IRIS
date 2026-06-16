@@ -153,10 +153,10 @@ export default function TeamPage() {
   const rest = entries.slice(3);
 
   return (
-    <div className="space-y-5 px-3 md:px-6 py-4 md:py-6">
+    <div className="space-y-5 px-3 md:px-6 py-4 md:pt-2 pb-6">
       {/* Header */}
       <div>
-        <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Сотрудники</h1>
+        <h1 className="sr-only sr-only" style={{ color: 'var(--text-primary)' }}>Сотрудники</h1>
         <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Рейтинг, загрузка и достижения команды</p>
       </div>
 
@@ -262,7 +262,7 @@ export default function TeamPage() {
                       </div>
                       <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Уровень {entry.level}</div>
                     </div>
-                    <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                    <div className="flex items-center gap-3 text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>
                       <span className="flex items-center gap-1"><Star size={12} style={{ color: '#D4AF37' }} /> {entry.xp.toLocaleString()}</span>
                       <span className="flex items-center gap-1"><Award size={12} style={{ color: '#8B5CF6' }} /> {entry.badges}</span>
                       <span className="flex items-center gap-1"><Flame size={12} style={{ color: '#EF4444' }} /> {entry.streak}</span>
@@ -435,7 +435,7 @@ export default function TeamPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-medium" style={{ color: isEarned ? 'var(--text-primary)' : 'var(--text-secondary)' }}>{badge.name}</span>
+                        <span className="text-base md:text-lg font-medium leading-relaxed mt-1 font-medium" style={{ color: isEarned ? 'var(--text-primary)' : 'var(--text-secondary)' }}>{badge.name}</span>
                         {isEarned && <Star size={10} style={{ color }} />}
                       </div>
                       <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{badge.description}</div>

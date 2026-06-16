@@ -47,7 +47,7 @@ export const MTOStatus: React.FC<Props> = ({ mtoItems, projects }) => {
           { label: 'Всего позиций', value: mtoItems.length, color: 'var(--text-secondary)' },
         ].map(kpi => (
           <div key={kpi.label} className="p-3 rounded-lg" style={{ backgroundColor: 'var(--iris-bg-app)', border: '1px solid var(--iris-border-subtle)' }}>
-            <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>{kpi.label}</div>
+            <div className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>{kpi.label}</div>
             <div className="text-xl font-bold" style={{ color: kpi.color }}>{kpi.value}</div>
           </div>
         ))}

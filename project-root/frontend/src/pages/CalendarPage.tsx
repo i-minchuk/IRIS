@@ -239,10 +239,10 @@ export default function CalendarPage() {
             <CalendarIcon size={18} style={{ color: '#EC4899' }} />
           </div>
           <div>
-            <h1 className="text-lg font-semibold" style={{ color: 'var(--iris-text-primary)' }}>
+            <h1 className="sr-only sr-only" style={{ color: 'var(--iris-text-primary)' }}>
               Календарь
             </h1>
-            <p className="text-xs" style={{ color: 'var(--iris-text-muted)' }}>
+            <p className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--iris-text-secondary)' }}>
               Дедлайны, задачи, тендеры и дни рождения
             </p>
           </div>
@@ -343,7 +343,7 @@ export default function CalendarPage() {
               >
                 {meta.icon}
               </span>
-              <span className="text-xs" style={{ color: 'var(--iris-text-muted)' }}>
+              <span className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--iris-text-secondary)' }}>
                 {meta.label}
               </span>
             </div>
@@ -470,7 +470,7 @@ export default function CalendarPage() {
                     }}
                   >
                     {dayEvents.length === 0 && (
-                      <span className="text-xs mt-1" style={{ color: 'var(--iris-text-muted)' }}>
+                      <span className="text-base md:text-lg font-medium leading-relaxed mt-1 mt-1" style={{ color: 'var(--iris-text-secondary)' }}>
                         Нет событий
                       </span>
                     )}

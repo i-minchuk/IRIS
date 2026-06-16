@@ -55,7 +55,7 @@ export const DocumentTracker: React.FC<Props> = ({ documents, projects }) => {
             <div key={project.id} className="rounded-lg p-4" style={{ backgroundColor: 'var(--iris-bg-surface)', border: '1px solid var(--iris-border-subtle)' }}>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{project.name}</span>
-                <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                <span className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>
                   Готово: {approved}/{total}
                 </span>
               </div>

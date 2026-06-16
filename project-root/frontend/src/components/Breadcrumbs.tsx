@@ -28,11 +28,12 @@ const ROUTE_LABELS: Record<string, string> = {
   'project-portfolio': 'Портфель проектов',
   'project-tasks': 'Задачи по проектам',
   references: 'Справочники',
+  'time-tracking': 'Трекер времени',
 };
 
 interface BreadcrumbItem {
   label: string;
-  to?: string;
+  to: string;
 }
 
 function formatLabel(value: string): string {
@@ -48,20 +49,18 @@ export default function Breadcrumbs() {
 
   if (pathnames.length === 0) return null;
 
-  const breadcrumbs: BreadcrumbItem[] = pathnames.map((value, index) => {
-    const last = index === pathnames.length - 1;
+  // Exclude the last segment (current page) to avoid duplication with nav
+  const breadcrumbs: BreadcrumbItem[] = pathnames.slice(0, -1).map((value, index) => {
     const to = `/${pathnames.slice(0, index + 1).join('/')}`;
     const label = ROUTE_LABELS[value] || formatLabel(value);
-
-    return {
-      label,
-      to: last ? undefined : to,
-    };
+    return { label, to };
   });
+
+  if (breadcrumbs.length === 0) return null;
 
   return (
     <nav
-      className="flex items-center gap-1 px-4 md:px-6 py-1.5 text-sm overflow-x-auto"
+      className="flex items-center gap-1 px-4 md:px-6 py-1 text-sm overflow-x-auto"
       style={{
         backgroundColor: 'var(--bg-surface-2)',
         borderBottom: '1px solid var(--border-default)',
@@ -77,31 +76,18 @@ export default function Breadcrumbs() {
         <Home size={14} />
       </Link>
 
-      {breadcrumbs.map((crumb, index) => {
-        const isLast = index === breadcrumbs.length - 1;
-
-        return (
-          <div key={index} className="flex items-center gap-1 flex-nowrap">
-            <ChevronRight size={14} style={{ color: 'var(--text-tertiary)' }} />
-            {crumb.to && !isLast ? (
-              <Link
-                to={crumb.to}
-                className="px-1.5 py-1 rounded hover:bg-[var(--bg-hover)] transition-colors whitespace-nowrap"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                {crumb.label}
-              </Link>
-            ) : (
-              <span
-                className="px-1.5 py-1 font-medium whitespace-nowrap truncate max-w-[200px]"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                {crumb.label}
-              </span>
-            )}
-          </div>
-        );
-      })}
+      {breadcrumbs.map((crumb, index) => (
+        <div key={index} className="flex items-center gap-1 flex-nowrap">
+          <ChevronRight size={14} style={{ color: 'var(--text-tertiary)' }} />
+          <Link
+            to={crumb.to}
+            className="px-1.5 py-1 rounded hover:bg-[var(--bg-hover)] transition-colors whitespace-nowrap"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            {crumb.label}
+          </Link>
+        </div>
+      ))}
     </nav>
   );
 }

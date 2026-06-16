@@ -29,10 +29,10 @@ export default function ContractsPage() {
   }, [contracts]);
 
   return (
-    <div className="space-y-6 px-3 md:px-6 py-4 md:py-6">
+    <div className="space-y-6 px-3 md:px-6 py-4 md:pt-2 pb-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Договоры</h1>
+          <h1 className="sr-only sr-only" style={{ color: 'var(--text-primary)' }}>Договоры</h1>
           <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Реестр договоров с поставщиками</p>
         </div>
       </div>
@@ -94,7 +94,7 @@ export default function ContractsPage() {
                   </Badge>
                 </div>
                 <h3 className="font-medium mb-1" style={{ color: 'var(--text-primary)' }}>{contract.title}</h3>
-                <div className="flex items-center gap-4 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                <div className="flex items-center gap-4 text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>
                   <span className="flex items-center gap-1">
                     <Building2 size={12} /> {contract.supplier_name}
                   </span>

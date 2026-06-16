@@ -70,7 +70,7 @@ export default function ReferencePage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <BookOpen size={22} style={{ color: TAB_COLOR }} />
-          <h1 className="text-2xl font-semibold" style={{ color: 'var(--text-primary)' }}>
+          <h1 className="sr-only sr-only" style={{ color: 'var(--text-primary)' }}>
             Справочники
           </h1>
         </div>
@@ -163,16 +163,16 @@ export default function ReferencePage() {
                       e.currentTarget.style.background = 'transparent';
                     }}
                   >
-                    <td className="px-4 py-3 font-mono text-xs" style={{ color: 'var(--text-secondary)' }}>
+                    <td className="px-4 py-3 font-mono text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>
                       {item.code || '—'}
                     </td>
                     <td className="px-4 py-3 font-medium" style={{ color: 'var(--text-primary)' }}>
                       {item.name}
                     </td>
-                    <td className="px-4 py-3 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                    <td className="px-4 py-3 text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>
                       {item.category || '—'}
                     </td>
-                    <td className="px-4 py-3 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                    <td className="px-4 py-3 text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>
                       {item.unit || '—'}
                     </td>
                   </tr>

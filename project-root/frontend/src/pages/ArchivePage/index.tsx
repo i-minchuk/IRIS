@@ -48,7 +48,7 @@ const ArchivePage: React.FC = () => {
     <div className="flex h-screen" style={{ background: 'var(--bg-surface)', color: 'var(--text-primary)' }}>
       {/* Левая колонка - навигация */}
       <div className="w-72 border-r p-4 overflow-y-auto" style={{ borderColor: 'var(--border-default)', background: 'var(--bg-surface-2)' }}>
-        <h1 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>📁 АРХИВ</h1>
+        <h1 className="sr-only sr-only" style={{ color: 'var(--text-primary)' }}>📁 АРХИВ</h1>
         <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>
           Хронология и материалы проекта
         </p>
@@ -128,8 +128,8 @@ const ArchivePage: React.FC = () => {
           
         {/* Статистика в сайдбаре */}
         {statistics && (
-          <div className="mt-6 pt-6 border-t" style={{ borderColor: 'var(--border-default)' }}>
-            <h3 className="text-xs font-bold mb-3 uppercase" style={{ color: 'var(--text-muted)' }}>Сводка</h3>
+          <div className="mt-6 pt-2 border-t" style={{ borderColor: 'var(--border-default)' }}>
+            <h3 className="text-base md:text-lg font-medium leading-relaxed mt-1 font-bold mb-3 uppercase" style={{ color: 'var(--text-secondary)' }}>Сводка</h3>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span style={{ color: 'var(--text-muted)' }}>Событий:</span>

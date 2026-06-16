@@ -36,7 +36,7 @@ export default function GamificationProfilePage() {
   const activeQuests = quests.filter(q => !q.claimed);
 
   return (
-    <div className="space-y-6 px-3 md:px-6 py-4 md:py-6">
+    <div className="space-y-6 px-3 md:px-6 py-4 md:pt-2 pb-6">
       {/* Header */}
       <div className="flex items-center gap-4">
         <div
@@ -50,7 +50,7 @@ export default function GamificationProfilePage() {
           {level}
         </div>
         <div>
-          <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+          <h1 className="sr-only sr-only" style={{ color: 'var(--text-primary)' }}>
             Достижения
           </h1>
           <div className="flex items-center gap-2 mt-1">
@@ -136,9 +136,9 @@ export default function GamificationProfilePage() {
                   {quest.type === 'daily' ? 'Ежедневный' : 'Еженедельный'}
                 </Badge>
               </div>
-              <p className="text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>{quest.description}</p>
+              <p className="text-base md:text-lg font-medium leading-relaxed mt-1 mb-2" style={{ color: 'var(--text-secondary)' }}>{quest.description}</p>
               <div className="space-y-1">
-                <div className="flex justify-between text-xs" style={{ color: 'var(--text-secondary)' }}>
+                <div className="flex justify-between text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>
                   <span>{quest.current} / {quest.target}</span>
                   <span>{Math.round((quest.current / quest.target) * 100)}%</span>
                 </div>
@@ -179,7 +179,7 @@ export default function GamificationProfilePage() {
                 </div>
                 <div className="flex-1">
                   <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{badge.name}</div>
-                  <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>{badge.description}</div>
+                  <div className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>{badge.description}</div>
                 </div>
                 <Badge variant={badge.rarity === 'legendary' ? 'leaders' : badge.rarity === 'epic' ? 'engineering' : 'info'}>
                   {badge.rarity === 'legendary' ? 'Легендарный' : badge.rarity === 'epic' ? 'Эпический' : badge.rarity === 'rare' ? 'Редкий' : 'Обычный'}

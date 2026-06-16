@@ -30,10 +30,10 @@ export default function InvoicesPage() {
   }, [invoices]);
 
   return (
-    <div className="space-y-6 px-3 md:px-6 py-4 md:py-6">
+    <div className="space-y-6 px-3 md:px-6 py-4 md:pt-2 pb-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Счета и платежи</h1>
+          <h1 className="sr-only sr-only" style={{ color: 'var(--text-primary)' }}>Счета и платежи</h1>
           <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Управление счетами к оплате</p>
         </div>
       </div>
@@ -91,7 +91,7 @@ export default function InvoicesPage() {
               <div key={inv.id} className="flex items-center justify-between p-2 rounded-lg" style={{ backgroundColor: 'color-mix(in srgb, var(--error) 5%, var(--bg-surface))' }}>
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{inv.number}</span>
-                  <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>{inv.supplier_name}</span>
+                  <span className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>{inv.supplier_name}</span>
                 </div>
                 <div className="text-sm font-medium" style={{ color: 'var(--error)' }}>
                   {inv.amount.toLocaleString('ru-RU')} {inv.currency}
@@ -115,7 +115,7 @@ export default function InvoicesPage() {
                       {STATUS_CONFIG[invoice.status].label}
                     </Badge>
                   </div>
-                  <div className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                  <div className="text-base md:text-lg font-medium leading-relaxed mt-1 mt-0.5" style={{ color: 'var(--text-secondary)' }}>
                     {invoice.supplier_name} • Выставлен: {invoice.issue_date} • Оплата до: {invoice.due_date}
                   </div>
                 </div>

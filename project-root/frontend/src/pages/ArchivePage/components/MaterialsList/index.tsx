@@ -59,7 +59,7 @@ export const MaterialsList: React.FC = () => {
                     </p>
                   )}
                   {material.quantity && material.unit && (
-                    <p className="text-xs text-[#64748b] mt-1">
+                    <p className="text-base md:text-lg font-medium leading-relaxed mt-1 text-[#64748b] mt-1">
                       Количество: {material.quantity} {material.unit}
                     </p>
                   )}

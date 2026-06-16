@@ -76,7 +76,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
   return (
     <div className="h-full overflow-y-auto p-6">
       <div className="max-w-4xl mx-auto bg-[#1e293b] rounded-lg border border-[#334155] p-6">
-        <h1 className="text-2xl font-bold text-[#e2e8f0] mb-6">
+        <h1 className="sr-only sr-only">
           {project ? 'Редактирование проекта' : 'Новый проект'}
         </h1>
 

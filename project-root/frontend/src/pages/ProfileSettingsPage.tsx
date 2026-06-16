@@ -213,7 +213,7 @@ export default function ProfileSettingsPage() {
   ];
 
   return (
-    <div className="max-w-5xl mx-auto py-6 px-4">
+    <div className="max-w-5xl mx-auto pt-2 pb-6 px-4">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <button
@@ -227,7 +227,7 @@ export default function ProfileSettingsPage() {
           <ArrowLeft size={18} />
         </button>
         <div>
-          <h1 className="text-2xl font-semibold" style={{ color: 'var(--text-primary)' }}>Настройки профиля</h1>
+          <h1 className="sr-only sr-only" style={{ color: 'var(--text-primary)' }}>Настройки профиля</h1>
           <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
             Управление аккаунтом, безопасностью и игровым прогрессом
           </p>
@@ -271,7 +271,7 @@ export default function ProfileSettingsPage() {
                 </div>
                 <div>
                   <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{profile.full_name || 'Пользователь'}</div>
-                  <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{levelInfo.title}</div>
+                  <div className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>{levelInfo.title}</div>
                 </div>
               </div>
               <div className="mt-2 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--bg-surface-2)' }}>
@@ -471,7 +471,7 @@ export default function ProfileSettingsPage() {
                 <div className="flex items-center justify-between p-3 rounded-lg border" style={{ borderColor: 'var(--border-default)' }}>
                   <div>
                     <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>TOTP (Google Authenticator)</div>
-                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>Защитите аккаунт дополнительным кодом</div>
+                    <div className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Защитите аккаунт дополнительным кодом</div>
                   </div>
                   <Button variant="outline" size="sm" onClick={() => navigate('/profile/2fa')}>Настроить</Button>
                 </div>
@@ -495,7 +495,7 @@ export default function ProfileSettingsPage() {
                           <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
                             {session.device} {session.current && <Badge variant="success" className="ml-2 text-[10px]">Текущая</Badge>}
                           </div>
-                          <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{session.ip} • {session.location}</div>
+                          <div className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>{session.ip} • {session.location}</div>
                         </div>
                       </div>
                       {!session.current && (
@@ -526,7 +526,7 @@ export default function ProfileSettingsPage() {
                       />
                       <div className="flex-1">
                         <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{ch.label}</div>
-                        <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{ch.description}</div>
+                        <div className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>{ch.description}</div>
                       </div>
                     </label>
                   ))}
@@ -553,7 +553,7 @@ export default function ProfileSettingsPage() {
                       <Badge variant="leaders" leftIcon={<Crown size={12} />}>{levelInfo.title}</Badge>
                     </div>
                     <div className="mt-2">
-                      <div className="flex justify-between text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>
+                      <div className="flex justify-between text-base md:text-lg font-medium leading-relaxed mt-1 mb-1" style={{ color: 'var(--text-secondary)' }}>
                         <span>Уровень {level}</span>
                         <span>{progress}%</span>
                       </div>
@@ -612,7 +612,7 @@ export default function ProfileSettingsPage() {
                 </h3>
                 <div className="flex items-center gap-4">
                   <div className="flex-1">
-                    <div className="flex justify-between text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>
+                    <div className="flex justify-between text-base md:text-lg font-medium leading-relaxed mt-1 mb-1" style={{ color: 'var(--text-secondary)' }}>
                       <span>Уровень {level}</span>
                       <span>{progress}%</span>
                     </div>
@@ -622,7 +622,7 @@ export default function ProfileSettingsPage() {
                   </div>
                   <div className="text-right">
                     <div className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{formatXP(xp)}</div>
-                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>XP набрано</div>
+                    <div className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>XP набрано</div>
                   </div>
                 </div>
               </Card>
@@ -639,9 +639,9 @@ export default function ProfileSettingsPage() {
                         <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{quest.title}</span>
                         <Badge variant={quest.type === 'daily' ? 'info' : 'warning'}>{quest.type === 'daily' ? 'Ежедневный' : 'Еженедельный'}</Badge>
                       </div>
-                      <p className="text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>{quest.description}</p>
+                      <p className="text-base md:text-lg font-medium leading-relaxed mt-1 mb-2" style={{ color: 'var(--text-secondary)' }}>{quest.description}</p>
                       <div className="space-y-1">
-                        <div className="flex justify-between text-xs" style={{ color: 'var(--text-secondary)' }}>
+                        <div className="flex justify-between text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>
                           <span>{quest.current} / {quest.target}</span>
                           <span>{Math.round((quest.current / quest.target) * 100)}%</span>
                         </div>
@@ -668,7 +668,7 @@ export default function ProfileSettingsPage() {
                 {/* Earned badges */}
                 {earnedBadges.length > 0 && (
                   <div className="space-y-2">
-                    <div className="text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Полученные ({earnedBadges.length})</div>
+                    <div className="text-base md:text-lg font-medium leading-relaxed mt-1 font-medium uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Полученные ({earnedBadges.length})</div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                       {earnedBadges.map((badge) => (
                         <div key={badge.id} className="flex items-center gap-3 p-2 rounded-lg border" style={{ backgroundColor: 'var(--bg-surface-2)', borderColor: 'var(--border-default)' }}>
@@ -677,7 +677,7 @@ export default function ProfileSettingsPage() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>{badge.name}</div>
-                            <div className="text-xs truncate" style={{ color: 'var(--text-secondary)' }}>{badge.description}</div>
+                            <div className="text-base md:text-lg font-medium leading-relaxed mt-1 truncate" style={{ color: 'var(--text-secondary)' }}>{badge.description}</div>
                           </div>
                           <Badge variant={badge.rarity === 'legendary' ? 'leaders' : badge.rarity === 'epic' ? 'engineering' : 'info'} className="text-[10px]">
                             {badge.rarity === 'legendary' ? 'Легендарный' : badge.rarity === 'epic' ? 'Эпический' : badge.rarity === 'rare' ? 'Редкий' : 'Обычный'}
@@ -691,7 +691,7 @@ export default function ProfileSettingsPage() {
                 {/* Locked badges */}
                 {badges.filter((b) => !b.earnedAt).length > 0 && (
                   <div className="space-y-2">
-                    <div className="text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Заблокированные</div>
+                    <div className="text-base md:text-lg font-medium leading-relaxed mt-1 font-medium uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Заблокированные</div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                       {badges.filter((b) => !b.earnedAt).map((badge) => (
                         <div key={badge.id} className="flex items-center gap-3 p-2 rounded-lg opacity-60" style={{ backgroundColor: 'var(--bg-surface-2)' }}>
@@ -700,7 +700,7 @@ export default function ProfileSettingsPage() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="text-sm font-medium truncate" style={{ color: 'var(--text-secondary)' }}>{badge.name}</div>
-                            <div className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{badge.description}</div>
+                            <div className="text-base md:text-lg font-medium leading-relaxed mt-1 truncate" style={{ color: 'var(--text-secondary)' }}>{badge.description}</div>
                           </div>
                           <Badge variant="neutral" className="text-[10px]">Заблокирован</Badge>
                         </div>
@@ -733,7 +733,7 @@ export default function ProfileSettingsPage() {
                     <BarChart3 size={18} style={{ color: 'var(--brand-iris)' }} />
                     <div>
                       <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Лидерборд</div>
-                      <div className="text-xs" style={{ color: 'var(--text-muted)' }}>Сравните свой прогресс с коллегами</div>
+                      <div className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Сравните свой прогресс с коллегами</div>
                     </div>
                   </div>
                   <ChevronRight size={16} style={{ color: 'var(--text-tertiary)' }} />

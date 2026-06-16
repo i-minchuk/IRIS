@@ -101,7 +101,7 @@ export const PackagePage: React.FC = () => {
     <div className="h-screen bg-[#0f172a] text-[#e2e8f0] flex flex-col">
       {/* Шапка */}
       <div className="flex items-center justify-between px-4 py-2 bg-[#1e293b] border-b border-[#334155]">
-        <h1 className="text-lg font-bold">📦 ПАКЕТ ДОКУМЕНТАЦИИ</h1>
+        <h1 className="sr-only sr-only">📦 ПАКЕТ ДОКУМЕНТАЦИИ</h1>
         <span className="text-xs text-[#94a3b8]">Все проекты в работе</span>
       </div>
 

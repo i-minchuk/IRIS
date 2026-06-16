@@ -59,7 +59,7 @@ export default function PortfolioPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto py-6 px-4">
+    <div className="max-w-7xl mx-auto pt-2 pb-6 px-4">
       <PageHeader
         title="Портфель заказов"
         subtitle="Тендеры, закупки, проекты и документация"

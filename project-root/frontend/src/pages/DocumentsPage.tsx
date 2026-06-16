@@ -400,7 +400,7 @@ function RegistryView() {
               /* Document list for selected project */
               <div className="p-3 space-y-1">
                 {docsForProject.length === 0 && (
-                  <div className="text-center py-8 text-xs" style={{ color: 'var(--text-muted)' }}>
+                  <div className="text-center py-8 text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>
                     Документы не найдены.
                   </div>
                 )}
@@ -467,7 +467,7 @@ function RegistryView() {
                   <button className="flex-1 text-xs py-1.5 rounded-md text-white text-center flex items-center justify-center gap-1.5" style={{ background: TAB_COLOR }}>
                     <Eye size={12} /> Открыть
                   </button>
-                  <button className="flex-1 text-xs py-1.5 rounded-md border text-center flex items-center justify-center gap-1.5 transition-colors" style={{ color: 'var(--text-secondary)', borderColor: 'var(--border-default)', background: 'var(--bg-surface-2)' }}>
+                  <button className="flex-1 text-base md:text-lg font-medium leading-relaxed mt-1 py-1.5 rounded-md border text-center flex items-center justify-center gap-1.5 transition-colors" style={{ color: 'var(--text-secondary)', borderColor: 'var(--border-default)', background: 'var(--bg-surface-2)' }}>
                     <Download size={12} /> Скачать
                   </button>
                 </div>
@@ -494,12 +494,12 @@ function RegistryView() {
             {!selectedDoc ? (
               <div className="flex flex-col items-center justify-center h-full text-center p-4">
                 <MessageSquare size={24} className="mb-2" style={{ color: 'var(--text-muted)', opacity: 0.3 }} />
-                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Выберите документ, чтобы увидеть замечания</p>
+                <p className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Выберите документ, чтобы увидеть замечания</p>
               </div>
             ) : selectedDoc.remarks.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center p-4">
                 <CheckCircle2 size={24} className="mb-2" style={{ color: '#4F7A4C', opacity: 0.5 }} />
-                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Замечаний нет</p>
+                <p className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Замечаний нет</p>
               </div>
             ) : (
               <div className="p-3 space-y-3">
@@ -523,7 +523,7 @@ function RegistryView() {
                           )}
                         </div>
                       </div>
-                      <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{remark.text}</p>
+                      <p className="text-base md:text-lg font-medium leading-relaxed mt-1 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{remark.text}</p>
                       <div className="flex items-center justify-between pt-1">
                         {actionCfg && (
                           <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border" style={{ color: actionCfg.color, background: actionCfg.bg, borderColor: actionCfg.border }}>
@@ -932,7 +932,7 @@ function WorkflowView() {
                 </button>
               ))}
             </div>
-            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Найдено: {filteredTasks.length}</span>
+            <span className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Найдено: {filteredTasks.length}</span>
           </div>
 
           <div className="space-y-2">
@@ -952,7 +952,7 @@ function WorkflowView() {
                         <h3 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{task.title}</h3>
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-[10px] px-1.5 py-0.5 rounded border font-medium" style={{ color: st.color, borderColor: st.border, background: st.bg }}>{getTaskStatusLabel(task.status)}</span>
-                          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Срок: {task.due_date ? new Date(task.due_date).toLocaleDateString('ru-RU') : '—'}</span>
+                          <span className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Срок: {task.due_date ? new Date(task.due_date).toLocaleDateString('ru-RU') : '—'}</span>
                         </div>
                       </div>
                     </div>
@@ -994,7 +994,7 @@ function WorkflowView() {
                 </button>
               ))}
             </div>
-            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Найдено: {filteredRemarks.length}</span>
+            <span className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Найдено: {filteredRemarks.length}</span>
           </div>
 
           <div className="space-y-2">
@@ -1008,7 +1008,7 @@ function WorkflowView() {
                 <div key={remark.id} className="rounded-xl border p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-default)' }}>
                   <div>
                     <h3 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{remark.title}</h3>
-                    <div className="flex items-center gap-2 mt-1 text-xs" style={{ color: 'var(--text-muted)' }}>
+                    <div className="flex items-center gap-2 mt-1 text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>
                       <span>{remark.project_name}</span>
                       <span>·</span>
                       <span>{remark.document_name}</span>
@@ -1176,7 +1176,7 @@ function EmployeesView() {
         ].map((item, i) => (
           <div key={i} className="p-3 rounded-lg flex flex-col gap-1" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-default)' }}>
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>{item.label}</span>
+              <span className="text-base md:text-lg font-medium leading-relaxed mt-1 font-medium" style={{ color: 'var(--text-secondary)' }}>{item.label}</span>
               <span className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: item.color + '15', color: item.color }}>
                 {item.icon}
               </span>
@@ -1192,12 +1192,12 @@ function EmployeesView() {
         {/* LEFT: Employee workload cards */}
         <div className="space-y-3">
           {loading && (
-            <div className="text-xs p-4 rounded-lg text-center" style={{ color: 'var(--text-muted)', background: 'var(--bg-surface-2)' }}>
+            <div className="text-base md:text-lg font-medium leading-relaxed mt-1 p-4 rounded-lg text-center" style={{ color: 'var(--text-secondary)', background: 'var(--bg-surface-2)' }}>
               Загрузка данных сотрудников…
             </div>
           )}
           {!loading && workloads.length === 0 && (
-            <div className="text-xs p-4 rounded-lg text-center" style={{ color: 'var(--text-muted)', background: 'var(--bg-surface-2)' }}>
+            <div className="text-base md:text-lg font-medium leading-relaxed mt-1 p-4 rounded-lg text-center" style={{ color: 'var(--text-secondary)', background: 'var(--bg-surface-2)' }}>
               Нет данных о сотрудниках.
             </div>
           )}
@@ -1226,7 +1226,7 @@ function EmployeesView() {
                       <span className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{emp.name}</span>
                       <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ background: TAB_COLOR + '15', color: TAB_COLOR }}>Lv.{emp.level}</span>
                     </div>
-                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{emp.role}</div>
+                    <div className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>{emp.role}</div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     {/* Load bar */}
@@ -1246,7 +1246,7 @@ function EmployeesView() {
                         <Timer size={10} /> Активность
                       </div>
                       {timeLoading ? (
-                        <div className="text-xs p-2 rounded-lg text-center" style={{ color: 'var(--text-muted)', background: 'var(--bg-surface-2)' }}>Загрузка...</div>
+                        <div className="text-base md:text-lg font-medium leading-relaxed mt-1 p-2 rounded-lg text-center" style={{ color: 'var(--text-secondary)', background: 'var(--bg-surface-2)' }}>Загрузка...</div>
                       ) : (
                         (() => {
                           const sessions = timeSessions[emp.id] || [];
@@ -1296,7 +1296,7 @@ function EmployeesView() {
                           </span>
                         </div>
                       ) : (
-                        <div className="text-xs p-2 rounded-lg text-center" style={{ color: 'var(--text-muted)', background: 'var(--bg-surface-2)' }}>Свободен</div>
+                        <div className="text-base md:text-lg font-medium leading-relaxed mt-1 p-2 rounded-lg text-center" style={{ color: 'var(--text-secondary)', background: 'var(--bg-surface-2)' }}>Свободен</div>
                       )}
                     </div>
 
@@ -1319,7 +1319,7 @@ function EmployeesView() {
                           </div>
                         ))}
                         {emp.queue.length === 0 && (
-                          <div className="text-xs text-center py-1" style={{ color: 'var(--text-muted)' }}>Очередь пуста</div>
+                          <div className="text-base md:text-lg font-medium leading-relaxed mt-1 text-center py-1" style={{ color: 'var(--text-secondary)' }}>Очередь пуста</div>
                         )}
                       </div>
                     </div>
@@ -1379,7 +1379,7 @@ function EmployeesView() {
             <div className="space-y-2">
               {sortedByEfficiency.map((emp, i) => (
                 <div key={emp.id} className="flex items-center gap-2 p-2 rounded-lg transition-colors" style={{ background: i === 0 ? TAB_COLOR + '08' : 'transparent' }}>
-                  <div className="w-5 text-center text-xs font-bold" style={{ color: i === 0 ? TAB_COLOR : i === 1 ? '#94A3B8' : i === 2 ? '#6B5B95' : 'var(--text-muted)' }}>
+                  <div className="w-5 text-center text-base md:text-lg font-medium leading-relaxed mt-1 font-bold" style={{ color: i === 0 ? TAB_COLOR : i === 1 ? '#94A3B8' : i === 2 ? '#6B5B95' : 'var(--text-secondary)' }}>
                     {i + 1}
                   </div>
                   <div className="w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0" style={{ background: emp.color + '20', color: emp.color }}>
@@ -1491,7 +1491,7 @@ export default function DocumentsPage() {
   const [activeTab, setActiveTab] = useTabState<TabKey>('iris_documents_tab', 'registry');
 
   return (
-    <div className="space-y-5 px-3 md:px-6 py-4 md:py-6">
+    <div className="space-y-5 px-3 md:px-6 py-4 md:pt-2 pb-6">
       <PageHeader
         title="Документы и согласования"
         subtitle="Управление проектной документацией, ревизиями и задачами согласования"

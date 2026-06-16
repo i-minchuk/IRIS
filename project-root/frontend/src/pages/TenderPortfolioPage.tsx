@@ -55,10 +55,10 @@ export default function TenderPortfolioPage() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
         <div>
-          <h1 className="text-lg sm:text-xl lg:text-2xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+          <h1 className="sr-only sr-only" style={{ color: 'var(--text-primary)' }}>
             Портфель заказов
           </h1>
-          <p className="text-xs sm:text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
+          <p className="text-base md:text-lg font-medium leading-relaxed mt-1 sm:text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
             Управление воронкой заказов, аукционами и подготовкой заявок
           </p>
         </div>

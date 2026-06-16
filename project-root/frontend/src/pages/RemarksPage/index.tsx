@@ -69,13 +69,13 @@ export const RemarksPage: React.FC = () => {
   };
 
   return (
-    <div className="h-screen bg-[#0f172a] text-[#e2e8f0] flex flex-col px-3 md:px-6 py-4 md:py-6">
+    <div className="h-screen bg-[#0f172a] text-[#e2e8f0] flex flex-col px-3 md:px-6 py-4 md:pt-2 pb-6">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-[#1e293b] border-b border-[#334155]">
         <div className="flex items-center gap-3">
           <MessageSquareWarning className="w-6 h-6 text-[#FF4D6D]" />
           <div>
-            <h1 className="text-lg font-bold">Замечания</h1>
+            <h1 className="sr-only sr-only">Замечания</h1>
             <p className="text-xs text-[#64748b]">
               Централизованный учёт и контроль замечаний
             </p>

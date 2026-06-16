@@ -159,13 +159,13 @@ export default function TendersPage() {
   ];
 
   return (
-    <div className="w-full overflow-x-hidden px-3 md:px-6 py-4 md:py-6" style={{ background: 'var(--layout-bg)', color: 'var(--text-primary)' }}>
+    <div className="w-full overflow-x-hidden px-3 md:px-6 py-4 md:pt-2 pb-6" style={{ background: 'var(--layout-bg)', color: 'var(--text-primary)' }}>
       <div className="space-y-4">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-lg md:text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Тендеры</h1>
-            <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>Управление тендерами и предложениями</p>
+            <h1 className="sr-only sr-only" style={{ color: 'var(--text-primary)' }}>Тендеры</h1>
+            <p className="text-base md:text-lg font-medium leading-relaxed mt-1 mt-0.5" style={{ color: 'var(--text-secondary)' }}>Управление тендерами и предложениями</p>
           </div>
           <button
             onClick={() => setShowAddModal(true)}
@@ -183,7 +183,7 @@ export default function TendersPage() {
           {kpi.map((item, i) => (
             <div key={i} className="p-3 rounded-lg flex flex-col gap-1" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>{item.label}</span>
+                <span className="text-base md:text-lg font-medium leading-relaxed mt-1 font-medium" style={{ color: 'var(--text-secondary)' }}>{item.label}</span>
                 <span className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: item.color + '15', color: item.color }}>
                   {item.icon}
                 </span>
@@ -225,7 +225,7 @@ export default function TendersPage() {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={8} className="px-3 py-8 text-center text-xs" style={{ color: 'var(--text-muted)' }}>Загрузка...</td></tr>
+                  <tr><td colSpan={8} className="px-3 py-8 text-center text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Загрузка...</td></tr>
                 ) : (
                   <>
                     {filtered.map((t) => {
@@ -272,7 +272,7 @@ export default function TendersPage() {
                       );
                     })}
                     {filtered.length === 0 && (
-                      <tr><td colSpan={8} className="px-3 py-8 text-center text-xs" style={{ color: 'var(--text-muted)' }}>Ничего не найдено</td></tr>
+                      <tr><td colSpan={8} className="px-3 py-8 text-center text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Ничего не найдено</td></tr>
                     )}
                   </>
                 )}

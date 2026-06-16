@@ -180,7 +180,7 @@ export default function Achievements() {
     <div className="max-w-6xl space-y-8">
       {/* Заголовок и статус */}
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+        <h1 className="sr-only sr-only">
           Достижения
         </h1>
         <p className="text-gray-600 dark:text-gray-400">

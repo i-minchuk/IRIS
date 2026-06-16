@@ -94,7 +94,7 @@ export default function TwoFactorSettingsPage() {
         >
           <ArrowLeft size={18} />
         </button>
-        <h1 className="text-2xl font-semibold" style={{ color: 'var(--text-primary)' }}>
+        <h1 className="sr-only sr-only" style={{ color: 'var(--text-primary)' }}>
           Двухфакторная аутентификация
         </h1>
       </div>
@@ -172,7 +172,7 @@ export default function TwoFactorSettingsPage() {
                 value={verifyToken}
                 onChange={(e) => setVerifyToken(e.target.value.replace(/\D/g, ''))}
               />
-              <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+              <p className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>
                 Введите 6-значный код из приложения-аутентификатора для подтверждения.
               </p>
             </div>

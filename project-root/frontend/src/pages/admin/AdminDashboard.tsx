@@ -74,9 +74,9 @@ export default function AdminDashboard() {
   const maxIncident = incidentSeverityData.reduce((m, d) => Math.max(m, d.value), 0) || 1;
 
   return (
-    <div className="space-y-6 px-3 md:px-6 py-4 md:py-6">
+    <div className="space-y-6 px-3 md:px-6 py-4 md:pt-2 pb-6">
       <div>
-        <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+        <h1 className="sr-only sr-only" style={{ color: 'var(--text-primary)' }}>
           Панель администратора
         </h1>
         <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
@@ -108,7 +108,7 @@ export default function AdminDashboard() {
             ) : (
               ticketPriorityData.map(d => (
                 <div key={d.name} className="flex items-center gap-3">
-                  <span className="text-xs w-20 flex-shrink-0" style={{ color: 'var(--text-secondary)' }}>{d.name}</span>
+                  <span className="text-base md:text-lg font-medium leading-relaxed mt-1 w-20 flex-shrink-0" style={{ color: 'var(--text-secondary)' }}>{d.name}</span>
                   <div className="flex-1 h-6 rounded-md overflow-hidden" style={{ backgroundColor: 'var(--bg-surface-2)' }}>
                     <div
                       className="h-full rounded-md transition-all duration-500 flex items-center justify-end pr-2"
@@ -139,7 +139,7 @@ export default function AdminDashboard() {
             ) : (
               incidentSeverityData.map(d => (
                 <div key={d.name} className="flex items-center gap-3">
-                  <span className="text-xs w-10 flex-shrink-0" style={{ color: 'var(--text-secondary)' }}>{d.name}</span>
+                  <span className="text-base md:text-lg font-medium leading-relaxed mt-1 w-10 flex-shrink-0" style={{ color: 'var(--text-secondary)' }}>{d.name}</span>
                   <div className="flex-1 h-6 rounded-md overflow-hidden" style={{ backgroundColor: 'var(--bg-surface-2)' }}>
                     <div
                       className="h-full rounded-md transition-all duration-500 flex items-center justify-end pr-2"

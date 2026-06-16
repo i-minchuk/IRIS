@@ -24,7 +24,7 @@ export default function TimeTrackingPage() {
           <Clock size={24} />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-[var(--iris-text-primary)]">Трекер времени</h1>
+          <h1 className="sr-only sr-only">Трекер времени</h1>
           <p className="text-sm text-[var(--iris-text-muted)]">
             Учёт рабочего времени и аналитика продуктивности
           </p>
@@ -86,19 +86,19 @@ export default function TimeTrackingPage() {
               </h2>
               <ul className="space-y-2 text-sm text-[var(--iris-text-secondary)]">
                 <li className="flex items-start gap-2">
-                  <span className="w-5 h-5 rounded-full bg-[var(--iris-accent)]/10 text-[var(--iris-accent)] flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">1</span>
+                  <span className="w-5 h-5 rounded-full bg-[var(--iris-accent)]/10 text-[var(--iris-accent)] flex items-center justify-center text-base md:text-lg font-medium leading-relaxed mt-1 font-bold shrink-0 mt-0.5">1</span>
                   <span>Запустите таймер перед началом работы над документом или проектом</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="w-5 h-5 rounded-full bg-[var(--iris-accent)]/10 text-[var(--iris-accent)] flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">2</span>
+                  <span className="w-5 h-5 rounded-full bg-[var(--iris-accent)]/10 text-[var(--iris-accent)] flex items-center justify-center text-base md:text-lg font-medium leading-relaxed mt-1 font-bold shrink-0 mt-0.5">2</span>
                   <span>Отмечайте правки кнопкой «+1 правка» для расчёта эффективности</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="w-5 h-5 rounded-full bg-[var(--iris-accent)]/10 text-[var(--iris-accent)] flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">3</span>
+                  <span className="w-5 h-5 rounded-full bg-[var(--iris-accent)]/10 text-[var(--iris-accent)] flex items-center justify-center text-base md:text-lg font-medium leading-relaxed mt-1 font-bold shrink-0 mt-0.5">3</span>
                   <span>Остановите таймер по завершении — данные сохранятся автоматически</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="w-5 h-5 rounded-full bg-[var(--iris-accent)]/10 text-[var(--iris-accent)] flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">4</span>
+                  <span className="w-5 h-5 rounded-full bg-[var(--iris-accent)]/10 text-[var(--iris-accent)] flex items-center justify-center text-base md:text-lg font-medium leading-relaxed mt-1 font-bold shrink-0 mt-0.5">4</span>
                   <span>Смотрите аналитику продуктивности во вкладке «Аналитика»</span>
                 </li>
               </ul>

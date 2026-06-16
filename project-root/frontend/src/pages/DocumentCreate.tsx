@@ -138,7 +138,7 @@ export default function DocumentCreate() {
         >
           <ArrowLeft size={18} style={{ color: 'var(--text-secondary)' }} />
         </button>
-        <h1 className="text-2xl font-semibold" style={{ color: 'var(--text-primary)' }}>
+        <h1 className="sr-only sr-only" style={{ color: 'var(--text-primary)' }}>
           Создать документ
         </h1>
       </div>

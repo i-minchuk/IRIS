@@ -1,35 +1,22 @@
 import type { ReactNode } from 'react';
 
 interface PageHeaderProps {
-  title: string;
+  title?: string;
   subtitle?: string;
   actions?: ReactNode;
 }
 
 /**
- * Единый заголовок страницы с подзаголовком и слотом для кнопок.
- *
- * @example
- * <PageHeader
- *   title="Документы и согласования"
- *   subtitle="Управление проектной документацией"
- *   actions={
- *     <>
- *       <button>Создать</button>
- *       <button>Импорт</button>
- *     </>
- *   }
- * />
+ * Единый заголовок страницы. Title скрыт визуально (дублирует пункт меню),
+ * subtitle отображается крупным шрифтом как основной описательный текст.
  */
 export function PageHeader({ title, subtitle, actions }: PageHeaderProps) {
   return (
-    <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div className="mb-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
       <div>
-        <h1 className="text-xl md:text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-          {title}
-        </h1>
+        {title && <h1 className="sr-only">{title}</h1>}
         {subtitle && (
-          <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+          <p className="text-base md:text-lg font-medium leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
             {subtitle}
           </p>
         )}

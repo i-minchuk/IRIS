@@ -156,13 +156,13 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, onClose,
         {/* Время */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <div className="text-xs" style={{ color: 'var(--text-muted)' }}>Плановое</div>
+            <div className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Плановое</div>
             <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
               {task.estimatedHours ? `${task.estimatedHours} ч.` : '—'}
             </div>
           </div>
           <div>
-            <div className="text-xs" style={{ color: 'var(--text-muted)' }}>Фактическое</div>
+            <div className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Фактическое</div>
             <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
               {task.actualHours ? `${task.actualHours} ч.` : '—'}
             </div>
@@ -187,10 +187,10 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, onClose,
 
         {/* Даты создания и обновления */}
         <div className="pt-4 border-t space-y-2" style={{ borderColor: 'var(--iris-border-subtle)' }}>
-          <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+          <div className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>
             Создана: {formatDate(task.createdAt)}
           </div>
-          <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+          <div className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>
             Обновлено: {formatDate(task.updatedAt)}
           </div>
         </div>

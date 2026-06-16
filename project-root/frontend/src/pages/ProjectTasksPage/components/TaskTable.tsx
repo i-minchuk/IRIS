@@ -94,7 +94,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
             }}
           />
         </div>
-        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{task.percentComplete}%</span>
+        <span className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>{task.percentComplete}%</span>
       </div>
     );
   };
@@ -106,7 +106,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
     const total = base + (isActive ? elapsed : 0);
     if (total <= 0 && !isActive) return null;
     return (
-      <span className="text-xs font-mono" style={{ color: isActive ? 'var(--iris-accent-green)' : 'var(--text-muted)' }}>
+      <span className="text-base md:text-lg font-medium leading-relaxed mt-1 font-mono" style={{ color: isActive ? 'var(--iris-accent-green)' : 'var(--text-secondary)' }}>
         {isActive && <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-500 mr-1 animate-pulse" />}
         {formatDuration(total)}
       </span>
@@ -122,17 +122,17 @@ export const TaskTable: React.FC<TaskTableProps> = ({
             style={{ background: 'var(--iris-bg-surface)' }}
           >
             <tr style={{ borderBottom: '2px solid var(--iris-border-subtle)' }}>
-              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Проект</th>
-              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Связь</th>
-              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Задача</th>
-              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Тип</th>
-              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Статус</th>
-              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Приоритет</th>
-              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Исполнитель</th>
-              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Дедлайн</th>
-              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Прогресс</th>
-              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Время</th>
-              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Действия</th>
+              <th className="px-4 py-3 text-base md:text-lg font-medium leading-relaxed mt-1 font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Проект</th>
+              <th className="px-4 py-3 text-base md:text-lg font-medium leading-relaxed mt-1 font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Связь</th>
+              <th className="px-4 py-3 text-base md:text-lg font-medium leading-relaxed mt-1 font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Задача</th>
+              <th className="px-4 py-3 text-base md:text-lg font-medium leading-relaxed mt-1 font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Тип</th>
+              <th className="px-4 py-3 text-base md:text-lg font-medium leading-relaxed mt-1 font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Статус</th>
+              <th className="px-4 py-3 text-base md:text-lg font-medium leading-relaxed mt-1 font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Приоритет</th>
+              <th className="px-4 py-3 text-base md:text-lg font-medium leading-relaxed mt-1 font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Исполнитель</th>
+              <th className="px-4 py-3 text-base md:text-lg font-medium leading-relaxed mt-1 font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Дедлайн</th>
+              <th className="px-4 py-3 text-base md:text-lg font-medium leading-relaxed mt-1 font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Прогресс</th>
+              <th className="px-4 py-3 text-base md:text-lg font-medium leading-relaxed mt-1 font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Время</th>
+              <th className="px-4 py-3 text-base md:text-lg font-medium leading-relaxed mt-1 font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Действия</th>
             </tr>
           </thead>
           <tbody>
@@ -153,7 +153,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                     <div className="flex flex-col">
                       <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{task.projectCode}</span>
                       {task.projectName && (
-                        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{task.projectName}</span>
+                        <span className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>{task.projectName}</span>
                       )}
                     </div>
                   )}
@@ -175,12 +175,12 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                   <div className="max-w-xs">
                     <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{task.title}</div>
                     {task.description && (
-                      <div className="text-xs mt-0.5 truncate" style={{ color: 'var(--text-muted)' }}>{task.description}</div>
+                      <div className="text-base md:text-lg font-medium leading-relaxed mt-1 mt-0.5 truncate" style={{ color: 'var(--text-secondary)' }}>{task.description}</div>
                     )}
                   </div>
                 </td>
                 <td className="px-4 py-3">
-                  <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                  <span className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>
                     {task.type === 'production' && '🏭'}
                     {task.type === 'document' && '📄'}
                     {task.type === 'approval' && '✅'}

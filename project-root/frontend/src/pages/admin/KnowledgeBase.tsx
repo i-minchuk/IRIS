@@ -20,9 +20,9 @@ export default function KnowledgeBasePage() {
   });
 
   return (
-    <div className="space-y-6 px-3 md:px-6 py-4 md:py-6">
+    <div className="space-y-6 px-3 md:px-6 py-4 md:pt-2 pb-6">
       <div>
-        <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+        <h1 className="sr-only sr-only" style={{ color: 'var(--text-primary)' }}>
           База знаний
         </h1>
         <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>

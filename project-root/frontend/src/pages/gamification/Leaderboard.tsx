@@ -23,9 +23,9 @@ export default function LeaderboardPage() {
   };
 
   return (
-    <div className="space-y-6 px-3 md:px-6 py-4 md:py-6">
+    <div className="space-y-6 px-3 md:px-6 py-4 md:pt-2 pb-6">
       <div>
-        <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Лидерборд</h1>
+        <h1 className="sr-only sr-only" style={{ color: 'var(--text-primary)' }}>Лидерборд</h1>
         <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Топ игроков по XP</p>
       </div>
 
@@ -84,7 +84,7 @@ export default function LeaderboardPage() {
 
               <div className="flex-1">
                 <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{entry.userName}</div>
-                <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>Уровень {entry.level}</div>
+                <div className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Уровень {entry.level}</div>
               </div>
 
               <div className="flex items-center gap-4 text-xs">

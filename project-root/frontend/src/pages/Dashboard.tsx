@@ -429,7 +429,7 @@ export default function Dashboard() {
   const chartGridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
 
   return (
-    <div className="w-full overflow-x-hidden px-3 md:px-6 py-4 md:py-6" style={{ background: 'var(--layout-bg)', color: 'var(--text-primary)' }}>
+    <div className="w-full overflow-x-hidden px-3 md:px-6 py-4 md:pt-2 pb-6" style={{ background: 'var(--layout-bg)', color: 'var(--text-primary)' }}>
       {/* Loading overlay */}
       {loading && (
         <div className="flex items-center justify-center gap-2 py-8">
@@ -453,8 +453,8 @@ export default function Dashboard() {
           {/* Header + фильтр */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <h1 className="text-lg md:text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Панель аналитики</h1>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>Стратегическая сводка по финансам, тендерам и проектам</p>
+              <h1 className="sr-only" style={{ color: 'var(--text-primary)' }}>Панель аналитики</h1>
+              <p className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Стратегическая сводка по финансам, тендерам и проектам</p>
             </div>
             <div className="flex items-center gap-3">
               <div className="flex items-center rounded-lg p-0.5" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
@@ -472,7 +472,7 @@ export default function Dashboard() {
                   </button>
                 ))}
               </div>
-              <span className="text-xs hidden sm:inline tabular-nums" style={{ color: 'var(--text-muted)' }}>{currentTime.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
+              <span className="text-base md:text-lg font-medium leading-relaxed mt-1 hidden sm:inline tabular-nums" style={{ color: 'var(--text-secondary)' }}>{currentTime.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
             </div>
           </div>
 
@@ -489,7 +489,7 @@ export default function Dashboard() {
                   <div className="flex items-center gap-2 min-w-0">
                     <Zap size={16} style={{ color: item.color }} />
                     <span className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>{item.text}</span>
-                    <span className="text-xs shrink-0" style={{ color: 'var(--text-muted)' }}>{item.deadline}</span>
+                    <span className="text-base md:text-lg font-medium leading-relaxed mt-1 shrink-0" style={{ color: 'var(--text-secondary)' }}>{item.deadline}</span>
                   </div>
                   <button className="text-xs px-2 py-1 rounded transition-colors shrink-0" style={{ color: item.color, background: item.color + '15' }}>
                     {item.action}
@@ -503,46 +503,46 @@ export default function Dashboard() {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] md:text-xs" style={{ color: 'var(--text-secondary)' }}>Выручка (план)</span>
+                <span className="text-[10px] md:text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Выручка (план)</span>
                 <DollarSign size={14} style={{ color: '#3B82F6' }} />
               </div>
               <div className="text-xl md:text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                {revVal}<span className="text-xs md:text-sm font-normal" style={{ color: 'var(--text-muted)' }}> / {finance.revenue.plan} {finance.revenue.unit}</span>
+                {revVal}<span className="text-base md:text-lg font-medium leading-relaxed mt-1 md:text-sm font-normal" style={{ color: 'var(--text-secondary)' }}> / {finance.revenue.plan} {finance.revenue.unit}</span>
               </div>
-              <div className="flex items-center gap-1 mt-1 text-[10px] md:text-xs" style={{ color: '#0C7205' }}><TrendingUp size={12} /> {finance.revenue.trend}</div>
+              <div className="flex items-center gap-1 mt-1 text-[10px] md:text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: '#0C7205' }}><TrendingUp size={12} /> {finance.revenue.trend}</div>
             </div>
 
             <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] md:text-xs" style={{ color: 'var(--text-secondary)' }}>Прибыль (план)</span>
+                <span className="text-[10px] md:text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Прибыль (план)</span>
                 <Award size={14} style={{ color: '#D4AF37' }} />
               </div>
               <div className="text-xl md:text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                {profVal}<span className="text-xs md:text-sm font-normal" style={{ color: 'var(--text-muted)' }}> / {finance.profit.plan} {finance.profit.unit}</span>
+                {profVal}<span className="text-base md:text-lg font-medium leading-relaxed mt-1 md:text-sm font-normal" style={{ color: 'var(--text-secondary)' }}> / {finance.profit.plan} {finance.profit.unit}</span>
               </div>
-              <div className="flex items-center gap-1 mt-1 text-[10px] md:text-xs" style={{ color: '#0C7205' }}><TrendingUp size={12} /> {finance.profit.trend}</div>
+              <div className="flex items-center gap-1 mt-1 text-[10px] md:text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: '#0C7205' }}><TrendingUp size={12} /> {finance.profit.trend}</div>
             </div>
 
             <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: finance.receivables.risk ? '1px solid rgba(220,38,38,0.4)' : '1px solid var(--border-color)' }}>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] md:text-xs" style={{ color: 'var(--text-secondary)' }}>ДЗО (дебиторка)</span>
+                <span className="text-[10px] md:text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>ДЗО (дебиторка)</span>
                 <Clock size={14} style={{ color: finance.receivables.risk ? '#DC2626' : '#6B7280' }} />
               </div>
               <div className="text-xl md:text-2xl font-bold" style={{ color: finance.receivables.risk ? '#DC2626' : 'var(--text-primary)' }}>
-                {dzVal} <span className="text-xs md:text-sm font-normal" style={{ color: 'var(--text-muted)' }}>{finance.receivables.unit}</span>
+                {dzVal} <span className="text-base md:text-lg font-medium leading-relaxed mt-1 md:text-sm font-normal" style={{ color: 'var(--text-secondary)' }}>{finance.receivables.unit}</span>
               </div>
-              <div className="flex items-center gap-1 mt-1 text-[10px] md:text-xs" style={{ color: '#0C7205' }}><TrendingDown size={12} /> {finance.receivables.trend}</div>
+              <div className="flex items-center gap-1 mt-1 text-[10px] md:text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: '#0C7205' }}><TrendingDown size={12} /> {finance.receivables.trend}</div>
             </div>
 
             <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] md:text-xs" style={{ color: 'var(--text-secondary)' }}>Средняя маржа</span>
+                <span className="text-[10px] md:text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Средняя маржа</span>
                 <Briefcase size={14} style={{ color: '#8B5CF6' }} />
               </div>
               <div className="text-xl md:text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                {margVal}<span className="text-xs md:text-sm font-normal" style={{ color: 'var(--text-muted)' }}>{finance.avgMargin.unit}</span>
+                {margVal}<span className="text-base md:text-lg font-medium leading-relaxed mt-1 md:text-sm font-normal" style={{ color: 'var(--text-secondary)' }}>{finance.avgMargin.unit}</span>
               </div>
-              <div className="flex items-center gap-1 mt-1 text-[10px] md:text-xs" style={{ color: '#0C7205' }}><TrendingUp size={12} /> {finance.avgMargin.trend}</div>
+              <div className="flex items-center gap-1 mt-1 text-[10px] md:text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: '#0C7205' }}><TrendingUp size={12} /> {finance.avgMargin.trend}</div>
             </div>
           </div>
 
@@ -550,7 +550,7 @@ export default function Dashboard() {
           <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Тендерная воронка</h3>
-              <button onClick={() => navigate('/projects')} className="text-xs flex items-center gap-1 transition-colors" style={{ color: 'var(--text-muted)' }}>Все тендеры <ChevronRight size={12} /></button>
+              <button onClick={() => navigate('/projects')} className="text-base md:text-lg font-medium leading-relaxed mt-1 flex items-center gap-1 transition-colors" style={{ color: 'var(--text-secondary)' }}>Все тендеры <ChevronRight size={12} /></button>
             </div>
             <div className="flex items-end justify-between gap-1 overflow-x-auto pb-1">
               {tenderFunnel.map((step, i) => (
@@ -611,7 +611,7 @@ export default function Dashboard() {
             {chartsLoading && (
               <div className="flex items-center justify-center gap-2 py-8">
                 <Loader2 size={16} className="animate-spin" style={{ color: 'var(--text-muted)' }} />
-                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Загрузка графиков…</span>
+                <span className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Загрузка графиков…</span>
               </div>
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4" style={{ opacity: chartsLoading ? 0.4 : 1, transition: 'opacity 0.2s' }}>
@@ -688,7 +688,7 @@ export default function Dashboard() {
               {chartsLoading && (
                 <div className="flex items-center justify-center gap-2 py-8">
                   <Loader2 size={16} className="animate-spin" style={{ color: 'var(--text-muted)' }} />
-                  <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Загрузка графиков…</span>
+                  <span className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Загрузка графиков…</span>
                 </div>
               )}
               <div className="h-56" style={{ opacity: chartsLoading ? 0.4 : 1, transition: 'opacity 0.2s' }}>
@@ -726,7 +726,7 @@ export default function Dashboard() {
             <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Топ-проекты по выручке</h3>
-                <button onClick={() => navigate('/projects')} className="text-xs flex items-center gap-1 transition-colors" style={{ color: 'var(--text-muted)' }}>Все <ChevronRight size={12} /></button>
+                <button onClick={() => navigate('/projects')} className="text-base md:text-lg font-medium leading-relaxed mt-1 flex items-center gap-1 transition-colors" style={{ color: 'var(--text-secondary)' }}>Все <ChevronRight size={12} /></button>
               </div>
               <div className="flex flex-col gap-2">
                 {topProjects.map((proj, i) => {
@@ -759,7 +759,7 @@ export default function Dashboard() {
           <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Ближайшие дедлайны</h3>
-              <button onClick={() => navigate('/projects')} className="text-xs flex items-center gap-1 transition-colors" style={{ color: 'var(--text-muted)' }}>Календарь <ChevronRight size={12} /></button>
+              <button onClick={() => navigate('/projects')} className="text-base md:text-lg font-medium leading-relaxed mt-1 flex items-center gap-1 transition-colors" style={{ color: 'var(--text-secondary)' }}>Календарь <ChevronRight size={12} /></button>
             </div>
             <div className="flex items-center gap-1 overflow-x-auto pb-1">
               {deadlines.map((item, i) => (

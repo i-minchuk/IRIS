@@ -197,7 +197,7 @@ export function WorkflowPage() {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>Документооборот</h1>
+          <h1 className="sr-only sr-only" style={{ color: 'var(--text-primary)' }}>Документооборот</h1>
           <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Управление задачами согласования и замечаниями</p>
         </div>
         <button className="px-4 py-2 rounded-lg text-sm font-medium text-white flex items-center gap-2" style={{ background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)', boxShadow: '0 4px 16px rgba(245,158,11,0.35)' }}>
@@ -344,7 +344,7 @@ export function WorkflowPage() {
                 </button>
               ))}
             </div>
-            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Найдено: {filteredTasks.length}</span>
+            <span className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Найдено: {filteredTasks.length}</span>
           </div>
 
           {/* Task cards */}
@@ -365,7 +365,7 @@ export function WorkflowPage() {
                         <h3 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{task.title}</h3>
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-[10px] px-1.5 py-0.5 rounded border font-medium" style={{ color: st.color, borderColor: st.border, background: st.bg }}>{getTaskStatusLabel(task.status)}</span>
-                          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Срок: {task.due_date ? new Date(task.due_date).toLocaleDateString('ru-RU') : '—'}</span>
+                          <span className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Срок: {task.due_date ? new Date(task.due_date).toLocaleDateString('ru-RU') : '—'}</span>
                         </div>
                       </div>
                     </div>
@@ -408,7 +408,7 @@ export function WorkflowPage() {
                 </button>
               ))}
             </div>
-            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Найдено: {filteredRemarks.length}</span>
+            <span className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Найдено: {filteredRemarks.length}</span>
           </div>
 
           {/* Remark cards */}
@@ -423,7 +423,7 @@ export function WorkflowPage() {
                 <div key={remark.id} className="rounded-xl border p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-default)' }}>
                   <div>
                     <h3 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{remark.title}</h3>
-                    <div className="flex items-center gap-2 mt-1 text-xs" style={{ color: 'var(--text-muted)' }}>
+                    <div className="flex items-center gap-2 mt-1 text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>
                       <span>{remark.project_name}</span>
                       <span>·</span>
                       <span>{remark.document_name}</span>

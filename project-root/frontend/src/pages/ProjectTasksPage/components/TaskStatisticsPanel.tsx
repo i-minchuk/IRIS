@@ -42,7 +42,7 @@ export const TaskStatisticsPanel: React.FC<TaskStatisticsPanelProps> = ({ statis
           <CheckCircle size={16} color="#ffffff" />
         </div>
         <div>
-          <div className="text-xs" style={{ color: 'var(--text-muted)' }}>Всего задач</div>
+          <div className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Всего задач</div>
           <div className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{statistics.total}</div>
         </div>
       </div>
@@ -55,15 +55,15 @@ export const TaskStatisticsPanel: React.FC<TaskStatisticsPanelProps> = ({ statis
           <AlertCircle size={16} color="#ffffff" />
         </div>
         <div>
-          <div className="text-xs" style={{ color: 'var(--text-muted)' }}>Просрочено</div>
+          <div className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Просрочено</div>
           <div className="text-lg font-bold" style={{ color: 'var(--iris-accent-red)' }}>{statistics.overdueCount}</div>
         </div>
-        <div className="text-xs" style={{ color: 'var(--text-muted)' }}>({statistics.overduePercentage.toFixed(1)}%)</div>
+        <div className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>({statistics.overduePercentage.toFixed(1)}%)</div>
       </div>
 
       {/* По статусам */}
       <div className="flex items-center gap-2 ml-4 border-l pl-4" style={{ borderColor: 'var(--iris-border-subtle)' }}>
-        <div className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>По статусам:</div>
+        <div className="text-base md:text-lg font-medium leading-relaxed mt-1 font-medium" style={{ color: 'var(--text-secondary)' }}>По статусам:</div>
         {Object.entries(statistics.byStatus).map(([status, count]) => (
           <div key={status} className="flex items-center gap-1.5 px-2 py-1 rounded"
             style={{ background: getStatusColor(status) + '20' }}
@@ -76,7 +76,7 @@ export const TaskStatisticsPanel: React.FC<TaskStatisticsPanelProps> = ({ statis
 
       {/* По приоритетам */}
       <div className="flex items-center gap-2">
-        <div className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Критичных:</div>
+        <div className="text-base md:text-lg font-medium leading-relaxed mt-1 font-medium" style={{ color: 'var(--text-secondary)' }}>Критичных:</div>
         {Object.entries(statistics.byPriority).map(([priority, count]) => {
           if (priority === 'critical' || priority === 'high') {
             return (
@@ -95,14 +95,14 @@ export const TaskStatisticsPanel: React.FC<TaskStatisticsPanelProps> = ({ statis
       {/* ТОП исполнителей */}
       {statistics.assigneeLoad.length > 0 && (
         <div className="flex items-center gap-2 ml-4 border-l pl-4" style={{ borderColor: 'var(--iris-border-subtle)' }}>
-          <div className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Загрузка:</div>
+          <div className="text-base md:text-lg font-medium leading-relaxed mt-1 font-medium" style={{ color: 'var(--text-secondary)' }}>Загрузка:</div>
           {statistics.assigneeLoad.slice(0, 3).map((load, index) => (
             <div key={load.assigneeId} className="flex items-center gap-1.5 px-2 py-1 rounded"
               style={{ 
                 background: load.overdueCount > 0 ? 'var(--iris-accent-red)' + '20' : 'var(--iris-bg-app)',
               }}
             >
-              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+              <span className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>
                 {index + 1}. {load.taskCount}
                 {load.overdueCount > 0 && <span style={{ color: 'var(--iris-accent-red)' }}> (+{load.overdueCount})</span>}
               </span>

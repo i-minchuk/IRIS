@@ -39,13 +39,13 @@ export default function DocumentDetailPage() {
   ];
 
   return (
-    <div className="space-y-6 px-3 md:px-6 py-4 md:py-6">
+    <div className="space-y-6 px-3 md:px-6 py-4 md:pt-2 pb-6">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="sm" onClick={() => navigate('/documents')} leftIcon={<ArrowLeft size={14} />}>
           Назад
         </Button>
         <div>
-          <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+          <h1 className="sr-only sr-only" style={{ color: 'var(--text-primary)' }}>
             КМ-001-Rev.B — Комплект чертежей
           </h1>
           <div className="flex items-center gap-2 mt-1">
@@ -167,8 +167,8 @@ export default function DocumentDetailPage() {
                   <div className="w-2 h-2 rounded-full mt-2 flex-shrink-0" style={{ backgroundColor: 'var(--brand-iris)' }} />
                   <div>
                     <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{h.action}</div>
-                    <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>{h.details}</div>
-                    <div className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                    <div className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>{h.details}</div>
+                    <div className="text-base md:text-lg font-medium leading-relaxed mt-1 mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
                       {h.user} • {new Date(h.date).toLocaleDateString('ru-RU')}
                     </div>
                   </div>

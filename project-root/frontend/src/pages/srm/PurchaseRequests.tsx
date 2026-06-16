@@ -41,9 +41,9 @@ export default function PurchaseRequestsPage() {
   };
 
   return (
-    <div className="space-y-6 px-3 md:px-6 py-4 md:py-6">
+    <div className="space-y-6 px-3 md:px-6 py-4 md:pt-2 pb-6">
       <div>
-        <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Заявки на закупку</h1>
+        <h1 className="sr-only sr-only" style={{ color: 'var(--text-primary)' }}>Заявки на закупку</h1>
         <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Kanban-доска закупочного процесса</p>
       </div>
 
@@ -56,7 +56,7 @@ export default function PurchaseRequestsPage() {
                 <h3 className="text-xs font-medium uppercase tracking-wide" style={{ color: 'var(--text-tertiary)' }}>
                   {column.label}
                 </h3>
-                <span className="text-xs px-1.5 py-0.5 rounded" style={{ backgroundColor: 'var(--bg-surface-2)', color: 'var(--text-secondary)' }}>
+                <span className="text-base md:text-lg font-medium leading-relaxed mt-1 px-1.5 py-0.5 rounded" style={{ backgroundColor: 'var(--bg-surface-2)', color: 'var(--text-secondary)' }}>
                   {columnRequests.length}
                 </span>
               </div>
@@ -85,7 +85,7 @@ export default function PurchaseRequestsPage() {
                       {request.title}
                     </h4>
 
-                    <p className="text-xs line-clamp-2 mb-2" style={{ color: 'var(--text-secondary)' }}>
+                    <p className="text-base md:text-lg font-medium leading-relaxed mt-1 line-clamp-2 mb-2" style={{ color: 'var(--text-secondary)' }}>
                       {request.description}
                     </p>
 

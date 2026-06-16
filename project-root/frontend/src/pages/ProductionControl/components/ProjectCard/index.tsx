@@ -41,7 +41,7 @@ export const ProjectCard: React.FC<Props> = ({ project, operations, documents, m
           <span className="text-lg">{stage.icon}</span>
           <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{project.name}</span>
         </div>
-        <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>{project.code} | 👤 {project.customer}</div>
+        <div className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>{project.code} | 👤 {project.customer}</div>
         <div
           className="mt-2 px-3 py-1 rounded text-xs font-bold inline-block"
           style={{ backgroundColor: isDark ? stage.bg : stage.bgLight, color: stage.color }}
@@ -52,7 +52,7 @@ export const ProjectCard: React.FC<Props> = ({ project, operations, documents, m
 
       {/* Быстрый статус для телефона */}
       <div className="rounded-lg p-3" style={{ backgroundColor: 'var(--iris-bg-app)', border: '1px solid var(--iris-border-subtle)' }}>
-        <h3 className="text-xs font-bold mb-2" style={{ color: 'var(--text-secondary)' }}>📞 ДЛЯ ОТВЕТА ЗАКАЗЧИКУ</h3>
+        <h3 className="text-base md:text-lg font-medium leading-relaxed mt-1 font-bold mb-2" style={{ color: 'var(--text-secondary)' }}>📞 ДЛЯ ОТВЕТА ЗАКАЗЧИКУ</h3>
         <div className="space-y-2 text-sm">
           <div style={{ color: 'var(--text-primary)' }}>
             <span style={{ color: 'var(--text-secondary)' }}>Стадия:</span> {stage.label}
@@ -77,7 +77,7 @@ export const ProjectCard: React.FC<Props> = ({ project, operations, documents, m
 
       {/* Прогресс */}
       <div>
-        <div className="flex justify-between text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>
+        <div className="flex justify-between text-base md:text-lg font-medium leading-relaxed mt-1 mb-1" style={{ color: 'var(--text-secondary)' }}>
           <span>Прогресс проекта</span>
           <span>{project.progressPercent}%</span>
         </div>
@@ -91,7 +91,7 @@ export const ProjectCard: React.FC<Props> = ({ project, operations, documents, m
             }}
           />
         </div>
-        <div className="flex justify-between text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+        <div className="flex justify-between text-base md:text-lg font-medium leading-relaxed mt-1 mt-1" style={{ color: 'var(--text-secondary)' }}>
           <span>Крит. путь: {project.criticalPathDays} дн.</span>
           <span>Дедлайн: {new Date(project.plannedFinish).toLocaleDateString('ru-RU')}</span>
         </div>
@@ -99,7 +99,7 @@ export const ProjectCard: React.FC<Props> = ({ project, operations, documents, m
 
       {/* Операции */}
       <div className="rounded-lg p-3" style={{ backgroundColor: 'var(--iris-bg-app)', border: '1px solid var(--iris-border-subtle)' }}>
-        <h3 className="text-xs font-bold mb-2" style={{ color: 'var(--text-secondary)' }}>
+        <h3 className="text-base md:text-lg font-medium leading-relaxed mt-1 font-bold mb-2" style={{ color: 'var(--text-secondary)' }}>
           🔧 ОПЕРАЦИИ ({completedOps}/{projectOps.length})
         </h3>
         <div className="space-y-1">
@@ -122,7 +122,7 @@ export const ProjectCard: React.FC<Props> = ({ project, operations, documents, m
 
       {/* Документы */}
       <div className="rounded-lg p-3" style={{ backgroundColor: 'var(--iris-bg-app)', border: '1px solid var(--iris-border-subtle)' }}>
-        <h3 className="text-xs font-bold mb-2" style={{ color: 'var(--text-secondary)' }}>
+        <h3 className="text-base md:text-lg font-medium leading-relaxed mt-1 font-bold mb-2" style={{ color: 'var(--text-secondary)' }}>
           📄 ДОКУМЕНТЫ {overdueDocs.length > 0 && <span style={{ color: 'var(--iris-accent-coral)' }}>({overdueDocs.length} просрочено)</span>}
         </h3>
         <div className="space-y-1">
@@ -145,7 +145,7 @@ export const ProjectCard: React.FC<Props> = ({ project, operations, documents, m
       {/* МТО */}
       {projectMTO.length > 0 && (
         <div className="rounded-lg p-3" style={{ backgroundColor: 'var(--iris-bg-app)', border: '1px solid var(--iris-border-subtle)' }}>
-          <h3 className="text-xs font-bold mb-2" style={{ color: 'var(--text-secondary)' }}>
+          <h3 className="text-base md:text-lg font-medium leading-relaxed mt-1 font-bold mb-2" style={{ color: 'var(--text-secondary)' }}>
             🛒 МТО ({readyMTO}/{projectMTO.length} на складе)
           </h3>
           <div className="space-y-1">

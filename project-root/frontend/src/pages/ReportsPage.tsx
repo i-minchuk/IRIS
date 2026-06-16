@@ -104,7 +104,7 @@ export default function ReportsPage() {
     <div className="p-4 md:p-6 max-w-6xl mx-auto">
       <div className="flex items-center gap-3 mb-6">
         <FileText size={24} style={{ color: '#8B5CF6' }} />
-        <h1 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>
+        <h1 className="sr-only sr-only" style={{ color: 'var(--text-primary)' }}>
           Отчёты
         </h1>
       </div>
@@ -112,7 +112,7 @@ export default function ReportsPage() {
       <div className="rounded-xl border p-4 md:p-5 mb-6" style={{ background: 'var(--iris-bg-surface)', borderColor: 'var(--iris-border-subtle)' }}>
         <div className="flex flex-col md:flex-row md:items-end gap-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+            <label className="text-base md:text-lg font-medium leading-relaxed mt-1 font-medium" style={{ color: 'var(--text-secondary)' }}>
               Шаблон отчёта
             </label>
             <select
@@ -132,7 +132,7 @@ export default function ReportsPage() {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+            <label className="text-base md:text-lg font-medium leading-relaxed mt-1 font-medium" style={{ color: 'var(--text-secondary)' }}>
               Дата начала
             </label>
             <input
@@ -149,7 +149,7 @@ export default function ReportsPage() {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+            <label className="text-base md:text-lg font-medium leading-relaxed mt-1 font-medium" style={{ color: 'var(--text-secondary)' }}>
               Дата окончания
             </label>
             <input
@@ -234,7 +234,7 @@ export default function ReportsPage() {
                         background: idx % 2 === 0 ? 'transparent' : 'var(--iris-bg-hover)',
                       }}
                     >
-                      <td className="px-4 py-2.5 font-mono text-xs" style={{ color: 'var(--text-secondary)' }}>{row.id}</td>
+                      <td className="px-4 py-2.5 font-mono text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>{row.id}</td>
                       <td className="px-4 py-2.5" style={{ color: 'var(--text-primary)' }}>{row.name}</td>
                       <td className="px-4 py-2.5">
                         <span
@@ -261,7 +261,7 @@ export default function ReportsPage() {
                           {row.status}
                         </span>
                       </td>
-                      <td className="px-4 py-2.5 text-xs" style={{ color: 'var(--text-muted)' }}>{row.date}</td>
+                      <td className="px-4 py-2.5 text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>{row.date}</td>
                       <td className="px-4 py-2.5 text-right font-mono" style={{ color: 'var(--text-primary)' }}>
                         {formatValue(template, row.value)}
                       </td>
@@ -280,7 +280,7 @@ export default function ReportsPage() {
           <p className="text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
             Выберите шаблон и период
           </p>
-          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+          <p className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>
             Нажмите «Сгенерировать» для формирования отчёта
           </p>
         </div>

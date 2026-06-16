@@ -21,7 +21,7 @@ export const WorkloadHeatmap: React.FC<Props> = ({ workCenters }) => {
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <div className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{wc.name}</div>
-                  <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>{wc.department}</div>
+                  <div className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>{wc.department}</div>
                 </div>
                 <div
                   className="px-3 py-1 rounded text-lg font-bold"
@@ -33,7 +33,7 @@ export const WorkloadHeatmap: React.FC<Props> = ({ workCenters }) => {
 
               {/* Полоса загрузки */}
               <div className="mb-3">
-                <div className="flex justify-between text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>
+                <div className="flex justify-between text-base md:text-lg font-medium leading-relaxed mt-1 mb-1" style={{ color: 'var(--text-secondary)' }}>
                   <span>Загрузка</span>
                   <span>{wc.actualLoad} / {wc.capacity} ч</span>
                 </div>

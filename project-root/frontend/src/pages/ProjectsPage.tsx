@@ -299,8 +299,8 @@ function TendersView() {
     <div className="space-y-4">
       {/* Header */}
       <div className="mb-4">
-        <h1 className="text-xl md:text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Тендерный отдел</h1>
-        <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>Управление тендерами и предложениями</p>
+        <h1 className="sr-only sr-only" style={{ color: 'var(--text-primary)' }}>Тендерный отдел</h1>
+        <p className="text-base md:text-lg font-medium leading-relaxed mt-1 mt-0.5" style={{ color: 'var(--text-secondary)' }}>Управление тендерами и предложениями</p>
       </div>
 
       {/* KPI */}
@@ -308,7 +308,7 @@ function TendersView() {
         {kpi.map((item, i) => (
           <div key={i} className="p-3 rounded-lg flex flex-col gap-1" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>{item.label}</span>
+              <span className="text-base md:text-lg font-medium leading-relaxed mt-1 font-medium" style={{ color: 'var(--text-secondary)' }}>{item.label}</span>
               <span className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: item.color + '15', color: item.color }}>
                 {item.icon}
               </span>
@@ -359,7 +359,7 @@ function TendersView() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={8} className="px-3 py-8 text-center text-xs" style={{ color: 'var(--text-muted)' }}>Загрузка...</td></tr>
+                <tr><td colSpan={8} className="px-3 py-8 text-center text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Загрузка...</td></tr>
               ) : (
                 <>
                   {filtered.map((t) => {
@@ -399,7 +399,7 @@ function TendersView() {
                     );
                   })}
                   {filtered.length === 0 && (
-                    <tr><td colSpan={8} className="px-3 py-8 text-center text-xs" style={{ color: 'var(--text-muted)' }}>Ничего не найдено</td></tr>
+                    <tr><td colSpan={8} className="px-3 py-8 text-center text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Ничего не найдено</td></tr>
                   )}
                 </>
               )}
@@ -433,8 +433,8 @@ function SolutionsView() {
                 <span className="text-xs px-2 py-0.5 rounded border" style={{ color: '#6B5B95', borderColor: 'rgba(107,91,149,0.3)', background: 'rgba(107,91,149,0.08)' }}>{s.type}</span>
               </div>
             </div>
-            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{s.preview}</p>
-            <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+            <p className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>{s.preview}</p>
+            <div className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>
               <strong>Применено в:</strong> {s.projectsUsed.join(', ')}
             </div>
             <div className="flex gap-2">
@@ -477,14 +477,14 @@ function TemplatesView() {
                 <FileText size={18} style={{ color: '#6B7280' }} />
                 <div>
                   <h3 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t.name}</h3>
-                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{t.category} · {t.format.toUpperCase()}</p>
+                  <p className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>{t.category} · {t.format.toUpperCase()}</p>
                 </div>
               </div>
               <button className="p-1 rounded transition-colors" style={{ color: t.isFavorite ? '#D4AF37' : 'var(--text-muted)' }}>
                 <Bookmark size={14} />
               </button>
             </div>
-            <div className="flex items-center justify-between text-xs" style={{ color: 'var(--text-muted)' }}>
+            <div className="flex items-center justify-between text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>
               <span className="flex items-center gap-1"><Download size={10} /> {t.downloads} скачиваний</span>
             </div>
             <div className="flex gap-2">
@@ -561,8 +561,8 @@ function ProjectsView() {
     <div className="space-y-4">
       {/* Header */}
       <div className="mb-4">
-        <h1 className="text-xl md:text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Проекты</h1>
-        <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>Аналитика по проектам и документообороту</p>
+        <h1 className="sr-only sr-only" style={{ color: 'var(--text-primary)' }}>Проекты</h1>
+        <p className="text-base md:text-lg font-medium leading-relaxed mt-1 mt-0.5" style={{ color: 'var(--text-secondary)' }}>Аналитика по проектам и документообороту</p>
       </div>
 
       {/* Быстрые действия */}
@@ -593,7 +593,7 @@ function ProjectsView() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <button onClick={() => navigate('/workflow?filter=overdue')} className="group p-3 rounded-lg text-left transition-all hover:scale-[1.02] flex flex-col gap-1 cursor-pointer" style={{ background: 'var(--card-bg)', border: '1px solid rgba(220,38,38,0.35)' }}>
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Требуют внимания</span>
+            <span className="text-base md:text-lg font-medium leading-relaxed mt-1 font-medium" style={{ color: 'var(--text-secondary)' }}>Требуют внимания</span>
             <span className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: 'rgba(220,38,38,0.12)', color: '#DC2626' }}><AlertTriangle size={12} /></span>
           </div>
           <div className="text-xl font-bold" style={{ color: '#DC2626' }}>7</div>
@@ -601,7 +601,7 @@ function ProjectsView() {
         </button>
         <button onClick={() => navigate('/workflow')} className="group p-3 rounded-lg text-left transition-all hover:scale-[1.02] flex flex-col gap-1 cursor-pointer" style={{ background: 'var(--card-bg)', border: '1px solid rgba(212,175,55,0.35)' }}>
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>На согласовании</span>
+            <span className="text-base md:text-lg font-medium leading-relaxed mt-1 font-medium" style={{ color: 'var(--text-secondary)' }}>На согласовании</span>
             <span className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: 'rgba(212,175,55,0.12)', color: '#D4AF37' }}><Clock size={12} /></span>
           </div>
           <div className="text-xl font-bold" style={{ color: '#D4AF37' }}>84</div>
@@ -609,7 +609,7 @@ function ProjectsView() {
         </button>
         <button onClick={() => navigate('/documents?dept=tender')} className="group p-3 rounded-lg text-left transition-all hover:scale-[1.02] flex flex-col gap-1 cursor-pointer" style={{ background: 'var(--card-bg)', border: '1px solid rgba(37,99,235,0.35)' }}>
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Перегруженный отдел</span>
+            <span className="text-base md:text-lg font-medium leading-relaxed mt-1 font-medium" style={{ color: 'var(--text-secondary)' }}>Перегруженный отдел</span>
             <span className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: 'rgba(37,99,235,0.12)', color: '#2563EB' }}><Users size={12} /></span>
           </div>
           <div className="text-xl font-bold" style={{ color: '#2563EB' }}>34/40</div>
@@ -774,9 +774,9 @@ export default function ProjectsPage() {
   return (
     <div className="min-h-screen w-full overflow-x-hidden" style={{ background: 'var(--layout-bg)', color: 'var(--text-primary)' }}>
       {/* Header area */}
-      <div className="px-6 pt-6 pb-2">
-        <h1 className="text-xl md:text-2xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Портфель заказов</h1>
-        <p className="text-xs mb-4" style={{ color: 'var(--text-secondary)' }}>Управление тендерами, проектами и документооборотом</p>
+      <div className="px-6 pt-2 pb-2">
+        <h1 className="sr-only sr-only" style={{ color: 'var(--text-primary)' }}>Портфель заказов</h1>
+        <p className="text-base md:text-lg font-medium leading-relaxed mt-1 mb-4" style={{ color: 'var(--text-secondary)' }}>Управление тендерами, проектами и документооборотом</p>
         <PageTabs active={activeTab} onChange={setActiveTab} />
       </div>
 

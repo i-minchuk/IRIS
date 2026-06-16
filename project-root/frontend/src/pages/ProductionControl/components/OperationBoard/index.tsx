@@ -30,7 +30,7 @@ export const OperationBoard: React.FC<Props> = ({ operations, projects }) => {
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{project.name}</span>
-                  <span className="text-xs ml-2" style={{ color: 'var(--text-secondary)' }}>({project.code})</span>
+                  <span className="text-base md:text-lg font-medium leading-relaxed mt-1 ml-2" style={{ color: 'var(--text-secondary)' }}>({project.code})</span>
                 </div>
                 <span className="px-2 py-1 rounded text-xs" style={{ backgroundColor: 'var(--iris-bg-subtle)', color: 'var(--text-primary)' }}>
                   {ops.filter(o => o.status === 'completed').length}/{ops.length} операций
@@ -55,14 +55,14 @@ export const OperationBoard: React.FC<Props> = ({ operations, projects }) => {
                         <div className="text-xs font-bold" style={{ color: colors.text }}>
                           {op.code} — {op.name}
                         </div>
-                        <div className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
+                        <div className="text-base md:text-lg font-medium leading-relaxed mt-1 mt-1" style={{ color: 'var(--text-secondary)' }}>
                           {op.workCenterName}
                         </div>
-                        <div className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+                        <div className="text-base md:text-lg font-medium leading-relaxed mt-1 mt-1" style={{ color: 'var(--text-secondary)' }}>
                           {op.setupTime + op.runTime}ч | {op.responsible}
                         </div>
                         {op.status === 'overdue' && (
-                          <div className="text-xs mt-1" style={{ color: 'var(--iris-accent-coral)' }}>
+                          <div className="text-base md:text-lg font-medium leading-relaxed mt-1 mt-1" style={{ color: 'var(--iris-accent-coral)' }}>
                             ⚠️ Просрочена!
                           </div>
                         )}

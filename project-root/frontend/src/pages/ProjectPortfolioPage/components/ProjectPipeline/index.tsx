@@ -81,7 +81,7 @@ export const ProjectPipeline: React.FC<Props> = ({ projects, onSelect }) => {
                       {config.label}
                     </span>
                   </div>
-                  <div className="text-xs text-[#94a3b8] mt-1">
+                  <div className="text-base md:text-lg font-medium leading-relaxed mt-1 text-[#94a3b8] mt-1">
                     {stageProjects.length} проектов |{' '}
                     {stageProjects.reduce((s, p) => s + p.contractSum, 0)} млн ₽
                   </div>
@@ -102,7 +102,7 @@ export const ProjectPipeline: React.FC<Props> = ({ projects, onSelect }) => {
                       <div className="text-xs text-[#94a3b8]">
                         👤 {project.customer}
                       </div>
-                      <div className="text-xs text-[#94a3b8] mt-1">
+                      <div className="text-base md:text-lg font-medium leading-relaxed mt-1 text-[#94a3b8] mt-1">
                         💰 {project.contractSum} млн ₽
                       </div>
 
