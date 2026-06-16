@@ -68,9 +68,8 @@ export default function ReferencePage() {
     <div className="w-full pt-2 pb-6 px-4 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <BookOpen size={22} style={{ color: TAB_COLOR }} />
-          <h1 className="sr-only sr-only" style={{ color: 'var(--text-primary)' }}>
+        <div>
+          <h1 className="sr-only" style={{ color: 'var(--text-primary)' }}>
             Справочники
           </h1>
         </div>
