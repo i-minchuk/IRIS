@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+// import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/providers/ThemeProvider';
 import {
   Search, Calendar, TrendingUp, TrendingDown,
@@ -98,7 +98,7 @@ function FilterBar({ options, active, onChange, count }: {
    MAIN PAGE
    ═══════════════════════════════════════════════════════════ */
 export default function TendersPage() {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   const [filter, setFilter] = useState<string>('all');
@@ -231,7 +231,7 @@ export default function TendersPage() {
                     {filtered.map((t) => {
                       const meta = statusMeta[t.status];
                       return (
-                        <tr key={t.id} className="transition-colors cursor-pointer" style={{ borderBottom: '1px solid var(--border-color)' }}
+                        <tr key={t.id} className="transition-colors" style={{ borderBottom: '1px solid var(--border-color)' }}
                           onMouseEnter={(e) => { e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'; }}
                           onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                         >
@@ -257,9 +257,16 @@ export default function TendersPage() {
                             </div>
                           </td>
                           <td className="px-3 py-2.5">
-                            <button onClick={() => navigate('/documents')} className="text-[9px] px-2 py-1 rounded transition-colors cursor-pointer" style={{ color: '#2563EB', background: 'rgba(37,99,235,0.1)' }}>
+                            <a
+                              href={`/portfolio?tender=${t.id}`}
+                              className="inline-block text-[9px] px-2 py-1 rounded transition-colors"
+                              style={{ color: '#2563EB', background: 'rgba(37,99,235,0.1)', textDecoration: 'none' }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                              }}
+                            >
                               Открыть
-                            </button>
+                            </a>
                           </td>
                         </tr>
                       );

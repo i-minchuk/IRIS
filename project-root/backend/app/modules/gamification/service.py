@@ -56,20 +56,8 @@ class GamificationService:
         }
 
     async def get_leaderboard(self, exclude_roles: list[str] = None) -> list[dict]:
-        exclude_roles = exclude_roles or ["admin"]
-        users = await self.user_repo.get_all()
-        entries = []
-        for user in users:
-            if user.role in exclude_roles:
-                continue
-            score = await self.event_repo.get_user_score(user.id)
-            entries.append({
-                "user_id": user.id,
-                "username": user.username or user.email,
-                "full_name": user.full_name or user.email,
-                "score": score,
-            })
-        entries.sort(key=lambda x: x["score"], reverse=True)
+        """Get leaderboard with scores — single JOIN query, no N+1."""
+        entries = await self.event_repo.get_all_users_scores(exclude_roles=exclude_roles)
         for i, entry in enumerate(entries, 1):
             entry["rank"] = i
         return entries

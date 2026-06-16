@@ -88,7 +88,7 @@ export const releases: Release[] = [
   },
   {
     id: 4,
-    version: 'v4.1.0',
+    version: 'v4.3.0',
     name: 'Delta',
     branch: 'feature/delta-modules',
     status: 'development',

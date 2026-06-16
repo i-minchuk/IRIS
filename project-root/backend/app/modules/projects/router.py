@@ -10,6 +10,17 @@ from app.db.session import get_db
 from app.modules.auth.deps import get_current_active_user
 from app.modules.auth.models import User
 from app.modules.projects.models import Project, Stage, Kit, Section
+from app.modules.projects.schemas import (
+    ProjectCreate,
+    ProjectCreateResponse,
+    ProjectDetailResponse,
+    StageCreate,
+    StageResponse,
+    KitCreate,
+    KitResponse,
+    SectionCreate,
+    SectionResponse,
+)
 from app.core.cache import invalidate_cache
 
 router = APIRouter(tags=["projects"])
@@ -50,21 +61,21 @@ async def list_projects(
     }
 
 
-@router.post("", response_model=dict)
+@router.post("", response_model=ProjectCreateResponse)
 async def create_project(
-    data: dict,
+    data: ProjectCreate,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
     project = Project(
-        name=data.get("name"),
-        code=data.get("code"),
-        customer_name=data.get("customer_name"),
-        contract_number=data.get("contract_number"),
-        stage=data.get("stage", "draft"),
-        status=data.get("status", "draft"),
-        standard_template_id=data.get("standard_template_id"),
-        variables=data.get("variables", {}),
+        name=data.name,
+        code=data.code,
+        customer_name=data.customer_name,
+        contract_number=data.contract_number,
+        stage=data.stage,
+        status=data.status,
+        standard_template_id=data.standard_template_id,
+        variables=data.variables or {},
         created_by_id=current_user.id,
     )
     db.add(project)
@@ -72,15 +83,15 @@ async def create_project(
     await db.refresh(project)
     await invalidate_cache("cache:*portfolio*")
     await invalidate_cache("cache:*dashboard*")
-    return {
-        "id": project.id,
-        "name": project.name,
-        "code": project.code,
-        "status": project.status,
-    }
+    return ProjectCreateResponse(
+        id=project.id,
+        name=project.name,
+        code=project.code,
+        status=project.status,
+    )
 
 
-@router.get("/{project_id}", response_model=dict)
+@router.get("/{project_id}", response_model=ProjectDetailResponse)
 async def get_project(
     project_id: int,
     db: AsyncSession = Depends(get_db),
@@ -90,17 +101,17 @@ async def get_project(
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    return {
-        "id": project.id,
-        "name": project.name,
-        "code": project.code,
-        "customer_name": project.customer_name,
-        "contract_number": project.contract_number,
-        "stage": project.stage,
-        "status": project.status,
-        "variables": project.variables,
-        "created_at": project.created_at.isoformat() if project.created_at else None,
-        "stages": [
+    return ProjectDetailResponse(
+        id=project.id,
+        name=project.name,
+        code=project.code,
+        customer_name=project.customer_name,
+        contract_number=project.contract_number,
+        stage=project.stage,
+        status=project.status,
+        variables=project.variables,
+        created_at=project.created_at.isoformat() if project.created_at else None,
+        stages=[
             {
                 "id": s.id,
                 "name": s.name,
@@ -120,64 +131,64 @@ async def get_project(
             }
             for s in project.stages
         ],
-    }
+    )
 
 
-@router.post("/{project_id}/stages", response_model=dict)
+@router.post("/{project_id}/stages", response_model=StageResponse)
 async def create_stage(
     project_id: int,
-    data: dict,
+    data: StageCreate,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
     stage = Stage(
         project_id=project_id,
-        name=data.get("name"),
-        code=data.get("code"),
-        sort_order=data.get("sort_order", 0),
+        name=data.name,
+        code=data.code,
+        sort_order=data.sort_order,
     )
     db.add(stage)
     await db.commit()
     await db.refresh(stage)
-    return {"id": stage.id, "name": stage.name, "code": stage.code}
+    return StageResponse(id=stage.id, name=stage.name, code=stage.code)
 
 
-@router.post("/stages/{stage_id}/kits", response_model=dict)
+@router.post("/stages/{stage_id}/kits", response_model=KitResponse)
 async def create_kit(
     stage_id: int,
-    data: dict,
+    data: KitCreate,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
     kit = Kit(
         stage_id=stage_id,
-        name=data.get("name"),
-        code=data.get("code"),
-        sort_order=data.get("sort_order", 0),
+        name=data.name,
+        code=data.code,
+        sort_order=data.sort_order,
     )
     db.add(kit)
     await db.commit()
     await db.refresh(kit)
-    return {"id": kit.id, "name": kit.name, "code": kit.code}
+    return KitResponse(id=kit.id, name=kit.name, code=kit.code)
 
 
-@router.post("/kits/{kit_id}/sections", response_model=dict)
+@router.post("/kits/{kit_id}/sections", response_model=SectionResponse)
 async def create_section(
     kit_id: int,
-    data: dict,
+    data: SectionCreate,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
     section = Section(
         kit_id=kit_id,
-        name=data.get("name"),
-        code=data.get("code"),
-        sort_order=data.get("sort_order", 0),
+        name=data.name,
+        code=data.code,
+        sort_order=data.sort_order,
     )
     db.add(section)
     await db.commit()
     await db.refresh(section)
-    return {"id": section.id, "name": section.name, "code": section.code}
+    return SectionResponse(id=section.id, name=section.name, code=section.code)
 
 
 @router.get("/{project_id}/tree", response_model=dict)

@@ -10,13 +10,13 @@ from app.modules.tasks.models import Task
 from app.modules.tasks.service import TaskService
 from app.modules.tasks.dto import (
     TaskCreate, TaskUpdate, TaskStatusUpdate,
-    TaskFilters, TaskResponse, TaskStatistics
+    TaskFilters, TaskResponse, TaskStatistics, PaginatedTaskList
 )
 
 router = APIRouter(tags=["tasks"])
 
 
-@router.get("", response_model=dict)
+@router.get("", response_model=PaginatedTaskList)
 async def list_tasks(
     project_id: Optional[int] = Query(None, description="Filter by project ID"),
     assignee_id: Optional[int] = Query(None, description="Filter by assignee"),
@@ -56,13 +56,13 @@ async def list_tasks(
     tasks, total = await service.get_tasks(filters, page_size, offset)
     items = [service.task_to_response(task) for task in tasks]
     
-    return {
-        "items": items,
-        "total": total,
-        "page": page,
-        "page_size": page_size,
-        "pages": (total + page_size - 1) // page_size,
-    }
+    return PaginatedTaskList(
+        items=items,
+        total=total,
+        page=page,
+        page_size=page_size,
+        pages=(total + page_size - 1) // page_size,
+    )
 
 
 @router.post("", response_model=TaskResponse, status_code=status.HTTP_201_CREATED)

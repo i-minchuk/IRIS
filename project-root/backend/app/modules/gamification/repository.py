@@ -48,14 +48,36 @@ class GamificationEventRepository:
         )
         return result.scalar_one()
 
-    async def get_user_events(self, user_id: int, limit: int = 100) -> list[GamificationEvent]:
-        result = await self.db.execute(
-            select(GamificationEvent)
-            .where(GamificationEvent.user_id == user_id)
-            .order_by(GamificationEvent.created_at.desc())
-            .limit(limit)
+    async def get_all_users_scores(self, exclude_roles: list[str] = None) -> list[dict]:
+        """Get all users with their total scores in a single JOIN query."""
+        from app.modules.auth.models import User
+        stmt = (
+            select(
+                User.id,
+                User.username,
+                User.email,
+                User.full_name,
+                User.role,
+                func.coalesce(func.sum(GamificationEvent.points_delta), 0).label("score"),
+            )
+            .outerjoin(GamificationEvent, User.id == GamificationEvent.user_id)
+            .group_by(User.id)
+            .order_by(func.coalesce(func.sum(GamificationEvent.points_delta), 0).desc())
         )
-        return list(result.scalars().all())
+        if exclude_roles:
+            stmt = stmt.where(User.role.notin_(exclude_roles))
+        result = await self.db.execute(stmt)
+        rows = result.all()
+        return [
+            {
+                "user_id": row.id,
+                "username": row.username or row.email,
+                "full_name": row.full_name or row.email,
+                "role": row.role,
+                "score": int(row.score),
+            }
+            for row in rows
+        ]
 
     async def create(self, event: GamificationEvent) -> GamificationEvent:
         self.db.add(event)

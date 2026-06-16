@@ -18,9 +18,9 @@ from app.core.cache import cache_response
 import hashlib
 
 
-async def _get_db(read_only: bool = True):
-    """Return get_db dependency with read_only flag for analytics endpoints."""
-    async for session in get_db(read_only=read_only):
+async def _get_db():
+    """Return get_db dependency for analytics endpoints."""
+    async for session in get_db():
         yield session
 
 router = APIRouter(tags=["analytics"])

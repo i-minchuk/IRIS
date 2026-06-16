@@ -25,6 +25,11 @@ from app.modules.remarks.schemas import (
     RemarkTagResponse,
     RemarkExportRow
 )
+from app.modules.remarks.response_schemas import (
+    RemarkActionResponse,
+    RemarkWorkflowStartResponse,
+    RemarkLinkResponse,
+)
 
 router = APIRouter(tags=["remarks"])
 
@@ -361,7 +366,7 @@ async def delete_comment(
 
 # ==================== Action Endpoints ====================
 
-@router.post("/{remark_id}/actions", response_model=dict)
+@router.post("/{remark_id}/actions", response_model=RemarkActionResponse)
 async def perform_action(
     remark_id: UUID,
     action_data: RemarkAction,
@@ -380,13 +385,13 @@ async def perform_action(
                 detail="Remark not found"
             )
         
-        return {
-            "success": True,
-            "action": action_data.action,
-            "remark_id": str(remark.id),
-            "new_status": remark.status.value,
-            "workflow_instance_id": remark.workflow_instance_id
-        }
+        return RemarkActionResponse(
+            success=True,
+            action=action_data.action,
+            remark_id=str(remark.id),
+            new_status=remark.status.value,
+            workflow_instance_id=remark.workflow_instance_id
+        )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -394,7 +399,7 @@ async def perform_action(
         )
 
 
-@router.post("/{remark_id}/start-workflow", response_model=dict)
+@router.post("/{remark_id}/start-workflow", response_model=RemarkWorkflowStartResponse)
 async def start_remark_workflow(
     remark_id: UUID,
     db: AsyncSession = Depends(get_db),
@@ -419,11 +424,11 @@ async def start_remark_workflow(
     await service._maybe_start_workflow(remark, current_user.id)
     await db.refresh(remark)
     
-    return {
-        "success": True,
-        "remark_id": str(remark.id),
-        "workflow_instance_id": remark.workflow_instance_id
-    }
+    return RemarkWorkflowStartResponse(
+        success=True,
+        remark_id=str(remark.id),
+        workflow_instance_id=remark.workflow_instance_id
+    )
 
 
 @router.post("/{remark_id}/link/{related_id}", response_model=dict)

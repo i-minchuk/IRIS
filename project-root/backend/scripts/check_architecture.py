@@ -202,7 +202,7 @@ class ImportChecker:
             "documents": {"auth", "gamification", "operations", "projects", "variables"},  # Documents relate to projects, use variables, gamification, operations
             "projects": {"auth"},  # Projects are independent
             "tasks": {"auth", "documents", "gamification", "operations", "projects", "routes", "time_tracking"},  # Tasks sync with production, time tracking
-            "tenders": {"auth", "documents", "projects", "tasks"},  # Tenders work with documents, tasks, projects
+            "tenders": {"auth", "documents", "projects", "tasks", "operations", "workflow"},  # Tenders detail view needs work centers and workflows
             "variables": {"auth"},  # Variables are independent
             "remarks": {"auth", "gamification", "workflow"},  # Issue tracking with gamification, workflow
             "workflow": {"auth"},  # Approval workflows

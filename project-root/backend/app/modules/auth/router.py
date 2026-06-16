@@ -11,7 +11,7 @@ from app.core.config import settings
 from app.core.security_utils import limiter, rate_limit_standard, rate_limit_refresh_route
 from app.db.session import get_db
 from app.modules.auth.schemas import (
-    User, UserCreate, UserUpdate, Token, LoginRequest, RefreshTokenRequest,
+    User, UserResponse, UserCreate, UserUpdate, Token, LoginRequest, RefreshTokenRequest,
     ForgotPasswordRequest, ResetPasswordRequest, PasswordResetResponse,
 )
 from app.modules.auth.repository import UserRepository
@@ -22,7 +22,7 @@ from app.core.session import SessionStore
 router = APIRouter()
 
 
-@router.post("/register", response_model=User)
+@router.post("/register", response_model=UserResponse)
 @limiter.limit("5/minute")
 async def register(
     *,
@@ -211,7 +211,13 @@ async def refresh_token(
     )
     try:
         from jose import jwt, JWTError
-        payload = jwt.decode(token_data.refresh_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        payload = jwt.decode(
+            token_data.refresh_token,
+            settings.SECRET_KEY,
+            algorithms=[settings.ALGORITHM],
+            audience=security.JWT_AUDIENCE,
+            issuer=security.JWT_ISSUER,
+        )
         user_id: str | None = payload.get("sub")
         token_type: str | None = payload.get("type")
         if user_id is None or token_type != "refresh":
@@ -250,7 +256,7 @@ async def refresh_token(
         }
 
 
-@router.get("/me", response_model=User)
+@router.get("/me", response_model=UserResponse)
 @rate_limit_standard()
 async def read_users_me(
     request: Request,
@@ -272,7 +278,7 @@ async def link_telegram(
     return {"status": "linked"}
 
 
-@router.get("/users", response_model=list[User])
+@router.get("/users", response_model=list[UserResponse])
 @rate_limit_standard()
 async def list_users(
     request: Request,
@@ -290,7 +296,7 @@ async def list_users(
     return users
 
 
-@router.patch("/users/{user_id}", response_model=User)
+@router.patch("/users/{user_id}", response_model=UserResponse)
 @rate_limit_standard()
 async def update_user(
     request: Request,

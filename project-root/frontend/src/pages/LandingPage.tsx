@@ -165,7 +165,7 @@ export default function LandingPage() {
           style={{ color: isDark ? '#8B92A8' : '#6B7280' }}
         >
           <p className="text-sm md:text-base leading-relaxed">
-            Интеллектуальная система управления инженерной документацией,
+            Интеллектуальная система управления технической документацией,
             проектами и тендерными процессами
           </p>
         </div>
@@ -215,7 +215,7 @@ export default function LandingPage() {
           className="mt-8 text-[11px] relative z-[2]"
           style={{ color: isDark ? 'rgba(139,146,168,0.5)' : 'rgba(107,114,128,0.6)' }}
         >
-          © {new Date().getFullYear()} ДокПоток IRIS — инженерный документооборот
+          © {new Date().getFullYear()} ДокПоток IRIS — технический документооборот
         </div>
       </div>
 

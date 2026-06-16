@@ -4,12 +4,28 @@ from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 
 from app.db.session import get_db
 from app.modules.auth.deps import get_current_active_user
 from app.modules.auth.models import User
 from app.modules.tenders.models import Tender, TenderDocumentPreview
+from app.modules.tenders.schemas import (
+    TenderCreate,
+    TenderCreateResponse,
+    TenderDetail,
+    TenderDocumentPreviewCreate,
+    TenderDocumentPreviewResponse,
+    TenderListItem,
+    TenderStageResponse,
+    TenderStageUpdate,
+    TenderCalculateResponse,
+    TenderProjectCreateResponse,
+    PortfolioSummary,
+    TenderTaskItem,
+    PaginatedTenderList,
+    PaginationParams,
+)
 from app.modules.tenders.calculator import calculate_tender
 from app.modules.projects.models import Project
 from app.modules.tasks.models import Task
@@ -18,45 +34,72 @@ from app.core.cache import invalidate_cache
 router = APIRouter(tags=["tenders"])
 
 
-@router.get("", response_model=list)
+def _iso_or_none(dt: Optional[datetime]) -> Optional[str]:
+    return dt.isoformat() if dt else None
+
+
+@router.get("", response_model=PaginatedTenderList)
 async def list_tenders(
     status: Optional[str] = None,
     stage: Optional[str] = None,
+    pagination: PaginationParams = Depends(),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
+    # Build count query
+    count_query = select(func.count(Tender.id))
+    if status:
+        count_query = count_query.where(Tender.status == status)
+    if stage:
+        count_query = count_query.where(Tender.stage == stage)
+    total_result = await db.execute(count_query)
+    total = total_result.scalar() or 0
+
+    # Build data query with pagination
     query = select(Tender)
     if status:
         query = query.where(Tender.status == status)
     if stage:
         query = query.where(Tender.stage == stage)
-    result = await db.execute(query.order_by(Tender.created_at.desc()))
+    offset = (pagination.page - 1) * pagination.page_size
+    query = query.order_by(Tender.created_at.desc()).offset(offset).limit(pagination.page_size)
+    result = await db.execute(query)
     tenders = result.scalars().all()
-    return [
-        {
-            "id": t.id,
-            "name": t.name,
-            "customer_name": t.customer_name,
-            "project_type": t.project_type,
-            "status": t.status,
-            "stage": t.stage,
-            "nmc": t.nmc,
-            "our_price": t.our_price,
-            "margin_pct": t.margin_pct,
-            "probability": t.probability,
-            "platform": t.platform,
-            "region": t.region,
-            "deadline": t.deadline.isoformat() if t.deadline else None,
-            "auction_end_time": t.auction_end_time.isoformat() if t.auction_end_time else None,
-            "responsible_id": t.responsible_id,
-            "calculated_cost": t.calculated_cost,
-            "created_at": t.created_at.isoformat() if t.created_at else None,
-        }
+
+    items = [
+        TenderListItem(
+            id=t.id,
+            name=t.name,
+            customer_name=t.customer_name,
+            project_type=t.project_type,
+            status=t.status,
+            stage=t.stage,
+            nmc=t.nmc,
+            our_price=t.our_price,
+            margin_pct=t.margin_pct,
+            probability=t.probability,
+            platform=t.platform,
+            region=t.region,
+            deadline=_iso_or_none(t.deadline),
+            auction_end_time=_iso_or_none(t.auction_end_time),
+            responsible_id=t.responsible_id,
+            calculated_cost=t.calculated_cost,
+            created_at=_iso_or_none(t.created_at),
+        )
         for t in tenders
     ]
 
+    pages = (total + pagination.page_size - 1) // pagination.page_size
+    return PaginatedTenderList(
+        items=items,
+        total=total,
+        page=pagination.page,
+        page_size=pagination.page_size,
+        pages=pages,
+    )
 
-@router.get("/portfolio-summary", response_model=dict)
+
+@router.get("/portfolio-summary", response_model=PortfolioSummary)
 async def portfolio_summary(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
@@ -85,15 +128,15 @@ async def portfolio_summary(
             "sum_nmc": sum(t.nmc or 0 for t in stage_tenders),
         }
 
-    return {
-        "active_count": len(active),
-        "active_sum": round(total_nmc, 2),
-        "won_count": len(won),
-        "won_sum": round(total_won, 2),
-        "win_rate": win_rate,
-        "auction_now": len(auction_now),
-        "pipeline": pipeline,
-    }
+    return PortfolioSummary(
+        active_count=len(active),
+        active_sum=round(total_nmc, 2),
+        won_count=len(won),
+        won_sum=round(total_won, 2),
+        win_rate=win_rate,
+        auction_now=len(auction_now),
+        pipeline=pipeline,
+    )
 
 
 def _parse_date(value):
@@ -110,36 +153,36 @@ def _parse_date(value):
     return None
 
 
-@router.post("", response_model=dict)
+@router.post("", response_model=TenderCreateResponse)
 async def create_tender(
-    data: dict,
+    data: TenderCreate,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
     tender = Tender(
-        name=data.get("name"),
-        customer_name=data.get("customer_name"),
-        project_type=data.get("project_type"),
-        volume=data.get("volume"),
-        volume_unit=data.get("volume_unit"),
-        complexity=data.get("complexity", "medium"),
-        standards=data.get("standards", []),
-        start_date=_parse_date(data.get("start_date")),
-        deadline=_parse_date(data.get("deadline")),
-        duration_months=data.get("duration_months"),
-        nmc=data.get("nmc"),
-        our_price=data.get("our_price"),
-        margin_pct=data.get("margin_pct"),
-        probability=data.get("probability"),
-        platform=data.get("platform"),
-        region=data.get("region"),
-        responsible_id=data.get("responsible_id"),
-        auction_end_time=_parse_date(data.get("auction_end_time")),
-        stage=data.get("stage", "new"),
-        calculated_hours=data.get("calculated_hours"),
-        calculated_cost=data.get("calculated_cost"),
-        team_size=data.get("team_size"),
-        team_composition=data.get("team_composition", {}),
+        name=data.name,
+        customer_name=data.customer_name,
+        project_type=data.project_type,
+        volume=data.volume,
+        volume_unit=data.volume_unit,
+        complexity=data.complexity,
+        standards=data.standards or [],
+        start_date=data.start_date,
+        deadline=data.deadline,
+        duration_months=data.duration_months,
+        nmc=data.nmc,
+        our_price=data.our_price,
+        margin_pct=data.margin_pct,
+        probability=data.probability,
+        platform=data.platform,
+        region=data.region,
+        responsible_id=data.responsible_id,
+        auction_end_time=data.auction_end_time,
+        stage=data.stage,
+        calculated_hours=data.calculated_hours,
+        calculated_cost=data.calculated_cost,
+        team_size=data.team_size,
+        team_composition=data.team_composition or {},
         status="draft",
         created_by_id=current_user.id,
     )
@@ -148,38 +191,41 @@ async def create_tender(
     await db.refresh(tender)
     await invalidate_cache("cache:*trend*")
     await invalidate_cache("cache:*dashboard*")
-    return {
-        "id": tender.id,
-        "name": tender.name,
-        "status": tender.status,
-        "stage": tender.stage,
-        "calculated_cost": tender.calculated_cost,
-    }
+    return TenderCreateResponse(
+        id=tender.id,
+        name=tender.name,
+        status=tender.status,
+        stage=tender.stage,
+        calculated_cost=tender.calculated_cost,
+    )
 
 
-@router.patch("/{tender_id}/stage", response_model=dict)
+@router.patch("/{tender_id}/stage", response_model=TenderStageResponse)
 async def update_tender_stage(
     tender_id: int,
-    data: dict,
+    data: TenderStageUpdate,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    result = await db.execute(select(Tender).where(Tender.id == tender_id))
+    # Lock the row to prevent race condition on project creation
+    result = await db.execute(
+        select(Tender).where(Tender.id == tender_id).with_for_update()
+    )
     tender = result.scalar_one_or_none()
     if not tender:
         raise HTTPException(status_code=404, detail="Tender not found")
-    new_stage = data.get("stage")
-    new_status = data.get("status")
+    new_stage = data.stage
+    new_status = data.status
     if new_stage:
         tender.stage = new_stage
     if new_status:
         tender.status = new_status
-    if "our_price" in data:
-        tender.our_price = data["our_price"]
-    if "margin_pct" in data:
-        tender.margin_pct = data["margin_pct"]
-    if "probability" in data:
-        tender.probability = data["probability"]
+    if data.our_price is not None:
+        tender.our_price = data.our_price
+    if data.margin_pct is not None:
+        tender.margin_pct = data.margin_pct
+    if data.probability is not None:
+        tender.probability = data.probability
     await db.commit()
 
     # Auto-create project when tender is won and no project linked yet
@@ -208,13 +254,15 @@ async def update_tender_stage(
 
     await invalidate_cache("cache:*trend*")
     await invalidate_cache("cache:*dashboard*")
-    result_payload = {"id": tender.id, "stage": tender.stage, "status": tender.status}
-    if project_created:
-        result_payload["project_created"] = project_created
-    return result_payload
+    return TenderStageResponse(
+        id=tender.id,
+        stage=tender.stage,
+        status=tender.status,
+        project_created=project_created,
+    )
 
 
-@router.get("/{tender_id}", response_model=dict)
+@router.get("/{tender_id}", response_model=TenderDetail)
 async def get_tender(
     tender_id: int,
     db: AsyncSession = Depends(get_db),
@@ -224,58 +272,62 @@ async def get_tender(
     tender = result.scalar_one_or_none()
     if not tender:
         raise HTTPException(status_code=404, detail="Tender not found")
-    return {
-        "id": tender.id,
-        "name": tender.name,
-        "customer_name": tender.customer_name,
-        "project_type": tender.project_type,
-        "volume": tender.volume,
-        "complexity": tender.complexity,
-        "standards": tender.standards,
-        "start_date": tender.start_date.isoformat() if tender.start_date else None,
-        "deadline": tender.deadline.isoformat() if tender.deadline else None,
-        "duration_months": tender.duration_months,
-        "nmc": tender.nmc,
-        "our_price": tender.our_price,
-        "margin_pct": tender.margin_pct,
-        "probability": tender.probability,
-        "platform": tender.platform,
-        "region": tender.region,
-        "responsible_id": tender.responsible_id,
-        "auction_end_time": tender.auction_end_time.isoformat() if tender.auction_end_time else None,
-        "stage": tender.stage,
-        "loss_reason": tender.loss_reason,
-        "calculated_hours": tender.calculated_hours,
-        "calculated_cost": tender.calculated_cost,
-        "team_size": tender.team_size,
-        "team_composition": tender.team_composition,
-        "status": tender.status,
-        "created_at": tender.created_at.isoformat() if tender.created_at else None,
-    }
+    return TenderDetail(
+        id=tender.id,
+        name=tender.name,
+        customer_name=tender.customer_name,
+        project_type=tender.project_type,
+        volume=tender.volume,
+        complexity=tender.complexity,
+        standards=tender.standards,
+        start_date=_iso_or_none(tender.start_date),
+        deadline=_iso_or_none(tender.deadline),
+        duration_months=tender.duration_months,
+        nmc=tender.nmc,
+        our_price=tender.our_price,
+        margin_pct=tender.margin_pct,
+        probability=tender.probability,
+        platform=tender.platform,
+        region=tender.region,
+        responsible_id=tender.responsible_id,
+        auction_end_time=_iso_or_none(tender.auction_end_time),
+        stage=tender.stage,
+        loss_reason=tender.loss_reason,
+        calculated_hours=tender.calculated_hours,
+        calculated_cost=tender.calculated_cost,
+        team_size=tender.team_size,
+        team_composition=tender.team_composition,
+        status=tender.status,
+        created_at=_iso_or_none(tender.created_at),
+    )
 
 
-@router.post("/{tender_id}/generate-preview", response_model=dict)
+@router.post("/{tender_id}/generate-preview", response_model=TenderDocumentPreviewResponse)
 async def generate_preview(
     tender_id: int,
-    data: dict,
+    data: TenderDocumentPreviewCreate,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
     preview = TenderDocumentPreview(
         tender_id=tender_id,
-        doc_type=data.get("doc_type"),
-        name=data.get("name"),
-        format=data.get("format", "pdf"),
-        content_data=data.get("content_data", {}),
-        preview_url=data.get("preview_url"),
+        doc_type=data.doc_type,
+        name=data.name,
+        format=data.format,
+        content_data=data.content_data or {},
+        preview_url=data.preview_url,
     )
     db.add(preview)
     await db.commit()
     await db.refresh(preview)
-    return {"id": preview.id, "doc_type": preview.doc_type, "name": preview.name}
+    return TenderDocumentPreviewResponse(
+        id=preview.id,
+        doc_type=preview.doc_type,
+        name=preview.name,
+    )
 
 
-@router.post("/{tender_id}/calculate", response_model=dict)
+@router.post("/{tender_id}/calculate", response_model=TenderCalculateResponse)
 async def calculate_tender_endpoint(
     tender_id: int,
     db: AsyncSession = Depends(get_db),
@@ -303,14 +355,18 @@ async def calculate_tender_endpoint(
     tender.duration_months = calc["duration_months"]
     await db.commit()
 
-    return {
-        "tender_id": tender.id,
-        "name": tender.name,
-        **calc,
-    }
+    return TenderCalculateResponse(
+        tender_id=tender.id,
+        name=tender.name,
+        total_hours=calc["total_hours"],
+        team_size=calc["team_size"],
+        team_composition=calc["team_composition"],
+        duration_months=calc["duration_months"],
+        load_chart=calc["monthly_load"],
+    )
 
 
-@router.post("/{tender_id}/create-project", response_model=dict)
+@router.post("/{tender_id}/create-project", response_model=TenderProjectCreateResponse)
 async def create_project_from_tender(
     tender_id: int,
     db: AsyncSession = Depends(get_db),
@@ -344,19 +400,19 @@ async def create_project_from_tender(
     await invalidate_cache("cache:*portfolio*")
     await invalidate_cache("cache:*dashboard*")
 
-    return {
-        "id": project.id,
-        "name": project.name,
-        "code": project.code,
-        "customer_name": project.customer_name,
-        "status": project.status,
-        "stage": project.stage,
-        "planned_finish": project.planned_finish.isoformat() if project.planned_finish else None,
-        "created_at": project.created_at.isoformat() if project.created_at else None,
-    }
+    return TenderProjectCreateResponse(
+        id=project.id,
+        name=project.name,
+        code=project.code,
+        customer_name=project.customer_name,
+        status=project.status,
+        stage=project.stage,
+        planned_finish=project.planned_finish.isoformat() if project.planned_finish else None,
+        created_at=project.created_at.isoformat() if project.created_at else None,
+    )
 
 
-@router.get("/{tender_id}/tasks", response_model=list)
+@router.get("/{tender_id}/tasks", response_model=list[TenderTaskItem])
 async def get_tender_tasks(
     tender_id: int,
     db: AsyncSession = Depends(get_db),
@@ -368,24 +424,20 @@ async def get_tender_tasks(
     if not tender:
         raise HTTPException(status_code=404, detail="Tender not found")
 
-    # Tasks linked to the same project as the tender
-    # Tenders don't have a direct project_id FK, so we return empty if no project context
-    # In a real scenario, tasks with matching project_id would be returned
-    # For now, return tasks that have task_data referencing this tender
     tasks_result = await db.execute(
         select(Task).where(Task.task_data.contains({"tender_id": tender_id}))
     )
     tasks = tasks_result.scalars().all()
 
     return [
-        {
-            "id": t.id,
-            "tender_id": tender_id,
-            "title": t.title,
-            "assignee": t.assignee.full_name if t.assignee else None,
-            "due_date": t.due_date.isoformat() if t.due_date else None,
-            "status": t.status,
-            "priority": t.priority,
-        }
+        TenderTaskItem(
+            id=t.id,
+            tender_id=tender_id,
+            title=t.title,
+            assignee=t.assignee.full_name if t.assignee else None,
+            due_date=_iso_or_none(t.due_date),
+            status=t.status,
+            priority=t.priority,
+        )
         for t in tasks
     ]

@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui';
 import { useSRMStore } from '@/stores/srmStore';
 import type { InvoiceStatus } from '@/types/srm';
 import { FileText, Calendar, AlertCircle, TrendingUp } from 'lucide-react';
+import { useMemo } from 'react';
 
 const STATUS_CONFIG: Record<InvoiceStatus, { label: string; variant: 'success' | 'warning' | 'error' | 'info' | 'neutral' }> = {
   received: { label: 'Получен', variant: 'neutral' },
@@ -15,8 +16,18 @@ const STATUS_CONFIG: Record<InvoiceStatus, { label: string; variant: 'success' |
 
 export default function InvoicesPage() {
   const invoices = useSRMStore(s => s.invoices);
-  const stats = useSRMStore(s => s.getSRMStats());
-  const overdue = useSRMStore(s => s.getOverdueInvoices());
+
+  // Use useMemo to avoid recalculating on every render and prevent infinite loops
+  const stats = useMemo(() => {
+    const totalInvoices = invoices.length;
+    const totalPayable = invoices
+      .filter(i => ['received', 'verified', 'approved', 'overdue'].includes(i.status))
+      .reduce((sum, i) => sum + i.amount, 0);
+    const overdueInvoices = invoices.filter(i => i.status === 'overdue').length;
+    const approvedCount = invoices.filter(i => i.status === 'approved').length;
+    const overdue = invoices.filter(i => i.status === 'overdue');
+    return { totalInvoices, totalPayable, overdueInvoices, approvedCount, overdue };
+  }, [invoices]);
 
   return (
     <div className="space-y-6 px-3 md:px-6 py-4 md:py-6">
@@ -63,20 +74,20 @@ export default function InvoicesPage() {
           </div>
           <div>
             <div className="text-lg font-bold" style={{ color: 'var(--warning)' }}>
-              {invoices.filter(i => i.status === 'approved').length}
+              {stats.approvedCount}
             </div>
             <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>На оплату</div>
           </div>
         </Card>
       </div>
 
-      {overdue.length > 0 && (
+      {stats.overdue.length > 0 && (
         <Card padding="md" style={{ borderColor: 'var(--error)', borderWidth: '1px' }}>
           <h3 className="text-sm font-medium mb-3 flex items-center gap-2" style={{ color: 'var(--error)' }}>
             <AlertCircle size={16} /> Просроченные счета
           </h3>
           <div className="space-y-2">
-            {overdue.map(inv => (
+            {stats.overdue.map(inv => (
               <div key={inv.id} className="flex items-center justify-between p-2 rounded-lg" style={{ backgroundColor: 'color-mix(in srgb, var(--error) 5%, var(--bg-surface))' }}>
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{inv.number}</span>

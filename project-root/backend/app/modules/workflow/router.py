@@ -19,6 +19,9 @@ from app.modules.workflow.schemas import (
     ApprovalAction,
     RejectionAction,
     DelegationAction,
+    ApprovalResponse,
+    RejectionResponse,
+    DelegationResponse,
     WorkflowCommentCreate,
     WorkflowCommentResponse,
     WorkflowAuditLogResponse,
@@ -240,7 +243,7 @@ async def get_document_instances(
 
 # ==================== Step Action Endpoints ====================
 
-@router.post("/steps/{step_id}/approve", response_model=dict)
+@router.post("/steps/{step_id}/approve", response_model=ApprovalResponse)
 async def approve_step(
     step_id: int,
     action: ApprovalAction,
@@ -253,20 +256,20 @@ async def approve_step(
     try:
         step, next_step = await service.approve_step(step_id, current_user.id, action)
         
-        result = {
-            "step_id": step.id,
-            "status": "approved",
-            "message": "Step approved successfully"
-        }
+        result = ApprovalResponse(
+            step_id=step.id,
+            status="approved",
+            message="Step approved successfully",
+        )
         
         if next_step:
-            result["next_step"] = {
+            result.next_step = {
                 "id": next_step.id,
                 "name": next_step.step_name,
                 "status": next_step.status.value
             }
         else:
-            result["workflow_completed"] = True
+            result.workflow_completed = True
         
         return result
     except Exception as e:
@@ -276,7 +279,7 @@ async def approve_step(
         )
 
 
-@router.post("/steps/{step_id}/reject", response_model=dict)
+@router.post("/steps/{step_id}/reject", response_model=RejectionResponse)
 async def reject_step(
     step_id: int,
     action: RejectionAction,
@@ -289,12 +292,12 @@ async def reject_step(
     try:
         return_step = await service.reject_step(step_id, current_user.id, action)
         
-        return {
-            "step_id": step_id,
-            "status": "rejected",
-            "message": "Step rejected",
-            "return_to_step": return_step.id if return_step else None
-        }
+        return RejectionResponse(
+            step_id=step_id,
+            status="rejected",
+            message="Step rejected",
+            return_to_step=return_step.id if return_step else None
+        )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -302,7 +305,7 @@ async def reject_step(
         )
 
 
-@router.post("/steps/{step_id}/delegate", response_model=dict)
+@router.post("/steps/{step_id}/delegate", response_model=DelegationResponse)
 async def delegate_step(
     step_id: int,
     action: DelegationAction,
@@ -315,12 +318,12 @@ async def delegate_step(
     try:
         step = await service.delegate_step(step_id, current_user.id, action)
         
-        return {
-            "step_id": step.id,
-            "status": "delegated",
-            "message": "Step delegated successfully",
-            "delegate_to": action.delegate_to
-        }
+        return DelegationResponse(
+            step_id=step.id,
+            status="delegated",
+            message="Step delegated successfully",
+            delegate_to=action.delegate_to
+        )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

@@ -1,0 +1,159 @@
+C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\pytest_asyncio\plugin.py:208: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts =============================
+platform win32 -- Python 3.12.7, pytest-8.3.3, pluggy-1.6.0 -- C:\Users\Novikova\AppData\Local\Programs\Python\Python312\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\Novikova\Desktop\ДокПоток_IRIS\project-root\backend
+configfile: pyproject.toml
+plugins: anyio-4.12.1, langsmith-0.7.33, asyncio-0.24.0, cov-5.0.0, xdist-3.8.0
+asyncio: mode=Mode.STRICT, default_loop_scope=None
+collecting ... collected 127 items
+
+tests/test_ai_service.py::test_chat_with_context PASSED                  [  0%]
+tests/test_ai_service.py::test_confidence_low_when_no_context PASSED     [  1%]
+tests/test_architecture.py::TestArchitecture::test_no_cyclic_dependencies PASSED [  2%]
+tests/test_architecture.py::TestArchitecture::test_auth_module_isolation PASSED [  3%]
+tests/test_architecture.py::TestArchitecture::test_documents_module_dependencies PASSED [  3%]
+tests/test_architecture.py::TestArchitecture::test_analytics_module_dependencies PASSED [  4%]
+tests/test_architecture.py::TestArchitecture::test_resources_module_dependencies PASSED [  5%]
+tests/test_architecture.py::TestArchitecture::test_router_cleanliness PASSED [  6%]
+tests/test_architecture.py::TestArchitecture::test_repository_service_layers_exist PASSED [  7%]
+tests/test_auth_api.py::TestAuthRegister::test_register_success PASSED   [  7%]
+tests/test_auth_api.py::TestAuthRegister::test_register_duplicate_email PASSED [  8%]
+tests/test_auth_api.py::TestAuthLogin::test_login_success PASSED         [  9%]
+tests/test_auth_api.py::TestAuthLogin::test_login_with_totp PASSED       [ 10%]
+tests/test_auth_api.py::TestAuthLogin::test_login_totp_missing PASSED    [ 11%]
+tests/test_auth_api.py::TestAuthLogin::test_login_wrong_password PASSED  [ 11%]
+tests/test_auth_api.py::TestAuthLogin::test_login_user_not_found PASSED  [ 12%]
+tests/test_auth_api.py::TestAuthRefresh::test_refresh_success PASSED     [ 13%]
+tests/test_auth_api.py::TestAuthRefresh::test_refresh_invalid_token PASSED [ 14%]
+tests/test_auth_api.py::TestAuthMe::test_me_returns_current_user PASSED  [ 14%]
+tests/test_auth_api.py::TestForgotPassword::test_forgot_password_success PASSED [ 15%]
+tests/test_auth_api.py::TestForgotPassword::test_forgot_password_nonexistent_email PASSED [ 16%]
+tests/test_auth_api.py::TestResetPassword::test_reset_password_success PASSED [ 17%]
+tests/test_auth_api.py::TestResetPassword::test_reset_password_invalid_token PASSED [ 18%]
+tests/test_auth_api.py::TestResetPassword::test_reset_password_expired_token PASSED [ 18%]
+tests/test_collaboration_ws.py::TestWebSocketConnect::test_ws_no_token PASSED [ 19%]
+tests/test_collaboration_ws.py::TestWebSocketConnect::test_ws_invalid_token PASSED [ 20%]
+tests/test_collaboration_ws.py::TestWebSocketConnect::test_ws_valid_token PASSED [ 21%]
+tests/test_collaboration_ws.py::TestWebSocketConnect::test_ws_presence_update PASSED [ 22%]
+tests/test_collaboration_ws.py::TestWebSocketConnect::test_ws_subscribe_document PASSED [ 22%]
+tests/test_documents_api.py::TestListDocuments::test_list_documents PASSED [ 23%]
+tests/test_documents_api.py::TestGetDocument::test_get_document_success PASSED [ 24%]
+tests/test_documents_api.py::TestGetDocument::test_get_document_locked PASSED [ 25%]
+tests/test_documents_api.py::TestGetDocument::test_get_document_not_found PASSED [ 25%]
+tests/test_documents_api.py::TestCreateDocument::test_create_document PASSED [ 26%]
+tests/test_documents_api.py::TestLockDocument::test_lock_success PASSED  [ 27%]
+tests/test_documents_api.py::TestLockDocument::test_lock_already_locked_by_other PASSED [ 28%]
+tests/test_documents_api.py::TestLockDocument::test_lock_idempotent_same_user PASSED [ 29%]
+tests/test_documents_api.py::TestUnlockDocument::test_unlock_success PASSED [ 29%]
+tests/test_documents_api.py::TestUnlockDocument::test_unlock_forbidden PASSED [ 30%]
+tests/test_documents_api.py::TestSubmitForApproval::test_submit_for_approval_success PASSED [ 31%]
+tests/test_documents_api.py::TestSubmitForApproval::test_submit_for_approval_conflict PASSED [ 32%]
+tests/test_documents_api.py::TestSubmitForReview::test_submit_for_review_success PASSED [ 33%]
+tests/test_documents_api.py::TestSubmitForReview::test_submit_for_review_conflict PASSED [ 33%]
+tests/test_gamification_api.py::TestGamificationLeaderboard::test_leaderboard_excludes_admins PASSED [ 34%]
+tests/test_gamification_api.py::TestGamificationLeaderboard::test_leaderboard_sorted_by_score PASSED [ 35%]
+tests/test_gamification_api.py::TestGamificationProfile::test_profile_includes_score_and_level PASSED [ 36%]
+tests/test_gamification_api.py::TestGamificationProfile::test_profile_includes_badges PASSED [ 37%]
+tests/test_gamification_api.py::TestGamificationBadges::test_available_badges_returns_definitions PASSED [ 37%]
+tests/test_gamification_api.py::TestGamificationNotifications::test_get_notifications_returns_list PASSED [ 38%]
+tests/test_gamification_api.py::TestGamificationNotifications::test_mark_notification_read_returns_success PASSED [ 39%]
+tests/test_gamification_api.py::TestGamificationNotifications::test_get_unread_count_returns_count PASSED [ 40%]
+tests/test_gamification_api.py::TestDailyQuests::test_get_daily_quests_returns_quests PASSED [ 40%]
+tests/test_gamification_api.py::TestDailyQuests::test_update_quest_progress_updates_and_awards PASSED [ 41%]
+tests/test_other_modules_api.py::TestTimeTracking::test_list_sessions PASSED [ 42%]
+tests/test_other_modules_api.py::TestTimeTracking::test_start_session PASSED [ 43%]
+tests/test_other_modules_api.py::TestTimeTracking::test_stop_session PASSED [ 44%]
+tests/test_other_modules_api.py::TestTimeTracking::test_stop_session_not_found PASSED [ 44%]
+tests/test_other_modules_api.py::TestTimeTracking::test_employee_analytics PASSED [ 45%]
+tests/test_other_modules_api.py::TestVariables::test_list_variables PASSED [ 46%]
+tests/test_other_modules_api.py::TestVariables::test_create_variable PASSED [ 47%]
+tests/test_other_modules_api.py::TestVariables::test_update_variable PASSED [ 48%]
+tests/test_other_modules_api.py::TestVariables::test_substitute_variable PASSED [ 48%]
+tests/test_other_modules_api.py::TestAnalytics::test_dashboard PASSED    [ 49%]
+tests/test_other_modules_api.py::TestTenders::test_list_tenders PASSED   [ 50%]
+tests/test_other_modules_api.py::TestTenders::test_get_tender PASSED     [ 51%]
+tests/test_other_modules_api.py::TestTenders::test_get_tender_not_found PASSED [ 51%]
+tests/test_other_modules_api.py::TestTenders::test_create_tender PASSED  [ 52%]
+tests/test_other_modules_api.py::TestTenders::test_calculate_tender PASSED [ 53%]
+tests/test_other_modules_api.py::TestResources::test_get_workload PASSED [ 54%]
+tests/test_parser.py::test_pdf_structure_extraction PASSED               [ 55%]
+tests/test_parser.py::test_entity_extraction PASSED                      [ 55%]
+tests/test_projects_api.py::TestListProjects::test_list_projects PASSED  [ 56%]
+tests/test_projects_api.py::TestCreateProject::test_create_project PASSED [ 57%]
+tests/test_projects_api.py::TestGetProject::test_get_project_success PASSED [ 58%]
+tests/test_projects_api.py::TestGetProject::test_get_project_not_found PASSED [ 59%]
+tests/test_security_utils.py::TestIsSecureSecretKey::test_too_short_or_empty[None] PASSED [ 59%]
+tests/test_security_utils.py::TestIsSecureSecretKey::test_too_short_or_empty[] PASSED [ 60%]
+tests/test_security_utils.py::TestIsSecureSecretKey::test_too_short_or_empty[short] PASSED [ 61%]
+tests/test_security_utils.py::TestIsSecureSecretKey::test_too_short_or_empty[1234567890123456789012345678901] PASSED [ 62%]
+tests/test_security_utils.py::TestIsSecureSecretKey::test_default_keys_rejected[your-super-secret-key-change-in-production-please] PASSED [ 62%]
+tests/test_security_utils.py::TestIsSecureSecretKey::test_default_keys_rejected[change-me-in-production-min-32-chars-long] PASSED [ 63%]
+tests/test_security_utils.py::TestIsSecureSecretKey::test_default_keys_rejected[secret] PASSED [ 64%]
+tests/test_security_utils.py::TestIsSecureSecretKey::test_default_keys_rejected[password] PASSED [ 65%]
+tests/test_security_utils.py::TestIsSecureSecretKey::test_default_keys_rejected[12345678901234567890123456789012] PASSED [ 66%]
+tests/test_security_utils.py::TestIsSecureSecretKey::test_default_keys_rejected[admin] PASSED [ 66%]
+tests/test_security_utils.py::TestIsSecureSecretKey::test_default_keys_rejected[root] PASSED [ 67%]
+tests/test_security_utils.py::TestIsSecureSecretKey::test_default_keys_rejected[toor] PASSED [ 68%]
+tests/test_security_utils.py::TestIsSecureSecretKey::test_default_keys_rejected[qwerty] PASSED [ 69%]
+tests/test_security_utils.py::TestIsSecureSecretKey::test_default_keys_rejected[12345678] PASSED [ 70%]
+tests/test_security_utils.py::TestIsSecureSecretKey::test_default_keys_rejected[SECRET] PASSED [ 70%]
+tests/test_security_utils.py::TestIsSecureSecretKey::test_default_keys_rejected[ADMIN] PASSED [ 71%]
+tests/test_security_utils.py::TestIsSecureSecretKey::test_default_keys_rejected[QwErTy] PASSED [ 72%]
+tests/test_security_utils.py::TestIsSecureSecretKey::test_only_uppercase_and_digits_fails PASSED [ 73%]
+tests/test_security_utils.py::TestIsSecureSecretKey::test_only_lowercase_and_digits_fails PASSED [ 74%]
+tests/test_security_utils.py::TestIsSecureSecretKey::test_only_uppercase_and_lowercase_fails PASSED [ 74%]
+tests/test_security_utils.py::TestIsSecureSecretKey::test_upper_lower_digit_special_passes PASSED [ 75%]
+tests/test_security_utils.py::TestIsSecureSecretKey::test_upper_lower_digit_passes PASSED [ 76%]
+tests/test_security_utils.py::TestIsSecureSecretKey::test_upper_lower_special_passes PASSED [ 77%]
+tests/test_security_utils.py::TestIsSecureSecretKey::test_lower_digit_special_passes PASSED [ 77%]
+tests/test_security_utils.py::TestIsSecureSecretKey::test_upper_digit_special_passes PASSED [ 78%]
+tests/test_security_utils.py::TestIsSecureSecretKey::test_exactly_three_categories_passes PASSED [ 79%]
+tests/test_security_utils.py::TestIsSecureSecretKey::test_only_two_categories_fails PASSED [ 80%]
+tests/test_security_utils.py::TestIsSecureSecretKey::test_long_secure_key_passes PASSED [ 81%]
+tests/test_tasks_api.py::TestListTasks::test_list_tasks PASSED           [ 81%]
+tests/test_tasks_api.py::TestListTasks::test_list_tasks_with_filters PASSED [ 82%]
+tests/test_tasks_api.py::TestListTasks::test_list_tasks_overdue_only PASSED [ 83%]
+tests/test_tasks_api.py::TestListTasks::test_list_tasks_search PASSED    [ 84%]
+tests/test_tasks_api.py::TestGetTask::test_get_task_success PASSED       [ 85%]
+tests/test_tasks_api.py::TestGetTask::test_get_task_not_found PASSED     [ 85%]
+tests/test_tasks_api.py::TestCreateTask::test_create_task PASSED         [ 86%]
+tests/test_tasks_api.py::TestCreateTask::test_create_task_validation_error PASSED [ 87%]
+tests/test_tasks_api.py::TestUpdateTask::test_update_task PASSED         [ 88%]
+tests/test_tasks_api.py::TestUpdateTask::test_update_task_not_found PASSED [ 88%]
+tests/test_tasks_api.py::TestUpdateTaskStatus::test_update_task_status PASSED [ 89%]
+tests/test_tasks_api.py::TestUpdateTaskStatus::test_update_task_status_not_found PASSED [ 90%]
+tests/test_tasks_api.py::TestDeleteTask::test_delete_task PASSED         [ 91%]
+tests/test_tasks_api.py::TestDeleteTask::test_delete_task_not_found PASSED [ 92%]
+tests/test_tasks_api.py::TestTaskStatistics::test_get_statistics PASSED  [ 92%]
+tests/test_tasks_api.py::TestTaskStatistics::test_get_statistics_with_project_id PASSED [ 93%]
+tests/test_team_module.py::TestTeamEndpoints::test_leaderboard_data_structure PASSED [ 94%]
+tests/test_team_module.py::TestTeamEndpoints::test_leaderboard_sorted_by_rank PASSED [ 95%]
+tests/test_team_module.py::TestBirthdayWidget::test_birthday_data_format PASSED [ 96%]
+tests/test_team_module.py::TestCalendarBirthdays::test_calendar_birthdays_returns_data PASSED [ 96%]
+tests/test_team_module.py::TestCalendarBirthdays::test_calendar_birthdays_requires_auth PASSED [ 97%]
+tests/test_team_module.py::TestCalendarBirthdays::test_calendar_events_include_birthday_type PASSED [ 98%]
+tests/test_team_module.py::TestAdminDashboard::test_admin_audit_api_returns_data PASSED [ 99%]
+tests/test_team_module.py::TestAdminDashboard::test_admin_audit_api_requires_auth PASSED [100%]
+
+============================== warnings summary ===============================
+..\..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pydantic\_internal\_config.py:295
+..\..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pydantic\_internal\_config.py:295
+..\..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pydantic\_internal\_config.py:295
+..\..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pydantic\_internal\_config.py:295
+..\..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pydantic\_internal\_config.py:295
+..\..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pydantic\_internal\_config.py:295
+..\..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pydantic\_internal\_config.py:295
+  C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+tests/test_ai_service.py::test_chat_with_context
+tests/test_architecture.py::TestArchitecture::test_no_cyclic_dependencies
+  C:\Users\Novikova\AppData\Local\Programs\Python\Python312\Lib\site-packages\qdrant_client\qdrant_remote.py:288: UserWarning: Failed to obtain server version. Unable to check client-server compatibility. Set check_compatibility=False to skip version check.
+    show_warning(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================= 127 passed, 9 warnings in 390.26s (0:06:30) =================

@@ -32,7 +32,7 @@ async def classify_document(content: str) -> dict:
                 {
                     "role": "system",
                     "content": (
-                        "Классифицируй инженерный документ. "
+                        "Классифицируй технический документ. "
                         "Возможные типы: КМ, КЖ, КМД, АР, ОВ, ЭОМ, ТХ, ИОС, ПД, РД. "
                         "Ответь JSON: {type, confidence, keywords}"
                     ),

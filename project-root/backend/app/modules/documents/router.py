@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, and_
 
 from app.db.session import get_db, get_db_read_only
 from app.modules.auth.deps import get_current_active_user
@@ -11,6 +11,15 @@ from app.modules.documents.dependencies import router as deps_router
 from app.modules.documents.service import DocumentService
 from app.modules.documents.deps import get_document_service
 from app.modules.documents.models import Document
+from app.modules.documents.schemas import (
+    DocumentCreateInput,
+    DocumentUpdateInput,
+    RevisionCreateInput,
+    ApprovalWorkflowCreateInput,
+    DocumentRenderRequest,
+    CascadeUpdateRequest,
+    LockRequestInput,
+)
 from app.ai.classification import classify_document
 
 router = APIRouter(tags=["documents"])
@@ -80,20 +89,20 @@ async def list_documents(
 
 @router.post("", response_model=dict, status_code=201)
 async def create_document(
-    data: dict,
+    data: DocumentCreateInput,
     current_user: User = Depends(get_current_active_user),
     service: DocumentService = Depends(get_document_service),
 ):
-    return await service.create_document(data, current_user.id)
+    return await service.create_document(data.model_dump(), current_user.id)
 
 
 @router.patch("/{document_id}", response_model=dict)
 async def update_document(
     document_id: int,
-    data: dict,
+    data: DocumentUpdateInput,
     service: DocumentService = Depends(get_document_service),
 ):
-    return await service.update_document(document_id, data)
+    return await service.update_document(document_id, data.model_dump(exclude_unset=True))
 
 
 @router.get("/{document_id}", response_model=dict)
@@ -107,39 +116,39 @@ async def get_document(
 @router.post("/{document_id}/revisions", response_model=dict)
 async def create_revision(
     document_id: int,
-    data: dict,
+    data: RevisionCreateInput,
     current_user: User = Depends(get_current_active_user),
     service: DocumentService = Depends(get_document_service),
 ):
-    return await service.create_revision(document_id, data, current_user.id)
+    return await service.create_revision(document_id, data.model_dump(), current_user.id)
 
 
 @router.post("/{document_id}/approval-workflows", response_model=dict)
 async def start_approval_workflow(
     document_id: int,
-    data: dict,
+    data: ApprovalWorkflowCreateInput,
     service: DocumentService = Depends(get_document_service),
 ):
-    return await service.start_approval_workflow(document_id, data)
+    return await service.start_approval_workflow(document_id, data.model_dump())
 
 
 @router.post("/{document_id}/render", response_model=dict)
 async def render_document_endpoint(
     document_id: int,
-    data: dict = {},
+    data: DocumentRenderRequest = DocumentRenderRequest(),
     service: DocumentService = Depends(get_document_service),
 ):
-    return await service.render_document(document_id, data.get("extra_variables"))
+    return await service.render_document(document_id, data.extra_variables)
 
 
 @router.post("/cascade-update", response_model=dict)
 async def cascade_update_endpoint(
-    data: dict,
+    data: CascadeUpdateRequest,
     service: DocumentService = Depends(get_document_service),
 ):
     return await service.cascade_update(
-        data.get("project_id"),
-        data.get("changed_keys", [])
+        data.project_id,
+        data.changed_keys
     )
 
 

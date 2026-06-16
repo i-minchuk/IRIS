@@ -42,6 +42,7 @@ const ContractsPage = lazy(() => import('@/pages/srm/Contracts'));
 const OrdersPage = lazy(() => import('@/pages/srm/Orders'));
 const InvoicesPage = lazy(() => import('@/pages/srm/Invoices'));
 const TeamPage = lazy(() => import('@/pages/TeamPage'));
+const TimeTrackingPage = lazy(() => import('@/pages/TimeTrackingPage'));
 
 function RouteFallback() {
   return <div className="flex items-center justify-center h-screen text-gray-400 text-sm">Загрузка…</div>;
@@ -93,12 +94,14 @@ export const router = createBrowserRouter([
           { path: '/srm/contracts', element: <Navigate to="/portfolio" replace /> },
           { path: '/srm/orders', element: <Navigate to="/portfolio" replace /> },
           { path: '/srm/invoices', element: <Navigate to="/portfolio" replace /> },
+  { path: '/tenders/:id', element: <Navigate to="/portfolio" replace /> },
           { path: '/calendar', element: <SuspenseWrapper><CalendarPage /></SuspenseWrapper> },
           { path: '/reports', element: <SuspenseWrapper><ReportsPage /></SuspenseWrapper> },
           { path: '/profile', element: <SuspenseWrapper><ProfileSettingsPage /></SuspenseWrapper> },
           { path: '/profile/2fa', element: <SuspenseWrapper><TwoFactorSettingsPage /></SuspenseWrapper> },
           { path: '/notifications', element: <SuspenseWrapper><NotificationPage /></SuspenseWrapper> },
           { path: '/production', element: <SuspenseWrapper><ProductionControlPage /></SuspenseWrapper> },
+          { path: '/time-tracking', element: <SuspenseWrapper><TimeTrackingPage /></SuspenseWrapper> },
           { path: '/analytics', element: <Navigate to='/dashboard' replace /> },
           { path: '/references', element: <SuspenseWrapper><ReferencePage /></SuspenseWrapper> },
           { path: '/documents/new', element: <SuspenseWrapper><DocumentCreate /></SuspenseWrapper> },

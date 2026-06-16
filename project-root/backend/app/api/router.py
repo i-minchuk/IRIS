@@ -13,6 +13,7 @@ from app.modules.resources import router as resources_router
 from app.modules.remarks import router as remarks_router
 from app.modules.tasks import router as tasks_router
 from app.modules.tenders import router as tenders_router
+from app.modules.tenders.router_extended import router as tenders_extended_router
 from app.modules.time_tracking import router as time_tracking_router
 from app.modules.variables import router as variables_router
 from app.modules.workflow.router import router as workflow_router
@@ -33,6 +34,7 @@ api_router.include_router(documents_router, prefix=f"{settings.API_V1_STR}/docum
 api_router.include_router(variables_router, prefix=f"{settings.API_V1_STR}/variables", tags=["Variables"])
 api_router.include_router(time_tracking_router, prefix=f"{settings.API_V1_STR}/time-tracking", tags=["Time Tracking"])
 api_router.include_router(tenders_router, prefix=f"{settings.API_V1_STR}/tenders", tags=["Tenders"])
+api_router.include_router(tenders_extended_router, prefix=f"{settings.API_V1_STR}/tenders", tags=["Tenders Extended"])
 api_router.include_router(analytics_router, prefix=f"{settings.API_V1_STR}/analytics", tags=["Analytics"])
 api_router.include_router(resources_router, prefix=f"{settings.API_V1_STR}/resources", tags=["Resources"])
 api_router.include_router(collaboration_router, prefix=f"{settings.API_V1_STR}/collaboration", tags=["Collaboration"])

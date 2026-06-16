@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional, List
 from uuid import UUID
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class DocumentBase(BaseModel):
@@ -269,3 +269,64 @@ class CascadeUpdateRequest(BaseModel):
 class CascadeUpdateResponse(BaseModel):
     affected_documents: int
     document_ids: List[int]
+
+
+# ---------------------------------------------------------------------------
+# Router input schemas (replacing raw dict for security)
+# ---------------------------------------------------------------------------
+
+class DocumentCreateInput(BaseModel):
+    """Schema for router create_document endpoint (maps to service dict)."""
+    model_config = ConfigDict(from_attributes=True)
+
+    name: str = Field(..., min_length=1, max_length=255)
+    number: Optional[str] = Field(None, max_length=100)
+    doc_type: Optional[str] = Field(None, max_length=50)
+    status: Optional[str] = Field(default="draft", max_length=50)
+    crs_code: Optional[str] = Field(None, max_length=50)
+    project_id: Optional[int] = None
+    section_id: Optional[int] = None
+    variables: Optional[dict] = Field(default_factory=dict)
+    standard_template_id: Optional[int] = None
+
+
+class DocumentUpdateInput(BaseModel):
+    """Schema for router update_document endpoint."""
+    model_config = ConfigDict(from_attributes=True)
+
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
+    number: Optional[str] = Field(None, max_length=100)
+    doc_type: Optional[str] = Field(None, max_length=50)
+    status: Optional[str] = Field(None, max_length=50)
+    crs_code: Optional[str] = Field(None, max_length=50)
+    project_id: Optional[int] = None
+    section_id: Optional[int] = None
+    variables: Optional[dict] = None
+    standard_template_id: Optional[int] = None
+
+
+class RevisionCreateInput(BaseModel):
+    """Schema for router create_revision endpoint."""
+    model_config = ConfigDict(from_attributes=True)
+
+    revision_number: Optional[str] = Field(None, max_length=20)
+    status: Optional[str] = Field(default="draft", max_length=50)
+    changes: Optional[str] = Field(None, max_length=2000)
+    variables: Optional[dict] = Field(default_factory=dict)
+
+
+class ApprovalWorkflowCreateInput(BaseModel):
+    """Schema for router start_approval_workflow endpoint."""
+    model_config = ConfigDict(from_attributes=True)
+
+    approver_id: int
+    workflow_type: Optional[str] = Field(default="standard", max_length=50)
+    due_date: Optional[datetime] = None
+    notes: Optional[str] = Field(None, max_length=1000)
+
+
+class LockRequestInput(BaseModel):
+    """Schema for document lock endpoint."""
+    model_config = ConfigDict(from_attributes=True)
+
+    force: bool = False

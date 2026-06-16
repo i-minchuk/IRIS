@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui';
 import { useSRMStore } from '@/stores/srmStore';
 import type { ContractStatus } from '@/types/srm';
 import { FileText, Calendar, Building2, TrendingUp } from 'lucide-react';
+import { useMemo } from 'react';
 
 const STATUS_CONFIG: Record<ContractStatus, { label: string; variant: 'success' | 'warning' | 'error' | 'info' | 'neutral' }> = {
   draft: { label: 'Черновик', variant: 'neutral' },
@@ -17,7 +18,15 @@ const STATUS_CONFIG: Record<ContractStatus, { label: string; variant: 'success' 
 
 export default function ContractsPage() {
   const contracts = useSRMStore(s => s.contracts);
-  const stats = useSRMStore(s => s.getSRMStats());
+
+  // Use useMemo to avoid recalculating on every render
+  const stats = useMemo(() => {
+    const totalContracts = contracts.length;
+    const activeContracts = contracts.filter(c => c.status === 'active').length;
+    const legalReviewCount = contracts.filter(c => c.status === 'legal_review').length;
+    const totalAmount = contracts.reduce((sum, c) => sum + c.amount, 0);
+    return { totalContracts, activeContracts, legalReviewCount, totalAmount };
+  }, [contracts]);
 
   return (
     <div className="space-y-6 px-3 md:px-6 py-4 md:py-6">
@@ -53,7 +62,7 @@ export default function ContractsPage() {
           </div>
           <div>
             <div className="text-lg font-bold" style={{ color: 'var(--warning)' }}>
-              {contracts.filter(c => c.status === 'legal_review').length}
+              {stats.legalReviewCount}
             </div>
             <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>На проверке</div>
           </div>
@@ -64,7 +73,7 @@ export default function ContractsPage() {
           </div>
           <div>
             <div className="text-lg font-bold" style={{ color: 'var(--brand-iris)' }}>
-              {(contracts.reduce((sum, c) => sum + c.amount, 0) / 1000000).toFixed(1)}M
+              {(stats.totalAmount / 1000000).toFixed(1)}M
             </div>
             <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Общая сумма</div>
           </div>

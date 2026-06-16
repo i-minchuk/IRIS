@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft, Gavel, ShoppingCart, FolderKanban, PackageOpen,
 } from 'lucide-react';
@@ -14,6 +14,7 @@ import OrdersPage from '@/pages/srm/Orders';
 import InvoicesPage from '@/pages/srm/Invoices';
 import ProjectPortfolioPage from '@/pages/ProjectPortfolioPage';
 import PackagePage from '@/pages/PackagePage';
+import TenderDetailPage from '@/features/tenders/pages/TenderDetailPage';
 
 /* ─── SRM Sub-tabs ─── */
 const SRM_TABS = [
@@ -37,8 +38,25 @@ type SRMTab = 'suppliers' | 'purchase-requests' | 'contracts' | 'orders' | 'invo
 
 export default function PortfolioPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useTabState<MainTab>('iris_portfolio_tab', 'tenders');
   const [srmTab, setSrmTab] = useTabState<SRMTab>('iris_portfolio_srm_tab', 'suppliers');
+
+  // Check if tender detail view is requested via query param
+  const tenderId = searchParams.get('tender');
+
+  const handleTabChange = (tab: MainTab) => {
+    setActiveTab(tab);
+    // Clear tender detail when switching tabs
+    if (tenderId) {
+      setSearchParams({});
+    }
+  };
+
+  // If tender detail is requested, show it
+  if (tenderId) {
+    return <TenderDetailPage />;
+  }
 
   return (
     <div className="max-w-7xl mx-auto py-6 px-4">
@@ -65,7 +83,7 @@ export default function PortfolioPage() {
           <button
             key={tab.id}
             type="button"
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => handleTabChange(tab.id)}
             className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg transition-all"
             style={{
               color: activeTab === tab.id ? 'var(--brand-iris)' : 'var(--text-secondary)',

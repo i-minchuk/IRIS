@@ -42,6 +42,17 @@ class UserInDB(UserBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class UserResponse(UserBase):
+    """User response schema — safe for API responses (no hashed_password)."""
+    id: int
+    is_active: bool
+    role: str
+    telegram_chat_id: Optional[str] = None
+    totp_enabled: bool = False
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
 class User(UserBase):
     id: int
     is_active: bool

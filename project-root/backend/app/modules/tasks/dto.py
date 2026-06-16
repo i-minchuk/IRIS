@@ -1,7 +1,7 @@
 """Task DTOs for API requests and responses."""
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from app.core.enums import TaskType, TaskStatus, TaskPriority
 
 
@@ -53,40 +53,49 @@ class TaskStatusUpdate(BaseModel):
 # === Response ===
 class TaskResponse(BaseModel):
     """Task response with related entities."""
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     title: str
-    description: Optional[str]
+    description: Optional[str] = None
     type: TaskType
     status: TaskStatus
     priority: TaskPriority
-    due_date: Optional[datetime]
-    started_at: Optional[datetime]
-    completed_at: Optional[datetime]
-    assignee_id: Optional[int]
+    due_date: Optional[datetime] = None
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    assignee_id: Optional[int] = None
     assignee_name: Optional[str] = None
     creator_id: int
     creator_name: Optional[str] = None
-    project_id: Optional[int]
+    project_id: Optional[int] = None
     project_code: Optional[str] = None
     project_name: Optional[str] = None
-    route_id: Optional[int]
-    operation_id: Optional[int]
+    route_id: Optional[int] = None
+    operation_id: Optional[int] = None
     operation_code: Optional[str] = None
     operation_name: Optional[str] = None
-    document_id: Optional[int]
+    document_id: Optional[int] = None
     document_number: Optional[str] = None
-    work_center_id: Optional[int]
+    work_center_id: Optional[int] = None
     work_center_name: Optional[str] = None
-    estimated_hours: Optional[float]
-    actual_hours: Optional[float]
-    percent_complete: int
-    overdue_days: Optional[int] = None  # Calculated field
-    metadata: Optional[dict]
+    estimated_hours: Optional[float] = None
+    actual_hours: Optional[float] = None
+    percent_complete: int = 0
+    overdue_days: Optional[int] = None
+    metadata: Optional[dict] = None
     created_at: datetime
-    updated_at: datetime
+    updated_at: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+
+# === Paginated List ===
+class PaginatedTaskList(BaseModel):
+    """Paginated list of tasks."""
+    items: list[TaskResponse]
+    total: int
+    page: int
+    page_size: int
+    pages: int
 
 
 # === Filtering ===
@@ -102,7 +111,7 @@ class TaskFilters(BaseModel):
     due_date_from: Optional[datetime] = None
     due_date_to: Optional[datetime] = None
     overdue_only: bool = False
-    search: Optional[str] = None  # Search in title, description
+    search: Optional[str] = None
 
 
 # === Summary/Statistics ===
@@ -114,4 +123,4 @@ class TaskStatistics(BaseModel):
     by_type: dict[str, int]
     overdue_count: int
     overdue_percentage: float
-    assignee_load: list[dict]  # [{assignee_id, assignee_name, task_count, overdue_count}]
+    assignee_load: list[dict]

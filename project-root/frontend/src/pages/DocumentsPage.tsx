@@ -12,7 +12,7 @@ import {
   Circle, AlertCircle, ArrowRight, FileCheck, Archive, Filter,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { getSessions, type TimeSession } from '@/api/timeTracking';
+import { getSessions, type TimeSession } from '@/features/time_tracking/api/sessions';
 import apiClient from '@/shared/api/client';
 import { getLeaderboard } from '@/api/gamification';
 import { getTasks } from '@/api/tasks';
@@ -1107,7 +1107,7 @@ function EmployeesView() {
       Promise.all(
         mapped.map(emp =>
           getSessions({ user_id: parseInt(emp.id) || 0 })
-            .then(sessions => ({ id: emp.id, sessions }))
+            .then(data => ({ id: emp.id, sessions: data.items }))
             .catch(() => ({ id: emp.id, sessions: [] as TimeSession[] }))
         )
       ).then(results => {

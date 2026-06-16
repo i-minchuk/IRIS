@@ -28,7 +28,7 @@ def client(mock_db):
 
 @pytest.fixture
 def mock_user():
-    """Mock authenticated user."""
+    """Mock authenticated user with primitive attributes for JSON serialization."""
     user = MagicMock(spec=User)
     user.id = 1
     user.email = "test@example.com"
@@ -37,8 +37,10 @@ def mock_user():
     user.role = "engineer"
     user.is_active = True
     user.is_superuser = False
-    from unittest.mock import PropertyMock
-    type(user).telegram_chat_id = PropertyMock(return_value=None)
+    user.totp_enabled = False
+    user.totp_secret = None
+    user.telegram_chat_id = None
+    user.created_at = None
     return user
 
 

@@ -4,6 +4,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
+from app.core.security import JWT_ISSUER, JWT_AUDIENCE
 from app.core.session import SessionStore
 from app.db.session import get_db
 from app.modules.auth.models import User
@@ -35,9 +36,15 @@ async def get_current_user(
             if user:
                 return user
 
-    # Fallback to JWT token
+    # Fallback to JWT token with audience/issuer validation
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        payload = jwt.decode(
+            token,
+            settings.SECRET_KEY,
+            algorithms=[settings.ALGORITHM],
+            audience=JWT_AUDIENCE,
+            issuer=JWT_ISSUER,
+        )
         user_id: str | None = payload.get("sub")
         token_type: str | None = payload.get("type")
         if user_id is None or token_type != "access":

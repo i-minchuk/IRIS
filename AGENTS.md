@@ -6,10 +6,10 @@
 
 ## Обзор проекта
 
-**ДокПоток IRIS** — это система управления инженерной документацией (Document Management System). Версия MVP 4.2.0. Приложение состоит из:
+**ДокПоток IRIS** — это система управления технической документацией (Document Management System). Версия MVP 4.3.0. Приложение состоит из:
 - **Backend** — асинхронный API на FastAPI с модульной архитектурой.
 - **Frontend** — одностраничное приложение (SPA) на React 19 + TypeScript.
-- **База данных** — PostgreSQL 15 (production) или SQLite (быстрая разработка).
+- **База данных** — PostgreSQL 15 (asyncpg).
 - **Векторная БД** — Qdrant (для AI/эмбеддингов).
 
 Основные функции: аутентификация и авторизация, управление проектами, документами, замечаниями (remarks), задачами, архивом, тендерами, геймификация, совместная работа через WebSocket, интеграция с OpenAI.
@@ -23,7 +23,7 @@
 - **FastAPI** 0.115.6 + **Uvicorn** 0.34.0
 - **SQLAlchemy** 2.0.36 (async) + **Alembic** 1.14.0
 - **Pydantic** 2.10.4 + **pydantic-settings** 2.7.0
-- **Базы данных**: PostgreSQL 15 (asyncpg) / SQLite (aiosqlite)
+- **Базы данных**: PostgreSQL 15 (asyncpg)
 - **Auth**: JWT (python-jose, passlib/bcrypt), OAuth2PasswordBearer
 - **Rate limiting**: slowapi 0.1.9
 - **AI/LLM**: OpenAI API, tiktoken, langchain, langchain-openai
@@ -143,8 +143,7 @@ project-root/
 - Async SQLAlchemy 2.0: `create_async_engine` + `async_sessionmaker`
 - `expire_on_commit=False`
 - Поддержка SQLite (для разработки) и PostgreSQL (production)
-- Для PostgreSQL: `pool_size`, `max_overflow`, `pool_timeout`, `pool_recycle`
-- Для SQLite: `check_same_thread=False`, без пулинга
+- Для PostgreSQL: `pool_size`, `max_overflow`, `pool_timeout`, `pool_recycle`, `pool_pre_ping`
 - Alembic с async-движком. Миграции запускаются при старте контейнера: `alembic upgrade head`
 
 ### Аутентификация и безопасность
@@ -397,7 +396,6 @@ export const featureFlags = {
 ```bash
 SECRET_KEY=your-secure-secret-key-min-32-chars
 DATABASE_URL=postgresql+asyncpg://user:pass@localhost:5432/iris
-# или sqlite+aiosqlite:///./iris.db
 ACCESS_TOKEN_EXPIRE_MINUTES=1440
 REFRESH_TOKEN_EXPIRE_DAYS=7
 BACKEND_CORS_ORIGINS=["http://localhost:5173"]

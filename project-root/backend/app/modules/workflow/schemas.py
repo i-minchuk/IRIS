@@ -1,7 +1,7 @@
 """Pydantic schemas for Workflow API."""
 from typing import Optional, List, Dict, Any
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from sqlalchemy.orm import Session
 
 from app.modules.workflow.models import (
@@ -153,6 +153,36 @@ class DelegationAction(BaseModel):
     """Delegate workflow step."""
     delegate_to: int = Field(..., gt=0)
     reason: Optional[str] = None
+
+
+# ============== Action Response Schemas ==============
+
+class ApprovalResponse(BaseModel):
+    """Response after approving a workflow step."""
+    model_config = ConfigDict(from_attributes=True)
+    step_id: int
+    status: str = "approved"
+    message: str
+    next_step: Optional[Dict[str, Any]] = None
+    workflow_completed: bool = False
+
+
+class RejectionResponse(BaseModel):
+    """Response after rejecting a workflow step."""
+    model_config = ConfigDict(from_attributes=True)
+    step_id: int
+    status: str = "rejected"
+    message: str
+    return_to_step: Optional[int] = None
+
+
+class DelegationResponse(BaseModel):
+    """Response after delegating a workflow step."""
+    model_config = ConfigDict(from_attributes=True)
+    step_id: int
+    status: str = "delegated"
+    message: str
+    delegate_to: int
 
 
 # ============== Comment Schemas ==============

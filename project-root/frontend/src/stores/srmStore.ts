@@ -57,7 +57,7 @@ export const useSRMStore = create<SRMState>((_set, get) => ({
   getSuppliersByStatus: (status) => get().suppliers.filter(s => s.status === status),
   getSuppliersByCategory: (category) => get().suppliers.filter(s => s.category === category),
   getActiveSuppliers: () => get().suppliers.filter(s => s.status === 'active'),
-  getTopSuppliers: (limit) => get().suppliers
+  getTopSuppliers: (limit) => [...get().suppliers]
     .filter(s => s.rating > 0)
     .sort((a, b) => b.rating - a.rating)
     .slice(0, limit),

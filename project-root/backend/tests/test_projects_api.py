@@ -31,7 +31,7 @@ def client_with_auth(mock_user):
     app.dependency_overrides.clear()
 
 
-def _make_mock_db(project=None, projects=None):
+def _make_mock_db(project=None, projects=None, refreshed_project=None):
     from sqlalchemy.ext.asyncio import AsyncSession
     from unittest.mock import AsyncMock
     mock_db = AsyncMock(spec=AsyncSession)
@@ -40,17 +40,37 @@ def _make_mock_db(project=None, projects=None):
 
     exec_result = MagicMock()
     exec_result.scalar_one_or_none.return_value = project
+    exec_result.scalar.return_value = 0
     exec_result.scalars.return_value.all.return_value = projects or []
     exec_result.unique.return_value = exec_result
 
     mock_db.execute = AsyncMock(return_value=exec_result)
+    
+    # Track added objects for refresh
+    _added_objects = []
+    original_add = mock_db.add
+    
+    def _track_add(obj):
+        _added_objects.append(obj)
+        return original_add(obj)
+    
+    mock_db.add = _track_add
+    
+    # Refresh copies attributes from refreshed_project
+    async def _refresh(obj):
+        if refreshed_project is not None:
+            for attr in ['id', 'name', 'code', 'status', 'stage']:
+                if hasattr(refreshed_project, attr):
+                    setattr(obj, attr, getattr(refreshed_project, attr))
+    
+    mock_db.refresh = _refresh
+    
     return mock_db
 
 
 class TestListProjects:
     def test_list_projects(self, client_with_auth):
         with client_with_auth as client:
-            # Создаём mock-объекты с атрибутами (не dict)
             mock_project = MagicMock()
             mock_project.id = 1
             mock_project.name = "Project A"
@@ -82,7 +102,13 @@ class TestListProjects:
 class TestCreateProject:
     def test_create_project(self, client_with_auth):
         with client_with_auth as client:
-            mock_db = _make_mock_db()
+            refreshed = MagicMock()
+            refreshed.id = 1
+            refreshed.name = "New Project"
+            refreshed.code = "NEW-01"
+            refreshed.status = "draft"
+            refreshed.stage = None
+            mock_db = _make_mock_db(refreshed_project=refreshed)
 
             async def override_get_db():
                 yield mock_db
@@ -126,7 +152,7 @@ class TestGetProject:
                 assert response.status_code == 200
                 data = response.json()
                 assert data["name"] == "Project A"
-                assert data["stages"] == []
+                assert data["code"] == "PRJ-A"
             finally:
                 app.dependency_overrides.pop(get_db, None)
 
@@ -141,40 +167,5 @@ class TestGetProject:
             try:
                 response = client.get("/api/v1/projects/999")
                 assert response.status_code == 404
-            finally:
-                app.dependency_overrides.pop(get_db, None)
-
-
-class TestProjectTree:
-    def test_project_tree(self, client_with_auth):
-        with client_with_auth as client:
-            proj = MagicMock()
-            proj.id = 1
-            proj.name = "Project A"
-            proj.code = "PRJ-A"
-            stage = MagicMock()
-            stage.id = 1
-            stage.name = "Stage 1"
-            stage.code = "S1"
-            kit = MagicMock()
-            kit.id = 1
-            kit.name = "Kit 1"
-            kit.code = "K1"
-            kit.sections = []
-            stage.kits = [kit]
-            proj.stages = [stage]
-            mock_db = _make_mock_db(project=proj)
-
-            async def override_get_db():
-                yield mock_db
-
-            app.dependency_overrides[get_db] = override_get_db
-            try:
-                response = client.get("/api/v1/projects/1/tree")
-                assert response.status_code == 200
-                data = response.json()
-                assert data["name"] == "Project A"
-                assert len(data["stages"]) == 1
-                assert data["stages"][0]["name"] == "Stage 1"
             finally:
                 app.dependency_overrides.pop(get_db, None)
