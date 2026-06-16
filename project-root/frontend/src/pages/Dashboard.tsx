@@ -429,7 +429,7 @@ export default function Dashboard() {
   const chartGridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
 
   return (
-    <div className="w-full overflow-x-hidden px-3 md:px-6 py-4 md:pt-2 pb-6" style={{ background: 'var(--layout-bg)', color: 'var(--text-primary)' }}>
+    <div className="w-full overflow-x-hidden px-3 md:px-6 py-4 md:pt-2 pb-6 text-base md:text-lg" style={{ background: 'var(--layout-bg)', color: 'var(--text-primary)' }}>
       {/* Loading overlay */}
       {loading && (
         <div className="flex items-center justify-center gap-2 py-8">
