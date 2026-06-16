@@ -48,7 +48,7 @@ const ArchivePage: React.FC = () => {
     <div className="flex h-screen" style={{ background: 'var(--bg-surface)', color: 'var(--text-primary)' }}>
       {/* Левая колонка - навигация */}
       <div className="w-72 border-r p-4 overflow-y-auto" style={{ borderColor: 'var(--border-default)', background: 'var(--bg-surface-2)' }}>
-        <h1 className="sr-only sr-only" style={{ color: 'var(--text-primary)' }}>📁 АРХИВ</h1>
+        <h1 className="sr-only" style={{ color: 'var(--text-primary)' }}>📁 АРХИВ</h1>
         <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>
           Хронология и материалы проекта
         </p>

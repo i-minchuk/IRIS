@@ -197,7 +197,7 @@ export function WorkflowPage() {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="sr-only sr-only" style={{ color: 'var(--text-primary)' }}>Документооборот</h1>
+          <h1 className="sr-only" style={{ color: 'var(--text-primary)' }}>Документооборот</h1>
           <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Управление задачами согласования и замечаниями</p>
         </div>
         <button className="px-4 py-2 rounded-lg text-sm font-medium text-white flex items-center gap-2" style={{ background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)', boxShadow: '0 4px 16px rgba(245,158,11,0.35)' }}>

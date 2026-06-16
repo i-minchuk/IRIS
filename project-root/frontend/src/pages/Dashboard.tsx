@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/providers/ThemeProvider';
 import { ChromeBot } from '@/components/ChromeBot';
+import LiveClock from '@/shared/components/LiveClock';
 
 import {
   analyticsApi,
@@ -164,22 +165,14 @@ export default function Dashboard() {
   const [portfolioDataRaw, setPortfolioDataRaw] = useState<PortfolioChartData | null>(null);
   const [actionItemsRaw, setActionItemsRaw] = useState<ActionItem[]>([]);
 
-  const [currentTime, setCurrentTime] = useState(new Date());
-
   // Derived flags — no mock fallback, show empty states instead
   const hasData = scorecard.length > 0 || alerts.length > 0 || tenderPipeline !== null;
 
-  // Live clock — updates every second
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  // Auto-refresh data every 30 seconds
+  // Auto-refresh data every 30 seconds (silent — no loaders)
   useEffect(() => {
     const refreshTimer = setInterval(() => {
       if (document.visibilityState === 'visible') {
-        loadDashboardData();
+        loadDashboardData({ silent: true });
       }
     }, 30000);
     return () => clearInterval(refreshTimer);
@@ -190,11 +183,13 @@ export default function Dashboard() {
     loadDashboardData();
   }, [period]);
 
-  function loadDashboardData() {
+  function loadDashboardData({ silent = false }: { silent?: boolean } = {}) {
     let cancelled = false;
-    setLoading(true);
-    setChartsLoading(true);
-    setError(false);
+    if (!silent) {
+      setLoading(true);
+      setChartsLoading(true);
+      setError(false);
+    }
 
     Promise.allSettled([
       analyticsApi.getDashboard(),
@@ -472,7 +467,7 @@ export default function Dashboard() {
                   </button>
                 ))}
               </div>
-              <span className="text-base md:text-lg font-medium leading-relaxed mt-1 hidden sm:inline tabular-nums" style={{ color: 'var(--text-secondary)' }}>{currentTime.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
+              <LiveClock className="text-base md:text-lg font-medium leading-relaxed mt-1 hidden sm:inline tabular-nums" style={{ color: 'var(--text-secondary)' }} />
             </div>
           </div>
 

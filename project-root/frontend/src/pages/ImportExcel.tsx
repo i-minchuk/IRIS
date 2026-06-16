@@ -204,7 +204,7 @@ export default function ImportExcel() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="sr-only sr-only">Импорт Excel</h1>
+        <h1 className="sr-only">Импорт Excel</h1>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           Загрузка MDR / реестров документов, сопоставление колонок и предпросмотр перед импортом.
         </p>

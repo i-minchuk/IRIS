@@ -164,7 +164,7 @@ export default function TendersPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="sr-only sr-only" style={{ color: 'var(--text-primary)' }}>Тендеры</h1>
+            <h1 className="sr-only" style={{ color: 'var(--text-primary)' }}>Тендеры</h1>
             <p className="text-base md:text-lg font-medium leading-relaxed mt-1 mt-0.5" style={{ color: 'var(--text-secondary)' }}>Управление тендерами и предложениями</p>
           </div>
           <button

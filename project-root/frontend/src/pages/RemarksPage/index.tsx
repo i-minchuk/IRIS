@@ -75,7 +75,7 @@ export const RemarksPage: React.FC = () => {
         <div className="flex items-center gap-3">
           <MessageSquareWarning className="w-6 h-6 text-[#FF4D6D]" />
           <div>
-            <h1 className="sr-only sr-only">Замечания</h1>
+            <h1 className="sr-only">Замечания</h1>
             <p className="text-xs text-[#64748b]">
               Централизованный учёт и контроль замечаний
             </p>

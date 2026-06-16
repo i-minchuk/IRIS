@@ -146,7 +146,7 @@ export default function Achievements() {
 
   if (initialLoading) {
     return (
-      <div className="max-w-6xl">
+      <div className="w-full pt-2 pb-6 px-4">
         <Card className="p-8 text-center text-gray-500 dark:text-gray-400">
           Загрузка достижений...
         </Card>
@@ -156,7 +156,7 @@ export default function Achievements() {
 
   if (!profile) {
     return (
-      <div className="max-w-6xl">
+      <div className="w-full pt-2 pb-6 px-4">
         <Card className="p-8 text-center text-gray-500 dark:text-gray-400 space-y-3">
           <Info className="mx-auto text-gray-400 dark:text-gray-500" size={32} />
           <p>Не удалось загрузить профиль геймификации.</p>
@@ -177,10 +177,10 @@ export default function Achievements() {
   );
 
   return (
-    <div className="max-w-6xl space-y-8">
+    <div className="w-full pt-2 pb-6 px-4 space-y-8">
       {/* Заголовок и статус */}
       <div className="space-y-2">
-        <h1 className="sr-only sr-only">
+        <h1 className="sr-only">
           Достижения
         </h1>
         <p className="text-gray-600 dark:text-gray-400">

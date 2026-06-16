@@ -213,7 +213,7 @@ export default function ProfileSettingsPage() {
   ];
 
   return (
-    <div className="max-w-5xl mx-auto pt-2 pb-6 px-4">
+    <div className="w-full pt-2 pb-6 px-4">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <button
@@ -227,7 +227,7 @@ export default function ProfileSettingsPage() {
           <ArrowLeft size={18} />
         </button>
         <div>
-          <h1 className="sr-only sr-only" style={{ color: 'var(--text-primary)' }}>Настройки профиля</h1>
+          <h1 className="sr-only" style={{ color: 'var(--text-primary)' }}>Настройки профиля</h1>
           <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
             Управление аккаунтом, безопасностью и игровым прогрессом
           </p>

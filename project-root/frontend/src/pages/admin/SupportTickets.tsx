@@ -17,7 +17,7 @@ export default function SupportTicketsPage() {
     <div className="space-y-6 px-3 md:px-6 py-4 md:pt-2 pb-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="sr-only sr-only" style={{ color: 'var(--text-primary)' }}>
+          <h1 className="sr-only" style={{ color: 'var(--text-primary)' }}>
             Тикеты поддержки
           </h1>
           <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>

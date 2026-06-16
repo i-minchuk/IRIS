@@ -45,7 +45,7 @@ export default function DocumentDetailPage() {
           Назад
         </Button>
         <div>
-          <h1 className="sr-only sr-only" style={{ color: 'var(--text-primary)' }}>
+          <h1 className="sr-only" style={{ color: 'var(--text-primary)' }}>
             КМ-001-Rev.B — Комплект чертежей
           </h1>
           <div className="flex items-center gap-2 mt-1">

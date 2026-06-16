@@ -128,7 +128,7 @@ export default function DocumentCreate() {
   const hasErrors = Object.keys(errors).length > 0;
 
   return (
-    <div className="max-w-2xl mx-auto py-8">
+    <div className="w-full pt-2 pb-6 px-4">
       {/* Header */}
       <div className="flex items-center gap-2 mb-6">
         <button
@@ -138,7 +138,7 @@ export default function DocumentCreate() {
         >
           <ArrowLeft size={18} style={{ color: 'var(--text-secondary)' }} />
         </button>
-        <h1 className="sr-only sr-only" style={{ color: 'var(--text-primary)' }}>
+        <h1 className="sr-only" style={{ color: 'var(--text-primary)' }}>
           Создать документ
         </h1>
       </div>

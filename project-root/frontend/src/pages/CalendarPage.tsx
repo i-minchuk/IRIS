@@ -239,7 +239,7 @@ export default function CalendarPage() {
             <CalendarIcon size={18} style={{ color: '#EC4899' }} />
           </div>
           <div>
-            <h1 className="sr-only sr-only" style={{ color: 'var(--iris-text-primary)' }}>
+            <h1 className="sr-only" style={{ color: 'var(--iris-text-primary)' }}>
               Календарь
             </h1>
             <p className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--iris-text-secondary)' }}>

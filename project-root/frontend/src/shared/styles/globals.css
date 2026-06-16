@@ -6,6 +6,10 @@
 /* Prevent horizontal scroll when zoom is applied */
 body {
   overflow-x: hidden;
+  font-family: var(--font-body);
+  line-height: 1.5;
+  color: var(--iris-text-primary);
+  background-color: var(--iris-bg-app);
 }
 /* Адаптивная сетка профиля */
 @media (max-width: 768px) {
@@ -102,6 +106,8 @@ body {
   /* ── LIGHT THEME (default) ── */
   :root,
   .theme-light {
+    /* Global font size bump for readability */
+    font-size: 17px;
     /* App-level aliases (for landing/login pages) */
     --app-bg: #F0F2F5;
     --app-text: #1E2230;
@@ -109,7 +115,7 @@ body {
     --app-border: rgba(0, 0, 0, 0.06);
 
     /* Backgrounds */
-    --iris-bg-app: #F0F2F5;
+    --iris-bg-app: #FFFFFF;
     --iris-bg-surface: #FFFFFF;
     --iris-bg-surface-elevated: #FFFFFF;
     --iris-bg-header: #FFFFFF;

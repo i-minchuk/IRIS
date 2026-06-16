@@ -28,7 +28,7 @@ export default function NotFound() {
           404
         </div>
 
-        <h1 className="sr-only sr-only">
+        <h1 className="sr-only">
           Страница не найдена
         </h1>
 

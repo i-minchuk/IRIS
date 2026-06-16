@@ -299,7 +299,7 @@ function TendersView() {
     <div className="space-y-4">
       {/* Header */}
       <div className="mb-4">
-        <h1 className="sr-only sr-only" style={{ color: 'var(--text-primary)' }}>Тендерный отдел</h1>
+        <h1 className="sr-only" style={{ color: 'var(--text-primary)' }}>Тендерный отдел</h1>
         <p className="text-base md:text-lg font-medium leading-relaxed mt-1 mt-0.5" style={{ color: 'var(--text-secondary)' }}>Управление тендерами и предложениями</p>
       </div>
 
@@ -561,7 +561,7 @@ function ProjectsView() {
     <div className="space-y-4">
       {/* Header */}
       <div className="mb-4">
-        <h1 className="sr-only sr-only" style={{ color: 'var(--text-primary)' }}>Проекты</h1>
+        <h1 className="sr-only" style={{ color: 'var(--text-primary)' }}>Проекты</h1>
         <p className="text-base md:text-lg font-medium leading-relaxed mt-1 mt-0.5" style={{ color: 'var(--text-secondary)' }}>Аналитика по проектам и документообороту</p>
       </div>
 
@@ -775,7 +775,7 @@ export default function ProjectsPage() {
     <div className="min-h-screen w-full overflow-x-hidden" style={{ background: 'var(--layout-bg)', color: 'var(--text-primary)' }}>
       {/* Header area */}
       <div className="px-6 pt-2 pb-2">
-        <h1 className="sr-only sr-only" style={{ color: 'var(--text-primary)' }}>Портфель заказов</h1>
+        <h1 className="sr-only" style={{ color: 'var(--text-primary)' }}>Портфель заказов</h1>
         <p className="text-base md:text-lg font-medium leading-relaxed mt-1 mb-4" style={{ color: 'var(--text-secondary)' }}>Управление тендерами, проектами и документооборотом</p>
         <PageTabs active={activeTab} onChange={setActiveTab} />
       </div>

@@ -77,7 +77,7 @@ export default function TwoFactorSettingsPage() {
   }, [disableToken, refreshUser]);
 
   return (
-    <div className="max-w-2xl mx-auto py-8 px-4">
+    <div className="w-full pt-2 pb-6 px-4">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <button
@@ -94,7 +94,7 @@ export default function TwoFactorSettingsPage() {
         >
           <ArrowLeft size={18} />
         </button>
-        <h1 className="sr-only sr-only" style={{ color: 'var(--text-primary)' }}>
+        <h1 className="sr-only" style={{ color: 'var(--text-primary)' }}>
           Двухфакторная аутентификация
         </h1>
       </div>

@@ -156,7 +156,7 @@ export default function TeamPage() {
     <div className="space-y-5 px-3 md:px-6 py-4 md:pt-2 pb-6">
       {/* Header */}
       <div>
-        <h1 className="sr-only sr-only" style={{ color: 'var(--text-primary)' }}>Сотрудники</h1>
+        <h1 className="sr-only" style={{ color: 'var(--text-primary)' }}>Сотрудники</h1>
         <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Рейтинг, загрузка и достижения команды</p>
       </div>
 
