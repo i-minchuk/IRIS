@@ -101,7 +101,7 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="p-4 md:p-6 max-w-6xl mx-auto">
+    <div className="w-full pt-2 pb-6 px-4">
       <div className="flex items-center gap-3 mb-6">
         <FileText size={24} style={{ color: '#8B5CF6' }} />
         <h1 className="sr-only sr-only" style={{ color: 'var(--text-primary)' }}>
