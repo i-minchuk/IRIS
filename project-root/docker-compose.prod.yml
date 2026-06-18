@@ -1,7 +1,7 @@
 # Docker Compose для Production
 # Запуск: docker compose -f docker-compose.prod.yml up -d
 
-version: '4.4.0'
+version: '4.5.0'
 
 services:
   db:
