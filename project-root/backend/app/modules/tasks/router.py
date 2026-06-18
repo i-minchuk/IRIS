@@ -126,7 +126,7 @@ async def update_task_status(
 ):
     """Update task status with production synchronization."""
     service = TaskService(db)
-    task = await service.update_task_status(task_id, status_in)
+    task = await service.update_task_status(task_id, status_in, current_user.id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     return service.task_to_response(task)

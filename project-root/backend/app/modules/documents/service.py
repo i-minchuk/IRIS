@@ -87,7 +87,6 @@ class DocumentService:
                 }
                 for r in doc.revisions
             ],
-            "remarks": [],
         }
     
     async def create_document(

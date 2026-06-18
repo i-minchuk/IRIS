@@ -28,17 +28,40 @@ async def send_notification_email(
     user_email: str, notification_type: str, data: dict
 ) -> int | None:
     templates = {
-        "task_assigned": {
-            "subject": "Новая задача",
-            "html": f"<h1>Вам назначена задача</h1><p>{data.get('task_title')}</p>",
-        },
-        "deadline_approaching": {
-            "subject": "Приближается дедлайн",
-            "html": f"<h1>Дедлайн через {data.get('days')} дней</h1>",
-        },
+    "workflow_started": {
+        "subject": "Новый маршрут согласования",
+        "html": "<h1>Вам назначен маршрут согласования</h1><p>Документ: {document_name}</p><p>Этап: {step_name}</p><p>Срок: {deadline_hours} ч</p>",
+    },
+    "step_assigned": {
+        "subject": "Новый этап согласования",
+        "html": "<h1>Вам назначен этап согласования</h1><p>Документ: {document_name}</p><p>Этап: {step_name}</p><p>Срок: {deadline_hours} ч</p>",
+    },
+    "step_approved": {
+        "subject": "Этап согласован",
+        "html": "<h1>Этап согласован</h1><p>Документ: {document_name}</p><p>Этап: {step_name}</p>",
+    },
+    "step_rejected": {
+        "subject": "Отказ в согласовании",
+        "html": "<h1>Отказ в согласовании</h1><p>Документ: {document_name}</p><p>Этап: {step_name}</p><p>Причина: {reason}</p>",
+    },
+    "step_rejected_return": {
+        "subject": "Возврат на доработку",
+        "html": "<h1>Этап возвращён на доработку</h1><p>Документ: {document_name}</p><p>Этап: {step_name}</p><p>Причина: {reason}</p>",
+    },
+    "step_delegated": {
+        "subject": "Делегирование этапа",
+        "html": "<h1>Вам делегирован этап согласования</h1><p>Документ: {document_name}</p><p>Этап: {step_name}</p><p>Причина: {reason}</p>",
+    },
+    "workflow_completed": {
+        "subject": "Маршрут согласования завершён",
+        "html": "<h1>Маршрут согласования завершён</h1><p>Документ: {document_name}</p><p>Все этапы пройдены.</p>",
+    },
     }
     template = templates.get(
         notification_type,
         {"subject": "Уведомление", "html": "<p>Новое уведомление</p>"},
     )
-    return await send_email(user_email, template["subject"], template["html"])
+    # Format template strings with data
+    subject = template["subject"].format(**data)
+    html = template["html"].format(**data)
+    return await send_email(user_email, subject, html)

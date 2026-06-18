@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { getDocument, updateDocument, createDocument, createRevision, type DocumentDetail } from '@/api/documents';
+import { getDocumentWithRemarks, updateDocument, createDocument, createRevision, type DocumentDetailWithRemarks } from '@/api/documents';
 import { DocumentEditor } from '../components/DocumentEditor';
 import { DocumentDetailPanels } from '../components/DocumentDetailPanels';
 import { projectsApi, type Project, type ProjectTree, type ProjectTreeDoc } from '@/features/projects/api/projects';
@@ -36,7 +36,7 @@ export const DocumentsPage: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<number | undefined>(undefined);
   const [tree, setTree] = useState<ProjectTree | null>(null);
-  const [selectedDoc, setSelectedDoc] = useState<DocumentDetail | null>(null);
+  const [selectedDoc, setSelectedDoc] = useState<DocumentDetailWithRemarks | null>(null);
   const [loading, setLoading] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [newDoc, setNewDoc] = useState<{ number: string; name: string; doc_type: string; project_id: number; section_id?: number }>({ number: '', name: '', doc_type: 'KM', project_id: 1 });
@@ -163,7 +163,7 @@ export const DocumentsPage: React.FC = () => {
     }
     setEditorReadOnly(false);
     setLockBanner(null);
-    const detail = await getDocument(doc.id);
+    const detail = await getDocumentWithRemarks(doc.id);
     setSelectedDoc(detail);
     setActiveTab('info');
   };
@@ -380,7 +380,7 @@ export const DocumentsPage: React.FC = () => {
 
               {/* Detail Panels (P6-стиль) */}
               <div className="shrink-0 border-t border-gray-200 dark:border-gray-700 p-3 bg-white dark:bg-gray-800">
-                <DocumentDetailPanels doc={selectedDoc} />
+                <DocumentDetailPanels doc={selectedDoc} remarks={selectedDoc.remarks} />
               </div>
             </>
           ) : (

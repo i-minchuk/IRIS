@@ -1,4 +1,4 @@
-import client from '@/shared/api/client';
+import apiClient from '@/shared/api/client';
 
 export interface WorkflowTemplate {
   id: number;
@@ -8,19 +8,17 @@ export interface WorkflowTemplate {
   steps_schema: WorkflowStepSchema[];
   is_active: boolean;
   is_default: boolean;
-  created_by: number | null;
-  created_at: string;
-  updated_at: string;
 }
 
 export interface WorkflowStepSchema {
   id: string;
   name: string;
   role: string | null;
+  user_ids: number[] | null;
   assignment_type: string;
   approval_type: string;
   deadline_hours: number | null;
-  order_index: number;
+  auto_transition: Record<string, string> | null;
 }
 
 export interface WorkflowInstance {
@@ -28,7 +26,6 @@ export interface WorkflowInstance {
   template_id: number;
   template_name: string;
   document_id: number | null;
-  document_revision: number | null;
   document_name: string | null;
   project_id: number | null;
   status: string;
@@ -37,13 +34,10 @@ export interface WorkflowInstance {
   started_at: string | null;
   completed_at: string | null;
   launch_comment: string | null;
-  document_changed: boolean;
-  created_at: string;
-  updated_at: string;
-  steps: WorkflowStepInstance[];
+  steps: WorkflowStep[];
 }
 
-export interface WorkflowStepInstance {
+export interface WorkflowStep {
   id: number;
   step_key: string;
   step_name: string;
@@ -53,80 +47,70 @@ export interface WorkflowStepInstance {
   deadline_hours: number | null;
   order_index: number;
   status: string;
-  deadline: string | null;
-  assigned_users: { id: number; full_name: string }[];
-  comments_count: number;
   is_delegated: boolean;
+  signed_by: number | null;
+  signed_at: string | null;
+  signature_hash: string | null;
+  assigned_users: { id: number; full_name: string }[];
 }
 
-export interface WorkflowComment {
+export interface WorkflowSignature {
   id: number;
-  text: string;
-  page_number: number | null;
-  coordinates: Record<string, unknown> | null;
+  step_id: number;
   user_id: number;
   user_name: string;
-  created_at: string;
-  updated_at: string;
+  signature_hash: string;
+  ip_address: string | null;
+  user_agent: string | null;
+  signed_at: string;
 }
 
 export interface WorkflowAuditLog {
   id: number;
   action: string;
-  old_status: string | null;
-  new_status: string | null;
-  comment: string | null;
-  metadata: Record<string, unknown> | null;
+  old_status?: string;
+  new_status?: string;
+  comment?: string;
+  metadata?: Record<string, any>;
   user_id: number;
   user_name: string;
   timestamp: string;
 }
 
 export const workflowApi = {
-  async getTemplates(): Promise<{ templates: WorkflowTemplate[]; total: number }> {
-    const { data } = await client.get('/api/v1/workflows/templates');
-    return data;
-  },
+  // Templates
+  getTemplates: () => apiClient.get('/workflows/templates').then((r: any) => r.data.templates as WorkflowTemplate[]),
+  getPredefinedTemplates: () => apiClient.get('/workflows/templates/predefined').then((r: any) => r.data as WorkflowTemplate[]),
 
-  async getInstances(params?: {
-    status?: string;
+  // Instances
+  getInstances: (params?: { status?: string; my_tasks?: boolean }) =>
+    apiClient.get('/workflows/instances', { params }).then((r: any) => r.data.instances as WorkflowInstance[]),
+  getInstance: (id: number) => apiClient.get(`/workflows/instances/${id}`).then((r: any) => r.data as WorkflowInstance),
+  getDocumentInstances: (documentId: number) =>
+    apiClient.get(`/workflows/instances/document/${documentId}`).then((r: any) => r.data as WorkflowInstance[]),
+  startWorkflow: (data: {
+    template_id: number;
     document_id?: number;
+    document_name?: string;
     project_id?: number;
-    my_tasks?: boolean;
-    page?: number;
-    page_size?: number;
-  }): Promise<{ instances: WorkflowInstance[]; total: number; page: number; page_size: number }> {
-    const { data } = await client.get('/api/v1/workflows/instances', { params });
-    return data;
-  },
+    launch_comment?: string;
+  }) => apiClient.post('/workflows/start', data).then((r: any) => r.data as WorkflowInstance),
 
-  async getInstance(instanceId: number): Promise<WorkflowInstance> {
-    const { data } = await client.get(`/api/v1/workflows/instances/${instanceId}`);
-    return data;
-  },
+  // Actions
+  approveStep: (stepId: number, comment?: string) =>
+    apiClient.post(`/workflows/steps/${stepId}/approve`, { comment }).then((r: any) => r.data),
+  rejectStep: (stepId: number, reason: string, returnToAuthor?: boolean) =>
+    apiClient.post(`/workflows/steps/${stepId}/reject`, { reason, return_to_author: returnToAuthor ?? true }).then((r: any) => r.data),
+  delegateStep: (stepId: number, delegateTo: number, reason?: string) =>
+    apiClient.post(`/workflows/steps/${stepId}/delegate`, { delegate_to: delegateTo, reason }).then((r: any) => r.data),
+  signStep: (stepId: number, payload: { comment?: string; ip_address?: string; user_agent?: string }) =>
+    apiClient.post(`/workflows/steps/${stepId}/sign`, payload).then((r: any) => r.data as { signature_hash: string; workflow_completed: boolean }),
 
-  async getDocumentInstances(documentId: number): Promise<WorkflowInstance[]> {
-    const { data } = await client.get(`/api/v1/workflows/instances/document/${documentId}`);
-    return data;
-  },
+  // Signatures
+  getStepSignatures: (stepId: number) =>
+    apiClient.get(`/workflows/steps/${stepId}/signatures`).then((r: any) => (r.data.signatures || []) as WorkflowSignature[]),
 
-  async getStepComments(stepId: number): Promise<WorkflowComment[]> {
-    const { data } = await client.get(`/api/v1/workflows/steps/${stepId}/comments`);
-    return data;
-  },
-
-  async approveStep(stepId: number, comment?: string): Promise<unknown> {
-    const { data } = await client.post(`/api/v1/workflows/steps/${stepId}/approve`, { comment });
-    return data;
-  },
-
-  async rejectStep(stepId: number, reason: string): Promise<unknown> {
-    const { data } = await client.post(`/api/v1/workflows/steps/${stepId}/reject`, { reason });
-    return data;
-  },
-
-  async getAuditLog(instanceId: number): Promise<{ logs: WorkflowAuditLog[]; total: number }> {
-    const { data } = await client.get(`/api/v1/workflows/audit/${instanceId}`);
-    return data;
-  },
+  // Audit
+  getAuditLog: (instanceId: number) =>
+    apiClient.get(`/workflows/audit/${instanceId}`).then((r: any) => r.data.logs || []),
 };

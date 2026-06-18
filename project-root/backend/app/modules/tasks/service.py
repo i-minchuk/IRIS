@@ -129,20 +129,36 @@ class TaskService:
         # Re-fetch with relations so response includes names
         return await self.get_task(task_id)
     
-    async def update_task_status(self, task_id: int, status_in: TaskStatusUpdate) -> Optional[Task]:
-        """Update task status with sync to production tables."""
+    async def update_task_status(
+        self,
+        task_id: int,
+        status_in: TaskStatusUpdate,
+        user_id: Optional[int] = None,
+    ) -> Optional[Task]:
+        """Update task status with sync to production tables and time tracking."""
         task = await self.get_task(task_id)
         if not task:
             return None
         
         old_status = task.status
         new_status = status_in.status
+        now = datetime.now(timezone.utc)
         
         # Update task
         task.status = new_status
         if status_in.percent_complete is not None:
             task.percent_complete = status_in.percent_complete
-        task.updated_at = datetime.now(timezone.utc)
+        task.updated_at = now
+        
+        # Auto-start time tracking when task becomes in_progress
+        if new_status == TaskStatus.IN_PROGRESS and old_status != TaskStatus.IN_PROGRESS:
+            if not task.started_at:
+                task.started_at = now
+            await self._start_time_session_for_task(task, user_id or task.assignee_id, now)
+        
+        # Auto-stop time tracking when task is done or cancelled
+        if new_status in (TaskStatus.DONE, TaskStatus.CANCELLED) and old_status == TaskStatus.IN_PROGRESS:
+            await self._stop_time_session_for_task(task, user_id or task.assignee_id, now)
         
         # Sync with production tables
         await self._sync_on_status_change(task, old_status, new_status)
@@ -152,6 +168,73 @@ class TaskService:
         # Re-fetch with relations so response includes names
         return await self.get_task(task_id)
     
+    async def _start_time_session_for_task(
+        self,
+        task: Task,
+        user_id: Optional[int],
+        now: datetime,
+    ) -> None:
+        """Create an active time session for the task if none exists."""
+        if not user_id:
+            return
+        result = await self.db.execute(
+            select(TimeSession)
+            .where(
+                TimeSession.task_id == task.id,
+                TimeSession.user_id == user_id,
+                TimeSession.ended_at.is_(None),
+            )
+        )
+        if result.scalar_one_or_none():
+            return
+        session = TimeSession(
+            user_id=user_id,
+            task_id=task.id,
+            project_id=task.project_id,
+            document_id=task.document_id,
+            started_at=now,
+        )
+        self.db.add(session)
+
+    async def _stop_time_session_for_task(
+        self,
+        task: Task,
+        user_id: Optional[int],
+        now: datetime,
+    ) -> None:
+        """Close the active time session for the task and update actual_hours."""
+        if not user_id:
+            # Try to stop any active session for this task
+            result = await self.db.execute(
+                select(TimeSession)
+                .where(
+                    TimeSession.task_id == task.id,
+                    TimeSession.ended_at.is_(None),
+                )
+                .order_by(TimeSession.started_at.desc())
+            )
+        else:
+            result = await self.db.execute(
+                select(TimeSession)
+                .where(
+                    TimeSession.task_id == task.id,
+                    TimeSession.user_id == user_id,
+                    TimeSession.ended_at.is_(None),
+                )
+                .order_by(TimeSession.started_at.desc())
+            )
+        session = result.scalar_one_or_none()
+        if not session or not session.started_at:
+            return
+        session.ended_at = now
+        session.total_duration = int((session.ended_at - session.started_at).total_seconds())
+        session.active_time = session.total_duration
+        duration_hours = session.total_duration / 3600.0
+        if task.actual_hours:
+            task.actual_hours += duration_hours
+        else:
+            task.actual_hours = duration_hours
+
     async def delete_task(self, task_id: int) -> bool:
         """Delete a task."""
         task = await self.get_task(task_id)

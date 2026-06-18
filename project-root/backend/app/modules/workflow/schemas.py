@@ -96,6 +96,9 @@ class WorkflowStepInstanceResponse(BaseModel):
     assigned_users: List[Dict[str, Any]] = []
     comments_count: int = 0
     is_delegated: bool
+    signed_by: Optional[int] = None
+    signed_at: Optional[datetime] = None
+    signature_hash: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -158,11 +161,31 @@ class DelegationAction(BaseModel):
 # ============== Action Response Schemas ==============
 
 class ApprovalResponse(BaseModel):
-    """Response after approving a workflow step."""
+    """Response after approving a step."""
     model_config = ConfigDict(from_attributes=True)
     step_id: int
     status: str = "approved"
     message: str
+    next_step: Optional[Dict[str, Any]] = None
+    workflow_completed: bool = False
+    signature_hash: Optional[str] = None
+
+
+class SignAction(BaseModel):
+    """Sign and approve workflow step."""
+    comment: Optional[str] = None
+    delegate_to: Optional[int] = None
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None
+
+
+class SignResponse(BaseModel):
+    """Response after signing a step."""
+    model_config = ConfigDict(from_attributes=True)
+    step_id: int
+    status: str = "signed_and_approved"
+    message: str
+    signature_hash: str
     next_step: Optional[Dict[str, Any]] = None
     workflow_completed: bool = False
 
@@ -230,6 +253,29 @@ class WorkflowAuditLogResponse(BaseModel):
 class WorkflowAuditLogListResponse(BaseModel):
     """List of audit log entries."""
     logs: List[WorkflowAuditLogResponse]
+    total: int
+
+
+# ============== Signature Schemas ==============
+
+class WorkflowSignatureResponse(BaseModel):
+    """Response for a workflow signature."""
+    id: int
+    step_id: int
+    user_id: int
+    user_name: str
+    signature_hash: str
+    ip_address: Optional[str]
+    user_agent: Optional[str]
+    signed_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class WorkflowSignatureListResponse(BaseModel):
+    """List of signatures for a step."""
+    signatures: List[WorkflowSignatureResponse]
     total: int
 
 

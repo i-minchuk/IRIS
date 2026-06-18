@@ -10,8 +10,9 @@ import { WorkloadHeatmap } from './components/WorkloadHeatmap';
 import { DocumentTracker } from './components/DocumentTracker';
 import { MTOStatus } from './components/MTOStatus';
 import { ProjectCard } from './components/ProjectCard';
+import { ProductionStrategyTab } from './components/ProductionStrategy';
 
-type TabId = 'pipeline' | 'operations' | 'workload' | 'documents' | 'mto';
+type TabId = 'pipeline' | 'operations' | 'workload' | 'documents' | 'mto' | 'strategy';
 
 export const ProductionControlPage: React.FC = () => {
   const { projects } = useProjects();
@@ -49,6 +50,7 @@ export const ProductionControlPage: React.FC = () => {
     { id: 'workload' as TabId, label: '⚡ Загрузка', color: '#f59e0b' },
     { id: 'documents' as TabId, label: '📄 Документы', color: '#8b5cf6' },
     { id: 'mto' as TabId, label: '🛒 МТО', color: '#22c55e' },
+    { id: 'strategy' as TabId, label: '📈 Стратегия', color: '#c47a1a' },
   ];
 
   const filteredProjects = projects.filter(p =>
@@ -161,19 +163,24 @@ export const ProductionControlPage: React.FC = () => {
               projects={filteredProjects}
             />
           )}
+          {activeTab === 'strategy' && (
+            <ProductionStrategyTab />
+          )}
         </div>
 
         {/* Правая панель — карточка проекта для ответа по телефону */}
-        <div className="w-80 lg:w-96 border-l overflow-y-auto hidden lg:block"
-          style={{ borderColor: 'var(--iris-border-subtle)', background: 'var(--iris-bg-surface)' }}
-        >
-          <ProjectCard
-            project={selectedProject}
-            operations={operations}
-            documents={documents}
-            mtoItems={mtoItems}
-          />
-        </div>
+        {activeTab !== 'strategy' && (
+          <div className="w-80 lg:w-96 border-l overflow-y-auto hidden lg:block"
+            style={{ borderColor: 'var(--iris-border-subtle)', background: 'var(--iris-bg-surface)' }}
+          >
+            <ProjectCard
+              project={selectedProject}
+              operations={operations}
+              documents={documents}
+              mtoItems={mtoItems}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

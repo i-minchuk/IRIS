@@ -6,7 +6,7 @@
 
 ## Сводка
 
-**ДокПоток IRIS** — система управления технической документацией (DMS). MVP 4.3.0.
+**ДокПоток IRIS** — система управления технической документацией (DMS). MVP 4.4.0.
 - **Backend**: FastAPI + async SQLAlchemy 2.0 (PostgreSQL/SQLite) + Alembic
 - **Frontend**: React 19 + TypeScript + Vite + Tailwind CSS + React Router v7
 - **AI**: OpenAI + Qdrant (RAG, inline suggestions, анализ документов)

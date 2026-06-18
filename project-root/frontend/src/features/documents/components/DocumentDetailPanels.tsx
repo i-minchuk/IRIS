@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
 import type { DocumentDetail } from '@/api/documents';
+import type { RemarkListItem } from '@/types/remarks';
 import { classifyDocument } from '@/api/documents';
 
 interface Props {
   doc: DocumentDetail;
+  remarks?: RemarkListItem[];
 }
 
-export const DocumentDetailPanels: React.FC<Props> = ({ doc }) => {
-  const openRemarks = doc.remarks?.filter((r) => r.status !== 'closed' && r.status !== 'resolved_confirmed').length || 0;
+const CLOSED_STATUSES = new Set(['closed', 'resolved', 'rejected']);
+
+export const DocumentDetailPanels: React.FC<Props> = ({ doc, remarks = [] }) => {
+  const openRemarks = remarks.filter((r) => !CLOSED_STATUSES.has(r.status)).length;
   const totalRevisions = doc.revisions?.length || 0;
   const [classifying, setClassifying] = useState(false);
   const [aiResult, setAiResult] = useState<{ type: string; confidence: number } | null>(
@@ -41,7 +45,7 @@ export const DocumentDetailPanels: React.FC<Props> = ({ doc }) => {
         <div className="text-[10px] text-gray-400 dark:text-gray-500 uppercase font-semibold">Замечания</div>
         <div className="text-xs text-gray-700 dark:text-gray-300 mt-1">
           <div>Открытых: <span className={`font-medium ${openRemarks > 0 ? 'text-red-600' : ''}`}>{openRemarks}</span></div>
-          <div>Всего: <span className="font-medium">{doc.remarks?.length || 0}</span></div>
+          <div>Всего: <span className="font-medium">{remarks.length}</span></div>
         </div>
       </div>
 

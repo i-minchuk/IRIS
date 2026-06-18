@@ -26,7 +26,6 @@ TABLES = [
     "documents",
     "revisions",
     "change_sheets",
-    "document_remarks",
     "approval_workflows",
     "approval_stages",
     "document_dependencies",

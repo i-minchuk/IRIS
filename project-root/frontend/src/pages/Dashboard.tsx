@@ -64,15 +64,8 @@ function useCountUp(target: number, duration = 1500, decimals = 1) {
    MOCK FALLBACK DATA
    ═══════════════════════════════════════════ */
 
-
-
-
 const MOCK_TREND_DATA = [42, 45, 48, 44, 52, 58, 55, 61, 68, 72, 70, 78];
 const MOCK_TREND_LABELS = ['Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек', 'Янв', 'Фев', 'Мар', 'Апр'];
-
-
-
-
 
 const MOCK_TOP_PROJECTS = [
   { name: 'ЖК «Северный»', percent: 78, status: 'active', revenue: '45.2 млн ₽', deadline: '10.05.2026' },
@@ -440,24 +433,20 @@ export default function Dashboard() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-4 md:gap-5 items-start">
+      {/* Правая колонка — 1/3 ширины (2fr 1fr) */}
+      <div className="grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-4 md:gap-5 items-start">
 
         {/* ═══ ЛЕВАЯ КОЛОНКА ═══ */}
         <div className="space-y-4 md:space-y-5 min-w-0">
 
           {/* Header + фильтр */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-              <h1 className="sr-only" style={{ color: 'var(--text-primary)' }}>Панель аналитики</h1>
-              <p className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Стратегическая сводка по финансам, тендерам и проектам</p>
-            </div>
             <div className="flex items-center gap-3">
               <div className="flex items-center rounded-lg p-0.5" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
                 {periods.map((p) => (
                   <button
                     key={p.key}
                     onClick={() => setPeriod(p.key)}
-                    className="text-[11px] px-2 md:px-2.5 py-1 rounded-md font-medium transition-all"
+                    className="text-sm md:text-base px-3 md:px-4 py-1.5 rounded-md font-medium transition-all"
                     style={{
                       color: period === p.key ? '#fff' : 'var(--text-secondary)',
                       background: period === p.key ? '#3B82F6' : 'transparent',
@@ -467,9 +456,8 @@ export default function Dashboard() {
                   </button>
                 ))}
               </div>
-              <LiveClock className="text-base md:text-lg font-medium leading-relaxed mt-1 hidden sm:inline tabular-nums" style={{ color: 'var(--text-secondary)' }} />
+              <LiveClock className="text-lg md:text-2xl font-medium leading-relaxed mt-1 hidden sm:inline tabular-nums" style={{ color: 'var(--text-secondary)' }} />
             </div>
-          </div>
 
           {/* Action items */}
           {actionItems.length > 0 && (
@@ -544,7 +532,7 @@ export default function Dashboard() {
           {/* Tender funnel */}
           <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Тендерная воронка</h3>
+              <p className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Тендерная воронка</p>
               <button onClick={() => navigate('/projects')} className="text-base md:text-lg font-medium leading-relaxed mt-1 flex items-center gap-1 transition-colors" style={{ color: 'var(--text-secondary)' }}>Все тендеры <ChevronRight size={12} /></button>
             </div>
             <div className="flex items-end justify-between gap-1 overflow-x-auto pb-1">
@@ -577,18 +565,19 @@ export default function Dashboard() {
               { label: 'Просроченные документы', valueRaw: kpiValues[2], suffix: '', trend: '-3', good: true, icon: <AlertTriangle size={14} />, color: '#DC2626', spark: kpiSparkData.overdue, decimals: 0 },
               { label: 'Средняя загрузка', valueRaw: kpiValues[3], suffix: '%', trend: '+2%', good: false, icon: <Users size={14} />, color: '#D4AF37', spark: kpiSparkData.load, decimals: 0 },
             ].map((kpi, idx) => (
-              <div key={idx} className="p-3 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{kpi.label}</span>
+              <div key={idx} className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] md:text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>{kpi.label}</span>
                   <span style={{ color: kpi.color }}>{kpi.icon}</span>
                 </div>
                 <div className="flex items-end justify-between">
                   <div>
-                    <div className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
-                      {kpi.decimals === 0 ? Math.round(kpiVals[idx]) : kpiVals[idx]}{kpi.suffix}
+                    <div className="text-xl md:text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                      {kpi.decimals === 0 ? Math.round(kpiVals[idx]) : kpiVals[idx]}
+                      <span className="text-base md:text-lg font-medium leading-relaxed mt-1 md:text-sm font-normal" style={{ color: 'var(--text-secondary)' }}>{kpi.suffix}</span>
                     </div>
-                    <div className="text-[10px] mt-0.5" style={{ color: kpi.good ? '#0C7205' : '#D4AF37' }}>
-                      {kpi.good ? <TrendingUp size={10} className="inline mr-0.5" /> : <TrendingDown size={10} className="inline mr-0.5" />}{kpi.trend}
+                    <div className="flex items-center gap-1 mt-1 text-[10px] md:text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: kpi.good ? '#0C7205' : '#D4AF37' }}>
+                      {kpi.good ? <TrendingUp size={12} /> : <TrendingDown size={12} />}{kpi.trend}
                     </div>
                   </div>
                   <MiniSparkline data={kpi.spark} color={kpi.color} />
@@ -600,8 +589,10 @@ export default function Dashboard() {
           {/* Portfolio — BarChart + PieChart */}
           <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Структура портфеля по типам объектов</h3>
-              <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Выручка, млн ₽</span>
+              <p className="text-base md:text-xl font-medium" style={{ color: 'var(--text-secondary)' }}>
+                Структура портфеля по типам объектов
+              </p>
+              <span className="text-xs md:text-sm" style={{ color: 'var(--text-muted)' }}>Выручка, млн ₽</span>
             </div>
             {chartsLoading && (
               <div className="flex items-center justify-center gap-2 py-8">
@@ -610,7 +601,6 @@ export default function Dashboard() {
               </div>
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4" style={{ opacity: chartsLoading ? 0.4 : 1, transition: 'opacity 0.2s' }}>
-              {/* BarChart */}
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={portfolioBarData} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
@@ -639,7 +629,6 @@ export default function Dashboard() {
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-              {/* PieChart */}
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -674,11 +663,12 @@ export default function Dashboard() {
 
           {/* Trend + Top projects */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* AreaChart — динамика выручки */}
             <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Динамика выручки (12 мес)</h3>
-                <span className="text-xs" style={{ color: '#0C7205' }}>+18% YoY</span>
+                <p className="text-base md:text-xl font-medium" style={{ color: 'var(--text-secondary)' }}>
+                  Динамика выручки (12 мес)
+                </p>
+                <span className="text-xs md:text-sm font-medium" style={{ color: '#0C7205' }}>+18% YoY</span>
               </div>
               {chartsLoading && (
                 <div className="flex items-center justify-center gap-2 py-8">
@@ -720,8 +710,12 @@ export default function Dashboard() {
 
             <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Топ-проекты по выручке</h3>
-                <button onClick={() => navigate('/projects')} className="text-base md:text-lg font-medium leading-relaxed mt-1 flex items-center gap-1 transition-colors" style={{ color: 'var(--text-secondary)' }}>Все <ChevronRight size={12} /></button>
+                <p className="text-base md:text-xl font-medium" style={{ color: 'var(--text-secondary)' }}>
+                  Топ проекты по выручке
+                </p>
+                <button onClick={() => navigate('/projects')} className="text-base md:text-lg font-medium leading-relaxed mt-1 flex items-center gap-1 transition-colors" style={{ color: 'var(--text-secondary)' }}>
+                  Все <ChevronRight size={14} />
+                </button>
               </div>
               <div className="flex flex-col gap-2">
                 {topProjects.map((proj, i) => {
@@ -735,13 +729,13 @@ export default function Dashboard() {
                       <div className="flex items-center gap-2">
                         <div className="w-1 h-8 rounded-full" style={{ background: color }} />
                         <div>
-                          <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{proj.name}</div>
-                          <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Дедлайн: {proj.deadline}</div>
+                          <div className="text-base md:text-lg font-medium" style={{ color: 'var(--text-primary)' }}>{proj.name}</div>
+                          <div className="text-xs md:text-sm" style={{ color: 'var(--text-muted)' }}>Дедлайн: {proj.deadline}</div>
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{proj.revenue}</div>
-                        <div className="text-[10px]" style={{ color: color }}>{proj.percent}%</div>
+                        <div className="text-base md:text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{proj.revenue}</div>
+                        <div className="text-xs md:text-sm" style={{ color: color }}>{proj.percent}%</div>
                       </div>
                     </div>
                   );
@@ -753,8 +747,12 @@ export default function Dashboard() {
           {/* Deadlines */}
           <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Ближайшие дедлайны</h3>
-              <button onClick={() => navigate('/projects')} className="text-base md:text-lg font-medium leading-relaxed mt-1 flex items-center gap-1 transition-colors" style={{ color: 'var(--text-secondary)' }}>Календарь <ChevronRight size={12} /></button>
+              <p className="text-base md:text-xl font-medium" style={{ color: 'var(--text-secondary)' }}>
+                Ближайшие дедлайны
+              </p>
+              <button onClick={() => navigate('/projects')} className="text-base md:text-lg font-medium leading-relaxed mt-1 flex items-center gap-1 transition-colors" style={{ color: 'var(--text-secondary)' }}>
+                Календарь <ChevronRight size={14} />
+              </button>
             </div>
             <div className="flex items-center gap-1 overflow-x-auto pb-1">
               {deadlines.map((item, i) => (
@@ -763,9 +761,9 @@ export default function Dashboard() {
                     style={{ background: item.urgent ? item.color + '15' : 'var(--card-elevated)', border: `1px solid ${item.urgent ? item.color + '40' : 'var(--border-color)'}` }}
                     onClick={() => navigate('/projects')}
                   >
-                    <div className="text-[10px] font-medium" style={{ color: item.urgent ? item.color : 'var(--text-muted)' }}>{item.day}</div>
-                    <div className="text-xs font-bold" style={{ color: 'var(--text-primary)' }}>{item.date}</div>
-                    <div className="text-[9px] mt-0.5 truncate px-1" style={{ color: 'var(--text-muted)' }}>{item.projects[0]}</div>
+                    <div className="text-xs md:text-sm font-medium" style={{ color: item.urgent ? item.color : 'var(--text-muted)' }}>{item.day}</div>
+                    <div className="text-sm md:text-base font-bold" style={{ color: 'var(--text-primary)' }}>{item.date}</div>
+                    <div className="text-xs md:text-sm mt-0.5 truncate px-1" style={{ color: 'var(--text-muted)' }}>{item.projects[0]}</div>
                   </div>
                   {i < deadlines.length - 1 && <div className="w-4 h-px mt-1" style={{ background: 'var(--border-color)' }} />}
                 </div>
@@ -775,36 +773,36 @@ export default function Dashboard() {
 
         </div>
 
-        {/* ═══ ПРАВАЯ КОЛОНКА ═══ */}
-        <div className="space-y-4 xl:sticky xl:top-5">
+        {/* ═══ ПРАВАЯ КОЛОНКА — УВЕЛИЧЕНА до 1/3 экрана, все шрифты внутри увеличены в 2 раза ═══ */}
+        <div className="space-y-5 xl:sticky xl:top-5">
 
           {/* Риски */}
-          <div className="p-3 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Риски и требования внимания</h3>
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ background: 'rgba(220,38,38,0.12)', color: '#DC2626' }}>{criticalAlerts.length}</span>
-                <AlertTriangle size={14} style={{ color: 'var(--text-muted)' }} />
+          <div className="p-5 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Риски и требования внимания</h3>
+              <div className="flex items-center gap-2">
+                <span className="text-lg px-2 py-0.5 rounded-full font-medium" style={{ background: 'rgba(220,38,38,0.12)', color: '#DC2626' }}>{criticalAlerts.length}</span>
+                <AlertTriangle size={24} style={{ color: 'var(--text-muted)' }} />
               </div>
             </div>
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-3">
               {criticalAlerts.map((risk) => (
                 <div key={risk.id}
                   onClick={() => navigate('/workflow')}
-                  className="flex items-start gap-2.5 p-2 rounded-lg cursor-pointer transition-colors"
+                  className="flex items-start gap-3 p-2 rounded-lg cursor-pointer transition-colors"
                   style={{ background: 'transparent' }}
                   onMouseEnter={(e) => { e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                 >
-                  <div className="w-1 h-8 rounded-full shrink-0 mt-0.5" style={{ background: risk.color }} />
+                  <div className="w-1 h-10 rounded-full shrink-0 mt-0.5" style={{ background: risk.color }} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
-                      <span className="text-xs font-medium leading-tight break-words" style={{ color: 'var(--text-primary)' }}>{risk.title}</span>
-                      <span onClick={(e) => { e.stopPropagation(); navigate('/workflow'); }} className="text-[10px] shrink-0 cursor-pointer hover:underline mt-0.5" style={{ color: risk.color }}>
+                      <span className="text-xl font-medium leading-tight break-words" style={{ color: 'var(--text-primary)' }}>{risk.title}</span>
+                      <span onClick={(e) => { e.stopPropagation(); navigate('/workflow'); }} className="text-lg shrink-0 cursor-pointer hover:underline mt-0.5" style={{ color: risk.color }}>
                         {risk.action} →
                       </span>
                     </div>
-                    <div className="text-[10px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                    <div className="text-base mt-0.5" style={{ color: 'var(--text-muted)' }}>
                       {risk.level === 'high' ? 'Высокий приоритет' : 'Средний приоритет'}
                     </div>
                   </div>
@@ -813,38 +811,48 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Загрузка команды */}
-          <div className="p-3 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
-            <DepartmentLoad />
+          {/* Загрузка команды — принудительное увеличение через [&_*] */}
+          <div className="p-5 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+            <div className="[&_*]:text-xl">
+              <DepartmentLoad />
+            </div>
           </div>
 
-          {/* Дни рождения */}
-          <BirthdayWidget birthdays={MOCK_BIRTHDAYS} />
+          {/* Дни рождения — принудительное увеличение через [&_*] */}
+          <div className="p-5 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+            <div className="[&_*]:text-xl">
+              <BirthdayWidget birthdays={MOCK_BIRTHDAYS} />
+            </div>
+          </div>
 
-          {/* Leaderboard Widget */}
-          <LeaderboardWidget />
+          {/* Лидерборд — принудительное увеличение через [&_*] */}
+          <div className="p-5 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+            <div className="[&_*]:text-xl">
+              <LeaderboardWidget />
+            </div>
+          </div>
 
-          {/* IRIS — изумрудный агент со звёздами */}
-          <div className="p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+          {/* IRIS — увеличенные шрифты */}
+          <div className="p-5 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
             <div className="flex items-center gap-3 mb-3">
               <ChromeBot size={100} variant={isDark ? 'dark' : 'light'} />
               <div>
-                <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Рекомендации IRIS</h3>
-                <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>AI-ассистент</span>
+                <h3 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Рекомендации IRIS</h3>
+                <span className="text-base" style={{ color: 'var(--text-muted)' }}>AI-ассистент</span>
               </div>
             </div>
-            <div className="p-2.5 rounded-lg" style={{ background: isDark ? 'rgba(12,114,5,0.08)' : 'rgba(12,114,5,0.06)', border: '1px solid rgba(12,114,5,0.2)' }}>
+            <div className="p-3 rounded-lg" style={{ background: isDark ? 'rgba(12,114,5,0.08)' : 'rgba(12,114,5,0.06)', border: '1px solid rgba(12,114,5,0.2)' }}>
               <div className="flex items-start gap-2">
-                <Sparkles size={14} className="shrink-0 mt-0.5" style={{ color: '#0C7205' }} />
+                <Sparkles size={22} className="shrink-0 mt-0.5" style={{ color: '#0C7205' }} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs leading-relaxed" style={{ color: 'var(--text-primary)' }}>
+                  <p className="text-xl leading-relaxed" style={{ color: 'var(--text-primary)' }}>
                     Перегруз тендерного отдела: <strong>85%</strong>. Переложить <strong>КЖ-02-014</strong> на проектный?
                   </p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <button onClick={() => navigate('/team')} className="text-[10px] px-2 py-1 rounded-md font-medium transition-colors hover:brightness-110" style={{ background: '#0C7205', color: '#fff' }}>
+                  <div className="flex items-center gap-3 mt-3">
+                    <button onClick={() => navigate('/team')} className="text-base px-4 py-2 rounded-md font-medium transition-colors hover:brightness-110" style={{ background: '#0C7205', color: '#fff' }}>
                       Применить
                     </button>
-                    <button onClick={() => navigate('/workflow')} className="text-[10px] px-2 py-1 rounded-md transition-colors" style={{ color: 'var(--text-secondary)', border: '1px solid var(--border-color)' }}>
+                    <button onClick={() => navigate('/workflow')} className="text-base px-4 py-2 rounded-md transition-colors" style={{ color: 'var(--text-secondary)', border: '1px solid var(--border-color)' }}>
                       Подробнее
                     </button>
                   </div>

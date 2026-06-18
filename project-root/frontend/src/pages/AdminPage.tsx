@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Loader2, Shield, UserCheck, UserX, Mail, Calendar } from 'lucide-react';
 import { adminApi, type AdminUser, type UserUpdatePayload } from '@/features/auth/api/adminApi';
 import { useAuthStore } from '@/features/auth/store/authStore';
+import { toast } from 'sonner';
 
 export const AdminPage: React.FC = () => {
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -32,8 +33,10 @@ export const AdminPage: React.FC = () => {
     try {
       const updated = await adminApi.updateUser(user.id, { is_active: !user.is_active });
       setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
+      toast.success(`Пользователь ${updated.is_active ? 'активирован' : 'деактивирован'}`);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Ошибка обновления');
+      toast.error(err.response?.data?.detail || 'Ошибка обновления');
     } finally {
       setSaving(false);
     }
@@ -46,8 +49,10 @@ export const AdminPage: React.FC = () => {
       const updated = await adminApi.updateUser(editingUser.id, payload);
       setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
       setEditingUser(null);
+      toast.success('Пользователь обновлён');
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Ошибка обновления');
+      toast.error(err.response?.data?.detail || 'Ошибка обновления');
     } finally {
       setSaving(false);
     }
@@ -276,7 +281,7 @@ function EditUserModal({ user, onClose, onSave, saving }: EditUserModalProps) {
         <h2 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
           Редактирование пользователя
         </h2>
-        <div className="space-y-4">
+        <form data-hotkey-submit="true" className="space-y-4" onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
           <div>
             <label className="block text-base md:text-lg font-medium leading-relaxed mt-1 font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Полное имя</label>
             <input
@@ -338,7 +343,7 @@ function EditUserModal({ user, onClose, onSave, saving }: EditUserModalProps) {
               {fieldErrors.general}
             </div>
           )}
-        </div>
+        </form>
         <div className="flex justify-end gap-2 mt-6">
           <button
             onClick={onClose}

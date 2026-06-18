@@ -879,3 +879,58 @@ main {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
 }
+/* ── BPMN Production Strategy ── */
+.bpmn-lane {
+  transition: all 0.2s ease;
+}
+
+.bpmn-task,
+.bpmn-event,
+.bpmn-gateway {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.bpmn-task:hover,
+.bpmn-event:hover,
+.bpmn-gateway:hover {
+  filter: brightness(1.05);
+}
+
+.bpmn-task.selected,
+.bpmn-event.selected,
+.bpmn-gateway.selected {
+  filter: brightness(1.1);
+}
+
+.bpmn-task.bottleneck {
+  animation: pulse-warn 2s infinite;
+}
+
+.bpmn-task.duplicate {
+  animation: pulse-dup 2s infinite;
+}
+
+@keyframes pulse-warn {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 0 rgba(249, 115, 22, 0.4));
+  }
+  50% {
+    filter: drop-shadow(0 0 6px rgba(249, 115, 22, 0.7));
+  }
+}
+
+@keyframes pulse-dup {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 0 rgba(168, 85, 247, 0.4));
+  }
+  50% {
+    filter: drop-shadow(0 0 6px rgba(168, 85, 247, 0.7));
+  }
+}
+
+.tooltip-bpmn {
+  pointer-events: none;
+}

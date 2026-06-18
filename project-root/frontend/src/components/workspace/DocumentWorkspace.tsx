@@ -9,7 +9,7 @@ import DocumentViewerHost from '../viewers/DocumentViewerHost';
 import RemarksPanel from '../RemarksPanel';
 import ExplorerSidebar from '../workspace/ExplorerSidebar';
 import WorkspaceLayout from '../workspace/WorkspaceLayout';
-import { getDocument, createRevision, submitForApproval, submitForReview } from '../../api/documents';
+import { getDocumentWithRemarks, createRevision, submitForApproval, submitForReview } from '../../api/documents';
 import RevisionForm from '../RevisionForm';
 import { Plus, FileCheck, Eye, Lock } from 'lucide-react';
 
@@ -85,7 +85,7 @@ export default function DocumentWorkspace() {
       setActiveExplorerNode(nodeId);
 
       try {
-        const doc = await getDocument(documentId);
+        const doc = await getDocumentWithRemarks(documentId);
         
         // Build file info from revision
         const currentRevision = doc.current_revision_id 
@@ -135,7 +135,7 @@ export default function DocumentWorkspace() {
 
   const refreshSelectedDocument = async () => {
     if (!selectedDocument) return;
-    const doc = await getDocument(selectedDocument.id);
+    const doc = await getDocumentWithRemarks(selectedDocument.id);
     const currentRevision = doc.current_revision_id
       ? doc.revisions?.find(r => r.id === doc.current_revision_id)
       : null;

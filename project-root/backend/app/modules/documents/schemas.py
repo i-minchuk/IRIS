@@ -1,6 +1,5 @@
 from datetime import datetime
 from typing import Optional, List
-from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -133,67 +132,6 @@ class RevisionResponse(RevisionBase):
     document_id: int
     created_by_id: int
     created_at: Optional[datetime] = None
-    
-    model_config = ConfigDict(from_attributes=True)
-
-
-# Remark schemas
-class RemarkBase(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
-    severity: str = "minor"
-    remark_type: str = "internal"
-    category: str = "other"
-    status: str = "new"
-    deadline: Optional[datetime] = None
-    target_page: Optional[int] = None
-    target_coordinates: Optional[dict] = None
-    target_element_id: Optional[str] = None
-    target_text_selection: Optional[str] = None
-    source_organization: Optional[str] = None
-    source_department: Optional[str] = None
-    resolution_action: Optional[str] = None
-    response: Optional[str] = None
-    confirmed_by_customer: Optional[bool] = None
-
-
-class RemarkCreate(RemarkBase):
-    document_id: int
-    revision_id: Optional[int] = None
-
-
-class RemarkUpdate(BaseModel):
-    status: Optional[str] = None
-    resolution_action: Optional[str] = None
-    response: Optional[str] = None
-    confirmed_by_customer: Optional[bool] = None
-
-
-class RemarkResponse(RemarkBase):
-    id: int
-    document_id: int
-    revision_id: Optional[int] = None
-    source_author_id: int
-    created_at: Optional[datetime] = None
-    confirmed_at: Optional[datetime] = None
-    
-    model_config = ConfigDict(from_attributes=True)
-
-
-class RemarkListItem(BaseModel):
-    id: int
-    title: Optional[str] = None
-    description: Optional[str] = None
-    severity: str
-    status: str
-    remark_type: str
-    category: str
-    deadline: Optional[datetime] = None
-    created_at: Optional[datetime] = None
-    document_id: int
-    document_number: Optional[str] = None
-    document_name: Optional[str] = None
-    project_id: Optional[int] = None
     
     model_config = ConfigDict(from_attributes=True)
 

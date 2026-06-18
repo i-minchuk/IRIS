@@ -19,6 +19,8 @@ from app.modules.workflow.schemas import (
     ApprovalAction,
     RejectionAction,
     DelegationAction,
+    SignAction,
+    SignResponse,
     ApprovalResponse,
     RejectionResponse,
     DelegationResponse,
@@ -26,6 +28,8 @@ from app.modules.workflow.schemas import (
     WorkflowCommentResponse,
     WorkflowAuditLogResponse,
     WorkflowAuditLogListResponse,
+    WorkflowSignatureResponse,
+    WorkflowSignatureListResponse,
     PREDEFINED_TEMPLATES
 )
 
@@ -239,6 +243,73 @@ async def get_document_instances(
     service = get_service(db)
     instances = await service.get_instances_by_document(document_id)
     return [WorkflowInstanceResponse.model_validate(i) for i in instances]
+
+
+@router.post("/steps/{step_id}/sign", response_model=SignResponse)
+async def sign_step(
+    step_id: int,
+    action: SignAction,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Sign and approve a workflow step with hash-based signature."""
+    service = get_service(db)
+    
+    try:
+        step, next_step, signature_hash = await service.sign_and_approve_step(
+            step_id, current_user.id, action
+        )
+        
+        result = SignResponse(
+            step_id=step.id,
+            status="signed_and_approved",
+            message="Шаг подписан и согласован",
+            signature_hash=signature_hash,
+        )
+        
+        if next_step:
+            result.next_step = {
+                "id": next_step.id,
+                "name": next_step.step_name,
+                "status": next_step.status.value
+            }
+        else:
+            result.workflow_completed = True
+        
+        return result
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+
+
+@router.get("/steps/{step_id}/signatures", response_model=WorkflowSignatureListResponse)
+async def get_step_signatures(
+    step_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Get all signatures for a workflow step."""
+    service = get_service(db)
+    signatures = await service.get_step_signatures(step_id)
+    
+    return WorkflowSignatureListResponse(
+        signatures=[
+            WorkflowSignatureResponse(
+                id=s.id,
+                step_id=s.step_id,
+                user_id=s.user_id,
+                user_name=s.user.full_name or s.user.username or str(s.user_id),
+                signature_hash=s.signature_hash,
+                ip_address=s.ip_address,
+                user_agent=s.user_agent,
+                signed_at=s.signed_at,
+            )
+            for s in signatures
+        ],
+        total=len(signatures)
+    )
 
 
 # ==================== Step Action Endpoints ====================

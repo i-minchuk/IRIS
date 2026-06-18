@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, FileText, Check } from 'lucide-react';
 import { createDocument } from '../api/documents';
 import { Button, Input, Select, Card } from '../components/ui';
+import { toast } from 'sonner';
 
 interface Template {
   id: string;
@@ -117,8 +118,10 @@ export default function DocumentCreate() {
         project_id: pid,
         ...formData,
       });
+      toast.success('Документ успешно создан');
       navigate(`/documents/workspace/${doc.project_id || pid}`);
-    } catch (err) {
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || 'Ошибка при создании документа');
       console.error('Ошибка создания:', err);
     } finally {
       setLoading(false);
@@ -129,6 +132,7 @@ export default function DocumentCreate() {
 
   return (
     <div className="w-full pt-2 pb-6 px-4">
+      <form data-hotkey-submit="true" onSubmit={(e) => { e.preventDefault(); handleCreate(); }}>
       {/* Header */}
       <div className="flex items-center gap-2 mb-6">
         <button
@@ -366,6 +370,7 @@ export default function DocumentCreate() {
           </div>
         </Card>
       )}
+      </form>
     </div>
   );
 }

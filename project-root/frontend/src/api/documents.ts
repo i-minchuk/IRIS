@@ -1,4 +1,6 @@
 import client from '@/shared/api/client';
+import { getRemarks } from '@/api/remarks';
+import type { RemarkListItem } from '@/types/remarks';
 
 export interface DocumentItem {
   id: number;
@@ -33,7 +35,10 @@ export interface DocumentDetail extends DocumentItem {
   discipline?: string;
   locked_by_user?: LockedByUser | null;
   revisions: Revision[];
-  remarks: LegacyRemark[];
+}
+
+export interface DocumentDetailWithRemarks extends DocumentDetail {
+  remarks: RemarkListItem[];
 }
 
 export interface Revision {
@@ -46,22 +51,6 @@ export interface Revision {
   changes_summary?: string;
 }
 
-export interface LegacyRemark {
-  id: number;
-  title: string;
-  description?: string;
-  severity: string;
-  status: string;
-  remark_type: string;
-  category?: string;
-  deadline?: string;
-  document_id?: number;
-  document_number?: string;
-  document_name?: string;
-  project_id?: number;
-  created_at: string;
-}
-
 export const getDocuments = async (params?: { project_id?: number; section_id?: number }): Promise<DocumentItem[]> => {
   const { data } = await client.get('/api/v1/documents', { params });
   return data;
@@ -70,6 +59,21 @@ export const getDocuments = async (params?: { project_id?: number; section_id?: 
 export const getDocument = async (id: number): Promise<DocumentDetail> => {
   const { data } = await client.get(`/api/v1/documents/${id}`);
   return data;
+};
+
+export const getDocumentWithRemarks = async (id: number): Promise<DocumentDetailWithRemarks> => {
+  const [doc, remarksResponse] = await Promise.all([
+    getDocument(id),
+    getRemarks({
+      document_id: id,
+      page: 1,
+      page_size: 100,
+    }),
+  ]);
+  return {
+    ...doc,
+    remarks: remarksResponse.items,
+  };
 };
 
 export const createDocument = async (body: Partial<DocumentItem>): Promise<DocumentItem> => {
@@ -101,5 +105,3 @@ export const classifyDocument = async (documentId: number): Promise<{ type: stri
   const { data } = await client.post(`/api/v1/documents/${documentId}/classify`);
   return data;
 };
-
-

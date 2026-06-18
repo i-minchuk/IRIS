@@ -66,6 +66,28 @@ workflow_step_assignees = Table(
 )
 
 
+class WorkflowSignature(Base):
+    """Аудитопригодная подпись этапа согласования (hash-based)."""
+    __tablename__ = 'workflow_signatures'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    step_id: Mapped[int] = mapped_column(ForeignKey('workflow_steps.id', ondelete='CASCADE'), nullable=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=False)
+    
+    # Hash-based signature
+    signature_hash: Mapped[str] = mapped_column(String(128), nullable=False)
+    
+    # Metadata
+    ip_address: Mapped[Optional[str]] = mapped_column(String(45), nullable=True)
+    user_agent: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    
+    signed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
+
+    # Relationships
+    step = relationship('WorkflowStep', back_populates='signatures')
+    user = relationship('User', backref='workflow_signatures')
+
+
 class WorkflowTemplate(Base):
     """Шаблоны маршрутов согласования."""
     __tablename__ = 'workflow_templates'
@@ -201,11 +223,16 @@ class WorkflowStep(Base):
     # Кто выполнил (последний)
     completed_by: Mapped[Optional[int]] = mapped_column(ForeignKey('users.id'), nullable=True)
     
+    # Электронная подпись
+    signed_by: Mapped[Optional[int]] = mapped_column(ForeignKey('users.id'), nullable=True)
+    signed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
 
     # Relationships
     instance = relationship('WorkflowInstance', back_populates='steps')
     completed_by_user = relationship('User', foreign_keys=[completed_by], backref='completed_steps')
+    signed_by_user = relationship('User', foreign_keys=[signed_by], backref='signed_steps')
     assignees = relationship(
         'User',
         secondary=workflow_step_assignees,
@@ -213,6 +240,7 @@ class WorkflowStep(Base):
     )
     comments = relationship('WorkflowComment', back_populates='step', lazy='dynamic', order_by='WorkflowComment.created_at')
     audit_logs = relationship('WorkflowAuditLog', back_populates='step', lazy='dynamic')
+    signatures = relationship('WorkflowSignature', back_populates='step', lazy='dynamic', order_by='WorkflowSignature.signed_at')
 
 
 class WorkflowComment(Base):

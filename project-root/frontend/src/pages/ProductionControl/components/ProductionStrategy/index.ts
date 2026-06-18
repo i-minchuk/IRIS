@@ -1,0 +1,1 @@
+export { ProductionStrategyTab } from './ProductionStrategyTab';

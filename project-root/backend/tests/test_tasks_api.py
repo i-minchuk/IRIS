@@ -68,7 +68,7 @@ def client_with_auth(mock_user):
     app.dependency_overrides.clear()
 
 
-def _make_mock_db(tasks=None, task=None, count=0):
+def _make_mock_db(tasks=None, task=None, count=0, time_session=None):
     """Create a mock async database session for task tests."""
     from sqlalchemy.ext.asyncio import AsyncSession
     mock_db = AsyncMock(spec=AsyncSession)
@@ -79,6 +79,10 @@ def _make_mock_db(tasks=None, task=None, count=0):
     task_result = MagicMock()
     task_result.scalar_one_or_none.return_value = task
     task_result.scalars.return_value.all.return_value = tasks or []
+
+    time_session_result = MagicMock()
+    time_session_result.scalar_one_or_none.return_value = time_session
+    time_session_result.scalars.return_value.all.return_value = []
 
     count_result = MagicMock()
     count_result.scalar.return_value = count
@@ -95,6 +99,9 @@ def _make_mock_db(tasks=None, task=None, count=0):
         # Statistics group by queries
         if "group by" in qstr:
             return stats_result
+        # Time session queries
+        if "time_sessions" in qstr:
+            return time_session_result
         return task_result
 
     mock_db.execute = AsyncMock(side_effect=execute_side_effect)
@@ -372,6 +379,48 @@ class TestUpdateTaskStatus:
                     json={"status": "done"},
                 )
                 assert response.status_code == 404
+            finally:
+                app.dependency_overrides.pop(get_db, None)
+
+    def test_update_task_status_to_in_progress(self, client_with_auth, mock_task):
+        with client_with_auth as client:
+            mock_task.status = TaskStatus.NEW
+            mock_task.assignee_id = 1
+            mock_db = _make_mock_db(task=mock_task)
+
+            async def override_get_db():
+                yield mock_db
+
+            app.dependency_overrides[get_db] = override_get_db
+            try:
+                response = client.patch(
+                    "/api/v1/tasks/1/status",
+                    json={"status": "in_progress"},
+                )
+                assert response.status_code == 200
+                data = response.json()
+                assert data["status"] == "in_progress"
+            finally:
+                app.dependency_overrides.pop(get_db, None)
+
+    def test_update_task_status_to_done(self, client_with_auth, mock_task):
+        with client_with_auth as client:
+            mock_task.status = TaskStatus.IN_PROGRESS
+            mock_task.assignee_id = 1
+            mock_db = _make_mock_db(task=mock_task)
+
+            async def override_get_db():
+                yield mock_db
+
+            app.dependency_overrides[get_db] = override_get_db
+            try:
+                response = client.patch(
+                    "/api/v1/tasks/1/status",
+                    json={"status": "done"},
+                )
+                assert response.status_code == 200
+                data = response.json()
+                assert data["status"] == "done"
             finally:
                 app.dependency_overrides.pop(get_db, None)
 

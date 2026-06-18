@@ -16,6 +16,12 @@ from app.modules.workflow.schemas import (
     WorkflowInstanceCreate, ApprovalAction, RejectionAction, DelegationAction
 )
 from app.modules.auth.models import User
+from app.modules.workflow.notifications import (
+    notify_workflow_started,
+    notify_step_approved,
+    notify_step_rejected,
+    notify_step_delegated,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -219,6 +225,21 @@ class WorkflowService:
             self.db.add(audit)
             await self.db.commit()
             
+            # Notify assignees of first step
+            from sqlalchemy import select as _select
+            steps_result = await self.db.execute(
+                _select(WorkflowStep)
+                .where(WorkflowStep.instance_id == instance.id)
+                .order_by(WorkflowStep.order_index.asc())
+            )
+            all_steps = steps_result.scalars().all()
+            first_step = all_steps[0] if all_steps else None
+            if first_step:
+                try:
+                    await notify_workflow_started(self.db, instance, first_step)
+                except Exception as e:
+                    logger.warning(f"Failed to send workflow start notification: {e}")
+            
             logger.info(f"Workflow instance created: {instance.id}")
             return instance
             
@@ -349,6 +370,13 @@ class WorkflowService:
             await self.db.refresh(step)
             if next_step:
                 await self.db.refresh(next_step)
+            
+            # Notify next step assignees or completer
+            try:
+                await notify_step_approved(self.db, step, next_step, instance)
+            except Exception as e:
+                logger.warning(f"Failed to send approval notification: {e}")
+            
             return step, next_step
         except SQLAlchemyError as e:
             await self.db.rollback()
@@ -408,6 +436,13 @@ class WorkflowService:
             await self.db.commit()
             if return_step:
                 await self.db.refresh(return_step)
+            
+            # Notify starter and return step assignees
+            try:
+                await notify_step_rejected(self.db, step, return_step, instance, action.reason)
+            except Exception as e:
+                logger.warning(f"Failed to send rejection notification: {e}")
+            
             return return_step
         except SQLAlchemyError as e:
             await self.db.rollback()
@@ -453,10 +488,113 @@ class WorkflowService:
         try:
             await self.db.commit()
             await self.db.refresh(step)
+            
+            # Notify delegatee
+            try:
+                await notify_step_delegated(self.db, step, delegatee, instance, action.reason)
+            except Exception as e:
+                logger.warning(f"Failed to send delegation notification: {e}")
+            
             return step
         except SQLAlchemyError as e:
             await self.db.rollback()
             raise WorkflowServiceError(f"Failed to delegate step: {e}")
+
+    # ==================== Signature Methods ====================
+
+    async def sign_and_approve_step(
+        self,
+        step_id: int,
+        user_id: int,
+        action: 'SignAction'
+    ) -> Tuple[WorkflowStep, Optional[WorkflowStep], str]:
+        """Create a signature record and approve the step."""
+        import hashlib
+        import os
+
+        step = await self.db.get(WorkflowStep, step_id)
+        if not step:
+            raise StepNotFoundError(f"Step {step_id} not found")
+        
+        if step.status != WorkflowStepStatus.IN_PROGRESS:
+            raise WorkflowServiceError("Step is not in progress")
+        
+        user = await self.db.get(User, user_id)
+        if not user:
+            raise WorkflowServiceError(f"User {user_id} not found")
+        
+        # Generate signature hash
+        secret_salt = os.environ.get('SIGNATURE_SALT', 'iris-workflow-salt-v1')
+        timestamp = datetime.now(timezone.utc).isoformat()
+        hash_input = f"{step_id}:{user_id}:{timestamp}:{secret_salt}"
+        signature_hash = hashlib.sha256(hash_input.encode()).hexdigest()
+        
+        # Create signature record
+        from app.modules.workflow.models import WorkflowSignature
+        signature = WorkflowSignature(
+            step_id=step_id,
+            user_id=user_id,
+            signature_hash=signature_hash,
+            ip_address=action.ip_address,
+            user_agent=action.user_agent,
+            signed_at=datetime.now(timezone.utc)
+        )
+        self.db.add(signature)
+        
+        # Update step with signature info
+        step.signed_by = user_id
+        step.signed_at = datetime.now(timezone.utc)
+        
+        # Now approve the step (reuse existing logic)
+        step.status = WorkflowStepStatus.APPROVED
+        step.completed_by = user_id
+        step.completed_at = datetime.now(timezone.utc)
+        
+        instance = await self.db.get(WorkflowInstance, step.instance_id)
+        
+        # Create audit log
+        audit = WorkflowAuditLog(
+            step_id=step_id,
+            instance_id=step.instance_id,
+            user_id=user_id,
+            action='signed_and_approved',
+            old_status=WorkflowStepStatus.IN_PROGRESS.value,
+            new_status=WorkflowStepStatus.APPROVED.value,
+            comment=action.comment,
+            audit_metadata={"signature_hash": signature_hash},
+            timestamp=datetime.now(timezone.utc)
+        )
+        self.db.add(audit)
+        
+        # Determine next step
+        next_step = await self._determine_next_step(step, instance)
+        
+        try:
+            await self.db.commit()
+            await self.db.refresh(step)
+            if next_step:
+                await self.db.refresh(next_step)
+            
+            # Notify next step assignees or completer
+            try:
+                await notify_step_approved(self.db, step, next_step, instance)
+            except Exception as e:
+                logger.warning(f"Failed to send approval notification: {e}")
+            
+            return step, next_step, signature_hash
+        except SQLAlchemyError as e:
+            await self.db.rollback()
+            raise WorkflowServiceError(f"Failed to sign and approve step: {e}")
+
+    async def get_step_signatures(self, step_id: int) -> List['WorkflowSignature']:
+        """Get all signatures for a step."""
+        from app.modules.workflow.models import WorkflowSignature
+        result = await self.db.execute(
+            select(WorkflowSignature)
+            .where(WorkflowSignature.step_id == step_id)
+            .order_by(WorkflowSignature.signed_at.asc())
+        )
+        return result.scalars().all()
 
     # ==================== Helper Methods ====================
 
