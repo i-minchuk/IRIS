@@ -6,10 +6,13 @@ import { Badge } from '@/components/ui';
 import { DocumentStatusBadge } from '@/components/documents/DocumentStatusBadge';
 import { ApprovalChain } from '@/components/documents/ApprovalChain';
 import { useRemarksStore } from '@/stores/remarksStore';
-import { FileText, MessageSquare, History, Users, ArrowLeft } from 'lucide-react';
+import { DocumentAnalysisPanel } from '@/features/ai/components/DocumentAnalysisPanel';
+import { AIChatPanel } from '@/features/ai/components/AIChatPanel';
+import { RequirementsPanel } from '@/features/ai/components/RequirementsPanel';
+import { FileText, MessageSquare, History, Users, ArrowLeft, Sparkles, Wrench, Bot } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-type Tab = 'info' | 'files' | 'approval' | 'remarks' | 'history';
+type Tab = 'info' | 'files' | 'approval' | 'remarks' | 'history' | 'ai-analysis' | 'ai-requirements' | 'ai-chat';
 
 const mockApprovers = [
   { id: 1, name: 'Алексей Петров', role: 'ГИП', status: 'approved' as const, date: '2026-05-28', comment: 'Согласовано без замечаний' },
@@ -36,6 +39,9 @@ export default function DocumentDetailPage() {
     { key: 'approval', label: 'Согласование', icon: <Users size={14} /> },
     { key: 'remarks', label: `Замечания (${documentRemarks.length})`, icon: <MessageSquare size={14} /> },
     { key: 'history', label: 'История', icon: <History size={14} /> },
+    { key: 'ai-analysis', label: 'AI Анализ', icon: <Sparkles size={14} /> },
+    { key: 'ai-requirements', label: 'Требования', icon: <Wrench size={14} /> },
+    { key: 'ai-chat', label: 'AI Чат', icon: <Bot size={14} /> },
   ];
 
   return (
@@ -52,7 +58,24 @@ export default function DocumentDetailPage() {
             <DocumentStatusBadge status="approval" />
             <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Проект: Альфа</span>
             <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Дисциплина: КМ</span>
+            {activeTab === 'ai-analysis' && id && (
+          <Card padding="md">
+            <DocumentAnalysisPanel documentId={id} />
+          </Card>
+        )}
+
+        {activeTab === 'ai-requirements' && id && (
+          <Card padding="md">
+            <RequirementsPanel documentId={id} />
+          </Card>
+        )}
+
+        {activeTab === 'ai-chat' && id && (
+          <div className="h-[600px]">
+            <AIChatPanel documentId={id} />
           </div>
+        )}
+      </div>
         </div>
       </div>
 

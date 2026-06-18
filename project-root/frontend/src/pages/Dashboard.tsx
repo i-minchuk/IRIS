@@ -433,13 +433,18 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Правая колонка — 1/3 ширины (2fr 1fr) */}
-      <div className="grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-4 md:gap-5 items-start">
+      {/* Увеличили расстояние между колонками: gap-8 md:gap-10 */}
+      <div className="grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-8 md:gap-10 items-start">
 
         {/* ═══ ЛЕВАЯ КОЛОНКА ═══ */}
         <div className="space-y-4 md:space-y-5 min-w-0">
 
-          {/* Header + фильтр */}
+          {/* Header + фильтр — увеличенный шрифт для кнопок и часов */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h1 className="sr-only" style={{ color: 'var(--text-primary)' }}>Панель аналитики</h1>
+              <p className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Стратегическая сводка по финансам, тендерам и проектам</p>
+            </div>
             <div className="flex items-center gap-3">
               <div className="flex items-center rounded-lg p-0.5" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
                 {periods.map((p) => (
@@ -458,6 +463,7 @@ export default function Dashboard() {
               </div>
               <LiveClock className="text-lg md:text-2xl font-medium leading-relaxed mt-1 hidden sm:inline tabular-nums" style={{ color: 'var(--text-secondary)' }} />
             </div>
+          </div>
 
           {/* Action items */}
           {actionItems.length > 0 && (
@@ -773,13 +779,13 @@ export default function Dashboard() {
 
         </div>
 
-        {/* ═══ ПРАВАЯ КОЛОНКА — УВЕЛИЧЕНА до 1/3 экрана, все шрифты внутри увеличены в 2 раза ═══ */}
+        {/* ═══ ПРАВАЯ КОЛОНКА — 1/3 экрана, увеличенные шрифты ═══ */}
         <div className="space-y-5 xl:sticky xl:top-5">
 
           {/* Риски */}
           <div className="p-5 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Риски и требования внимания</h3>
+              <h3 className="text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>Риски и требования внимания</h3>
               <div className="flex items-center gap-2">
                 <span className="text-lg px-2 py-0.5 rounded-full font-medium" style={{ background: 'rgba(220,38,38,0.12)', color: '#DC2626' }}>{criticalAlerts.length}</span>
                 <AlertTriangle size={24} style={{ color: 'var(--text-muted)' }} />
@@ -811,28 +817,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Загрузка команды — принудительное увеличение через [&_*] */}
-          <div className="p-5 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
-            <div className="[&_*]:text-xl">
-              <DepartmentLoad />
-            </div>
-          </div>
-
-          {/* Дни рождения — принудительное увеличение через [&_*] */}
-          <div className="p-5 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
-            <div className="[&_*]:text-xl">
-              <BirthdayWidget birthdays={MOCK_BIRTHDAYS} />
-            </div>
-          </div>
-
-          {/* Лидерборд — принудительное увеличение через [&_*] */}
-          <div className="p-5 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
-            <div className="[&_*]:text-xl">
-              <LeaderboardWidget />
-            </div>
-          </div>
-
-          {/* IRIS — увеличенные шрифты */}
+          {/* Рекомендации IRIS — теперь под рисками */}
           <div className="p-5 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
             <div className="flex items-center gap-3 mb-3">
               <ChromeBot size={100} variant={isDark ? 'dark' : 'light'} />
@@ -858,6 +843,27 @@ export default function Dashboard() {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* Загрузка команды */}
+          <div className="p-5 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+            <div className="[&_*]:text-xl">
+              <DepartmentLoad />
+            </div>
+          </div>
+
+          {/* Дни рождения */}
+          <div className="p-5 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+            <div className="[&_*]:text-xl">
+              <BirthdayWidget birthdays={MOCK_BIRTHDAYS} />
+            </div>
+          </div>
+
+          {/* Лидерборд */}
+          <div className="p-5 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+            <div className="[&_*]:text-xl">
+              <LeaderboardWidget />
             </div>
           </div>
 

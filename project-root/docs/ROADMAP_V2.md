@@ -2,7 +2,7 @@
 
 > Дата: 2026-06-16
 > Текущая версия: MVP 4.4.0
-> Статус: завершена фаза v0.2.0-dev, завершена фаза v0.4.0 (Workflow & UX), ведётся работа над v0.3.0 (AI)
+> Статус: завершена фаза v0.2.0-dev, завершена фаза v0.4.0 (Workflow & UX), завершена фаза v0.3.0 (AI), ведётся работа над v0.5.0 (Интеграции и оптимизация)
 
 ---
 
@@ -16,9 +16,9 @@
 | **v0.2.0-dev** | Remarks (CRUD, full workflow) | ✅ Выполнено | CRUD, статусы, workflow |
 | **v0.2.0-dev** | Archive (timeline, real data) | ✅ Выполнено | Backend + frontend страница |
 | **v0.2.0-dev** | PostgreSQL + Docker | ✅ Выполнено | PostgreSQL asyncpg, Docker Compose |
-| **v0.3.0** | AI-ассистент анализ документов | ⚠️ Частично | Backend `app/ai/service.py`, classification, chatbot; UI-интеграция фрагментарна |
-| **v0.3.0** | Автоизвлечение требований из PDF/DOCX | ⚠️ Частично | Парсеры DOCX/PDF и `app/ai/autofill.py` — требуется end-to-end pipeline |
-| **v0.3.0** | Семантический поиск (Qdrant) | ⚠️ Частично | `app/ai/embeddings.py`, `DocumentIndexer` — требуется полное покрытие |
+| **v0.3.0** | AI-ассистент анализ документов | ✅ Выполнено | `POST /ai/analyze/{id}`, `DocumentAnalysisPanel` в DocumentDetail, score + findings UI |
+| **v0.3.0** | Автоизвлечение требований из PDF/DOCX | ✅ Выполнено | `POST /ai/extract-requirements/{id}`, `RequirementsPanel` в DocumentDetail, 6 типов требований |
+| **v0.3.0** | Семантический поиск (Qdrant) | ✅ Выполнено | `POST /ai/search`, `SemanticSearchPage`, `SemanticSearchPanel`, автоиндексация при создании документа |
 | **v0.4.0** | Статусы документов с workflow | ✅ Выполнено | `app/modules/workflow/` — полноценный workflow engine |
 | **v0.4.0** | Уведомления email + WebSocket | ✅ Выполнено | Email-шаблоны в `app/core/email.py`, интегрированы в workflow (7 шаблонов: started, assigned, approved, rejected, delegated, completed) |
 | **v0.4.0** | Электронное подписание | ✅ Выполнено | Hash-based SHA256 подпись (`WorkflowSignature`), endpoint `POST /workflows/steps/{step_id}/sign`, IP + user agent аудит |
@@ -77,6 +77,12 @@
 - Inactive user = 403, reset token убран из ответа
 
 ### Последние изменения (MVP 4.4.0)
+- ✅ AI-анализ документов — `POST /ai/analyze/{id}`, `DocumentAnalysisPanel` с score и findings
+- ✅ Автоизвлечение требований — `POST /ai/extract-requirements/{id}`, `RequirementsPanel` (ГОСТ, материалы, размеры, давление, температура)
+- ✅ Семантический поиск — `POST /ai/search`, `SemanticSearchPage`, `SemanticSearchPanel`, автоиндексация в Qdrant
+- ✅ AI чат-бот (RAG) — `POST /ai/chat`, `AIChatPanel` с источниками и confidence indicator
+- ✅ Расширен `DocumentDetail` — 3 новые вкладки: AI Анализ, Требования, AI Чат
+- ✅ Автоиндексация документов при создании — `DocumentService.index_document()` + `DocumentIndexer`
 - ✅ Электронное подписание workflow — hash-based SHA256 (`WorkflowSignature`), endpoint `POST /workflows/steps/{step_id}/sign`, аудит IP + user agent
 - ✅ Email уведомления в workflow — 7 шаблонов (started, assigned, approved, rejected, rejected_return, delegated, completed), интегрированы в `WorkflowService`
 - ✅ Валидация форм — DocumentCreate (real-time blur, required, maxLength), AdminPage (проверка имени, toast уведомления)
@@ -123,16 +129,16 @@
 
 **Итого: 22 часа**
 
-### v0.3.0 — AI Интеграция (2–3 недели)
+### v0.3.0 — AI Интеграция ✅ (выполнено)
 
-| # | Задача | Описание | Оценка |
-|---|--------|----------|--------|
-| 3.1 | AI анализ документов | UI для классификации и анализа документов | 8ч |
-| 3.2 | Автоизвлечение требований | End-to-end pipeline: PDF/DOCX → извлечение → сохранение | 12ч |
-| 3.3 | Семантический поиск | Полное покрытие Qdrant + поисковый UI | 10ч |
-| 3.4 | AI чат-бот | Интеграция RAG-чата в документы | 8ч |
+| # | Задача | Описание | Оценка | Статус |
+|---|--------|----------|--------|--------|
+| 3.1 | ✅ AI анализ документов | `POST /ai/analyze/{id}`, `DocumentAnalysisPanel` — score, findings, critical/warning/info | 8ч | Готово |
+| 3.2 | ✅ Автоизвлечение требований | `POST /ai/extract-requirements/{id}`, `RequirementsPanel` — ГОСТ, материалы, размеры, давление, температура | 12ч | Готово |
+| 3.3 | ✅ Семантический поиск | `POST /ai/search`, `SemanticSearchPage`, `SemanticSearchPanel`, автоиндексация при создании документа | 10ч | Готово |
+| 3.4 | ✅ AI чат-бот | `POST /ai/chat` (RAG), `AIChatPanel` — контекстный чат по документу с источниками | 8ч | Готово |
 
-**Итого: 38 часов**
+**Итого: 38 часов — все задачи выполнены**
 
 ### v0.4.0 — Workflow и UX ✅ (выполнено)
 
@@ -182,12 +188,11 @@
 
 ## Рекомендуемый приоритет
 
-### Ближайший месяц (v0.3.0 AI)
-**38 часов, 2–3 недели**
-- AI анализ документов (UI + backend pipeline)
-- Автоизвлечение требований из PDF/DOCX
-- Семантический поиск (Qdrant + поисковый UI)
-- AI чат-бот (RAG-интеграция в документы)
+### Ближайший месяц (v0.5.0 Интеграции и оптимизация)
+**57 часов, 3–4 недели**
+- Экспорт 1С, API внешних систем, AutoCAD/Revit плагин
+- Оптимизация chunks, миграция `remarks.created_at` → DateTime
+- Monitoring: Prometheus + Grafana
 
 ### Квартал (v0.3.0 + v0.5.0)
 **95 часов, 8 недель**

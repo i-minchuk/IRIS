@@ -11,6 +11,13 @@ from app.modules.documents.repository import (
 )
 from app.modules.documents.variable_engine import render_document, cascade_update
 from app.modules.gamification.service import GamificationService
+from app.parser.indexer import DocumentIndexer
+from app.parser.factory import ParserFactory
+from app.ai.classification import classify_document
+import logging
+import io
+
+logger = logging.getLogger(__name__)
 
 
 class DocumentService:
@@ -111,11 +118,29 @@ class DocumentService:
         
         doc = await self.doc_repo.create(doc_data)
         
+        # AI auto-classification if content available
+        content = ""
+        if doc.content and isinstance(doc.content, dict):
+            content = doc.content.get("body") or doc.content.get("text") or ""
+        if not content:
+            content = doc.name or ""
+        
+        if content:
+            try:
+                result = await classify_document(content)
+                doc.ai_classified_type = result.get("type")
+                doc.ai_confidence = result.get("confidence")
+                await self.db.commit()
+            except Exception as exc:
+                logger.warning("AI classification failed for doc %s: %s", doc.id, exc)
+        
         return {
             "id": doc.id,
             "number": doc.number,
             "name": doc.name,
             "status": doc.status,
+            "ai_classified_type": doc.ai_classified_type,
+            "ai_confidence": doc.ai_confidence,
         }
     
     async def update_document(
@@ -371,3 +396,71 @@ class DocumentService:
         }
     
 
+    async def index_document(
+        self,
+        document_id: int,
+        file_stream: Optional[bytes] = None,
+        file_name: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Index document content into Qdrant for semantic search."""
+        doc = await self.doc_repo.get_by_id(document_id)
+        if not doc:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Document not found"
+            )
+        
+        # Try to get content from file upload first
+        parsed = None
+        if file_stream and file_name:
+            try:
+                from app.parser.factory import ParserFactory
+                stream = io.BytesIO(file_stream)
+                parsed = ParserFactory.parse(stream, file_name)
+            except Exception as exc:
+                logger.warning("Parser failed for doc %s: %s", document_id, exc)
+        
+        # Fallback: use document.content JSON
+        if not parsed and doc.content and isinstance(doc.content, dict):
+            text = doc.content.get("body") or doc.content.get("text") or ""
+            if text:
+                from uuid import uuid4
+                parsed = ParsedDocument(
+                    document_id=uuid4(),
+                    file_name=doc.name or f"doc_{document_id}",
+                    file_type="text",
+                    content=text,
+                    sections=[],
+                    metadata={"document_id": document_id, "source": "content"},
+                    entities=[],
+                )
+        
+        if not parsed:
+            return {"document_id": document_id, "indexed": False, "chunks": 0, "reason": "no content"}
+        
+        # Override document_id to match our DB id
+        from uuid import uuid4
+        parsed.document_id = uuid4()
+        
+        try:
+            indexer = DocumentIndexer()
+            chunk_ids = await indexer.index(parsed, original_doc_id=parsed.document_id)
+            
+            # Store index metadata in document.content
+            if doc.content is None or not isinstance(doc.content, dict):
+                doc.content = {}
+            doc.content["qdrant_indexed"] = {
+                "chunks": len(chunk_ids),
+                "indexed_at": str(datetime.now(timezone.utc)),
+                "collection": indexer.collection,
+            }
+            await self.db.commit()
+            
+            return {
+                "document_id": document_id,
+                "indexed": True,
+                "chunks": len(chunk_ids),
+            }
+        except Exception as exc:
+            logger.warning("Qdrant indexing failed for doc %s: %s", document_id, exc)
+            return {"document_id": document_id, "indexed": False, "chunks": 0, "reason": str(exc)}
