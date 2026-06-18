@@ -42,7 +42,12 @@ export default defineConfig({
           if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) return 'vendor-react';
           if (id.includes('node_modules/react-router-dom/')) return 'vendor-router';
           if (id.includes('node_modules/recharts/')) return 'vendor-charts';
-          if (id.includes('node_modules/framer-motion/') || id.includes('node_modules/lucide-react/')) return 'vendor-ui';
+          if (id.includes('node_modules/framer-motion/')) return 'vendor-motion';
+          if (id.includes('node_modules/lucide-react/')) return 'vendor-icons';
+          if (id.includes('node_modules/xlsx/')) return 'vendor-xlsx';
+          if (id.includes('node_modules/pdfjs-dist/') || id.includes('node_modules/react-pdf/')) return 'vendor-pdf';
+          if (id.includes('node_modules/@tiptap/')) return 'vendor-editor';
+          if (id.includes('node_modules/axios/') || id.includes('node_modules/zustand/')) return 'vendor-utils';
         },
       },
     },

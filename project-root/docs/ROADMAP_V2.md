@@ -2,7 +2,7 @@
 
 > Дата: 2026-06-16
 > Текущая версия: MVP 4.5.0
-> Статус: завершена фаза v0.2.0-dev, завершена фаза v0.4.0 (Workflow & UX), завершена фаза v0.3.0 (AI), ведётся работа над v0.5.0 (Интеграции и оптимизация)
+> Статус: завершены фазы v0.2.0-dev (Core), v0.4.0 (Workflow & UX), v0.3.0 (AI), v0.5.0 (Интеграции и оптимизация). Проект готов к v1.0.0 (Production).
 
 ---
 
@@ -153,18 +153,18 @@
 
 **Итого: 38 часов — все задачи выполнены**
 
-### v0.5.0 — Интеграции и оптимизация (3–4 недели)
+### v0.5.0 — Интеграции и оптимизация ✅ (выполнено)
 
-| # | Задача | Описание | Оценка |
-|---|--------|----------|--------|
-| 5.1 | Экспорт 1С | Формат обмена с бухгалтерией | 10ч |
-| 5.2 | API внешних систем | Dedicated интеграционный gateway | 12ч |
-| 5.3 | AutoCAD/Revit плагин | Загрузка/экспорт чертежей | 20ч |
-| 5.4 | Оптимизация chunks | Code splitting, lazy loading | 6ч |
-| 5.5 | `remarks.created_at` → DateTime | Миграция + обновление кода | 3ч |
-| 5.6 | Monitoring | Prometheus + Grafana метрики | 6ч |
+| # | Задача | Описание | Оценка | Статус |
+|---|--------|----------|--------|--------|
+| 5.1 | ✅ Экспорт 1С | `POST /integrations/1c/export-documents`, `/export-batch`, `/import-contracts` — EnterpriseData XML + JSON | 10ч | Готово |
+| 5.2 | ✅ API внешних систем | Gateway: `/integrations/gateway/partners`, `/webhook/{source}`, `/sync/{id}`, HMAC + IP whitelist | 12ч | Готово |
+| 5.3 | ✅ AutoCAD/Revit плагин | DWG/DXF парсеры (`DWGParser`, `DXFParser`), `ParserFactory` обновлён, метаданные извлекаются | 20ч | Готово |
+| 5.4 | ✅ Оптимизация chunks | `manualChunks`: vendor-icons, vendor-motion, vendor-xlsx, vendor-pdf, vendor-utils, vendor-charts, vendor-react | 6ч | Готово |
+| 5.5 | ✅ `remarks.created_at` → DateTime | Миграция `7a320fc846fe` уже применена, `timestamp without time zone` в БД | 3ч | Готово |
+| 5.6 | ✅ Monitoring | Prometheus `/metrics`, health checks `/health`, `/health/db`, `/health/qdrant`, custom metrics | 6ч | Готово |
 
-**Итого: 57 часов**
+**Итого: 57 часов — все задачи выполнены**
 
 ### v1.0.0 — Production (4–6 недель)
 
@@ -188,11 +188,11 @@
 
 ## Рекомендуемый приоритет
 
-### Ближайший месяц (v0.5.0 Интеграции и оптимизация)
-**57 часов, 3–4 недели**
-- Экспорт 1С, API внешних систем, AutoCAD/Revit плагин
-- Оптимизация chunks, миграция `remarks.created_at` → DateTime
-- Monitoring: Prometheus + Grafana
+### Ближайший месяц (v1.0.0 Production)
+**96 часов, 4–6 недель**
+- SSO/SAML, 2FA, полный аудит действий
+- Шифрование at rest, бэкапы, multi-tenancy
+- Kubernetes, horizontal scaling, load testing
 
 ### Квартал (v0.3.0 + v0.5.0)
 **95 часов, 8 недель**

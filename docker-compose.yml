@@ -75,8 +75,8 @@ services:
 
   frontend:
     build:
-      context: .
-      dockerfile: Dockerfile.frontend
+      context: ./frontend
+      dockerfile: Dockerfile
     image: iris-frontend:latest
     container_name: iris_frontend
     restart: unless-stopped

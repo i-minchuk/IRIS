@@ -12,6 +12,8 @@ ehthumbs_vista.db
 *.stackdump
 [Dd]esktop.ini
 $RECYCLE.BIN/
+.vscode/
+
 
 # macOS
 .DS_Store
@@ -126,6 +128,7 @@ lerna-debug.log*
 .env.*.local
 !.env.example
 docker-compose.override.yml
+.dockerignore
 
 # ─── PROJECT-SPECIFIC: DOKPOTOK IRIS ──────
 # Логи приложения

@@ -3,8 +3,10 @@ from .base import BaseParser, ParsedDocument
 from .pdf_parser import PDFParser
 from .docx_parser import DOCXParser
 
+from .dwg_parser import DWGParser, DXFParser
+
 class ParserFactory:
-    _parsers = [PDFParser(), DOCXParser()]
+    _parsers = [PDFParser(), DOCXParser(), DWGParser(), DXFParser()]
     
     @classmethod
     def get_parser(cls, file_name: str) -> BaseParser:

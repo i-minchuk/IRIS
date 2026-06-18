@@ -44,6 +44,9 @@ const InvoicesPage = lazy(() => import('@/pages/srm/Invoices'));
 const TeamPage = lazy(() => import('@/pages/TeamPage'));
 const TimeTrackingPage = lazy(() => import('@/pages/TimeTrackingPage'));
 const SemanticSearchPage = lazy(() => import('@/pages/SemanticSearchPage'));
+const IntegrationsPage = lazy(() => import('@/pages/IntegrationsPage'));
+const OneCExportPage = lazy(() => import('@/pages/OneCExportPage'));
+const MonitoringPage = lazy(() => import('@/pages/MonitoringPage'));
 
 function RouteFallback() {
   return <div className="flex items-center justify-center h-screen text-gray-400 text-sm">Загрузка…</div>;
@@ -109,6 +112,9 @@ export const router = createBrowserRouter([
           { path: '/documents/import', element: <SuspenseWrapper><ImportExcel /></SuspenseWrapper> },
           { path: '/documents/:id', element: <SuspenseWrapper><DocumentDetail /></SuspenseWrapper> },
           { path: '/ai-search', element: <SuspenseWrapper><SemanticSearchPage /></SuspenseWrapper> },
+          { path: '/integrations', element: <SuspenseWrapper><IntegrationsPage /></SuspenseWrapper> },
+          { path: '/integrations/1c', element: <SuspenseWrapper><OneCExportPage /></SuspenseWrapper> },
+          { path: '/monitoring', element: <SuspenseWrapper><AdminRouteGuard><MonitoringPage /></AdminRouteGuard></SuspenseWrapper> },
           /* ── Admin routes (guarded by AdminRouteGuard inside Layout) ── */
           { path: '/admin', element: <SuspenseWrapper><AdminRouteGuard><AdminDashboard /></AdminRouteGuard></SuspenseWrapper> },
           { path: '/admin/users', element: <SuspenseWrapper><AdminRouteGuard><AdminPage /></AdminRouteGuard></SuspenseWrapper> },
