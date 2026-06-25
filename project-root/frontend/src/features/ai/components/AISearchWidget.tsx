@@ -5,9 +5,10 @@ import type { SemanticSearchResult } from '@/features/ai/api/aiApi';
 
 interface AISearchWidgetProps {
   isDark?: boolean;
+  compact?: boolean;
 }
 
-export const AISearchWidget: React.FC<AISearchWidgetProps> = ({ isDark: _isDark = false }) => {
+export const AISearchWidget: React.FC<AISearchWidgetProps> = ({ isDark: _isDark = false, compact = false }) => {
   const { results, loading, query, search, clear } = useSemanticSearch();
   const [input, setInput] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
@@ -34,25 +35,27 @@ export const AISearchWidget: React.FC<AISearchWidgetProps> = ({ isDark: _isDark 
 
   return (
     <div className="w-full">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <div
-            className="flex items-center justify-center h-8 w-8 rounded-lg"
-            style={{ background: 'rgba(139, 92, 246, 0.12)' }}
-          >
-            <Sparkles size={16} style={{ color: '#8B5CF6' }} />
+      {/* Header — скрываем в компактном режиме */}
+      {!compact && (
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <div
+              className="flex items-center justify-center h-8 w-8 rounded-lg"
+              style={{ background: 'rgba(139, 92, 246, 0.12)' }}
+            >
+              <Sparkles size={16} style={{ color: '#8B5CF6' }} />
+            </div>
+            <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+              AI-поиск
+            </h3>
           </div>
-          <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-            AI-поиск
-          </h3>
+          {results.length > 0 && (
+            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+              {results.length} результатов
+            </span>
+          )}
         </div>
-        {results.length > 0 && (
-          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-            {results.length} результатов
-          </span>
-        )}
-      </div>
+      )}
 
       {/* Search input */}
       <form onSubmit={handleSubmit} className="relative mb-3">
@@ -86,8 +89,8 @@ export const AISearchWidget: React.FC<AISearchWidgetProps> = ({ isDark: _isDark 
         )}
       </form>
 
-      {/* Hint */}
-      {!isExpanded && !loading && results.length === 0 && (
+      {/* Hint — скрываем в компактном режиме */}
+      {!compact && !isExpanded && !loading && results.length === 0 && (
         <div className="flex items-center gap-1 mb-2">
           <Sparkles size={10} style={{ color: 'var(--accent-ai)' }} />
           <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
@@ -104,9 +107,9 @@ export const AISearchWidget: React.FC<AISearchWidgetProps> = ({ isDark: _isDark 
         </div>
       )}
 
-      {/* Results */}
+      {/* Results — в компактном режиме ограничиваем высоту */}
       {!loading && results.length > 0 && (
-        <div className="space-y-2 max-h-[300px] overflow-y-auto">
+        <div className={`space-y-2 overflow-y-auto ${compact ? 'max-h-[200px]' : 'max-h-[300px]'}`}>
           {results.slice(0, 5).map((result) => (
             <button
               key={result.chunk_id}

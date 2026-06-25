@@ -5,6 +5,8 @@ import {
 } from 'lucide-react';
 import { useTabState } from '@/shared/hooks/useTabState';
 import { PageHeader } from '@/shared/components/PageHeader';
+import { useTheme } from '@/providers/ThemeProvider';
+import { IRISRecommendations } from '@/components/IRISRecommendations';
 
 /* ─── Lazy tab contents ─── */
 import TendersPage from '@/pages/TendersPage';
@@ -44,6 +46,8 @@ export default function PortfolioPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useTabState<MainTab>('iris_portfolio_tab', 'tenders');
   const [srmTab, setSrmTab] = useTabState<SRMTab>('iris_portfolio_srm_tab', 'suppliers');
+  const { theme } = useTheme();
+  const isDark = theme === 'dark' || theme === 'midnight' || theme === 'contrast';
 
   // Sync with URL query params
   const tabParam = searchParams.get('tab') as MainTab | null;
@@ -93,6 +97,11 @@ export default function PortfolioPage() {
         }
       />
 
+      {/* IRIS Recommendations */}
+      <div className="mb-6">
+        <IRISRecommendations page="portfolio" isDark={isDark} />
+      </div>
+
       {/* Main tabs */}
       <div className="flex items-center gap-1 mb-6 border-b pb-1" style={{ borderColor: 'var(--border-default)' }}>
         {MAIN_TABS.map((tab) => {
@@ -102,33 +111,20 @@ export default function PortfolioPage() {
               key={tab.id}
               type="button"
               onClick={() => handleTabChange(tab.id)}
-              className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg transition-all"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-t-lg transition-all"
               style={{
                 color: isActive ? PORTFOLIO_ACCENT : 'var(--text-secondary)',
                 backgroundColor: isActive ? PORTFOLIO_ACCENT_SOFT : 'transparent',
                 borderBottom: isActive ? `2px solid ${PORTFOLIO_ACCENT}` : '2px solid transparent',
-                boxShadow: isActive ? `0 4px 12px ${PORTFOLIO_ACCENT_GLOW}` : 'none',
-                transform: isActive ? 'translateY(-2px)' : 'translateY(0)',
               }}
               onMouseEnter={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)';
-                  e.currentTarget.style.color = 'var(--text-primary)';
-                }
+                if (!isActive) e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)';
               }}
               onMouseLeave={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                  e.currentTarget.style.color = 'var(--text-secondary)';
-                }
+                if (!isActive) e.currentTarget.style.backgroundColor = 'transparent';
               }}
             >
-              <span
-                style={{
-                  color: PORTFOLIO_ACCENT,
-                  filter: `drop-shadow(0 0 5px ${PORTFOLIO_ICON_GLOW})`,
-                }}
-              >
+              <span style={{ color: isActive ? PORTFOLIO_ACCENT : 'var(--text-muted)', filter: isActive ? `drop-shadow(0 0 4px ${PORTFOLIO_ICON_GLOW})` : 'none' }}>
                 {tab.icon}
               </span>
               {tab.label}

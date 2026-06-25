@@ -1,4 +1,5 @@
-import { useTabState } from '@/shared/hooks/useTabState';
+import { useTheme } from '@/providers/ThemeProvider';
+import { IRISRecommendations } from '@/components/IRISRecommendations';import { useTabState } from '@/shared/hooks/useTabState';
 import { PageTabs } from '@/shared/components/PageTabs';
 import React, { useState, useEffect } from 'react';
 import { ProductionProject, MTOItem } from './types/production';
@@ -100,6 +101,11 @@ export const ProductionControlPage: React.FC = () => {
             }}
           />
         </div>
+      </div>
+
+      {/* IRIS Recommendations */}
+      <div className="px-4 sm:px-6 py-2" style={{ background: 'var(--iris-bg-surface)' }}>
+        <IRISRecommendations page="production" isDark={useTheme().theme === 'dark' || useTheme().theme === 'midnight' || useTheme().theme === 'contrast'} />
       </div>
 
       {/* Табы — PageTabs с округлыми вкладками */}

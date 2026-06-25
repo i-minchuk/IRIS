@@ -5,13 +5,12 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 const prefetchDashboard = () => import('@/pages/Dashboard');
 const prefetchDocuments = () => import('@/pages/DocumentsPage');
 import {
-  User, LogOut, ChevronDown, Menu, X,
+  User, LogOut, ChevronDown, X,
   BarChart3, FileText, Archive,
   Search, Shield, Briefcase, Factory,
   BookOpen, Settings,
 } from 'lucide-react';
 
-import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useLanguageContext } from "@/features/profile/i18n/LanguageContext";
 import { t } from "@/features/profile/i18n/translations";
@@ -51,13 +50,10 @@ export default function Layout() {
   });
   const [searchQuery, setSearchQuery] = useState('');
   const [isDraggingZoom, setIsDraggingZoom] = useState(false);
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const zoomSliderRef = useRef<HTMLDivElement | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const userMenuRef = useRef<HTMLDivElement | null>(null);
-  const mobileMenuRef = useRef<HTMLDivElement | null>(null);
-  const mobileMenuButtonRef = useRef<HTMLButtonElement | null>(null);
   const isDark = theme === 'dark' || theme === 'midnight' || theme === 'contrast';
   const { user } = useAuth();
   const navItems = getNavItems(user?.role);
@@ -93,20 +89,10 @@ export default function Layout() {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setShowUserMenu(false);
       }
-
-      if (
-        mobileMenuRef.current &&
-        !mobileMenuRef.current.contains(event.target as Node) &&
-        mobileMenuButtonRef.current &&
-        !mobileMenuButtonRef.current.contains(event.target as Node)
-      ) {
-        setShowMobileMenu(false);
-      }
     };
     const handleEsc = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setShowUserMenu(false);
-        setShowMobileMenu(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -116,10 +102,6 @@ export default function Layout() {
       document.removeEventListener('keydown', handleEsc);
     };
   }, []);
-
-  useEffect(() => {
-    setShowMobileMenu(false);
-  }, [location.pathname]);
 
   /* Prefetch после монтирования Layout (пользователь залогинен) */
   useEffect(() => {
@@ -300,63 +282,99 @@ export default function Layout() {
         </div>
 
         {/* ===== ТАБЫ + ГЛОБАЛЬНЫЙ ПОИСК ===== */}
-        <div className="shrink-0 border-b" style={{ borderColor: 'var(--header-border)' }}>
-          <div className="w-full px-4 md:px-6 flex items-center justify-between gap-4">
-            <nav className="flex items-center gap-0.5 lg:gap-1 py-1" aria-label="Главная навигация">
-              {/* Hamburger — когда табы не влезают или на мобильных */}
-              <button
-                ref={mobileMenuButtonRef}
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowMobileMenu(prev => !prev);
-                }}
-                className="flex h-8 w-8 items-center justify-center rounded-lg transition-all"
-                style={{ color: 'var(--text-secondary)' }}
-                title="Меню"
-                aria-label="Меню"
-                aria-expanded={showMobileMenu}
-              >
-                {showMobileMenu ? <X size={18} /> : <Menu size={18} />}
-              </button>
+        <div className="shrink-0 relative pt-3" style={{ borderColor: 'var(--header-border)' }}>
+          {/* Background "stacked" tabs effect - inactive tabs peeking behind */}
+          <div className="absolute bottom-0 left-0 right-0 h-full pointer-events-none overflow-hidden">
+            {navItems.map((item, idx) => {
+              const active = isActive(item.to);
+              if (active) return null;
+              // Each inactive tab peeks from behind with offset
+              const offset = (navItems.length - idx) * 3;
+              return (
+                <div
+                  key={`bg-${item.to}`}
+                  className="absolute bottom-0 h-8 rounded-t-lg"
+                  style={{
+                    left: `${idx * 12 + offset}px`,
+                    width: '80px',
+                    backgroundColor: item.bgActive.replace('0.15', '0.08'),
+                    borderTop: `2px solid ${item.color}44`,
+                    borderLeft: '1px solid var(--iris-border-subtle)',
+                    borderRight: '1px solid var(--iris-border-subtle)',
+                    zIndex: idx,
+                    transform: `translateY(${offset}px)`,
+                  }}
+                />
+              );
+            })}
+          </div>
 
-              {/* Табы — полный текст на xl, короткий на lg, иконки только на <lg */}
-              {navItems.map((item) => {
+          <div className="w-full px-4 md:px-6 flex items-end justify-between gap-4 relative z-10">
+            <nav className="flex items-end gap-0" aria-label="Главная навигация">
+              {/* Табы — стиль папок-ярлыков */}
+              {navItems.map((item, idx) => {
                 const active = isActive(item.to);
                 const iconOnly = (item as any).iconOnly;
+                // Folder tab style: rounded top, flat bottom, peeking effect
                 return (
-                  <Link key={item.to} to={item.to}
-                    className="group relative px-1 lg:px-1.5 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium transition-all duration-200 rounded-lg flex items-center gap-0.5 xl:gap-1.5 2xl:gap-2"
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    className={`
+                      group relative font-medium transition-all duration-200
+                      flex items-center gap-1.5
+                      ${active
+                        ? 'z-20 px-3 py-2 text-sm'
+                        : 'z-10 px-2 py-1.5 text-xs hover:z-30'
+                      }
+                    `}
                     style={{
                       color: active ? item.color : 'var(--text-secondary)',
-                      backgroundColor: active ? item.bgActive : 'transparent',
-                      transform: active ? 'translateY(-2px)' : 'translateY(0)',
-                      boxShadow: active ? `0 4px 12px ${item.color}22` : 'none',
+                      backgroundColor: active ? 'var(--iris-bg-surface)' : 'transparent',
+                      borderTopLeftRadius: '10px',
+                      borderTopRightRadius: '10px',
+                      borderBottom: active ? 'none' : '1px solid var(--iris-border-subtle)',
+                      borderTop: active ? `3px solid ${item.color}` : `2px solid ${item.color}44`,
+                      borderLeft: active ? '1px solid var(--iris-border-subtle)' : '1px solid transparent',
+                      borderRight: active ? '1px solid var(--iris-border-subtle)' : '1px solid transparent',
+                      marginLeft: idx > 0 ? '-6px' : '0',
+                      transform: active ? 'translateY(0)' : `translateY(${2 + idx}px)`,
+                      boxShadow: active
+                        ? `0 -2px 6px ${item.color}18, 0 0 0 1px var(--iris-border-subtle)`
+                        : 'none',
+                      zIndex: active ? 20 : 10 - idx,
+                      paddingBottom: active ? '10px' : '6px',
                     }}
                     onMouseEnter={(e) => {
                       if (!active) {
                         e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)';
                         e.currentTarget.style.color = 'var(--text-primary)';
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                        e.currentTarget.style.zIndex = '25';
                       }
                     }}
                     onMouseLeave={(e) => {
                       if (!active) {
                         e.currentTarget.style.backgroundColor = 'transparent';
                         e.currentTarget.style.color = 'var(--text-secondary)';
+                        e.currentTarget.style.transform = `translateY(${2 + idx}px)`;
+                        e.currentTarget.style.zIndex = '10';
                       }
                     }}
                     aria-current={active ? 'page' : undefined}
                     title={item.label}
                   >
-                    <span style={{ color: item.color }}>{item.icon}</span>
+                    <span style={{ color: item.color, opacity: active ? 1 : 0.7 }}>{item.icon}</span>
                     {!iconOnly && (
                       <>
-                        <span className="hidden lg:inline-block 2xl:hidden whitespace-nowrap">{(item as any).shortLabel || item.label}</span>
-                        <span className="hidden 2xl:inline-block whitespace-nowrap">{item.label}</span>
+                        {/* Ноутбук: полные названия */}
+                        <span className="hidden lg:inline-block xl:hidden whitespace-nowrap">{item.shortLabel || item.label}</span>
+                        {/* Десктоп: полные названия */}
+                        <span className="hidden xl:inline-block whitespace-nowrap">{item.label}</span>
                       </>
                     )}
                     {iconOnly && (
-                      <span className="hidden 2xl:inline-block whitespace-nowrap">{item.label}</span>
+                      <span className="hidden xl:inline-block whitespace-nowrap">{item.label}</span>
                     )}
                   </Link>
                 );
@@ -364,7 +382,7 @@ export default function Layout() {
             </nav>
 
             {/* Глобальный поиск */}
-            <div className="relative shrink-0 w-full max-w-[140px] sm:max-w-[200px] lg:max-w-[280px]">
+            <div className="relative shrink-0 w-full max-w-[120px] lg:max-w-[160px] xl:max-w-[200px] mb-1">
               <Search
                 size={14}
                 className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
@@ -400,46 +418,12 @@ export default function Layout() {
               )}
             </div>
           </div>
+          {/* Bottom border line */}
+          <div className="h-px w-full" style={{ backgroundColor: 'var(--iris-border-subtle)' }} />
         </div>
 
         {/* ===== BREADCRUMBS ===== */}
         {location.pathname !== '/dashboard' && <Breadcrumbs />}
-
-        {/* ===== DROPDOWN MENU (бургер) ===== */}
-        <AnimatePresence>
-          {showMobileMenu && (
-            <motion.div
-              ref={mobileMenuRef}
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.2 }}
-              className="border-b overflow-hidden"
-              style={{ borderColor: 'var(--header-border)', background: 'var(--header-bg)' }}
-            >
-              <div className="px-4 py-2 space-y-1">
-                {navItems.map((item) => {
-                  const active = isActive(item.to);
-                  return (
-                    <Link
-                      key={item.to}
-                      to={item.to}
-                      onClick={() => setShowMobileMenu(false)}
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors"
-                      style={{
-                        color: active ? item.color : 'var(--text-secondary)',
-                        backgroundColor: active ? item.bgActive : 'transparent',
-                      }}
-                    >
-                      <span style={{ color: item.color }}>{item.icon}</span>
-                      <span>{item.label}</span>
-                    </Link>
-                  );
-                })}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
 
       {/* ===== КОНТЕНТ ===== */}

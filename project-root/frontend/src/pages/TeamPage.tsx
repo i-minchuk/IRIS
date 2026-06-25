@@ -8,6 +8,7 @@ import {
   ChevronRight, FolderKanban, ChevronDown, AlertTriangle,
   BarChart3, Gem
 } from 'lucide-react';
+import { IRISRecommendations } from '@/components/IRISRecommendations';
 
 /* ═══════════════════════════════════════════
    TYPES
@@ -155,6 +156,7 @@ export default function TeamPage() {
   return (
     <div className="space-y-5 px-3 md:px-6 py-4 md:pt-2 pb-6">
       {/* Header */}
+      <IRISRecommendations page="team" isDark={isDark} />
       <div>
         <h1 className="sr-only" style={{ color: 'var(--text-primary)' }}>Сотрудники</h1>
         <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Рейтинг, загрузка и достижения команды</p>

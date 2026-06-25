@@ -1,5 +1,7 @@
 import { useState, useMemo } from 'react';
 import { FileText, Download, Printer, Play } from 'lucide-react';
+import { useTheme } from '@/providers/ThemeProvider';
+import { IRISRecommendations } from '@/components/IRISRecommendations';
 
 type ReportTemplate = 'projects' | 'tenders' | 'load' | 'finances' | 'employees';
 
@@ -83,6 +85,8 @@ export default function ReportsPage() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [generated, setGenerated] = useState(false);
+  const { theme } = useTheme();
+  const isDark = theme === 'dark' || theme === 'midnight' || theme === 'contrast';
 
   const data = useMemo(() => {
     if (!generated) return [];
@@ -116,6 +120,7 @@ export default function ReportsPage() {
 
   return (
     <div className="w-full pt-2 pb-6 px-4">
+      <IRISRecommendations page="reports" isDark={isDark} />
       <div className="flex items-center gap-3 mb-6">
         <h1 className="sr-only" style={{ color: 'var(--text-primary)' }}>
           Отчёты

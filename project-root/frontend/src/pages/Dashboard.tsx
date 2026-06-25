@@ -19,7 +19,7 @@ import {
 } from '@/features/analytics/api/analytics';
 import { CalendarWidget } from '@/features/analytics/components/CalendarWidget';
 import { LeaderboardWidget } from '@/features/leaderboard/components/LeaderboardWidget';
-import { AISearchWidget } from '@/features/ai/components/AISearchWidget';
+
 import { RemarksWidget } from '@/features/remarks/components/RemarksWidget';
 import {
   TrendingUp, TrendingDown, AlertTriangle,
@@ -441,35 +441,38 @@ export default function Dashboard() {
       )}
 
       {/* Увеличили расстояние между колонками: gap-8 md:gap-10 */}
-      <div className="grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-8 md:gap-10 items-start">
+      <div className="grid grid-cols-1 xl:grid-cols-[5fr_2fr] gap-8 md:gap-12 items-start">
 
         {/* ═══ ЛЕВАЯ КОЛОНКА ═══ */}
         <div className="space-y-4 md:space-y-5 min-w-0">
 
-          {/* Header + фильтр — увеличенный шрифт для кнопок и часов */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-              <h1 className="sr-only" style={{ color: 'var(--text-primary)' }}>Панель аналитики</h1>
-              <h2 className="text-lg md:text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Стратегическая сводка по финансам, тендерам и проектам</h2>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center rounded-lg p-0.5" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
-                {periods.map((p) => (
-                  <button
-                    key={p.key}
-                    onClick={() => setPeriod(p.key)}
-                    className="text-sm md:text-base px-3 md:px-4 py-1.5 rounded-md font-medium transition-all"
-                    style={{
-                      color: period === p.key ? '#fff' : 'var(--text-secondary)',
-                      background: period === p.key ? '#3B82F6' : 'transparent',
-                    }}
-                  >
-                    {p.label}
-                  </button>
-                ))}
+          {/* Header + фильтр + AI-поиск — увеличенный шрифт для кнопок и часов */}
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <h1 className="sr-only" style={{ color: 'var(--text-primary)' }}>Панель аналитики</h1>
+                <h2 className="text-lg md:text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Стратегическая сводка по финансам, тендерам и проектам</h2>
               </div>
-              <LiveClock className="text-lg md:text-2xl font-medium leading-relaxed mt-1 hidden sm:inline tabular-nums" style={{ color: 'var(--text-secondary)' }} />
+              <div className="flex items-center gap-3">
+                <div className="flex items-center rounded-lg p-0.5" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+                  {periods.map((p) => (
+                    <button
+                      key={p.key}
+                      onClick={() => setPeriod(p.key)}
+                      className="text-sm md:text-base px-3 md:px-4 py-1.5 rounded-md font-medium transition-all"
+                      style={{
+                        color: period === p.key ? '#fff' : 'var(--text-secondary)',
+                        background: period === p.key ? '#3B82F6' : 'transparent',
+                      }}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+                <LiveClock className="text-lg md:text-2xl font-medium leading-relaxed mt-1 hidden sm:inline tabular-nums" style={{ color: 'var(--text-secondary)' }} />
+              </div>
             </div>
+
           </div>
 
           {/* Action items */}
@@ -887,29 +890,24 @@ export default function Dashboard() {
 
         </div>
 
-        {/* ═══ ПРАВАЯ КОЛОНКА — 1/3 экрана, увеличенные шрифты ═══ */}
-        <div className="space-y-5 xl:sticky xl:top-5">
+        {/* ═══ ПРАВАЯ КОЛОНКА — ~1/4 экрана, компактные отступы ═══ */}
+        <div className="space-y-3 xl:sticky xl:top-5 min-w-0 max-w-[320px] xl:max-w-[280px]">
 
-          {/* AI-поиск */}
-          <div className="p-5 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
-            <AISearchWidget isDark={isDark} />
-          </div>
-
-          {/* Риски */}
-          <div className="p-5 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
-            <div className="flex items-center justify-between mb-3">
+          {/* Риски — компактные */}
+          <div className="p-3 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+            <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2 mb-3">
                 <div className="flex items-center justify-center h-8 w-8 rounded-lg" style={{ background: 'rgba(220, 38, 38, 0.12)' }}>
                   <AlertTriangle size={16} style={{ color: '#DC2626' }} />
                 </div>
-                <h3 className="text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>Риски и требования внимания</h3>
+                <h3 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>Риски и требования внимания</h3>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-lg px-2 py-0.5 rounded-full font-medium" style={{ background: 'rgba(220,38,38,0.12)', color: '#DC2626' }}>{criticalAlerts.length}</span>
-                <AlertTriangle size={24} style={{ color: 'var(--text-muted)' }} />
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm px-2 py-0.5 rounded-full font-medium" style={{ background: 'rgba(220,38,38,0.12)', color: '#DC2626' }}>{criticalAlerts.length}</span>
+                <AlertTriangle size={18} style={{ color: 'var(--text-muted)' }} />
               </div>
             </div>
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2">
               {criticalAlerts.map((risk) => (
                 <div key={risk.id}
                   onClick={() => navigate('/workflow')}
@@ -921,12 +919,12 @@ export default function Dashboard() {
                   <div className="w-1 h-10 rounded-full shrink-0 mt-0.5" style={{ background: risk.color }} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
-                      <span className="text-xl font-medium leading-tight break-words" style={{ color: 'var(--text-primary)' }}>{risk.title}</span>
-                      <span onClick={(e) => { e.stopPropagation(); navigate('/workflow'); }} className="text-lg shrink-0 cursor-pointer hover:underline mt-0.5" style={{ color: risk.color }}>
+                      <span className="text-sm font-medium leading-tight break-words" style={{ color: 'var(--text-primary)' }}>{risk.title}</span>
+                      <span onClick={(e) => { e.stopPropagation(); navigate('/workflow'); }} className="text-xs shrink-0 cursor-pointer hover:underline mt-0.5" style={{ color: risk.color }}>
                         {risk.action} →
                       </span>
                     </div>
-                    <div className="text-base mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                    <div className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
                       {risk.level === 'high' ? 'Высокий приоритет' : 'Средний приоритет'}
                     </div>
                   </div>
@@ -935,27 +933,27 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Рекомендации IRIS — теперь под рисками */}
-          <div className="p-5 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
-            <div className="flex items-center gap-3 mb-3">
-              <ChromeBot size={100} variant={isDark ? 'dark' : 'light'} />
+          {/* Рекомендации IRIS */}
+          <div className="p-3 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+            <div className="flex items-center gap-2 mb-2">
+              <ChromeBot size={48} variant={isDark ? 'dark' : 'light'} />
               <div>
-                <h3 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Рекомендации IRIS</h3>
-                <span className="text-base" style={{ color: 'var(--text-muted)' }}>AI-ассистент</span>
+                <h3 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>Рекомендации IRIS</h3>
+                <span className="text-sm" style={{ color: 'var(--text-muted)' }}>AI-ассистент</span>
               </div>
             </div>
-            <div className="p-3 rounded-lg" style={{ background: isDark ? 'rgba(12,114,5,0.08)' : 'rgba(12,114,5,0.06)', border: '1px solid rgba(12,114,5,0.2)' }}>
+            <div className="p-2 rounded-lg" style={{ background: isDark ? 'rgba(12,114,5,0.08)' : 'rgba(12,114,5,0.06)', border: '1px solid rgba(12,114,5,0.2)' }}>
               <div className="flex items-start gap-2">
-                <Sparkles size={22} className="shrink-0 mt-0.5" style={{ color: '#0C7205' }} />
+                <Sparkles size={18} className="shrink-0 mt-0.5" style={{ color: '#0C7205' }} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xl leading-relaxed" style={{ color: 'var(--text-primary)' }}>
+                  <p className="text-sm leading-relaxed" style={{ color: 'var(--text-primary)' }}>
                     Перегруз тендерного отдела: <strong>85%</strong>. Переложить <strong>КЖ-02-014</strong> на проектный?
                   </p>
                   <div className="flex items-center gap-3 mt-3">
-                    <button onClick={() => navigate('/team')} className="text-base px-4 py-2 rounded-md font-medium transition-colors hover:brightness-110" style={{ background: '#0C7205', color: '#fff' }}>
+                    <button onClick={() => navigate('/team')} className="text-xs px-3 py-1.5 rounded-md font-medium transition-colors hover:brightness-110" style={{ background: '#0C7205', color: '#fff' }}>
                       Применить
                     </button>
-                    <button onClick={() => navigate('/workflow')} className="text-base px-4 py-2 rounded-md transition-colors" style={{ color: 'var(--text-secondary)', border: '1px solid var(--border-color)' }}>
+                    <button onClick={() => navigate('/workflow')} className="text-xs px-3 py-1.5 rounded-md transition-colors" style={{ color: 'var(--text-secondary)', border: '1px solid var(--border-color)' }}>
                       Подробнее
                     </button>
                   </div>
@@ -965,19 +963,19 @@ export default function Dashboard() {
           </div>
 
           {/* Загрузка команды */}
-          <div className="p-5 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
-            <div className="[&_*]:text-xl">
+          <div className="p-3 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+            <div className="[&_*]:text-base">
               <DepartmentLoad />
             </div>
           </div>
 
           {/* Замечания */}
-          <div className="p-5 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+          <div className="p-3 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
             <RemarksWidget isDark={isDark} />
           </div>
 
           {/* Лидерборд */}
-          <div className="p-5 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+          <div className="p-3 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
             <LeaderboardWidget />
           </div>
 

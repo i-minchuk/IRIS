@@ -135,8 +135,7 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="flex items-center justify-between mt-3">
-            <Link to="/register" className="text-[13px] font-semibold hover:underline" style={{ color: isDark ? '#5C75E0' : '#3B4FA8' }}>Зарегистрироваться</Link>
+          <div className="flex items-center justify-end mt-3">
             <Link to="/forgot-password" className="text-[13px] hover:underline" style={{ color: isDark ? '#8B92A8' : '#6B7280' }}>Забыли пароль?</Link>
           </div>
 

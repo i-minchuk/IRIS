@@ -46,13 +46,35 @@ function isDemoEnabled(): boolean {
 
 function getInitialState(): Pick<AuthState, 'user' | 'token' | 'isAuthenticated' | 'isLoading' | 'hasHydrated' | 'isDemoMode'> {
   const demo = isDemoEnabled();
+  if (demo) {
+    return {
+      user: DEMO_USER,
+      token: DEMO_TOKEN,
+      isAuthenticated: true,
+      isLoading: false,
+      hasHydrated: true,
+      isDemoMode: true,
+    };
+  }
+  // Try to restore token from localStorage on init (hydration)
+  const token = localStorage.getItem('access_token');
+  if (token) {
+    return {
+      user: null, // will be filled by checkAuth
+      token,
+      isAuthenticated: true, // optimistic: assume valid until checkAuth confirms
+      isLoading: true, // show loading while validating
+      hasHydrated: true,
+      isDemoMode: false,
+    };
+  }
   return {
-    user: demo ? DEMO_USER : null,
-    token: demo ? DEMO_TOKEN : null,
-    isAuthenticated: demo,
+    user: null,
+    token: null,
+    isAuthenticated: false,
     isLoading: false,
     hasHydrated: true,
-    isDemoMode: demo,
+    isDemoMode: false,
   };
 }
 

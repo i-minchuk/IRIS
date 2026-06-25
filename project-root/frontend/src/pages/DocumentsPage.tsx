@@ -1,4 +1,5 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useTheme } from '@/providers/ThemeProvider';
+import { IRISRecommendations } from '@/components/IRISRecommendations';import { useState, useMemo, useEffect } from 'react';
 import { useTabState } from '@/shared/hooks/useTabState';
 import { PageHeader } from '@/shared/components/PageHeader';
 import { PageTabs } from '@/shared/components/PageTabs';
@@ -1530,6 +1531,10 @@ export default function DocumentsPage() {
           </>
         }
       />
+
+      <div className="mb-4">
+        <IRISRecommendations page="documents" isDark={useTheme().theme === 'dark' || useTheme().theme === 'midnight' || useTheme().theme === 'contrast'} />
+      </div>
 
       <PageTabs tabs={DOC_TABS} active={activeTab} onChange={setActiveTab} />
 

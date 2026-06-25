@@ -238,7 +238,7 @@ const Avatar: React.FC<{ name: string; rank: number; src?: string }> = ({ name, 
 const SkeletonLadder: React.FC = () => (
   <div className="flex items-end justify-center gap-3 px-2">
     {[5,4,3,2,1].map((_, i) => (
-      <div key={i} className={`w-32 ${['h-36','h-44','h-52','h-60','h-72'][i]} rounded-xl bg-white/[0.03] animate-pulse`} />
+      <div key={i} className={`w-32 ${['h-24','h-28','h-32','h-36','h-40'][i]} rounded-xl bg-white/[0.03] animate-pulse`} />
     ))}
   </div>
 );
@@ -271,17 +271,17 @@ const SkeletonCards: React.FC = () => (
 const LadderView: React.FC<{ employees: LeaderboardEmployee[]; showTrend: boolean; showSparkline: boolean; animate: boolean }> =
   ({ employees, showTrend, showSparkline, animate }) => {
   const sorted = [...employees].sort((a, b) => b.docs - a.docs).slice(0, 5);
-  const stepHeights = ['h-36', 'h-44', 'h-52', 'h-60', 'h-72'];
+  const stepHeights = ['h-8', 'h-12', 'h-14', 'h-16', 'h-20'];
 
   return (
-    <div className="flex items-end justify-center gap-3 px-2 relative">
+    <div className="flex items-end justify-center gap-1 px-0 relative">
       <svg className="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none">
         {sorted.map((_, idx) => {
           if (idx === sorted.length - 1) return null;
-          const x1 = (idx * 152) + 76;
-          const x2 = ((idx + 1) * 152) + 76;
-          const y1 = 400 - ((sorted.length - idx) * 48);
-          const y2 = 400 - ((sorted.length - idx - 1) * 48);
+          const x1 = (idx * 44) + 22;
+          const x2 = ((idx + 1) * 44) + 22;
+          const y1 = 160 - ((sorted.length - idx) * 20);
+          const y2 = 160 - ((sorted.length - idx - 1) * 20);
           return (
             <line key={idx} x1={x1} y1={y1} x2={x2} y2={y2}
               stroke="rgba(59,79,168,0.15)" strokeWidth="2" strokeDasharray="4 4" />
@@ -295,20 +295,20 @@ const LadderView: React.FC<{ employees: LeaderboardEmployee[]; showTrend: boolea
           <div key={emp.id} className="relative flex flex-col items-center z-10"
             style={{ animation: `stepAppear 0.5s ease-out ${idx * 0.1}s both` }}>
             {rank <= 3 && (
-              <div className={`absolute -top-7 z-20 w-8 h-8 rounded-full bg-gradient-to-br ${getRankColor(rank)} flex items-center justify-center shadow-lg`}>
-                {rank === 1 ? <Trophy className="w-4 h-4 text-[#222B5C]" /> :
-                 rank === 2 ? <Medal className="w-4 h-4 text-[#222B5C]" /> :
-                 <Award className="w-4 h-4 text-[#222B5C]" />}
+              <div className={`absolute -top-5 z-20 w-6 h-6 rounded-full bg-gradient-to-br ${getRankColor(rank)} flex items-center justify-center shadow-lg`}>
+                {rank === 1 ? <Trophy className="w-3 h-3 text-[#222B5C]" /> :
+                 rank === 2 ? <Medal className="w-3 h-3 text-[#222B5C]" /> :
+                 <Award className="w-3 h-3 text-[#222B5C]" />}
               </div>
             )}
-            <div className={`relative w-32 ${stepHeights[reversedIdx]} rounded-xl backdrop-blur-md border border-[#3B4FA8]/15
-              bg-gradient-to-b from-white/[0.07] to-white/[0.02] flex flex-col items-center justify-between py-3 px-2
-              shadow-[0_0_15px_rgba(59,79,168,0.06)] hover:shadow-[0_0_25px_rgba(59,79,168,0.12)] transition-all duration-300`}>
+            <div className={`relative w-11 ${stepHeights[reversedIdx]} rounded-md backdrop-blur-md border border-[#3B4FA8]/15
+              bg-gradient-to-b from-white/[0.07] to-white/[0.02] flex flex-col items-center justify-between py-0.5 px-0.5
+              shadow-[0_0_4px_rgba(59,79,168,0.06)] hover:shadow-[0_0_8px_rgba(59,79,168,0.12)] transition-all duration-300`}>
               <div className={`absolute top-0 left-0 right-0 h-1 rounded-t-xl bg-gradient-to-r ${getRankColor(rank)}`} />
               <Avatar name={emp.name} rank={rank} src={emp.avatar} />
-              <div className="text-center mt-2">
-                <p className="text-sm font-bold text-white leading-tight">{emp.name}</p>
-                <p className="text-xs text-white/40 mt-0.5">{emp.position}</p>
+              <div className="text-center mt-0">
+                <p className="text-[8px] font-bold text-white leading-tight">{emp.name}</p>
+                <p className="text-[6px] text-white/40 mt-0">{emp.position}</p>
               </div>
               {showSparkline && emp.sparkline && (
                 <div className="mt-1">
@@ -317,12 +317,12 @@ const LadderView: React.FC<{ employees: LeaderboardEmployee[]; showTrend: boolea
               )}
               <div className="flex items-center gap-1 mt-1">
                 <FileText className="w-3 h-3 text-[#3B4FA8]/70" />
-                <AnimatedNumber value={emp.docs} animate={animate} className="text-base font-bold bg-gradient-to-r from-[#3B4FA8] to-[#8D79C7] bg-clip-text text-transparent" />
+                <AnimatedNumber value={emp.docs} animate={animate} className="text-[9px] font-bold bg-gradient-to-r from-[#3B4FA8] to-[#8D79C7] bg-clip-text text-transparent" />
                 <span className="text-[8px] text-[#3B4FA8]/50">док.</span>
               </div>
               {showTrend && <TrendBadge value={emp.trend} />}
             </div>
-            <div className="mt-1 text-xl font-bold text-white/10">{rank}</div>
+            <div className="mt-0 text-[10px] font-bold text-white/10">{rank}</div>
           </div>
         );
       })}
@@ -337,7 +337,7 @@ const PodiumView: React.FC<{ employees: LeaderboardEmployee[]; showTrend: boolea
   const top3 = sorted.slice(0, 3);
   const rest = sorted.slice(3);
   const podiumOrder = [top3[1], top3[0], top3[2]].filter(Boolean);
-  const heights = ['h-48', 'h-60', 'h-44'];
+  const heights = ['h-32', 'h-40', 'h-28'];
 
   return (
     <div className="flex flex-col items-center">
@@ -827,7 +827,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
 
       {/* Branding */}
       <div className="relative z-10 text-center mt-6">
-        <span className="text-xs text-[#3B4FA8]/30 tracking-[0.3em]">IRIS • DOKPOTOK</span>
+        <span className="text-xs text-[#3B4FA8]/30 tracking-[0.3em]"></span>
       </div>
 
       {/* Animations */}
