@@ -2,7 +2,7 @@
 from typing import Optional, List, Dict, Any
 from datetime import datetime, date
 from uuid import UUID
-from pydantic import BaseModel, Field, ConfigDict, computed_field
+from pydantic import BaseModel, Field, ConfigDict, computed_field, field_serializer
 
 from app.modules.remarks.models import RemarkSource, RemarkStatus, RemarkPriority, RemarkCategory
 
@@ -135,6 +135,14 @@ class RemarkResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+    @field_serializer('created_at', 'updated_at', 'resolved_at', 'due_date')
+    def serialize_datetime(self, value):
+        if value is None:
+            return None
+        if isinstance(value, datetime):
+            return value.isoformat()
+        return value
+
 
 class RemarkListItem(BaseModel):
     """Light remark item for list view."""
@@ -157,12 +165,20 @@ class RemarkListItem(BaseModel):
     workflow_instance_id: Optional[int] = None
     workflow_status: Optional[str] = None
     
-    due_date: Optional[str]
+    due_date: Optional[datetime]
     
-    created_at: str
-    updated_at: str
+    created_at: datetime
+    updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+    @field_serializer('created_at', 'updated_at', 'due_date')
+    def serialize_datetime(self, value):
+        if value is None:
+            return None
+        if isinstance(value, datetime):
+            return value.isoformat()
+        return value
 
 
 class RemarkListResponse(BaseModel):

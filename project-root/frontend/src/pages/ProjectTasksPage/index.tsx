@@ -52,7 +52,7 @@ export const ProjectTasksPage: React.FC = () => {
           <h1 className="sr-only" style={{ color: 'var(--text-primary)' }}>
             📋 Задачи по проектам
           </h1>
-          <p className="text-[10px] sm:text-base md:text-lg font-medium leading-relaxed mt-1 mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+          <p className="text-xs sm:text-base md:text-lg font-medium leading-relaxed mt-1 mt-0.5" style={{ color: 'var(--text-secondary)' }}>
             Единый список задач по всем проектам с привязкой к операциям и документам
           </p>
         </div>

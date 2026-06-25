@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import { getTasks } from '@/api/tasks';
-import { getRemarks } from '@/api/remarks';
+import { getTasks } from '@/features/tasks/api/tasks';
+import { getRemarks } from '@/features/remarks/api/remarks';
 import type { Task } from '@/types';
 import type { RemarkListItem } from '@/types/remarks';
 import { Loader2, CheckCircle2, Circle, AlertCircle, ArrowRight, Upload, Search, FileCheck, Archive, Plus, Filter } from 'lucide-react';
@@ -364,7 +364,7 @@ export function WorkflowPage() {
                       <div>
                         <h3 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{task.title}</h3>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className="text-[10px] px-1.5 py-0.5 rounded border font-medium" style={{ color: st.color, borderColor: st.border, background: st.bg }}>{getTaskStatusLabel(task.status)}</span>
+                          <span className="text-xs px-1.5 py-0.5 rounded border font-medium" style={{ color: st.color, borderColor: st.border, background: st.bg }}>{getTaskStatusLabel(task.status)}</span>
                           <span className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Срок: {task.due_date ? new Date(task.due_date).toLocaleDateString('ru-RU') : '—'}</span>
                         </div>
                       </div>

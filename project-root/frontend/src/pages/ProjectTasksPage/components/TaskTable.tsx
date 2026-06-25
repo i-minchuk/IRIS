@@ -162,7 +162,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                   {task.operationName && (
                     <div className="flex flex-col">
                       <span className="text-xs" style={{ color: 'var(--text-primary)' }}>🔧 {task.operationCode || 'Оп'}</span>
-                      <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{task.operationName}</span>
+                      <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{task.operationName}</span>
                     </div>
                   )}
                   {task.documentNumber && (

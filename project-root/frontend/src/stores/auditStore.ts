@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { AuditLogEntry, AuditFilter, AuditAction, AuditSeverity } from '@/types/audit';
-import { auditLogs as mockAuditLogs } from '@/api/mocks/auditLogs';
+import { auditLogs as mockAuditLogs } from '@/stores/mocks/auditLogs';
 
 interface AuditState {
   entries: AuditLogEntry[];

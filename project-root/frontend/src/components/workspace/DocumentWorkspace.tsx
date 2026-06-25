@@ -9,7 +9,7 @@ import DocumentViewerHost from '../viewers/DocumentViewerHost';
 import RemarksPanel from '../RemarksPanel';
 import ExplorerSidebar from '../workspace/ExplorerSidebar';
 import WorkspaceLayout from '../workspace/WorkspaceLayout';
-import { getDocumentWithRemarks, createRevision, submitForApproval, submitForReview } from '../../api/documents';
+import { getDocumentWithRemarks, createRevision, submitForApproval, submitForReview } from '../../features/documents/api/documents';
 import RevisionForm from '../RevisionForm';
 import { Plus, FileCheck, Eye, Lock } from 'lucide-react';
 

@@ -9,7 +9,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function RegisterPage() {
   const { theme } = useTheme();
-  const isDark = theme === 'dark';
+  const isDark = theme === 'dark' || theme === 'midnight' || theme === 'contrast';
   const { setHidden } = useZoomStore();
   useEffect(() => {
     setHidden(true);
@@ -136,7 +136,7 @@ export default function RegisterPage() {
 
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
-              <label htmlFor="full_name" className="block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: textMuted }}>Полное имя</label>
+              <label htmlFor="full_name" className="block text-sm font-semibold uppercase tracking-wider mb-1.5" style={{ color: textMuted }}>Полное имя</label>
               <div className="relative">
                 <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: iconColor }} />
                 <input id="full_name" type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Иванов Иван Иванович" autoComplete="name" required
@@ -146,7 +146,7 @@ export default function RegisterPage() {
             </div>
 
             <div className="mb-4">
-              <label htmlFor="email" className="block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: textMuted }}>Email</label>
+              <label htmlFor="email" className="block text-sm font-semibold uppercase tracking-wider mb-1.5" style={{ color: textMuted }}>Email</label>
               <div className="relative">
                 <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: iconColor }} />
                 <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="user@example.com" autoComplete="email" required
@@ -156,7 +156,7 @@ export default function RegisterPage() {
             </div>
 
             <div className="mb-4">
-              <label htmlFor="username" className="block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: textMuted }}>Логин</label>
+              <label htmlFor="username" className="block text-sm font-semibold uppercase tracking-wider mb-1.5" style={{ color: textMuted }}>Логин</label>
               <div className="relative">
                 <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: iconColor }} />
                 <input id="username" type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="ivanov" autoComplete="username" required
@@ -166,7 +166,7 @@ export default function RegisterPage() {
             </div>
 
             <div className="mb-4">
-              <label htmlFor="password" className="block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: textMuted }}>Пароль</label>
+              <label htmlFor="password" className="block text-sm font-semibold uppercase tracking-wider mb-1.5" style={{ color: textMuted }}>Пароль</label>
               <div className="relative">
                 <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: iconColor }} />
                 <input id="password" type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Минимум 6 символов" autoComplete="new-password" required minLength={6}
@@ -179,7 +179,7 @@ export default function RegisterPage() {
             </div>
 
             <div className="mb-5">
-              <label htmlFor="confirm_password" className="block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: textMuted }}>Подтвердите пароль</label>
+              <label htmlFor="confirm_password" className="block text-sm font-semibold uppercase tracking-wider mb-1.5" style={{ color: textMuted }}>Подтвердите пароль</label>
               <div className="relative">
                 <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: iconColor }} />
                 <input id="confirm_password" type={showConfirm ? 'text' : 'password'} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Повторите пароль" autoComplete="new-password" required

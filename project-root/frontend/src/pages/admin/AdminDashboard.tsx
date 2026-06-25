@@ -1,18 +1,31 @@
 import { useMemo } from 'react';
+import { useTabState } from '@/shared/hooks/useTabState';
+import { PageTabs } from '@/shared/components/PageTabs';
 import { Card } from '@/components/ui';
 import { Badge } from '@/components/ui';
 import { useAuditStore } from '@/stores/auditStore';
 import { useSupportStore } from '@/stores/supportStore';
 import { useReleaseStore } from '@/stores/releaseStore';
 import { AuditLogTable } from '@/components/admin/AuditLogTable';
+import SessionList from '@/features/time_tracking/components/SessionList';
+import AnalyticsPanel from '@/features/time_tracking/components/AnalyticsPanel';
 import {
-  Users, Shield, Ticket, AlertTriangle, Activity, Server,
-  Clock
+  Users, Shield, Ticket, AlertTriangle, LayoutDashboard, Timer,
 } from 'lucide-react';
 
+type AdminTab = 'overview' | 'time';
 
-export default function AdminDashboard() {
-  // Берём данные напрямую, не через методы-геттеры (избегаем infinite loop Zustand)
+const TAB_COLOR = '#FF6B6B';
+
+const TABS = [
+  { key: 'overview' as AdminTab, label: 'Обзор', icon: <LayoutDashboard size={16} />, color: TAB_COLOR },
+  { key: 'time' as AdminTab, label: 'Учёт времени', icon: <Timer size={16} />, color: TAB_COLOR },
+];
+
+/* ═══════════════════════════════════════════════════════════
+   DASHBOARD OVERVIEW TAB
+   ═══════════════════════════════════════════════════════════ */
+function DashboardOverview() {
   const auditEntries = useAuditStore(s => s.entries);
   const tickets = useSupportStore(s => s.tickets);
   const incidents = useSupportStore(s => s.incidents);
@@ -74,160 +87,125 @@ export default function AdminDashboard() {
   const maxIncident = incidentSeverityData.reduce((m, d) => Math.max(m, d.value), 0) || 1;
 
   return (
-    <div className="space-y-6 px-3 md:px-6 py-4 md:pt-2 pb-6">
-      <div>
-        <h1 className="sr-only" style={{ color: 'var(--text-primary)' }}>
-          Панель администратора
-        </h1>
-        <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-          Сводная информация о состоянии системы
-        </p>
+    <div className="space-y-6">
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard icon={<Users size={18} />} label="Пользователей" value="42" color="#3B82F6" />
+        <StatCard icon={<Shield size={18} />} label="Ролей" value="8" color="#8B5CF6" />
+        <StatCard icon={<Ticket size={18} />} label="Открытых тикетов" value={String(openTickets.length)} color="#F59E0B" />
+        <StatCard icon={<AlertTriangle size={18} />} label="Инцидентов" value={String(openIncidents.length)} color="#EF4444" />
       </div>
 
-      {/* Stats Row */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <StatCard icon={<Users size={20} />} label="Активные пользователи" value="24" color="#3B82F6" />
-        <StatCard icon={<Shield size={20} />} label="MFA Adoption" value="68%" color="#10B981" />
-        <StatCard icon={<Ticket size={20} />} label="Открытые тикеты" value={String(openTickets.length)} color="#F59E0B" />
-        <StatCard icon={<AlertTriangle size={20} />} label="Открытые инциденты" value={String(openIncidents.length)} color="#EF4444" />
-        <StatCard icon={<Activity size={20} />} label="SLA Compliance" value={`${slaCompliance}%`} color="#8B5CF6" />
-        <StatCard icon={<Server size={20} />} label="Uptime" value="99.9%" color="#14B8A6" />
-      </div>
-
-      {/* Charts Row — HTML/CSS instead of recharts */}
+      {/* Audit + Tickets */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card padding="md">
-          <h3 className="text-sm font-medium mb-4" style={{ color: 'var(--text-primary)' }}>
-            Тикеты по приоритету
-          </h3>
-          <div className="h-48 flex flex-col justify-center gap-3">
-            {ticketPriorityData.length === 0 ? (
-              <div className="flex items-center justify-center h-full text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                Нет данных
-              </div>
-            ) : (
-              ticketPriorityData.map(d => (
-                <div key={d.name} className="flex items-center gap-3">
-                  <span className="text-base md:text-lg font-medium leading-relaxed mt-1 w-20 flex-shrink-0" style={{ color: 'var(--text-secondary)' }}>{d.name}</span>
-                  <div className="flex-1 h-6 rounded-md overflow-hidden" style={{ backgroundColor: 'var(--bg-surface-2)' }}>
-                    <div
-                      className="h-full rounded-md transition-all duration-500 flex items-center justify-end pr-2"
-                      style={{
-                        width: `${(d.value / maxTicket) * 100}%`,
-                        backgroundColor: d.color + '33',
-                        borderRight: `3px solid ${d.color}`,
-                      }}
-                    >
-                      <span className="text-xs font-semibold" style={{ color: d.color }}>{d.value}</span>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </Card>
-
-        <Card padding="md">
-          <h3 className="text-sm font-medium mb-4" style={{ color: 'var(--text-primary)' }}>
-            Инциденты по severity
-          </h3>
-          <div className="h-48 flex flex-col justify-center gap-3">
-            {incidentSeverityData.length === 0 ? (
-              <div className="flex items-center justify-center h-full text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                Нет данных
-              </div>
-            ) : (
-              incidentSeverityData.map(d => (
-                <div key={d.name} className="flex items-center gap-3">
-                  <span className="text-base md:text-lg font-medium leading-relaxed mt-1 w-10 flex-shrink-0" style={{ color: 'var(--text-secondary)' }}>{d.name}</span>
-                  <div className="flex-1 h-6 rounded-md overflow-hidden" style={{ backgroundColor: 'var(--bg-surface-2)' }}>
-                    <div
-                      className="h-full rounded-md transition-all duration-500 flex items-center justify-end pr-2"
-                      style={{
-                        width: `${(d.value / maxIncident) * 100}%`,
-                        backgroundColor: d.color + '33',
-                        borderRight: `3px solid ${d.color}`,
-                      }}
-                    >
-                      <span className="text-xs font-semibold" style={{ color: d.color }}>{d.value}</span>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </Card>
-      </div>
-
-      {/* SLA & Releases */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card padding="md">
-          <h3 className="text-sm font-medium mb-3" style={{ color: 'var(--text-primary)' }}>SLA Compliance</h3>
-          <div className="flex items-center gap-4">
-            <div className="flex-1">
-              <div className="h-3 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--bg-surface-2)' }}>
-                <div
-                  className="h-full rounded-full transition-all"
-                  style={{
-                    width: `${slaCompliance}%`,
-                    backgroundColor: slaCompliance >= 90 ? 'var(--success)' : slaCompliance >= 70 ? 'var(--warning)' : 'var(--error)',
-                  }}
-                />
-              </div>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>Аудит</h3>
+            <div className="flex items-center gap-2">
+              <Badge variant="error">{auditStats.critical} крит</Badge>
+              <Badge variant="warning">{auditStats.warning} варн</Badge>
             </div>
-            <span className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{slaCompliance}%</span>
           </div>
-          <p className="text-xs mt-2" style={{ color: 'var(--text-tertiary)' }}>
-            Целевой показатель: 95%
-          </p>
+          <AuditLogTable entries={recentAudit} />
         </Card>
 
         <Card padding="md">
-          <h3 className="text-sm font-medium mb-3" style={{ color: 'var(--text-primary)' }}>Релизы готовы к деплою</h3>
-          <div className="flex items-center gap-3">
-            <div className="text-3xl font-bold" style={{ color: 'var(--brand-iris)' }}>{readyReleases}</div>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>Поддержка</h3>
+            <div className="flex items-center gap-2">
+              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>SLA:</span>
+              <Badge variant={slaCompliance >= 90 ? 'success' : slaCompliance >= 70 ? 'warning' : 'error'}>
+                {slaCompliance}%
+              </Badge>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {/* Ticket priority bars */}
             <div>
-              <Badge variant="success">{releases.filter(r => r.status === 'deployed').length} развёрнуто</Badge>
-              {releases.filter(r => r.status === 'rolled_back').length > 0 && (
-                <Badge variant="error" className="ml-2">
-                  {releases.filter(r => r.status === 'rolled_back').length} откат
-                </Badge>
-              )}
+              <p className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>Приоритеты тикетов</p>
+              <div className="space-y-1.5">
+                {ticketPriorityData.map(d => (
+                  <div key={d.name} className="flex items-center gap-2">
+                    <span className="text-xs w-20 shrink-0" style={{ color: 'var(--text-secondary)' }}>{d.name}</span>
+                    <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: 'var(--iris-bg-hover)' }}>
+                      <div className="h-full rounded-full transition-all" style={{ width: `${(d.value / maxTicket) * 100}%`, background: d.color }} />
+                    </div>
+                    <span className="text-xs font-bold w-6 text-right" style={{ color: 'var(--text-primary)' }}>{d.value}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        </Card>
 
-        <Card padding="md">
-          <h3 className="text-sm font-medium mb-3" style={{ color: 'var(--text-primary)' }}>Аудит (последние 24ч)</h3>
-          <div className="flex items-center gap-4">
-            <div className="text-center">
-              <div className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>{auditStats.total}</div>
-              <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Всего</div>
-            </div>
-            <div className="text-center">
-              <div className="text-xl font-bold" style={{ color: 'var(--error)' }}>{auditStats.critical}</div>
-              <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Критических</div>
-            </div>
-            <div className="text-center">
-              <div className="text-xl font-bold" style={{ color: 'var(--warning)' }}>{auditStats.warning}</div>
-              <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Предупреждений</div>
+            {/* Incident severity bars */}
+            <div>
+              <p className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>Инциденты по severity</p>
+              <div className="space-y-1.5">
+                {incidentSeverityData.map(d => (
+                  <div key={d.name} className="flex items-center gap-2">
+                    <span className="text-xs w-20 shrink-0" style={{ color: 'var(--text-secondary)' }}>{d.name}</span>
+                    <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: 'var(--iris-bg-hover)' }}>
+                      <div className="h-full rounded-full transition-all" style={{ width: `${(d.value / maxIncident) * 100}%`, background: d.color }} />
+                    </div>
+                    <span className="text-xs font-bold w-6 text-right" style={{ color: 'var(--text-primary)' }}>{d.value}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </Card>
       </div>
 
-      {/* Recent Audit */}
+      {/* Releases */}
       <Card padding="md">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-            Последние записи аудита
-          </h3>
-          <span className="text-xs flex items-center gap-1" style={{ color: 'var(--text-tertiary)' }}>
-            <Clock size={12} /> Обновлено: {new Date().toLocaleTimeString('ru-RU')}
-          </span>
+          <h3 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>Релизы</h3>
+          <div className="flex items-center gap-2">
+            <Badge variant="success" >{readyReleases} готовы</Badge>
+            <Badge variant="info" >{releases.length - readyReleases} в работе</Badge>
+          </div>
         </div>
-        <AuditLogTable entries={recentAudit} />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {releases.slice(0, 3).map(r => (
+            <div key={r.id} className="rounded-lg p-3 border" style={{ background: 'var(--iris-bg-hover)', borderColor: 'var(--iris-border-subtle)' }}>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{r.version}</span>
+                <Badge variant={r.status === 'ready' ? 'success' : r.status === 'testing' ? 'warning' : 'info'}>
+                  {r.status === 'ready' ? 'Готов' : r.status === 'testing' ? 'Тестирование' : 'Разработка'}
+                </Badge>
+              </div>
+              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{r.name}</p>
+            </div>
+          ))}
+        </div>
       </Card>
+    </div>
+  );
+}
+
+export default function AdminDashboard() {
+  const [activeTab, setActiveTab] = useTabState<AdminTab>('iris_admin_tab', 'overview');
+
+  return (
+    <div className="w-full pt-2 pb-6 px-4 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="sr-only" style={{ color: 'var(--text-primary)' }}>Администрирование</h1>
+          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+            Управление системой, аудит, учёт времени
+          </p>
+        </div>
+      </div>
+
+      <PageTabs tabs={TABS} active={activeTab} onChange={setActiveTab} color={TAB_COLOR} />
+
+      {activeTab === 'overview' && <DashboardOverview />}
+      {activeTab === 'time' && (
+        <div className="space-y-6">
+          <AnalyticsPanel />
+          <SessionList />
+        </div>
+      )}
     </div>
   );
 }

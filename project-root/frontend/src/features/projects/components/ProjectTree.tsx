@@ -31,7 +31,7 @@ const CrsBadge: React.FC<{ code?: string }> = ({ code }) => {
     B: 'bg-yellow-100 text-yellow-700',
     C: 'bg-red-100 text-red-700',
   };
-  return <span className={`text-[10px] px-1 rounded ${colors[code] || 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'}`}>{code}</span>;
+  return <span className={`text-xs px-1 rounded ${colors[code] || 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'}`}>{code}</span>;
 };
 
 export const ProjectTreeView: React.FC<Props> = ({ tree, selectedDocId, onSelectDoc }) => {
@@ -61,7 +61,7 @@ export const ProjectTreeView: React.FC<Props> = ({ tree, selectedDocId, onSelect
           >
             <Chevron open={openStages.has(stage.id)} />
             <span className="text-gray-600 dark:text-gray-400 font-medium truncate">{stage.name}</span>
-            <span className="text-[10px] text-gray-400 dark:text-gray-500 ml-1">{stage.code}</span>
+            <span className="text-xs text-gray-400 dark:text-gray-500 ml-1">{stage.code}</span>
           </button>
           {openStages.has(stage.id) && (
             <div className="ml-3 border-l border-gray-200 dark:border-gray-700 pl-1">
@@ -73,7 +73,7 @@ export const ProjectTreeView: React.FC<Props> = ({ tree, selectedDocId, onSelect
                   >
                     <Chevron open={openKits.has(kit.id)} />
                     <span className="text-gray-600 dark:text-gray-400 truncate">{kit.name}</span>
-                    <span className="text-[10px] text-gray-400 dark:text-gray-500 ml-1">{kit.code}</span>
+                    <span className="text-xs text-gray-400 dark:text-gray-500 ml-1">{kit.code}</span>
                   </button>
                   {openKits.has(kit.id) && (
                     <div className="ml-3 border-l border-gray-200 dark:border-gray-700 pl-1">
@@ -85,7 +85,7 @@ export const ProjectTreeView: React.FC<Props> = ({ tree, selectedDocId, onSelect
                           >
                             <Chevron open={openSections.has(section.id)} />
                             <span className="text-gray-600 dark:text-gray-400 truncate">{section.name}</span>
-                            <span className="text-[10px] text-gray-400 dark:text-gray-500 ml-1">{section.code}</span>
+                            <span className="text-xs text-gray-400 dark:text-gray-500 ml-1">{section.code}</span>
                           </button>
                           {openSections.has(section.id) && (
                             <div className="ml-3">
@@ -101,7 +101,7 @@ export const ProjectTreeView: React.FC<Props> = ({ tree, selectedDocId, onSelect
                                 </button>
                               ))}
                               {section.documents.length === 0 && (
-                                <div className="px-1 py-0.5 text-[10px] text-gray-400 dark:text-gray-500">Нет документов</div>
+                                <div className="px-1 py-0.5 text-xs text-gray-400 dark:text-gray-500">Нет документов</div>
                               )}
                             </div>
                           )}

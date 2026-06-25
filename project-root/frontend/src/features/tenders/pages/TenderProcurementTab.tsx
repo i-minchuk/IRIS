@@ -91,7 +91,7 @@ export default function TenderProcurementTab({ tenderId }: { tenderId: number })
                     </span>
                   )}
                   <span
-                    className="flex items-center gap-1 text-[10px] px-2 py-1 rounded font-medium"
+                    className="flex items-center gap-1 text-xs px-2 py-1 rounded font-medium"
                     style={{ background: cfg.color + '15', color: cfg.color }}
                   >
                     {cfg.icon} {cfg.label}
@@ -127,7 +127,7 @@ export default function TenderProcurementTab({ tenderId }: { tenderId: number })
 function StatCard({ label, value, color }: { label: string; value: number | string; color: string }) {
   return (
     <div className="p-3 rounded-lg" style={{ background: 'var(--bg-surface-2)', border: '1px solid var(--border-default)' }}>
-      <div className="text-[10px] font-medium" style={{ color: 'var(--text-muted)' }}>{label}</div>
+      <div className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>{label}</div>
       <div className="text-xl font-bold" style={{ color }}>{value}</div>
     </div>
   );

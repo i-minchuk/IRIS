@@ -1,0 +1,352 @@
+================================================================================
+REFINED DEAD CODE ANALYSIS
+================================================================================
+Total files scanned: 161
+Potentially unused items: 156
+
+Notes:
+- FastAPI router handlers (decorated with @router.*) are EXCLUDED — they are used by the framework.
+- Dunder methods (__init__, __repr__, etc.) are EXCLUDED.
+- Private names (_prefix) are EXCLUDED from variable analysis.
+- Classes in schemas.py/models.py flagged as 'referenced but never instantiated' may be
+  used only as Pydantic type hints; verify manually before removal.
+
+
+ai\chatbot.py
+-------------
+  [function ] chat_with_ai                                   (never called)
+
+ai\models.py
+------------
+  [class    ] ChatRequest                                    (referenced but never instantiated (possible unused schema/model))
+  [class    ] ChunkMetadata                                  (never referenced or instantiated)
+  [class    ] DocumentType                                   (referenced but never instantiated (possible unused schema/model))
+  [class    ] DocumentUploadRequest                          (never referenced or instantiated)
+  [class    ] TaskType                                       (referenced but never instantiated (possible unused schema/model))
+
+core\config.py
+--------------
+  [function ] load_config                                    (never called)
+
+core\metrics.py
+---------------
+  [variable ] db_connections                                 (never referenced)
+  [variable ] documents_created                              (never referenced)
+
+core\security_utils.py
+----------------------
+  [function ] generate_secure_secret_key                     (never called)
+  [function ] rate_limit_auth_routes                         (never called)
+
+core\telegram.py
+----------------
+  [function ] notify_user_telegram                           (never called)
+
+crud\archive.py
+---------------
+  [function ] link_entries                                   (never called)
+
+models\archive.py
+-----------------
+  [class    ] ArchiveSearchIndex                             (never referenced or instantiated)
+
+modules\ai\router.py
+--------------------
+  [class    ] ChatMessage                                    (never referenced or instantiated)
+  [function ] _ai_disabled_response                          (never called)
+
+modules\audit\router.py
+-----------------------
+  [class    ] AuditLogCreate                                 (never referenced or instantiated)
+  [class    ] AuditLogFilter                                 (never referenced or instantiated)
+  [function ] log_audit                                      (never called)
+
+modules\audit\schemas.py
+------------------------
+  [class    ] AuditLogBase                                   (referenced but never instantiated (possible unused schema/model))
+  [class    ] AuditLogCreate                                 (never referenced or instantiated)
+  [class    ] AuditLogListResponse                           (never referenced or instantiated)
+
+modules\auth\deps.py
+--------------------
+  [function ] require_executive                              (never called)
+  [function ] require_manager_or_above                       (never called)
+
+modules\auth\repository.py
+--------------------------
+  [function ] get_user_repository                            (never called)
+
+modules\auth\schemas.py
+-----------------------
+  [class    ] ForgotPasswordRequest                          (referenced but never instantiated (possible unused schema/model))
+  [class    ] LoginRequest                                   (referenced but never instantiated (possible unused schema/model))
+  [class    ] RefreshTokenRequest                            (referenced but never instantiated (possible unused schema/model))
+  [class    ] ResetPasswordRequest                           (referenced but never instantiated (possible unused schema/model))
+  [class    ] Token                                          (referenced but never instantiated (possible unused schema/model))
+  [class    ] TokenWithCookies                               (never referenced or instantiated)
+  [class    ] UserBase                                       (referenced but never instantiated (possible unused schema/model))
+  [class    ] UserCreate                                     (referenced but never instantiated (possible unused schema/model))
+  [class    ] UserInDB                                       (never referenced or instantiated)
+  [class    ] UserResponse                                   (referenced but never instantiated (possible unused schema/model))
+  [class    ] UserUpdate                                     (referenced but never instantiated (possible unused schema/model))
+
+modules\collaboration\schemas.py
+--------------------------------
+  [class    ] WSPresencePayload                              (never referenced or instantiated)
+  [class    ] WSSubscribePayload                             (never referenced or instantiated)
+
+modules\documents\crud.py
+-------------------------
+  [function ] delete_document                                (never called)
+
+modules\documents\models.py
+---------------------------
+  [class    ] ChangeSheet                                    (never referenced or instantiated)
+
+modules\documents\schemas.py
+----------------------------
+  [class    ] ApprovalStageBase                              (referenced but never instantiated (possible unused schema/model))
+  [class    ] ApprovalStageCreate                            (referenced but never instantiated (possible unused schema/model))
+  [class    ] ApprovalStageResponse                          (never referenced or instantiated)
+  [class    ] ApprovalWorkflowBase                           (referenced but never instantiated (possible unused schema/model))
+  [class    ] ApprovalWorkflowCreateInput                    (referenced but never instantiated (possible unused schema/model))
+  [class    ] ApprovalWorkflowResponse                       (never referenced or instantiated)
+  [class    ] CascadeUpdateRequest                           (referenced but never instantiated (possible unused schema/model))
+  [class    ] CascadeUpdateResponse                          (never referenced or instantiated)
+  [class    ] DocumentBase                                   (referenced but never instantiated (possible unused schema/model))
+  [class    ] DocumentCreateInput                            (referenced but never instantiated (possible unused schema/model))
+  [class    ] DocumentDependencyBase                         (referenced but never instantiated (possible unused schema/model))
+  [class    ] DocumentDependencyCreate                       (referenced but never instantiated (possible unused schema/model))
+  [class    ] DocumentDependencyOut                          (referenced but never instantiated (possible unused schema/model))
+  [class    ] DocumentDependencyUpdate                       (referenced but never instantiated (possible unused schema/model))
+  [class    ] DocumentLockResponse                           (never referenced or instantiated)
+  [class    ] DocumentRenderResponse                         (never referenced or instantiated)
+  [class    ] DocumentResponse                               (never referenced or instantiated)
+  [class    ] DocumentUpdateInput                            (referenced but never instantiated (possible unused schema/model))
+  [class    ] LockRequestInput                               (never referenced or instantiated)
+  [class    ] RevisionBase                                   (referenced but never instantiated (possible unused schema/model))
+  [class    ] RevisionCreateInput                            (referenced but never instantiated (possible unused schema/model))
+  [class    ] RevisionResponse                               (never referenced or instantiated)
+
+modules\gamification\schemas.py
+-------------------------------
+  [class    ] BadgeDefinition                                (never referenced or instantiated)
+  [class    ] EventCreate                                    (never referenced or instantiated)
+  [class    ] GamificationProfile                            (never referenced or instantiated)
+  [class    ] LeaderboardEntry                               (referenced but never instantiated (possible unused schema/model))
+  [class    ] QuestResponse                                  (referenced but never instantiated (possible unused schema/model))
+
+modules\integrations\_1c\router.py
+----------------------------------
+  [class    ] OneCContractItem                               (never referenced or instantiated)
+  [class    ] OneCNomenclatureItem                           (never referenced or instantiated)
+
+modules\monitoring\router.py
+----------------------------
+  [class    ] MetricsRoute                                   (never referenced or instantiated)
+  [variable ] active_users                                   (never referenced)
+  [variable ] ai_requests_total                              (never referenced)
+  [variable ] auth_failures_total                            (never referenced)
+  [variable ] db_connections_active                          (never referenced)
+  [variable ] document_uploads_total                         (never referenced)
+  [variable ] workflow_completions_total                     (never referenced)
+
+modules\notifications\schemas.py
+--------------------------------
+  [class    ] NotificationType                               (never referenced or instantiated)
+
+modules\operations\models.py
+----------------------------
+  [class    ] Operation                                      (referenced but never instantiated (possible unused schema/model))
+  [class    ] OperationAssignment                            (never referenced or instantiated)
+  [class    ] WorkCenter                                     (referenced but never instantiated (possible unused schema/model))
+
+modules\projects\schemas.py
+---------------------------
+  [class    ] KitCreate                                      (referenced but never instantiated (possible unused schema/model))
+  [class    ] ProjectCreate                                  (referenced but never instantiated (possible unused schema/model))
+  [class    ] SectionCreate                                  (referenced but never instantiated (possible unused schema/model))
+  [class    ] StageCreate                                    (referenced but never instantiated (possible unused schema/model))
+
+modules\remarks\models.py
+-------------------------
+  [function ] receive_before_update                          (never called)
+
+modules\remarks\response_schemas.py
+-----------------------------------
+  [class    ] RemarkLinkResponse                             (never referenced or instantiated)
+
+modules\remarks\schemas.py
+--------------------------
+  [class    ] RemarkAction                                   (referenced but never instantiated (possible unused schema/model))
+  [class    ] RemarkAttachment                               (referenced but never instantiated (possible unused schema/model))
+  [class    ] RemarkCommentCreate                            (referenced but never instantiated (possible unused schema/model))
+  [class    ] RemarkCreate                                   (referenced but never instantiated (possible unused schema/model))
+  [class    ] RemarkExportRow                                (never referenced or instantiated)
+  [class    ] RemarkHistoryEntry                             (referenced but never instantiated (possible unused schema/model))
+  [class    ] RemarkListItem                                 (referenced but never instantiated (possible unused schema/model))
+  [class    ] RemarkResponse                                 (referenced but never instantiated (possible unused schema/model))
+  [class    ] RemarkTagCreate                                (referenced but never instantiated (possible unused schema/model))
+  [class    ] RemarkTagResponse                              (referenced but never instantiated (possible unused schema/model))
+  [class    ] RemarkTagUpdate                                (never referenced or instantiated)
+  [class    ] RemarkUpdate                                   (referenced but never instantiated (possible unused schema/model))
+
+modules\remarks\service.py
+--------------------------
+  [class    ] RemarkNotFoundError                            (never referenced or instantiated)
+  [class    ] RemarkTagNotFoundError                         (never referenced or instantiated)
+
+modules\reports\schemas.py
+--------------------------
+  [class    ] ReportRequest                                  (referenced but never instantiated (possible unused schema/model))
+  [class    ] ReportTemplate                                 (referenced but never instantiated (possible unused schema/model))
+
+modules\resources\schemas.py
+----------------------------
+  [class    ] HeatmapDepartment                              (referenced but never instantiated (possible unused schema/model))
+  [class    ] HeatmapEmployee                                (referenced but never instantiated (possible unused schema/model))
+  [class    ] HeatmapResponse                                (referenced but never instantiated (possible unused schema/model))
+  [class    ] ProjectSummary                                 (referenced but never instantiated (possible unused schema/model))
+  [class    ] UserWorkload                                   (referenced but never instantiated (possible unused schema/model))
+  [class    ] WeeklyLoad                                     (referenced but never instantiated (possible unused schema/model))
+  [class    ] WorkloadResponse                               (referenced but never instantiated (possible unused schema/model))
+
+modules\routes\models.py
+------------------------
+  [class    ] Route                                          (referenced but never instantiated (possible unused schema/model))
+
+modules\tasks\dto.py
+--------------------
+  [class    ] TaskCreate                                     (referenced but never instantiated (possible unused schema/model))
+  [class    ] TaskStatusUpdate                               (referenced but never instantiated (possible unused schema/model))
+  [class    ] TaskUpdate                                     (referenced but never instantiated (possible unused schema/model))
+
+modules\tenders\router.py
+-------------------------
+  [function ] _parse_date                                    (never called)
+
+modules\tenders\schemas.py
+--------------------------
+  [class    ] PaginationParams                               (referenced but never instantiated (possible unused schema/model))
+  [class    ] TenderBase                                     (referenced but never instantiated (possible unused schema/model))
+  [class    ] TenderCreate                                   (referenced but never instantiated (possible unused schema/model))
+  [class    ] TenderDocumentPreviewCreate                    (referenced but never instantiated (possible unused schema/model))
+  [class    ] TenderStageUpdate                              (referenced but never instantiated (possible unused schema/model))
+  [class    ] TenderUpdate                                   (never referenced or instantiated)
+
+modules\time_tracking\models.py
+-------------------------------
+  [class    ] EmployeeLoad                                   (never referenced or instantiated)
+
+modules\time_tracking\schemas.py
+--------------------------------
+  [class    ] SessionStart                                   (referenced but never instantiated (possible unused schema/model))
+  [class    ] SessionStop                                    (referenced but never instantiated (possible unused schema/model))
+
+modules\variables\schemas.py
+----------------------------
+  [class    ] VariableBase                                   (referenced but never instantiated (possible unused schema/model))
+  [class    ] VariableCreate                                 (referenced but never instantiated (possible unused schema/model))
+  [class    ] VariableSubstitute                             (referenced but never instantiated (possible unused schema/model))
+  [class    ] VariableUpdate                                 (referenced but never instantiated (possible unused schema/model))
+
+modules\workflow\models.py
+--------------------------
+  [class    ] WorkflowStatus                                 (referenced but never instantiated (possible unused schema/model))
+  [class    ] WorkflowStepStatus                             (referenced but never instantiated (possible unused schema/model))
+
+modules\workflow\schemas.py
+---------------------------
+  [class    ] DelegationAction                               (referenced but never instantiated (possible unused schema/model))
+  [class    ] SignAction                                     (referenced but never instantiated (possible unused schema/model))
+  [class    ] WorkflowAuditLogResponse                       (referenced but never instantiated (possible unused schema/model))
+  [class    ] WorkflowCommentCreate                          (referenced but never instantiated (possible unused schema/model))
+  [class    ] WorkflowCommentResponse                        (referenced but never instantiated (possible unused schema/model))
+  [class    ] WorkflowInstanceResponse                       (referenced but never instantiated (possible unused schema/model))
+  [class    ] WorkflowStepInstanceResponse                   (referenced but never instantiated (possible unused schema/model))
+  [class    ] WorkflowStepResponse                           (referenced but never instantiated (possible unused schema/model))
+  [class    ] WorkflowStepSchema                             (referenced but never instantiated (possible unused schema/model))
+  [class    ] WorkflowTemplateResponse                       (referenced but never instantiated (possible unused schema/model))
+  [class    ] WorkflowTemplateUpdate                         (referenced but never instantiated (possible unused schema/model))
+
+modules\workflow\service.py
+---------------------------
+  [class    ] InstanceNotFoundError                          (never referenced or instantiated)
+
+parser\dwg_parser.py
+--------------------
+  [class    ] DWGHeader                                      (never referenced or instantiated)
+
+schemas\archive.py
+------------------
+  [class    ] ArchiveExport                                  (never referenced or instantiated)
+  [class    ] ArchiveSearchQuery                             (never referenced or instantiated)
+  [class    ] SearchResultItem                               (never referenced or instantiated)
+
+services\archive_service.py
+---------------------------
+  [function ] archive_document_event                         (never called)
+  [function ] archive_file_upload                            (never called)
+  [function ] archive_project_event                          (never called)
+  [function ] archive_remark_event                           (never called)
+  [function ] archive_workflow_event                         (never called)
+
+tasks\documents.py
+------------------
+  [function ] generate_pdf                                   (never called)
+  [function ] process_file                                   (never called)
+
+tasks\notifications.py
+----------------------
+  [function ] notify_project_members                         (never called)
+  [function ] send_push                                      (never called)
+
+tasks\reports.py
+----------------
+  [function ] export_data                                    (never called)
+  [function ] generate_report                                (never called)
+
+
+================================================================================
+TOP MODULES BY COUNT OF POTENTIALLY UNUSED ITEMS
+================================================================================
+ 22  modules\documents\schemas.py
+ 12  modules\remarks\schemas.py
+ 11  modules\auth\schemas.py
+ 11  modules\workflow\schemas.py
+  7  modules\monitoring\router.py
+  7  modules\resources\schemas.py
+  6  modules\tenders\schemas.py
+  5  ai\models.py
+  5  modules\gamification\schemas.py
+  5  services\archive_service.py
+  4  modules\projects\schemas.py
+  4  modules\variables\schemas.py
+  3  modules\audit\router.py
+  3  modules\audit\schemas.py
+  3  modules\operations\models.py
+  3  modules\tasks\dto.py
+  3  schemas\archive.py
+  2  core\metrics.py
+  2  core\security_utils.py
+  2  modules\ai\router.py
+  2  modules\auth\deps.py
+  2  modules\collaboration\schemas.py
+  2  modules\integrations\_1c\router.py
+  2  modules\remarks\service.py
+  2  modules\reports\schemas.py
+  2  modules\time_tracking\schemas.py
+  2  modules\workflow\models.py
+  2  tasks\documents.py
+  2  tasks\notifications.py
+  2  tasks\reports.py
+  1  ai\chatbot.py
+  1  core\config.py
+  1  core\telegram.py
+  1  crud\archive.py
+  1  models\archive.py
+  1  modules\auth\repository.py
+  1  modules\documents\crud.py
+  1  modules\documents\models.py
+  1  modules\notifications\schemas.py
+  1  modules\remarks\models.py

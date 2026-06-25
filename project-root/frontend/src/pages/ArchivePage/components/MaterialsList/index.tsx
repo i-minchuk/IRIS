@@ -6,23 +6,23 @@ export const MaterialsList: React.FC = () => {
   const { materials, selectMaterial } = useArchiveStore();
 
   const getMaterialTypeConfig = (type: string) => {
-    const configs: Record<string, { color: string; icon: string }> = {
-      steel: { color: '#6b7280', icon: '🔩' },
-      concrete: { color: '#9ca3af', icon: '🧱' },
-      reinforcement: { color: '#4b5563', icon: '📏' },
-      insulation: { color: '#f59e0b', icon: '🔥' },
-      finishing: { color: '#10b981', icon: '🎨' },
-      equipment: { color: '#3b82f6', icon: '⚙️' },
-      pipe: { color: '#06b6d4', icon: '�管道' },
-      cable: { color: '#8b5cf6', icon: '⚡' },
-      other: { color: '#64748b', icon: '📦' },
+    const configs: Record<string, { color: string; bg: string; icon: string }> = {
+      steel: { color: 'var(--iris-text-muted)', bg: 'var(--iris-bg-surface-elevated)', icon: '🔩' },
+      concrete: { color: 'var(--iris-text-secondary)', bg: 'var(--iris-bg-surface-elevated)', icon: '🧱' },
+      reinforcement: { color: 'var(--iris-text-secondary)', bg: 'var(--iris-bg-surface-elevated)', icon: '📏' },
+      insulation: { color: 'var(--iris-accent-orange)', bg: 'var(--iris-accent-orange-light)', icon: '🔥' },
+      finishing: { color: 'var(--iris-accent-green)', bg: 'var(--iris-accent-green-light)', icon: '🎨' },
+      equipment: { color: 'var(--iris-accent-blue)', bg: 'var(--iris-accent-blue-light)', icon: '⚙️' },
+      pipe: { color: 'var(--iris-accent-sky)', bg: 'var(--iris-accent-sky-light)', icon: '🚰' },
+      cable: { color: 'var(--iris-accent-purple)', bg: 'var(--iris-accent-purple-light)', icon: '⚡' },
+      other: { color: 'var(--iris-text-muted)', bg: 'var(--iris-bg-surface-elevated)', icon: '📦' },
     };
     return configs[type] || configs.other;
   };
 
   if (materials.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 text-[#64748b]">
+      <div className="flex flex-col items-center justify-center h-64" style={{ color: 'var(--iris-text-muted)' }}>
         <p>Нет материалов</p>
       </div>
     );
@@ -37,29 +37,39 @@ export const MaterialsList: React.FC = () => {
             <div
               key={material.id}
               onClick={() => selectMaterial(material)}
-              className="p-4 bg-[#1e293b] border border-[#334155] rounded-lg hover:border-[#3b82f6] transition-colors cursor-pointer"
+              className="p-4 rounded-lg transition-colors cursor-pointer"
+              style={{
+                background: 'var(--iris-bg-surface)',
+                border: '1px solid var(--iris-border-default)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = 'var(--iris-accent-blue)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'var(--iris-border-default)';
+              }}
             >
               <div className="flex items-start gap-3">
                 <div
                   className="w-10 h-10 rounded-lg flex items-center justify-center text-xl"
-                  style={{ backgroundColor: config.color + '20' }}
+                  style={{ backgroundColor: config.bg, color: config.color }}
                 >
                   {config.icon}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-[#e2e8f0] mb-1">{material.name}</h3>
+                  <h3 className="font-bold mb-1" style={{ color: 'var(--iris-text-primary)' }}>{material.name}</h3>
                   {material.specification && (
-                    <p className="text-sm text-[#94a3b8] mb-1">
+                    <p className="text-sm mb-1" style={{ color: 'var(--iris-text-secondary)' }}>
                       {material.specification}
                     </p>
                   )}
                   {material.manufacturer && (
-                    <p className="text-xs text-[#64748b]">
+                    <p className="text-xs" style={{ color: 'var(--iris-text-muted)' }}>
                       Производитель: {material.manufacturer}
                     </p>
                   )}
                   {material.quantity && material.unit && (
-                    <p className="text-base md:text-lg font-medium leading-relaxed mt-1 text-[#64748b] mt-1">
+                    <p className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--iris-text-muted)' }}>
                       Количество: {material.quantity} {material.unit}
                     </p>
                   )}

@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { Project, ProjectStatus, ProjectPriority } from '../../types/project';
 import { PROJECT_STATUS_CONFIG } from '../../constants/projectStatuses';
 import { PROJECT_PRIORITY_CONFIG } from '../../constants/projectStatuses';
-import { createProject } from '@/api/projects';
+import { createProject } from '@/features/projects/api/projects';
 
 interface ProjectFormProps {
   project?: Project | null;

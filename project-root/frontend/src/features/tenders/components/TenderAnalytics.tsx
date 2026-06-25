@@ -361,27 +361,27 @@ export function TenderAnalytics({ summary, tenders = [] }: Props) {
           </h4>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="rounded-lg border p-3" style={{ borderColor: 'var(--iris-border-subtle)', background: 'var(--iris-bg-subtle)' }}>
-              <div className="text-[10px] uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>Процент выигрыша</div>
+              <div className="text-xs uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>Процент выигрыша</div>
               <div className="text-2xl font-bold" style={{ color: summary.win_rate >= 30 ? 'var(--iris-accent-cyan)' : summary.win_rate >= 15 ? 'var(--iris-accent-amber)' : 'var(--iris-accent-coral)' }}>
                 {summary.win_rate}%
               </div>
             </div>
             <div className="rounded-lg border p-3" style={{ borderColor: 'var(--iris-border-subtle)', background: 'var(--iris-bg-subtle)' }}>
-              <div className="text-[10px] uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>Выиграно</div>
+              <div className="text-xs uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>Выиграно</div>
               <div className="text-2xl font-bold" style={{ color: 'var(--iris-accent-cyan)' }}>
                 {summary.won_count}
               </div>
-              <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{formatMoney(summary.won_sum)} ₽</div>
+              <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{formatMoney(summary.won_sum)} ₽</div>
             </div>
             <div className="rounded-lg border p-3" style={{ borderColor: 'var(--iris-border-subtle)', background: 'var(--iris-bg-subtle)' }}>
-              <div className="text-[10px] uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>В работе</div>
+              <div className="text-xs uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>В работе</div>
               <div className="text-2xl font-bold" style={{ color: 'var(--iris-accent-blue)' }}>
                 {summary.active_count}
               </div>
-              <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{formatMoney(summary.active_sum)} ₽</div>
+              <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{formatMoney(summary.active_sum)} ₽</div>
             </div>
             <div className="rounded-lg border p-3" style={{ borderColor: 'var(--iris-border-subtle)', background: 'var(--iris-bg-subtle)' }}>
-              <div className="text-[10px] uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>На аукционе</div>
+              <div className="text-xs uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>На аукционе</div>
               <div className="text-2xl font-bold" style={{ color: 'var(--iris-accent-amber)' }}>
                 {summary.auction_now}
               </div>

@@ -91,4 +91,4 @@ from app.models.archive import (  # noqa
 )
 
 # 14. Audit — ссылается на User
-from app.models.audit import AuditLog  # noqa
+from app.models.audit import AuditLog as AuditLogModel  # noqa

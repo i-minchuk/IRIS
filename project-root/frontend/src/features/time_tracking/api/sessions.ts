@@ -48,12 +48,12 @@ export async function getSessions(params?: {
   page?: number;
   page_size?: number;
 }): Promise<PaginatedSessions> {
-  const { data } = await client.get('/api/v1/time-tracking/sessions', { params });
+  const { data } = await client.get('/time-tracking/sessions', { params });
   return data;
 }
 
 export async function startSession(body: StartSessionBody): Promise<TimeSession> {
-  const { data } = await client.post('/api/v1/time-tracking/sessions/start', body);
+  const { data } = await client.post('/time-tracking/sessions/start', body);
   return data;
 }
 
@@ -62,13 +62,13 @@ export async function stopSession(
   body: StopSessionBody
 ): Promise<TimeSession> {
   const { data } = await client.post(
-    `/api/v1/time-tracking/sessions/${sessionId}/stop`,
+    `/time-tracking/sessions/${sessionId}/stop`,
     body
   );
   return data;
 }
 
 export async function getEmployeeAnalytics(userId: number): Promise<EmployeeAnalytics> {
-  const { data } = await client.get(`/api/v1/time-tracking/analytics/employee/${userId}`);
+  const { data } = await client.get(`/time-tracking/analytics/employee/${userId}`);
   return data;
 }

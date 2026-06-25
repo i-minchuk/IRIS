@@ -10,13 +10,15 @@ import {
   CornerDownLeft, ArrowLeft, CheckCircle,
   Briefcase, UserCheck, X, FilePlus, FileSpreadsheet,
   Circle, AlertCircle, ArrowRight, FileCheck, Archive, Filter,
+  GitBranch,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getSessions, type TimeSession } from '@/features/time_tracking/api/sessions';
+import { useAutoTimeTracker } from '@/features/time_tracking/hooks/useAutoTimeTracker';
 import apiClient from '@/shared/api/client';
-import { getLeaderboard } from '@/api/gamification';
-import { getTasks } from '@/api/tasks';
-import { getRemarks } from '@/api/remarks';
+import { getLeaderboard } from '@/features/gamification/api/gamification';
+import { getTasks } from '@/features/tasks/api/tasks';
+import { getRemarks } from '@/features/remarks/api/remarks';
 import type { LeaderboardEntry } from '@/types';
 import type { Task } from '@/types';
 import type { RemarkListItem } from '@/types/remarks';
@@ -77,6 +79,7 @@ interface Document {
 
 const TAB_COLOR = '#4F7A4C';
 const WORKFLOW_TAB_COLOR = '#D4AF37';
+const TASKS_TAB_COLOR = '#3B82F6';
 
 /* ── Configs ── */
 const docTypeConfig: Record<DocType, { label: string; color: string; bg: string; border: string }> = {
@@ -219,6 +222,7 @@ function FileIcon({ type }: { type: DocType }) {
    REGISTRY VIEW — VS Code three-panel layout
    ═══════════════════════════════════════════ */
 function RegistryView() {
+  const { autoStart } = useAutoTimeTracker();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProject, setSelectedProject] = useState<string | null>('ЖК «Северный»');
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
@@ -268,9 +272,11 @@ function RegistryView() {
     setSelectedProject(project);
   };
 
-  const handleDocClick = (doc: Document) => {
+  const handleDocClick = async (doc: Document) => {
     setSelectedDocId(doc.id);
     setSelectedProject(doc.project);
+    const numericId = Number.parseInt(doc.id, 10) || Number(doc.id.replace(/\D/g, '')) || undefined;
+    await autoStart({ documentId: numericId, documentName: `${doc.code} — ${doc.name}` });
   };
 
   const handleAddRemark = () => {
@@ -312,14 +318,14 @@ function RegistryView() {
         </button>
       </div>
 
-      {/* Three-panel grid */}
-      <div className="grid grid-cols-[220px_1fr_300px] gap-0 rounded-xl overflow-hidden" style={{ border: '1px solid var(--border-default)', background: 'var(--card-bg)', height: 'calc(100vh - 240px)' }}>
+      {/* Three-panel grid — responsive */}
+      <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr_300px] gap-0 rounded-xl overflow-hidden" style={{ border: '1px solid var(--border-default)', background: 'var(--card-bg)', minHeight: 'calc(100vh - 240px)' }}>
 
         {/* ═══ LEFT: PROJECTS ═══ */}
         <div className="flex flex-col" style={{ borderRight: '1px solid var(--border-default)', background: 'var(--bg-surface-2)' }}>
-          <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider flex items-center justify-between" style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border-default)' }}>
+          <div className="px-3 py-2 text-xs font-bold uppercase tracking-wider flex items-center justify-between" style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border-default)' }}>
             <span>Проекты</span>
-            <span className="text-[9px] font-normal">{projectNames.length}</span>
+            <span className="text-xs font-normal">{projectNames.length}</span>
           </div>
           <div className="flex-1 overflow-y-auto py-1">
             {projectNames.map(project => {
@@ -343,7 +349,7 @@ function RegistryView() {
                     {isExpanded ? <ChevronDown size={12} style={{ color: 'var(--text-muted)' }} /> : <ChevronRight size={12} style={{ color: 'var(--text-muted)' }} />}
                     <FolderKanban size={13} style={{ color: isSelected ? TAB_COLOR : 'var(--text-muted)' }} />
                     <span className="flex-1 truncate">{project}</span>
-                    <span className="text-[10px] px-1 py-0 rounded" style={{ background: 'var(--bg-surface)', color: 'var(--text-muted)' }}>{docs.length}</span>
+                    <span className="text-xs px-1 py-0 rounded" style={{ background: 'var(--bg-surface)', color: 'var(--text-muted)' }}>{docs.length}</span>
                   </button>
                   {isExpanded && (
                     <div>
@@ -364,9 +370,9 @@ function RegistryView() {
                             onMouseLeave={e => { if (!isDocSelected) e.currentTarget.style.background = 'transparent'; }}
                           >
                             <FileIcon type={doc.type} />
-                            <span className="text-[11px] truncate flex-1 font-mono">{doc.code}</span>
+                            <span className="text-sm truncate flex-1 font-mono">{doc.code}</span>
                             {doc.remarks.length > 0 && (
-                              <span className="text-[9px] px-1 rounded-full" style={{ background: 'rgba(255,107,107,0.2)', color: '#FF6B6B' }}>{doc.remarks.length}</span>
+                              <span className="text-xs px-1 rounded-full" style={{ background: 'rgba(255,107,107,0.2)', color: '#FF6B6B' }}>{doc.remarks.length}</span>
                             )}
                           </button>
                         );
@@ -382,12 +388,12 @@ function RegistryView() {
         {/* ═══ CENTER: DOCUMENT VIEWER ═══ */}
         <div className="flex flex-col" style={{ borderRight: '1px solid var(--border-default)' }}>
           {/* Center header */}
-          <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider flex items-center justify-between" style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border-default)' }}>
+          <div className="px-3 py-2 text-xs font-bold uppercase tracking-wider flex items-center justify-between" style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border-default)' }}>
             <span>{selectedDoc ? 'Просмотр документа' : 'Документы проекта'}</span>
             {selectedDoc && (
               <button
                 onClick={() => setSelectedDocId(null)}
-                className="flex items-center gap-1 text-[10px] font-normal transition-colors hover:opacity-80"
+                className="flex items-center gap-1 text-xs font-normal transition-colors hover:opacity-80"
                 style={{ color: 'var(--text-secondary)' }}
               >
                 <ArrowLeft size={10} /> Назад к списку
@@ -416,7 +422,7 @@ function RegistryView() {
                     <FileIcon type={doc.type} />
                     <div className="flex-1 min-w-0">
                       <div className="text-xs font-medium font-mono truncate" style={{ color: 'var(--text-primary)' }}>{doc.code}</div>
-                      <div className="text-[11px] truncate" style={{ color: 'var(--text-secondary)' }}>{doc.name}</div>
+                      <div className="text-sm truncate" style={{ color: 'var(--text-secondary)' }}>{doc.name}</div>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
                       <TypeBadge type={doc.type} />
@@ -437,12 +443,12 @@ function RegistryView() {
                       <TypeBadge type={selectedDoc.type} />
                       <StatusBadge status={selectedDoc.status} />
                     </div>
-                    <p className="text-[11px] truncate" style={{ color: 'var(--text-secondary)' }}>{selectedDoc.name}</p>
+                    <p className="text-sm truncate" style={{ color: 'var(--text-secondary)' }}>{selectedDoc.name}</p>
                   </div>
                 </div>
 
                 {/* Compact meta — single row */}
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px]">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
                   <span style={{ color: 'var(--text-secondary)' }}><span style={{ color: 'var(--text-muted)' }}>Проект:</span> {selectedDoc.project}</span>
                   <span style={{ color: 'var(--text-secondary)' }}><span style={{ color: 'var(--text-muted)' }}>Ревизия:</span> {selectedDoc.revision}</span>
                   <span style={{ color: 'var(--text-secondary)' }}><span style={{ color: 'var(--text-muted)' }}>Автор:</span> {selectedDoc.author}</span>
@@ -453,11 +459,11 @@ function RegistryView() {
 
                 {/* Preview placeholder */}
                 <div className="rounded-lg p-3" style={{ background: 'var(--bg-surface-2)', border: '1px dashed var(--border-default)' }}>
-                  <div className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>Предпросмотр</div>
+                  <div className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>Предпросмотр</div>
                   <div className="h-24 flex items-center justify-center rounded" style={{ background: 'var(--bg-surface)' }}>
                     <div className="text-center">
                       <FileText size={24} className="mx-auto mb-1" style={{ color: 'var(--text-muted)', opacity: 0.3 }} />
-                      <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>Просмотр документа {selectedDoc.format.toUpperCase()}</p>
+                      <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Просмотр документа {selectedDoc.format.toUpperCase()}</p>
                     </div>
                   </div>
                 </div>
@@ -478,13 +484,13 @@ function RegistryView() {
 
         {/* ═══ RIGHT: REMARKS ═══ */}
         <div className="flex flex-col" style={{ background: 'var(--bg-surface-2)' }}>
-          <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider flex items-center justify-between" style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border-default)' }}>
+          <div className="px-3 py-2 text-xs font-bold uppercase tracking-wider flex items-center justify-between" style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border-default)' }}>
             <span className="flex items-center gap-1.5">
               <MessageSquare size={10} />
               Замечания
             </span>
             {selectedDoc && (
-              <span className="text-[9px] px-1.5 py-0.5 rounded-full" style={{ background: 'var(--bg-surface)', color: 'var(--text-muted)' }}>
+              <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'var(--bg-surface)', color: 'var(--text-muted)' }}>
                 {selectedDoc.remarks.length}
               </span>
             )}
@@ -508,16 +514,16 @@ function RegistryView() {
                   return (
                     <div key={remark.id} className="p-2.5 rounded-lg space-y-1.5" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-default)' }}>
                       <div className="flex items-start gap-2">
-                        <div className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0" style={{ background: 'var(--bg-surface-2)', color: 'var(--text-secondary)' }}>
+                        <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0" style={{ background: 'var(--bg-surface-2)', color: 'var(--text-secondary)' }}>
                           {remark.author.split(' ').map(n => n[0]).join('')}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-1">
-                            <span className="text-[11px] font-medium" style={{ color: 'var(--text-primary)' }}>{remark.author}</span>
-                            <span className="text-[9px] shrink-0" style={{ color: 'var(--text-muted)' }}>{remark.date}</span>
+                            <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{remark.author}</span>
+                            <span className="text-xs shrink-0" style={{ color: 'var(--text-muted)' }}>{remark.date}</span>
                           </div>
                           {remark.assignee && (
-                            <div className="text-[10px] flex items-center gap-1" style={{ color: 'var(--text-secondary)' }}>
+                            <div className="text-xs flex items-center gap-1" style={{ color: 'var(--text-secondary)' }}>
                               <UserCheck size={9} /> Исполнитель: {remark.assignee}
                             </div>
                           )}
@@ -526,11 +532,11 @@ function RegistryView() {
                       <p className="text-base md:text-lg font-medium leading-relaxed mt-1 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{remark.text}</p>
                       <div className="flex items-center justify-between pt-1">
                         {actionCfg && (
-                          <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border" style={{ color: actionCfg.color, background: actionCfg.bg, borderColor: actionCfg.border }}>
+                          <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border" style={{ color: actionCfg.color, background: actionCfg.bg, borderColor: actionCfg.border }}>
                             {actionCfg.icon} {actionCfg.label}
                           </span>
                         )}
-                        <span className="text-[9px] px-1.5 py-0.5 rounded-full" style={{
+                        <span className="text-xs px-1.5 py-0.5 rounded-full" style={{
                           color: remark.status === 'open' ? '#FF6B6B' : remark.status === 'resolved' ? '#4F7A4C' : '#6B7280',
                           background: remark.status === 'open' ? 'rgba(255,107,107,0.1)' : remark.status === 'resolved' ? 'rgba(79,122,76,0.1)' : 'rgba(107,114,128,0.1)',
                         }}>
@@ -547,7 +553,7 @@ function RegistryView() {
           {/* New remark form */}
           {selectedDoc && (
             <div className="p-3 space-y-2" style={{ borderTop: '1px solid var(--border-default)', background: 'var(--card-bg)' }}>
-              <div className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Новое замечание</div>
+              <div className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Новое замечание</div>
               <textarea
                 value={newRemarkText}
                 onChange={e => setNewRemarkText(e.target.value)}
@@ -584,7 +590,7 @@ function RegistryView() {
                           setSelectedAssignee('');
                         }
                       }}
-                      className="flex-1 text-[10px] px-2 py-1 rounded-md border transition-colors flex items-center justify-center gap-1"
+                      className="flex-1 text-xs px-2 py-1 rounded-md border transition-colors flex items-center justify-center gap-1"
                       style={{
                         color: cfg.color,
                         background: isActive ? cfg.bg : 'transparent',
@@ -599,7 +605,7 @@ function RegistryView() {
                 {delegateOpen && (
                   <div className="absolute bottom-full left-0 right-0 mb-1 rounded-lg p-2 space-y-1 z-10" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-lg)' }}>
                     <div className="flex items-center justify-between px-1 pb-1" style={{ borderBottom: '1px solid var(--border-default)' }}>
-                      <span className="text-[10px] font-medium" style={{ color: 'var(--text-muted)' }}>Назначить исполнителя</span>
+                      <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Назначить исполнителя</span>
                       <button onClick={() => { setDelegateOpen(false); }} className="p-0.5 rounded" style={{ color: 'var(--text-muted)' }}><X size={10} /></button>
                     </div>
                     {employees.map(emp => (
@@ -609,7 +615,7 @@ function RegistryView() {
                           setSelectedAssignee(emp.name);
                           setDelegateOpen(false);
                         }}
-                        className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left transition-colors text-[11px]"
+                        className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left transition-colors text-sm"
                         style={{
                           background: selectedAssignee === emp.name ? 'var(--bg-surface-3)' : 'transparent',
                           color: selectedAssignee === emp.name ? 'var(--text-primary)' : 'var(--text-secondary)',
@@ -622,7 +628,7 @@ function RegistryView() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="truncate font-medium">{emp.name}</div>
-                          <div className="text-[9px]" style={{ color: 'var(--text-muted)' }}>{emp.role}</div>
+                          <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{emp.role}</div>
                         </div>
                         {selectedAssignee === emp.name && <CheckCircle size={10} style={{ color: '#4F7A4C' }} />}
                       </button>
@@ -749,10 +755,10 @@ function WorkflowView() {
   };
 
   const processCards = [
-    { icon: <Upload size={20} />, count: tasks.filter(t => t.status === 'NEW').length, label: 'Загрузка', color: '#3B82F6' },
-    { icon: <Search size={20} />, count: tasks.filter(t => t.status === 'IN_PROGRESS').length, label: 'Проверка', color: '#8B5CF6' },
-    { icon: <FileCheck size={20} />, count: remarks.filter(r => r.status === 'in_progress').length, label: 'Согласование', color: '#F59E0B' },
-    { icon: <Archive size={20} />, count: tasks.filter(t => t.status === 'DONE').length, label: 'Архив', color: '#6B7280' },
+    { icon: <Upload size={20} />, count: tasks.filter(t => t.status === 'NEW').length, label: 'Загрузка', color: '#3B82F6', onClick: () => { setTab('tasks'); setTaskFilter('NEW'); } },
+    { icon: <Search size={20} />, count: tasks.filter(t => t.status === 'IN_PROGRESS').length, label: 'Проверка', color: '#8B5CF6', onClick: () => { setTab('tasks'); setTaskFilter('IN_PROGRESS'); } },
+    { icon: <FileCheck size={20} />, count: remarks.filter(r => r.status === 'in_progress').length, label: 'Согласование', color: '#F59E0B', onClick: () => { setTab('remarks'); setRemarkFilter('in_progress'); } },
+    { icon: <Archive size={20} />, count: tasks.filter(t => t.status === 'DONE').length, label: 'Архив', color: '#6B7280', onClick: () => { setTab('tasks'); setTaskFilter('DONE'); } },
   ];
 
   const statusPieData = useMemo(() => {
@@ -801,13 +807,18 @@ function WorkflowView() {
       <div className="flex flex-wrap items-center gap-3">
         {processCards.map((card, idx) => (
           <div key={card.label} className="flex items-center gap-3">
-            <div className="flex items-center gap-3 px-4 py-3 rounded-xl text-white" style={{ backgroundColor: card.color }}>
+            <button
+              type="button"
+              onClick={card.onClick}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl text-white transition-all hover:brightness-110 hover:shadow-lg cursor-pointer"
+              style={{ backgroundColor: card.color }}
+            >
               {card.icon}
               <div>
                 <div className="text-lg font-bold">{card.count}</div>
                 <div className="text-xs opacity-90">{card.label}</div>
               </div>
-            </div>
+            </button>
             {idx < processCards.length - 1 && (
               <ArrowRight size={20} className="text-[#94a3b8]" />
             )}
@@ -880,24 +891,29 @@ function WorkflowView() {
       </div>
 
       {/* Sub-tabs */}
-      <div className="flex items-center gap-1 border-b" style={{ borderColor: 'var(--border-divider)' }}>
+      <div className="flex items-center gap-1 flex-wrap">
         {[
-          { key: 'tasks' as const, label: 'Задачи', icon: <FileCheck size={16} />, count: filteredTasks.length },
-          { key: 'remarks' as const, label: 'Замечания', icon: <AlertCircle size={16} />, count: filteredRemarks.length },
-        ].map(t => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className="relative px-4 py-2.5 text-sm font-medium transition-all flex items-center gap-2"
-            style={{
-              color: tab === t.key ? WORKFLOW_TAB_COLOR : 'var(--text-secondary)',
-              backgroundColor: tab === t.key ? `${WORKFLOW_TAB_COLOR}26` : 'transparent',
-            }}
-          >
-            {t.icon} {t.label} ({t.count})
-            {tab === t.key && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-4/5 rounded-full" style={{ backgroundColor: WORKFLOW_TAB_COLOR, boxShadow: `0 0 8px ${WORKFLOW_TAB_COLOR}` }} />}
-          </button>
-        ))}
+          { key: 'tasks' as const, label: 'Задачи', icon: <FileCheck size={16} />, count: filteredTasks.length, color: TASKS_TAB_COLOR },
+          { key: 'remarks' as const, label: 'Замечания', icon: <AlertCircle size={16} />, count: filteredRemarks.length, color: WORKFLOW_TAB_COLOR },
+        ].map(t => {
+          const isSubActive = tab === t.key;
+          const subColor = t.color;
+          return (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className="px-3 py-1.5 text-xs font-medium rounded-lg transition-all flex items-center gap-1.5"
+              style={{
+                color: isSubActive ? subColor : 'var(--text-secondary)',
+                backgroundColor: isSubActive ? `${subColor}26` : 'var(--bg-surface-2)',
+                border: isSubActive ? `2px solid ${subColor}` : '2px solid transparent',
+                boxShadow: isSubActive ? `0 0 8px ${subColor}40` : 'none',
+              }}
+            >
+              {t.icon} {t.label} ({t.count})
+            </button>
+          );
+        })}
       </div>
 
       {loading && (
@@ -951,7 +967,7 @@ function WorkflowView() {
                       <div>
                         <h3 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{task.title}</h3>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className="text-[10px] px-1.5 py-0.5 rounded border font-medium" style={{ color: st.color, borderColor: st.border, background: st.bg }}>{getTaskStatusLabel(task.status)}</span>
+                          <span className="text-xs px-1.5 py-0.5 rounded border font-medium" style={{ color: st.color, borderColor: st.border, background: st.bg }}>{getTaskStatusLabel(task.status)}</span>
                           <span className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Срок: {task.due_date ? new Date(task.due_date).toLocaleDateString('ru-RU') : '—'}</span>
                         </div>
                       </div>
@@ -1182,7 +1198,7 @@ function EmployeesView() {
               </span>
             </div>
             <div className="text-xl font-bold" style={{ color: item.color }}>{item.value}</div>
-            <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{item.sub}</div>
+            <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{item.sub}</div>
           </div>
         ))}
       </div>
@@ -1224,7 +1240,7 @@ function EmployeesView() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{emp.name}</span>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ background: TAB_COLOR + '15', color: TAB_COLOR }}>Lv.{emp.level}</span>
+                      <span className="text-xs px-1.5 py-0.5 rounded-full font-medium" style={{ background: TAB_COLOR + '15', color: TAB_COLOR }}>Lv.{emp.level}</span>
                     </div>
                     <div className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>{emp.role}</div>
                   </div>
@@ -1233,7 +1249,7 @@ function EmployeesView() {
                     <div className="w-20 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--bg-surface-2)' }}>
                       <div className="h-full rounded-full transition-all" style={{ width: `${loadPercent}%`, background: loadColor }} />
                     </div>
-                    <span className="text-[10px] font-medium w-8 text-right" style={{ color: loadColor }}>{emp.busyDays}д</span>
+                    <span className="text-xs font-medium w-8 text-right" style={{ color: loadColor }}>{emp.busyDays}д</span>
                   </div>
                 </div>
 
@@ -1242,7 +1258,7 @@ function EmployeesView() {
                   <div className="mt-3 pt-3 space-y-3" style={{ borderTop: '1px solid var(--border-default)' }}>
                     {/* Time tracking */}
                     <div>
-                      <div className="text-[10px] font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1" style={{ color: 'var(--text-muted)' }}>
+                      <div className="text-xs font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1" style={{ color: 'var(--text-muted)' }}>
                         <Timer size={10} /> Активность
                       </div>
                       {timeLoading ? (
@@ -1270,7 +1286,7 @@ function EmployeesView() {
                                 <span className="font-mono" style={{ color: 'var(--text-primary)' }}>{sessions.length}</span>
                               </div>
                               {currentSession && (
-                                <div className="text-[10px] px-2 py-1 rounded-full text-center" style={{ background: 'rgba(79,122,76,0.15)', color: '#4F7A4C' }}>
+                                <div className="text-xs px-2 py-1 rounded-full text-center" style={{ background: 'rgba(79,122,76,0.15)', color: '#4F7A4C' }}>
                                   <Timer size={9} className="inline mr-1" /> Сейчас в работе
                                 </div>
                               )}
@@ -1282,16 +1298,16 @@ function EmployeesView() {
 
                     {/* Current document */}
                     <div>
-                      <div className="text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>Текущий документ</div>
+                      <div className="text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>Текущий документ</div>
                       {emp.currentDoc ? (
                         <div className="flex items-center gap-2 p-2 rounded-lg" style={{ background: 'var(--bg-surface-2)', border: '1px solid var(--border-default)' }}>
                           <FileText size={14} style={{ color: TAB_COLOR }} />
                           <div className="flex-1 min-w-0">
                             <div className="text-xs font-mono font-medium" style={{ color: 'var(--text-primary)' }}>{emp.currentDoc.code}</div>
-                            <div className="text-[11px] truncate" style={{ color: 'var(--text-secondary)' }}>{emp.currentDoc.name}</div>
-                            <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{emp.currentDoc.project}</div>
+                            <div className="text-sm truncate" style={{ color: 'var(--text-secondary)' }}>{emp.currentDoc.name}</div>
+                            <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{emp.currentDoc.project}</div>
                           </div>
-                          <span className="text-[10px] px-2 py-0.5 rounded-full shrink-0" style={{ background: emp.currentDoc.daysLeft <= 1 ? 'rgba(255,107,107,0.15)' : 'rgba(212,175,55,0.15)', color: emp.currentDoc.daysLeft <= 1 ? '#FF6B6B' : '#D4AF37' }}>
+                          <span className="text-xs px-2 py-0.5 rounded-full shrink-0" style={{ background: emp.currentDoc.daysLeft <= 1 ? 'rgba(255,107,107,0.15)' : 'rgba(212,175,55,0.15)', color: emp.currentDoc.daysLeft <= 1 ? '#FF6B6B' : '#D4AF37' }}>
                             {emp.currentDoc.daysLeft} дн.
                           </span>
                         </div>
@@ -1302,16 +1318,16 @@ function EmployeesView() {
 
                     {/* Queue */}
                     <div>
-                      <div className="text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>Очередь ({emp.queue.length})</div>
+                      <div className="text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>Очередь ({emp.queue.length})</div>
                       <div className="space-y-1">
                         {emp.queue.map((task, qi) => (
-                          <div key={qi} className="flex items-center gap-2 p-1.5 rounded-md text-[11px]" style={{ background: 'var(--bg-surface-2)' }}>
+                          <div key={qi} className="flex items-center gap-2 p-1.5 rounded-md text-sm" style={{ background: 'var(--bg-surface-2)' }}>
                             <span className="font-mono shrink-0" style={{ color: 'var(--text-secondary)' }}>{task.code}</span>
                             <span className="flex-1 truncate" style={{ color: 'var(--text-primary)' }}>{task.name}</span>
-                            <span className="text-[10px] shrink-0" style={{ color: 'var(--text-muted)' }}>{task.project}</span>
+                            <span className="text-xs shrink-0" style={{ color: 'var(--text-muted)' }}>{task.project}</span>
                             <button
                               onClick={(e) => { e.stopPropagation(); openDelegate(emp.id, task); }}
-                              className="text-[10px] px-1.5 py-0.5 rounded border shrink-0 transition-colors"
+                              className="text-xs px-1.5 py-0.5 rounded border shrink-0 transition-colors"
                               style={{ color: TAB_COLOR, borderColor: TAB_COLOR + '40', background: TAB_COLOR + '10' }}
                             >
                               Делегировать
@@ -1326,7 +1342,7 @@ function EmployeesView() {
 
                     {/* XP bar */}
                     <div>
-                      <div className="flex items-center justify-between text-[10px] mb-1">
+                      <div className="flex items-center justify-between text-xs mb-1">
                         <span style={{ color: 'var(--text-muted)' }}>Опыт</span>
                         <span style={{ color: 'var(--text-secondary)' }}>{emp.xp} / {emp.xpToNext} XP</span>
                       </div>
@@ -1338,7 +1354,7 @@ function EmployeesView() {
                     {/* Badges */}
                     <div className="flex flex-wrap gap-1">
                       {emp.badges.map((badge, bi) => (
-                        <span key={bi} className="text-[10px] px-2 py-0.5 rounded-full border" style={{ color: TAB_COLOR, borderColor: TAB_COLOR + '30', background: TAB_COLOR + '10' }}>
+                        <span key={bi} className="text-xs px-2 py-0.5 rounded-full border" style={{ color: TAB_COLOR, borderColor: TAB_COLOR + '30', background: TAB_COLOR + '10' }}>
                           <Zap size={9} className="inline mr-0.5" /> {badge}
                         </span>
                       ))}
@@ -1348,7 +1364,7 @@ function EmployeesView() {
                     <div className="flex gap-2 pt-1">
                       <button
                         onClick={(e) => { e.stopPropagation(); handleLoad(emp.id); }}
-                        className="flex-1 text-[11px] py-1.5 rounded-md text-white flex items-center justify-center gap-1 transition-opacity hover:opacity-90"
+                        className="flex-1 text-sm py-1.5 rounded-md text-white flex items-center justify-center gap-1 transition-opacity hover:opacity-90"
                         style={{ background: TAB_COLOR }}
                       >
                         <Plus size={12} /> Загрузить
@@ -1356,7 +1372,7 @@ function EmployeesView() {
                       <button
                         onClick={(e) => { e.stopPropagation(); handleUnload(emp.id); }}
                         disabled={emp.queue.length === 0}
-                        className="flex-1 text-[11px] py-1.5 rounded-md border flex items-center justify-center gap-1 transition-colors"
+                        className="flex-1 text-sm py-1.5 rounded-md border flex items-center justify-center gap-1 transition-colors"
                         style={{ color: emp.queue.length ? 'var(--text-secondary)' : 'var(--text-muted)', borderColor: 'var(--border-default)', background: emp.queue.length ? 'var(--bg-surface-2)' : 'transparent', opacity: emp.queue.length ? 1 : 0.5 }}
                       >
                         <Minus size={12} /> Разгрузить
@@ -1382,7 +1398,7 @@ function EmployeesView() {
                   <div className="w-5 text-center text-base md:text-lg font-medium leading-relaxed mt-1 font-bold" style={{ color: i === 0 ? TAB_COLOR : i === 1 ? '#94A3B8' : i === 2 ? '#6B5B95' : 'var(--text-secondary)' }}>
                     {i + 1}
                   </div>
-                  <div className="w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0" style={{ background: emp.color + '20', color: emp.color }}>
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0" style={{ background: emp.color + '20', color: emp.color }}>
                     {emp.initials}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -1391,12 +1407,12 @@ function EmployeesView() {
                       <div className="w-10 h-1 rounded-full overflow-hidden" style={{ background: 'var(--bg-surface-2)' }}>
                         <div className="h-full rounded-full" style={{ width: `${emp.efficiency}%`, background: i === 0 ? TAB_COLOR : 'var(--text-muted)' }} />
                       </div>
-                      <span className="text-[9px]" style={{ color: 'var(--text-muted)' }}>{emp.efficiency}%</span>
+                      <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{emp.efficiency}%</span>
                     </div>
                   </div>
                   <div className="text-right shrink-0">
                     <div className="text-xs font-bold" style={{ color: TAB_COLOR }}>{emp.approvedThisWeek}</div>
-                    <div className="text-[9px]" style={{ color: 'var(--text-muted)' }}>согл.</div>
+                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>согл.</div>
                   </div>
                 </div>
               ))}
@@ -1414,11 +1430,11 @@ function EmployeesView() {
                 const pct = Math.min(100, (emp.busyDays / 10) * 100);
                 return (
                   <div key={emp.id} className="flex items-center gap-2">
-                    <span className="text-[10px] w-16 truncate shrink-0" style={{ color: 'var(--text-secondary)' }}>{emp.initials}</span>
+                    <span className="text-xs w-16 truncate shrink-0" style={{ color: 'var(--text-secondary)' }}>{emp.initials}</span>
                     <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: 'var(--bg-surface-2)' }}>
                       <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: pct > 80 ? '#FF6B6B' : pct > 50 ? '#D4AF37' : TAB_COLOR }} />
                     </div>
-                    <span className="text-[9px] w-6 text-right shrink-0" style={{ color: 'var(--text-muted)' }}>{emp.busyDays}д</span>
+                    <span className="text-xs w-6 text-right shrink-0" style={{ color: 'var(--text-muted)' }}>{emp.busyDays}д</span>
                   </div>
                 );
               })}
@@ -1439,10 +1455,10 @@ function EmployeesView() {
               <div className="p-2 rounded-lg text-xs" style={{ background: 'var(--bg-surface-2)', border: '1px solid var(--border-default)' }}>
                 <div className="font-mono font-medium" style={{ color: 'var(--text-primary)' }}>{taskToMove.code}</div>
                 <div style={{ color: 'var(--text-secondary)' }}>{taskToMove.name}</div>
-                <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{taskToMove.project}</div>
+                <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{taskToMove.project}</div>
               </div>
             )}
-            <div className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Выбрать исполнителя</div>
+            <div className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Выбрать исполнителя</div>
             <div className="space-y-1 max-h-40 overflow-y-auto">
               {workloads.filter(e => e.id !== fromEmpId).map(emp => (
                 <button
@@ -1459,7 +1475,7 @@ function EmployeesView() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>{emp.name}</div>
-                    <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{emp.role} · {emp.busyDays}д занят</div>
+                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{emp.role} · {emp.busyDays}д занят</div>
                   </div>
                   {toEmpId === emp.id && <CheckCircle size={12} style={{ color: TAB_COLOR }} />}
                 </button>
@@ -1482,7 +1498,7 @@ function EmployeesView() {
 
 const DOC_TABS = [
   { key: 'registry' as const, label: 'Реестр документов', icon: <FileText size={16} />, color: TAB_COLOR },
-  { key: 'workflow' as const, label: 'Согласования', icon: <ArrowRight size={16} className="rotate-180" />, color: WORKFLOW_TAB_COLOR },
+  { key: 'workflow' as const, label: 'Документооборот', icon: <GitBranch size={16} />, color: TAB_COLOR },
   { key: 'employees' as const, label: 'Сотрудники', icon: <User size={16} />, color: TAB_COLOR },
 ];
 
@@ -1515,7 +1531,7 @@ export default function DocumentsPage() {
         }
       />
 
-      <PageTabs tabs={DOC_TABS} active={activeTab} onChange={setActiveTab} color={activeTab === 'workflow' ? WORKFLOW_TAB_COLOR : TAB_COLOR} />
+      <PageTabs tabs={DOC_TABS} active={activeTab} onChange={setActiveTab} />
 
       {activeTab === 'registry' && <RegistryView />}
       {activeTab === 'workflow' && <WorkflowView />}

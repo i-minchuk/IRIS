@@ -8,7 +8,7 @@ import {
   User, LogOut, ChevronDown, Menu, X,
   BarChart3, FileText, Archive,
   Search, Shield, Briefcase, Factory,
-  Calendar, BookOpen, Settings, Clock,
+  BookOpen, Settings,
 } from 'lucide-react';
 
 import { motion, AnimatePresence } from 'framer-motion';
@@ -24,18 +24,14 @@ import type { UserRole } from '@/features/auth/store/authStore';
 
 /* ── Role-based nav config ── */
 const ALL_NAV_ITEMS = [
-  { to: '/dashboard', label: 'Панель аналитики', icon: <BarChart3 size={16} />, color: '#3B82F6', bgActive: 'rgba(59, 130, 246, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'site_manager', 'engineer', 'norm_controller', 'admin'] },
-  { to: '/portfolio', label: 'Портфель заказов', icon: <Briefcase size={16} />, color: '#7C3AED', bgActive: 'rgba(124, 58, 237, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
-  { to: '/documents', label: 'Документация', icon: <FileText size={16} />, color: '#4F7A4C', bgActive: 'rgba(79, 122, 76, 0.15)', roles: ['department_head', 'gip', 'site_manager', 'engineer', 'norm_controller', 'manager', 'admin'] },
-  { to: '/production', label: 'Производственный контроль', icon: <Factory size={16} />, color: '#F59E0B', bgActive: 'rgba(245, 158, 11, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
-  { to: '/time-tracking', label: 'Трекер времени', icon: <Clock size={16} />, color: '#06B6D4', bgActive: 'rgba(6, 182, 212, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
-  { to: '/archive', label: 'Архив', icon: <Archive size={16} />, color: '#6B7280', bgActive: 'rgba(107, 114, 128, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'site_manager', 'engineer', 'norm_controller', 'manager', 'admin'] },
-
-  { to: '/calendar', label: 'Календарь', icon: <Calendar size={16} />, color: '#EC4899', bgActive: 'rgba(236, 72, 153, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
-  { to: '/admin', label: 'Администрирование', icon: <Shield size={16} />, color: '#FF6B6B', bgActive: 'rgba(255, 107, 107, 0.15)', roles: ['admin', 'product_owner', 'system_admin', 'tech_support', 'content_editor'] },
-  { to: '/references', label: 'Справочники', icon: <BookOpen size={16} />, color: '#14B8A6', bgActive: 'rgba(20, 184, 166, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
-  { to: '/reports', label: 'Отчёты', icon: <FileText size={16} />, color: '#8B5CF6', bgActive: 'rgba(139, 92, 246, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
-
+  { to: '/dashboard', label: 'Панель аналитики', shortLabel: 'Аналитика', iconOnly: false, icon: <BarChart3 size={16} />, color: '#3B82F6', bgActive: 'rgba(59, 130, 246, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'site_manager', 'engineer', 'norm_controller', 'admin'] },
+  { to: '/portfolio', label: 'Портфель заказов', shortLabel: 'Портфель', iconOnly: false, icon: <Briefcase size={16} />, color: '#7C3AED', bgActive: 'rgba(124, 58, 237, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
+  { to: '/documents', label: 'Документация', shortLabel: 'Документы', iconOnly: false, icon: <FileText size={16} />, color: '#4F7A4C', bgActive: 'rgba(79, 122, 76, 0.15)', roles: ['department_head', 'gip', 'site_manager', 'engineer', 'norm_controller', 'manager', 'admin'] },
+  { to: '/production', label: 'Производственный контроль', shortLabel: 'Пр-во', iconOnly: false, icon: <Factory size={16} />, color: '#F59E0B', bgActive: 'rgba(245, 158, 11, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
+  { to: '/archive', label: 'Архив', shortLabel: 'Архив', iconOnly: false, icon: <Archive size={16} />, color: '#6B7280', bgActive: 'rgba(107, 114, 128, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'site_manager', 'engineer', 'norm_controller', 'manager', 'admin'] },
+  { to: '/admin', label: 'Администрирование', shortLabel: 'Админ', iconOnly: false, icon: <Shield size={16} />, color: '#FF6B6B', bgActive: 'rgba(255, 107, 107, 0.15)', roles: ['admin', 'product_owner', 'system_admin', 'tech_support', 'content_editor'] },
+  { to: '/references', label: 'Справочники', shortLabel: 'Справочн.', iconOnly: false, icon: <BookOpen size={16} />, color: '#14B8A6', bgActive: 'rgba(20, 184, 166, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
+  { to: '/reports', label: 'Отчёты', shortLabel: 'Отчёты', iconOnly: false, icon: <FileText size={16} />, color: '#EC4899', bgActive: 'rgba(236, 72, 153, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
 ];
 
 function getNavItems(role: UserRole | undefined) {
@@ -62,7 +58,7 @@ export default function Layout() {
   const userMenuRef = useRef<HTMLDivElement | null>(null);
   const mobileMenuRef = useRef<HTMLDivElement | null>(null);
   const mobileMenuButtonRef = useRef<HTMLButtonElement | null>(null);
-  const isDark = theme === 'dark' || theme === 'midnight';
+  const isDark = theme === 'dark' || theme === 'midnight' || theme === 'contrast';
   const { user } = useAuth();
   const navItems = getNavItems(user?.role);
 
@@ -213,7 +209,7 @@ export default function Layout() {
                 >
                   +
                 </button>
-                <span className="text-[11px] font-sans tabular-nums select-none min-w-[28px] text-right" style={{ color: 'var(--text-secondary)' }}>
+                <span className="text-sm font-sans tabular-nums select-none min-w-[28px] text-right" style={{ color: 'var(--text-secondary)' }}>
                   {Math.round(scale * 100)}%
                 </span>
               </div>
@@ -256,7 +252,7 @@ export default function Layout() {
                     <div className="border-b px-4 py-3" style={{ borderColor: 'var(--iris-border-subtle)' }}>
                       <div className="font-semibold">{user?.full_name || user?.username || 'Пользователь'}</div>
                       <div className="text-sm" style={{ color: 'var(--text-muted)' }}>{user?.email || ''}</div>
-                      <div className="text-[10px] mt-0.5 px-1.5 py-0.5 rounded-full inline-block" style={{ background: 'var(--iris-bg-hover)', color: 'var(--text-muted)' }}>{user?.role || 'engineer'}</div>
+                      <div className="text-xs mt-0.5 px-1.5 py-0.5 rounded-full inline-block" style={{ background: 'var(--iris-bg-hover)', color: 'var(--text-muted)' }}>{user?.role || 'engineer'}</div>
                     </div>
                     <div className="p-2">
                       <button type="button" onClick={() => { navigate('/profile'); setShowUserMenu(false); }}
@@ -306,7 +302,7 @@ export default function Layout() {
         {/* ===== ТАБЫ + ГЛОБАЛЬНЫЙ ПОИСК ===== */}
         <div className="shrink-0 border-b" style={{ borderColor: 'var(--header-border)' }}>
           <div className="w-full px-4 md:px-6 flex items-center justify-between gap-4">
-            <nav className="flex items-center gap-1 lg:gap-1.5 py-1" aria-label="Главная навигация">
+            <nav className="flex items-center gap-0.5 lg:gap-1 py-1" aria-label="Главная навигация">
               {/* Hamburger — когда табы не влезают или на мобильных */}
               <button
                 ref={mobileMenuButtonRef}
@@ -324,12 +320,13 @@ export default function Layout() {
                 {showMobileMenu ? <X size={18} /> : <Menu size={18} />}
               </button>
 
-              {/* Табы — полный текст на xl, иконки+текст на lg, скрыты на <lg */}
+              {/* Табы — полный текст на xl, короткий на lg, иконки только на <lg */}
               {navItems.map((item) => {
                 const active = isActive(item.to);
+                const iconOnly = (item as any).iconOnly;
                 return (
                   <Link key={item.to} to={item.to}
-                    className="group relative px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium transition-all duration-200 rounded-lg flex items-center gap-1.5 xl:gap-2"
+                    className="group relative px-1 lg:px-1.5 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium transition-all duration-200 rounded-lg flex items-center gap-0.5 xl:gap-1.5 2xl:gap-2"
                     style={{
                       color: active ? item.color : 'var(--text-secondary)',
                       backgroundColor: active ? item.bgActive : 'transparent',
@@ -352,7 +349,15 @@ export default function Layout() {
                     title={item.label}
                   >
                     <span style={{ color: item.color }}>{item.icon}</span>
-                    <span className="hidden xl:inline-block whitespace-nowrap">{item.label}</span>
+                    {!iconOnly && (
+                      <>
+                        <span className="hidden lg:inline-block 2xl:hidden whitespace-nowrap">{(item as any).shortLabel || item.label}</span>
+                        <span className="hidden 2xl:inline-block whitespace-nowrap">{item.label}</span>
+                      </>
+                    )}
+                    {iconOnly && (
+                      <span className="hidden 2xl:inline-block whitespace-nowrap">{item.label}</span>
+                    )}
                   </Link>
                 );
               })}
@@ -438,7 +443,7 @@ export default function Layout() {
       </div>
 
       {/* ===== КОНТЕНТ ===== */}
-      <main className="flex-auto overflow-auto min-h-0">
+      <main className="flex-auto overflow-y-auto overflow-x-hidden min-h-0">
         <Outlet />
       </main>
     </div>

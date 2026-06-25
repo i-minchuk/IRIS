@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { getDocumentWithRemarks, updateDocument, createDocument, createRevision, type DocumentDetailWithRemarks } from '@/api/documents';
+import { getDocumentWithRemarks, updateDocument, createDocument, createRevision, type DocumentDetailWithRemarks } from '@/features/documents/api/documents';
 import { DocumentEditor } from '../components/DocumentEditor';
 import { DocumentDetailPanels } from '../components/DocumentDetailPanels';
 import { projectsApi, type Project, type ProjectTree, type ProjectTreeDoc } from '@/features/projects/api/projects';

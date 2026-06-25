@@ -100,7 +100,7 @@ export function TenderRegistry({ tenders, selectedStage }: Props) {
             </span>
           )}
         </h3>
-        <div className="flex items-center gap-2 text-[10px]">
+        <div className="flex items-center gap-2 text-xs">
           <button onClick={() => toggleSort('deadline')} className="flex items-center gap-0.5 px-2 py-1 rounded" style={{ background: sortField === 'deadline' ? 'var(--iris-bg-hover)' : 'var(--iris-bg-subtle)', color: 'var(--text-secondary)' }}>
             Срок {sortField === 'deadline' && (sortDesc ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />)}
           </button>
@@ -144,10 +144,10 @@ export function TenderRegistry({ tenders, selectedStage }: Props) {
                   <td className="py-2.5 px-2 font-mono" style={{ color: 'var(--text-secondary)' }}>#{t.id}</td>
                   <td className="py-2.5 px-2">
                     <div className="font-medium" style={{ color: 'var(--text-primary)' }}>{t.name}</div>
-                    <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{t.customer_name}</div>
+                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{t.customer_name}</div>
                   </td>
                   <td className="py-2.5 px-2">
-                    <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium" style={{ color: stage.color, background: `${stage.color}15` }}>
+                    <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium" style={{ color: stage.color, background: `${stage.color}15` }}>
                       <span className="h-1.5 w-1.5 rounded-full" style={{ background: stage.color }} />
                       {stage.label}
                     </span>
@@ -161,7 +161,7 @@ export function TenderRegistry({ tenders, selectedStage }: Props) {
                         <div className="w-8 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--iris-bg-subtle)' }}>
                           <div className="h-full rounded-full" style={{ width: `${t.probability}%`, background: t.probability >= 70 ? 'var(--iris-accent-cyan)' : t.probability >= 40 ? 'var(--iris-accent-amber)' : 'var(--iris-accent-coral)' }} />
                         </div>
-                        <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{t.probability}%</span>
+                        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{t.probability}%</span>
                       </div>
                     ) : (
                       <span style={{ color: 'var(--text-muted)' }}>—</span>
@@ -178,7 +178,7 @@ export function TenderRegistry({ tenders, selectedStage }: Props) {
                       <button
                         onClick={() => handleCreateProject(t)}
                         disabled={creatingId === t.id}
-                        className="inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-md font-medium transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md font-medium transition-colors cursor-pointer"
                         style={{
                           background: 'var(--iris-accent-cyan)',
                           color: 'var(--iris-text-inverse)',
@@ -191,7 +191,7 @@ export function TenderRegistry({ tenders, selectedStage }: Props) {
                       </button>
                     )}
                     {t.project_id && (
-                      <span className="text-[10px] font-medium" style={{ color: 'var(--iris-accent-cyan)' }}>
+                      <span className="text-xs font-medium" style={{ color: 'var(--iris-accent-cyan)' }}>
                         Проект #{t.project_id}
                       </span>
                     )}

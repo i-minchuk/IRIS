@@ -68,7 +68,7 @@ export function ShipmentCalendar({ data, loading }: ShipmentCalendarProps) {
               minHeight: '80px',
             }}
           >
-            <span className="text-[10px] font-bold uppercase" style={{ color: 'var(--text-muted)' }}>
+            <span className="text-xs font-bold uppercase" style={{ color: 'var(--text-muted)' }}>
               {day.day_label}
             </span>
             <div className="mt-1 flex flex-col gap-1">
@@ -77,7 +77,7 @@ export function ShipmentCalendar({ data, loading }: ShipmentCalendarProps) {
                 return (
                   <div
                     key={i}
-                    className="rounded px-1.5 py-0.5 text-[10px] sm:text-xs font-medium border"
+                    className="rounded px-1.5 py-0.5 text-xs sm:text-xs font-medium border"
                     style={{
                       background: neon.bg,
                       borderColor: neon.border,
@@ -94,7 +94,7 @@ export function ShipmentCalendar({ data, loading }: ShipmentCalendarProps) {
               })}
             </div>
             {day.items.length === 0 && !day.is_weekend && (
-              <span className="mt-auto text-[10px]" style={{ color: 'var(--text-muted)' }}>—</span>
+              <span className="mt-auto text-xs" style={{ color: 'var(--text-muted)' }}>—</span>
             )}
           </button>
         ))}
@@ -118,7 +118,7 @@ export function ShipmentCalendar({ data, loading }: ShipmentCalendarProps) {
 
       {/* Pipeline */}
       <div className="mt-4">
-        <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
+        <p className="mb-2 text-sm font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
           Статусная лента
         </p>
         <div className="flex flex-wrap items-center gap-2">
@@ -136,7 +136,7 @@ export function ShipmentCalendar({ data, loading }: ShipmentCalendarProps) {
                 >
                   <Icon className="h-3.5 w-3.5" style={{ color: neon.text }} />
                   <div className="text-left">
-                    <div className="text-[10px] font-semibold" style={{ color: 'var(--text-secondary)' }}>
+                    <div className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>
                       {stage.label}
                     </div>
                     <div className="text-xs font-bold" style={{ color: 'var(--text-primary)' }}>

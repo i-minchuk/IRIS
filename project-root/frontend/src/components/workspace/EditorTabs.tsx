@@ -173,7 +173,7 @@ function TabItem({ tab, isActive, onClick, onClose }: TabItemProps) {
         </span>
         {tab.subtitle && (
           <span
-            className="text-[10px] truncate"
+            className="text-xs truncate"
             style={{ color: 'var(--text-tertiary)' }}
           >
             {tab.subtitle}

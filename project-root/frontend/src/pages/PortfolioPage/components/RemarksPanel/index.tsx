@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Document, Remark } from '../../types/portfolio';
 import { AUTHOR_COLORS } from '../../constants/statusColors';
-import { getRemarks } from '@/api/remarks';
+import { getRemarks } from '@/features/remarks/api/remarks';
 
 interface RemarksPanelProps {
   document: Document | null;

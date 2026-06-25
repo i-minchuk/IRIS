@@ -12,7 +12,7 @@ interface Props {
 
 export const ProjectCard: React.FC<Props> = ({ project, operations, documents, mtoItems }) => {
   const { theme } = useTheme();
-  const isDark = theme === 'dark';
+  const isDark = theme === 'dark' || theme === 'midnight' || theme === 'contrast';
 
   if (!project) {
     return (

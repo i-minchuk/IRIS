@@ -73,25 +73,25 @@ export function TenderPipeline({ tenders, summary, onStageClick }: Props) {
             >
               <div className="flex items-center gap-1.5 mb-2">
                 <span className="h-2 w-2 rounded-full" style={{ background: meta.color, boxShadow: `0 0 6px ${meta.glow}` }} />
-                <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: meta.color }}>
+                <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: meta.color }}>
                   {meta.label}
                 </span>
               </div>
               <div className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
                 {info.count}
               </div>
-              <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
+              <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
                 {formatMoney(info.sum_nmc)} ₽
               </div>
               {/* Mini preview of tender names */}
               <div className="mt-2 space-y-1">
                 {stageTenders.slice(0, 2).map((t) => (
-                  <div key={t.id} className="text-[10px] truncate" style={{ color: 'var(--text-secondary)' }}>
+                  <div key={t.id} className="text-xs truncate" style={{ color: 'var(--text-secondary)' }}>
                     {t.name}
                   </div>
                 ))}
                 {stageTenders.length > 2 && (
-                  <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
+                  <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
                     +{stageTenders.length - 2} ещё
                   </div>
                 )}

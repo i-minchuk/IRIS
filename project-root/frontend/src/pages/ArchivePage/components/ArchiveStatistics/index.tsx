@@ -22,17 +22,17 @@ interface Props {
   timeline?: TimelineEvent[];
 }
 
-const PIE_COLORS = ['#3B82F6', '#F59E0B', '#10B981', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316'];
-const LINE_COLORS = ['#3B82F6', '#10B981'];
+const PIE_COLORS = ['var(--iris-accent-blue)', 'var(--iris-accent-orange)', 'var(--iris-accent-green)', 'var(--iris-accent-red)', 'var(--iris-accent-purple)', 'var(--iris-accent-pink)', 'var(--iris-accent-sky)', 'var(--iris-accent-teal)'];
+const LINE_COLORS = ['var(--iris-accent-blue)', 'var(--iris-accent-green)'];
 
 function tooltipStyle() {
   return {
-    backgroundColor: 'rgba(11,14,20,0.95)',
-    border: '1px solid rgba(255,255,255,0.1)',
+    backgroundColor: 'var(--iris-bg-surface-elevated)',
+    border: '1px solid var(--iris-border-default)',
     borderRadius: '8px',
-    color: '#E2E8F0',
+    color: 'var(--iris-text-primary)',
     fontSize: '12px',
-    boxShadow: '0 4px 24px rgba(0,0,0,0.50)',
+    boxShadow: '0 4px 24px rgba(0,0,0,0.15)',
   };
 }
 
@@ -131,35 +131,35 @@ export const ArchiveStatistics: React.FC<Props> = ({ statistics, entries = [], t
     <div className="space-y-6">
       {/* Summary cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-[#1e293b] rounded-lg p-4">
-          <div className="text-xs text-[#94a3b8] mb-1">Всего записей</div>
-          <div className="text-xl font-bold text-[#e2e8f0]">{statistics?.total_entries ?? entries.length ?? 0}</div>
+        <div className="rounded-lg p-4" style={{ background: 'var(--iris-bg-surface)', border: '1px solid var(--iris-border-default)' }}>
+          <div className="text-xs mb-1" style={{ color: 'var(--iris-text-secondary)' }}>Всего записей</div>
+          <div className="text-xl font-bold" style={{ color: 'var(--iris-text-primary)' }}>{statistics?.total_entries ?? entries.length ?? 0}</div>
         </div>
-        <div className="bg-[#1e293b] rounded-lg p-4">
-          <div className="text-xs text-[#94a3b8] mb-1">Материалов</div>
-          <div className="text-xl font-bold text-[#e2e8f0]">{statistics?.materials_count ?? 0}</div>
+        <div className="rounded-lg p-4" style={{ background: 'var(--iris-bg-surface)', border: '1px solid var(--iris-border-default)' }}>
+          <div className="text-xs mb-1" style={{ color: 'var(--iris-text-secondary)' }}>Материалов</div>
+          <div className="text-xl font-bold" style={{ color: 'var(--iris-text-primary)' }}>{statistics?.materials_count ?? 0}</div>
         </div>
-        <div className="bg-[#1e293b] rounded-lg p-4">
-          <div className="text-xs text-[#94a3b8] mb-1">Конструкций</div>
-          <div className="text-xl font-bold text-[#e2e8f0]">{statistics?.constructions_count ?? 0}</div>
+        <div className="rounded-lg p-4" style={{ background: 'var(--iris-bg-surface)', border: '1px solid var(--iris-border-default)' }}>
+          <div className="text-xs mb-1" style={{ color: 'var(--iris-text-secondary)' }}>Конструкций</div>
+          <div className="text-xl font-bold" style={{ color: 'var(--iris-text-primary)' }}>{statistics?.constructions_count ?? 0}</div>
         </div>
-        <div className="bg-[#1e293b] rounded-lg p-4">
-          <div className="text-xs text-[#94a3b8] mb-1">Событий в таймлайне</div>
-          <div className="text-xl font-bold text-[#e2e8f0]">{timeline.length}</div>
+        <div className="rounded-lg p-4" style={{ background: 'var(--iris-bg-surface)', border: '1px solid var(--iris-border-default)' }}>
+          <div className="text-xs mb-1" style={{ color: 'var(--iris-text-secondary)' }}>Событий в таймлайне</div>
+          <div className="text-xl font-bold" style={{ color: 'var(--iris-text-primary)' }}>{timeline.length}</div>
         </div>
       </div>
 
       {/* Charts row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* BarChart: по типам */}
-        <div className="bg-[#1e293b] rounded-lg p-4">
-          <h3 className="text-sm font-bold text-[#e2e8f0] mb-4">По типам записей</h3>
+        <div className="rounded-lg p-4" style={{ background: 'var(--iris-bg-surface)', border: '1px solid var(--iris-border-default)' }}>
+          <h3 className="text-sm font-bold mb-4" style={{ color: 'var(--iris-text-primary)' }}>По типам записей</h3>
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={typeBarData} margin={{ top: 4, right: 8, left: -12, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                <XAxis dataKey="name" tick={{ fill: '#94a3b8', fontSize: 10 }} axisLine={{ stroke: 'rgba(255,255,255,0.06)' }} tickLine={false} />
-                <YAxis tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={{ stroke: 'rgba(255,255,255,0.06)' }} tickLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--iris-border-default)" />
+                <XAxis dataKey="name" tick={{ fill: 'var(--iris-text-secondary)', fontSize: 10 }} axisLine={{ stroke: 'var(--iris-border-default)' }} tickLine={false} />
+                <YAxis tick={{ fill: 'var(--iris-text-secondary)', fontSize: 11 }} axisLine={{ stroke: 'var(--iris-border-default)' }} tickLine={false} />
                 <Tooltip contentStyle={tooltipStyle()} formatter={(value) => [`${value}`, 'Количество']} />
                 <Bar dataKey="value" name="Количество" radius={[4, 4, 0, 0]}>
                   {typeBarData.map((_entry, index) => (
@@ -172,8 +172,8 @@ export const ArchiveStatistics: React.FC<Props> = ({ statistics, entries = [], t
         </div>
 
         {/* PieChart: по годам */}
-        <div className="bg-[#1e293b] rounded-lg p-4">
-          <h3 className="text-sm font-bold text-[#e2e8f0] mb-4">Распределение по годам</h3>
+        <div className="rounded-lg p-4" style={{ background: 'var(--iris-bg-surface)', border: '1px solid var(--iris-border-default)' }}>
+          <h3 className="text-sm font-bold mb-4" style={{ color: 'var(--iris-text-primary)' }}>Распределение по годам</h3>
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -187,10 +187,10 @@ export const ArchiveStatistics: React.FC<Props> = ({ statistics, entries = [], t
                   dataKey="value"
                   nameKey="name"
                   label={({ name, percent }) => `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`}
-                  labelLine={{ stroke: '#94a3b8', strokeOpacity: 0.4 }}
+                  labelLine={{ stroke: 'var(--iris-text-secondary)', strokeOpacity: 0.4 }}
                 >
                   {yearPieData.map((_entry, index) => (
-                    <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} fillOpacity={0.85} stroke="#1e293b" strokeWidth={2} />
+                    <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} fillOpacity={0.85} stroke="var(--iris-bg-surface)" strokeWidth={2} />
                   ))}
                 </Pie>
                 <Tooltip contentStyle={tooltipStyle()} formatter={(value, _name, props: any) => [`${value}`, props?.payload?.name ?? '']} />
@@ -200,17 +200,17 @@ export const ArchiveStatistics: React.FC<Props> = ({ statistics, entries = [], t
         </div>
 
         {/* LineChart: динамика по месяцам */}
-        <div className="bg-[#1e293b] rounded-lg p-4">
-          <h3 className="text-sm font-bold text-[#e2e8f0] mb-4">Динамика добавления</h3>
+        <div className="rounded-lg p-4" style={{ background: 'var(--iris-bg-surface)', border: '1px solid var(--iris-border-default)' }}>
+          <h3 className="text-sm font-bold mb-4" style={{ color: 'var(--iris-text-primary)' }}>Динамика добавления</h3>
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={monthlyLineData} margin={{ top: 4, right: 8, left: -12, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                <XAxis dataKey="month" tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={{ stroke: 'rgba(255,255,255,0.06)' }} tickLine={false} />
-                <YAxis tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={{ stroke: 'rgba(255,255,255,0.06)' }} tickLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--iris-border-default)" />
+                <XAxis dataKey="month" tick={{ fill: 'var(--iris-text-secondary)', fontSize: 11 }} axisLine={{ stroke: 'var(--iris-border-default)' }} tickLine={false} />
+                <YAxis tick={{ fill: 'var(--iris-text-secondary)', fontSize: 11 }} axisLine={{ stroke: 'var(--iris-border-default)' }} tickLine={false} />
                 <Tooltip contentStyle={tooltipStyle()} formatter={(value) => [`${value}`, 'Записи']} />
-                <Legend wrapperStyle={{ fontSize: '12px', color: '#94a3b8' }} />
-                <Line type="monotone" dataKey="count" name="Записи" stroke={LINE_COLORS[0]} strokeWidth={2} dot={{ r: 3, strokeWidth: 2, fill: '#1e293b' }} activeDot={{ r: 5 }} />
+                <Legend wrapperStyle={{ fontSize: '12px', color: 'var(--iris-text-secondary)' }} />
+                <Line type="monotone" dataKey="count" name="Записи" stroke={LINE_COLORS[0]} strokeWidth={2} dot={{ r: 3, strokeWidth: 2, fill: 'var(--iris-bg-surface)' }} activeDot={{ r: 5 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>

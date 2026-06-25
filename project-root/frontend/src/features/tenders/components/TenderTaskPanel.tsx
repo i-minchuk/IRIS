@@ -57,13 +57,13 @@ export function TenderTaskPanel({ tasks }: Props) {
                   {task.title}
                 </div>
                 <div className="flex flex-wrap items-center gap-2 mt-1">
-                  <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
+                  <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
                     {task.assignee}
                   </span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ color: pr.color, background: `${pr.color}15` }}>
+                  <span className="text-xs px-1.5 py-0.5 rounded" style={{ color: pr.color, background: `${pr.color}15` }}>
                     {pr.label}
                   </span>
-                  <span className="text-[10px]" style={{ color: task.status === 'overdue' ? 'var(--iris-accent-coral)' : 'var(--text-muted)' }}>
+                  <span className="text-xs" style={{ color: task.status === 'overdue' ? 'var(--iris-accent-coral)' : 'var(--text-muted)' }}>
                     до {task.due_date}
                   </span>
                 </div>

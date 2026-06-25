@@ -85,16 +85,16 @@ export interface WorkflowTemplateListResponse {
 
 /**
  * Get all workflow templates.
- * Endpoint: GET /api/v1/workflows/templates
+ * Endpoint: GET /workflows/templates
  */
 export async function getWorkflowTemplates(): Promise<WorkflowTemplateListResponse> {
-  const { data } = await client.get('/api/v1/workflows/templates');
+  const { data } = await client.get('/workflows/templates');
   return data;
 }
 
 /**
  * Get workflow instances with optional filters.
- * Endpoint: GET /api/v1/workflows/instances
+ * Endpoint: GET /workflows/instances
  */
 export async function getWorkflowInstances(params?: {
   status?: string;
@@ -104,20 +104,20 @@ export async function getWorkflowInstances(params?: {
   page?: number;
   page_size?: number;
 }): Promise<WorkflowInstanceListResponse> {
-  const { data } = await client.get('/api/v1/workflows/instances', { params });
+  const { data } = await client.get('/workflows/instances', { params });
   return data;
 }
 
 /**
  * Start a workflow from a template.
- * Endpoint: POST /api/v1/workflows/start
+ * Endpoint: POST /workflows/start
  */
 export async function startWorkflow(
   templateId: number,
   documentId: number,
   launchComment?: string
 ): Promise<WorkflowInstance> {
-  const { data } = await client.post('/api/v1/workflows/start', {
+  const { data } = await client.post('/workflows/start', {
     template_id: templateId,
     document_id: documentId,
     launch_comment: launchComment,
@@ -127,46 +127,46 @@ export async function startWorkflow(
 
 /**
  * Approve a workflow step.
- * Endpoint: POST /api/v1/workflows/steps/{stepId}/approve
+ * Endpoint: POST /workflows/steps/{stepId}/approve
  */
 export async function approveStep(stepId: number, comment?: string): Promise<unknown> {
-  const { data } = await client.post(`/api/v1/workflows/steps/${stepId}/approve`, { comment });
+  const { data } = await client.post(`/workflows/steps/${stepId}/approve`, { comment });
   return data;
 }
 
 /**
  * Reject a workflow step.
- * Endpoint: POST /api/v1/workflows/steps/{stepId}/reject
+ * Endpoint: POST /workflows/steps/{stepId}/reject
  */
 export async function rejectStep(stepId: number, reason: string): Promise<unknown> {
-  const { data } = await client.post(`/api/v1/workflows/steps/${stepId}/reject`, { reason });
+  const { data } = await client.post(`/workflows/steps/${stepId}/reject`, { reason });
   return data;
 }
 
 /**
  * Delegate a workflow step to another user.
- * Endpoint: POST /api/v1/workflows/steps/{stepId}/delegate
+ * Endpoint: POST /workflows/steps/{stepId}/delegate
  */
 export async function delegateStep(stepId: number, userId: number): Promise<unknown> {
-  const { data } = await client.post(`/api/v1/workflows/steps/${stepId}/delegate`, { user_id: userId });
+  const { data } = await client.post(`/workflows/steps/${stepId}/delegate`, { user_id: userId });
   return data;
 }
 
 /**
  * Add a comment to a workflow step.
- * Endpoint: POST /api/v1/workflows/steps/{stepId}/comments
+ * Endpoint: POST /workflows/steps/{stepId}/comments
  */
 export async function addComment(stepId: number, text: string): Promise<WorkflowComment> {
-  const { data } = await client.post(`/api/v1/workflows/steps/${stepId}/comments`, { text });
+  const { data } = await client.post(`/workflows/steps/${stepId}/comments`, { text });
   return data;
 }
 
 /**
  * Get comments for a workflow step.
- * Endpoint: GET /api/v1/workflows/steps/{stepId}/comments
+ * Endpoint: GET /workflows/steps/{stepId}/comments
  */
 export async function getComments(stepId: number): Promise<WorkflowComment[]> {
-  const { data } = await client.get(`/api/v1/workflows/steps/${stepId}/comments`);
+  const { data } = await client.get(`/workflows/steps/${stepId}/comments`);
   return data;
 }
 

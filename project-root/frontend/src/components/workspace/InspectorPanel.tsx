@@ -145,7 +145,7 @@ export default function InspectorPanel({ selectedRemark, onSelectRemark }: Inspe
           </h3>
         </div>
         <span
-          className="text-[10px] px-2 py-0.5 rounded-full font-medium"
+          className="text-xs px-2 py-0.5 rounded-full font-medium"
           style={{
             backgroundColor: openCount > 0 ? 'var(--error)' : 'var(--success)',
             color: 'var(--text-inverse)',
@@ -295,11 +295,11 @@ function RemarkCard({ remark, onClick }: { remark: Remark; onClick: () => void }
     >
       <div className="flex items-start justify-between gap-2 mb-1.5">
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[10px] font-mono font-semibold" style={{ color: 'var(--text-primary)' }}>
+          <span className="text-xs font-mono font-semibold" style={{ color: 'var(--text-primary)' }}>
             {remark.number}
           </span>
           <span
-            className="text-[9px] px-1 py-0.5 rounded border"
+            className="text-xs px-1 py-0.5 rounded border"
             style={{
               backgroundColor: 'var(--bg-surface-2)',
               borderColor: 'var(--border-default)',
@@ -315,7 +315,7 @@ function RemarkCard({ remark, onClick }: { remark: Remark; onClick: () => void }
           />
         </div>
         <span
-          className="text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0"
+          className="text-xs px-1.5 py-0.5 rounded-full font-medium shrink-0"
           style={{
             backgroundColor: statusBadge.bg,
             color: statusBadge.color,
@@ -330,11 +330,11 @@ function RemarkCard({ remark, onClick }: { remark: Remark; onClick: () => void }
       </p>
 
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1 text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+        <div className="flex items-center gap-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>
           <User size={10} />
           <span>Исп: {remark.assignee.split(' ')[0]}</span>
         </div>
-        <div className="flex items-center gap-1 text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+        <div className="flex items-center gap-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>
           <Clock size={10} />
           <span>{new Date(remark.dueDate).toLocaleDateString('ru-RU')}</span>
         </div>
@@ -462,7 +462,7 @@ function RemarkDetail({ remark, onBack }: { remark: Remark; onBack: () => void }
           </select>
 
           <span
-            className="text-[10px] px-2 py-1 rounded border"
+            className="text-xs px-2 py-1 rounded border"
             style={{
               backgroundColor: 'var(--bg-surface-2)',
               borderColor: 'var(--border-default)',
@@ -476,7 +476,7 @@ function RemarkDetail({ remark, onBack }: { remark: Remark; onBack: () => void }
         {/* Текст замечания */}
         <div>
           <h4
-            className="text-[10px] font-semibold uppercase tracking-wide mb-1.5"
+            className="text-xs font-semibold uppercase tracking-wide mb-1.5"
             style={{ color: 'var(--text-tertiary)' }}
           >
             Описание
@@ -523,14 +523,14 @@ function RemarkDetail({ remark, onBack }: { remark: Remark; onBack: () => void }
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <h4
-              className="text-[10px] font-semibold uppercase tracking-wide"
+              className="text-xs font-semibold uppercase tracking-wide"
               style={{ color: 'var(--text-tertiary)' }}
             >
               Что исправлено
             </h4>
             <button
               onClick={() => setShowProgressUpdate(!showProgressUpdate)}
-              className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium"
+              className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium"
               style={{ backgroundColor: 'var(--bg-hover)', color: 'var(--text-secondary)' }}
             >
               <Plus size={10} />
@@ -574,10 +574,10 @@ function RemarkDetail({ remark, onBack }: { remark: Remark; onBack: () => void }
                   }}
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-medium" style={{ color: 'var(--text-primary)' }}>
+                    <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
                       {update.author}
                     </span>
-                    <span className="text-[9px]" style={{ color: 'var(--text-tertiary)' }}>
+                    <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
                       {new Date(update.date).toLocaleDateString('ru-RU')}
                     </span>
                   </div>
@@ -608,7 +608,7 @@ function RemarkDetail({ remark, onBack }: { remark: Remark; onBack: () => void }
         {/* Что осталось сделать */}
         <div>
           <h4
-            className="text-[10px] font-semibold uppercase tracking-wide mb-1.5"
+            className="text-xs font-semibold uppercase tracking-wide mb-1.5"
             style={{ color: 'var(--text-tertiary)' }}
           >
             Остаток работ
@@ -631,7 +631,7 @@ function RemarkDetail({ remark, onBack }: { remark: Remark; onBack: () => void }
         {/* Ответы / обсуждение */}
         <div>
           <h4
-            className="text-[10px] font-semibold uppercase tracking-wide mb-1.5"
+            className="text-xs font-semibold uppercase tracking-wide mb-1.5"
             style={{ color: 'var(--text-tertiary)' }}
           >
             Обсуждение ({remark.responses.length})
@@ -649,12 +649,12 @@ function RemarkDetail({ remark, onBack }: { remark: Remark; onBack: () => void }
               >
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] font-medium" style={{ color: 'var(--text-primary)' }}>
+                    <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
                       {response.author}
                     </span>
                     {response.isOfficial && (
                       <span
-                        className="text-[9px] px-1 py-0.5 rounded"
+                        className="text-xs px-1 py-0.5 rounded"
                         style={{
                           backgroundColor: 'var(--info)',
                           color: 'var(--text-inverse)',
@@ -664,7 +664,7 @@ function RemarkDetail({ remark, onBack }: { remark: Remark; onBack: () => void }
                       </span>
                     )}
                   </div>
-                  <span className="text-[9px]" style={{ color: 'var(--text-tertiary)' }}>
+                  <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
                     {new Date(response.date).toLocaleDateString('ru-RU')}
                   </span>
                 </div>
@@ -715,7 +715,7 @@ interface InfoRowProps {
 function InfoRow({ label, value }: InfoRowProps) {
   return (
     <div>
-      <div className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+      <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
         {label}
       </div>
       <div className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>

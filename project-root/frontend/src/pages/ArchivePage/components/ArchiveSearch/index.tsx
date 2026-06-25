@@ -16,7 +16,7 @@ const HighlightedText: React.FC<HighlightedTextProps> = ({ text, query }) => {
     <span>
       {parts.map((part, i) =>
         part.toLowerCase() === query.toLowerCase() ? (
-          <mark key={i} className="bg-yellow-300 text-[#1e293b] px-0.5 rounded">
+          <mark key={i} className="px-0.5 rounded" style={{ background: 'var(--iris-accent-yellow)', color: 'var(--iris-text-primary)' }}>
             {part}
           </mark>
         ) : (
@@ -93,56 +93,85 @@ export const ArchiveSearch: React.FC = () => {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Поиск по архиву..."
-          className="w-full px-4 py-3 bg-[#0f172a] border border-[#334155] rounded-lg text-[#e2e8f0] placeholder-[#64748b] focus:outline-none focus:border-[#3b82f6]"
+          className="w-full px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--iris-accent-blue)] focus:border-transparent"
+          style={{
+            background: 'var(--iris-bg-surface)',
+            border: '1px solid var(--iris-border-default)',
+            color: 'var(--iris-text-primary)',
+          }}
         />
         {isSearchLoading && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2">
-            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#3b82f6]" />
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2" style={{ borderColor: 'var(--iris-accent-blue)' }} />
           </div>
         )}
       </div>
 
       {/* Фильтры */}
       <div className="flex flex-wrap gap-2">
-        {allEntryTypes.map((type) => (
-          <button
-            key={type.value}
-            onClick={() => toggleFilter(type.value)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              filters.entryTypes.includes(type.value)
-                ? 'bg-[#3b82f6] text-white'
-                : 'bg-[#334155] text-[#94a3b8] hover:bg-[#475569]'
-            }`}
-          >
-            {type.icon} {type.label}
-          </button>
-        ))}
+        {allEntryTypes.map((type) => {
+          const isActive = filters.entryTypes.includes(type.value);
+          return (
+            <button
+              key={type.value}
+              onClick={() => toggleFilter(type.value)}
+              className="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+              style={{
+                background: isActive ? 'var(--iris-accent-blue)' : 'var(--iris-bg-surface-elevated)',
+                color: isActive ? '#fff' : 'var(--iris-text-secondary)',
+                border: isActive ? 'none' : '1px solid var(--iris-border-default)',
+              }}
+              onMouseEnter={(e) => {
+                if (!isActive) {
+                  e.currentTarget.style.background = 'var(--iris-border-default)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isActive) {
+                  e.currentTarget.style.background = 'var(--iris-bg-surface-elevated)';
+                }
+              }}
+            >
+              {type.icon} {type.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* Результаты */}
       {debouncedQuery && (
         <div className="space-y-2">
-          <p className="text-sm text-[#94a3b8]">
+          <p className="text-sm" style={{ color: 'var(--iris-text-muted)' }}>
             Найдено: {entries.length} записей{query && ` по запросу "${query}"`}
           </p>
 
           {entries.map((entry) => (
             <div
               key={entry.id}
-              className="p-3 bg-[#1e293b] border border-[#334155] rounded-lg hover:border-[#3b82f6] transition-colors cursor-pointer"
+              className="p-3 rounded-lg transition-colors cursor-pointer"
+              style={{
+                background: 'var(--iris-bg-surface)',
+                border: '1px solid var(--iris-border-default)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = 'var(--iris-accent-blue)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'var(--iris-border-default)';
+              }}
             >
               <div className="flex items-start justify-between mb-2">
-                <h3 className="font-bold text-[#e2e8f0]">
+                <h3 className="font-bold" style={{ color: 'var(--iris-text-primary)' }}>
                   <HighlightedText text={entry.title} query={debouncedQuery} />
                 </h3>
                 {entry.is_pinned && <span>📌</span>}
               </div>
               {entry.description && (
-                <p className="text-sm text-[#94a3b8] mb-2">
+                <p className="text-sm mb-2" style={{ color: 'var(--iris-text-secondary)' }}>
                   <HighlightedText text={entry.description} query={debouncedQuery} />
                 </p>
               )}
-              <div className="flex items-center gap-2 text-xs text-[#64748b]">
+              <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--iris-text-muted)' }}>
                 <span>{new Date(entry.occurred_at).toLocaleDateString('ru-RU')}</span>
                 <span>•</span>
                 <span className="capitalize">{entry.entry_type}</span>
@@ -151,7 +180,7 @@ export const ArchiveSearch: React.FC = () => {
           ))}
 
           {entries.length === 0 && (
-            <div className="text-center py-8 text-[#64748b]">
+            <div className="text-center py-8" style={{ color: 'var(--iris-text-muted)' }}>
               <p>Ничего не найдено</p>
             </div>
           )}

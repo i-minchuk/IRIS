@@ -5,7 +5,7 @@ import { ProjectTree } from './components/ProjectTree';
 import { DocumentViewer } from './components/DocumentViewer';
 import { RemarksPanel } from './components/RemarksPanel';
 import { DocumentTimeline } from './components/DocumentTimeline';
-import { getProjects } from '@/api/projects';
+import { getProjects } from '@/features/projects/api/projects';
 
 export const PackagePage: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);

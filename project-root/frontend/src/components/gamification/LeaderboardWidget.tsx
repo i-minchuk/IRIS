@@ -53,7 +53,7 @@ export function LeaderboardWidget() {
         </div>
         <button
           onClick={() => navigate('/team')}
-          className="text-[10px] flex items-center gap-1 transition-colors hover:opacity-80"
+          className="text-xs flex items-center gap-1 transition-colors hover:opacity-80"
           style={{ color: 'var(--text-muted)' }}
         >
           Все <ChevronRight size={10} />
@@ -93,10 +93,10 @@ export function LeaderboardWidget() {
               >
                 <span className="text-xs font-bold" style={{ color: style.border }}>{e.rank}</span>
               </div>
-              <div className="text-[10px] font-medium mt-1 truncate w-full text-center" style={{ color: 'var(--text-primary)' }}>
+              <div className="text-xs font-medium mt-1 truncate w-full text-center" style={{ color: 'var(--text-primary)' }}>
                 {e.userName.split(' ')[0]}
               </div>
-              <div className="text-[9px]" style={{ color: 'var(--text-muted)' }}>{e.xp.toLocaleString()} XP</div>
+              <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{e.xp.toLocaleString()} XP</div>
             </div>
           );
         })}
@@ -116,7 +116,7 @@ export function LeaderboardWidget() {
             >
               <div className="w-5 flex justify-center">{style.icon}</div>
               <div
-                className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold"
+                className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
                 style={{ background: style.bg, color: style.border }}
               >
                 {entry.userName.charAt(0)}
@@ -124,7 +124,7 @@ export function LeaderboardWidget() {
               <div className="flex-1 min-w-0">
                 <div className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>{entry.userName}</div>
               </div>
-              <div className="flex items-center gap-2 text-[10px]" style={{ color: 'var(--text-muted)' }}>
+              <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>
                 <span className="flex items-center gap-0.5">
                   <Star size={10} style={{ color: '#D4AF37' }} /> {entry.xp.toLocaleString()}
                 </span>
@@ -142,7 +142,7 @@ export function LeaderboardWidget() {
         <div className="pt-2 border-t" style={{ borderColor: 'var(--border-default)' }}>
           <div className="flex items-center gap-1.5 mb-2">
             <Sparkles size={12} style={{ color: '#D4AF37' }} />
-            <span className="text-[10px] font-medium" style={{ color: 'var(--text-primary)' }}>Лучшие практики</span>
+            <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>Лучшие практики</span>
           </div>
           <div className="flex flex-wrap gap-1.5">
             {earnedBadges.slice(0, 5).map(badge => {
@@ -150,7 +150,7 @@ export function LeaderboardWidget() {
               return (
                 <div
                   key={badge.id}
-                  className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium"
+                  className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium"
                   style={{
                     background: `${color}15`,
                     color: color,

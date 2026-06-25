@@ -135,7 +135,7 @@ export const AdminPage: React.FC = () => {
                           {user.full_name || user.username || '—'}
                         </div>
                         {user.is_superuser && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded font-medium" style={{ backgroundColor: 'var(--iris-accent-purple)', color: '#fff' }}>
+                          <span className="text-xs px-1.5 py-0.5 rounded font-medium" style={{ backgroundColor: 'var(--iris-accent-purple)', color: '#fff' }}>
                             Superuser
                           </span>
                         )}

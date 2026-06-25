@@ -1,5 +1,5 @@
 import client from '@/shared/api/client';
-import { getRemarks } from '@/api/remarks';
+import { getRemarks } from '@/features/remarks/api/remarks';
 import type { RemarkListItem } from '@/types/remarks';
 
 export interface DocumentItem {
@@ -52,12 +52,12 @@ export interface Revision {
 }
 
 export const getDocuments = async (params?: { project_id?: number; section_id?: number }): Promise<DocumentItem[]> => {
-  const { data } = await client.get('/api/v1/documents', { params });
+  const { data } = await client.get('/documents', { params });
   return data;
 };
 
 export const getDocument = async (id: number): Promise<DocumentDetail> => {
-  const { data } = await client.get(`/api/v1/documents/${id}`);
+  const { data } = await client.get(`/documents/${id}`);
   return data;
 };
 
@@ -77,31 +77,31 @@ export const getDocumentWithRemarks = async (id: number): Promise<DocumentDetail
 };
 
 export const createDocument = async (body: Partial<DocumentItem>): Promise<DocumentItem> => {
-  const { data } = await client.post('/api/v1/documents', body);
+  const { data } = await client.post('/documents', body);
   return data;
 };
 
 export const updateDocument = async (id: number, body: Partial<DocumentItem> & { content?: Record<string, unknown> }): Promise<DocumentItem> => {
-  const { data } = await client.patch(`/api/v1/documents/${id}`, body);
+  const { data } = await client.patch(`/documents/${id}`, body);
   return data;
 };
 
 export const createRevision = async (documentId: number, body: Partial<Revision>): Promise<Revision> => {
-  const { data } = await client.post(`/api/v1/documents/${documentId}/revisions`, body);
+  const { data } = await client.post(`/documents/${documentId}/revisions`, body);
   return data;
 };
 
 export const submitForApproval = async (documentId: number): Promise<{ document_id: number; status: string; workflow_id: number }> => {
-  const { data } = await client.post(`/api/v1/documents/${documentId}/submit-for-approval`);
+  const { data } = await client.post(`/documents/${documentId}/submit-for-approval`);
   return data;
 };
 
 export const submitForReview = async (documentId: number): Promise<{ document_id: number; status: string }> => {
-  const { data } = await client.post(`/api/v1/documents/${documentId}/submit-for-review`);
+  const { data } = await client.post(`/documents/${documentId}/submit-for-review`);
   return data;
 };
 
 export const classifyDocument = async (documentId: number): Promise<{ type: string; confidence: number; keywords: string[] }> => {
-  const { data } = await client.post(`/api/v1/documents/${documentId}/classify`);
+  const { data } = await client.post(`/documents/${documentId}/classify`);
   return data;
 };

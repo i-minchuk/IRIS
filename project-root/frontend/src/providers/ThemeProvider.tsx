@@ -58,7 +58,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     // Add current theme class
     root.classList.add(`theme-${theme}`);
-    if (theme === 'dark' || theme === 'midnight') {
+    if (theme === 'dark' || theme === 'midnight' || theme === 'contrast') {
       root.classList.add('dark');
     }
 

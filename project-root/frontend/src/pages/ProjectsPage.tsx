@@ -237,7 +237,7 @@ function mapTenderToItem(t: Tender): TenderItem {
 function TendersView() {
   const navigate = useNavigate();
   const { theme } = useTheme();
-  const isDark = theme === 'dark';
+  const isDark = theme === 'dark' || theme === 'midnight' || theme === 'contrast';
   const [filter, setFilter] = useState<string>('all');
   const [search, setSearch] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -314,7 +314,7 @@ function TendersView() {
               </span>
             </div>
             <div className="text-xl font-bold" style={{ color: item.color }}>{item.value}</div>
-            <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{item.sub}</div>
+            <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{item.sub}</div>
           </div>
         ))}
       </div>
@@ -353,7 +353,7 @@ function TendersView() {
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
                 {['№ тендера','Название','Заказчик','Статус','Срок','Бюджет','Шанс','Действия'].map((h) => (
-                  <th key={h} className="text-[10px] font-semibold uppercase tracking-wider px-3 py-2.5" style={{ color: 'var(--text-muted)' }}>{h}</th>
+                  <th key={h} className="text-xs font-semibold uppercase tracking-wider px-3 py-2.5" style={{ color: 'var(--text-muted)' }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -369,29 +369,29 @@ function TendersView() {
                         onMouseEnter={(e) => { e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'; }}
                         onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                       >
-                        <td className="px-3 py-2.5 text-[11px] font-mono font-medium" style={{ color: 'var(--text-secondary)' }}>{t.number}</td>
-                        <td className="px-3 py-2.5 text-[11px] font-medium" style={{ color: 'var(--text-primary)' }}>{t.name}</td>
-                        <td className="px-3 py-2.5 text-[11px]" style={{ color: 'var(--text-secondary)' }}>{t.customer}</td>
+                        <td className="px-3 py-2.5 text-sm font-mono font-medium" style={{ color: 'var(--text-secondary)' }}>{t.number}</td>
+                        <td className="px-3 py-2.5 text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t.name}</td>
+                        <td className="px-3 py-2.5 text-sm" style={{ color: 'var(--text-secondary)' }}>{t.customer}</td>
                         <td className="px-3 py-2.5">
-                          <span className="inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-full font-medium"
+                          <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full font-medium"
                             style={{ background: meta.color + '15', color: meta.color, border: `1px solid ${meta.color}30` }}>
                             {meta.icon} {meta.label}
                           </span>
                         </td>
-                        <td className="px-3 py-2.5 text-[11px]" style={{ color: t.daysLeft < 0 ? '#DC2626' : t.daysLeft <= 3 ? '#D4AF37' : 'var(--text-secondary)' }}>
+                        <td className="px-3 py-2.5 text-sm" style={{ color: t.daysLeft < 0 ? '#DC2626' : t.daysLeft <= 3 ? '#D4AF37' : 'var(--text-secondary)' }}>
                           <span className="flex items-center gap-1"><Calendar size={10} /> {t.deadline} {t.daysLeft < 0 && `(${t.daysLeft} дн.)`}</span>
                         </td>
-                        <td className="px-3 py-2.5 text-[11px] font-medium" style={{ color: 'var(--text-primary)' }}>{t.budget}</td>
+                        <td className="px-3 py-2.5 text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t.budget}</td>
                         <td className="px-3 py-2.5">
                           <div className="flex items-center gap-1.5">
                             <div className="w-12 h-1.5 rounded-full overflow-hidden" style={{ background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }}>
                               <div className="h-full rounded-full" style={{ width: `${t.winChance}%`, background: t.winChance >= 70 ? '#0C7205' : t.winChance >= 40 ? '#D4AF37' : '#DC2626' }} />
                             </div>
-                            <span className="text-[10px] font-medium" style={{ color: 'var(--text-secondary)' }}>{t.winChance}%</span>
+                            <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>{t.winChance}%</span>
                           </div>
                         </td>
                         <td className="px-3 py-2.5">
-                          <button onClick={() => navigate('/documents')} className="text-[9px] px-2 py-1 rounded transition-colors cursor-pointer" style={{ color: '#2563EB', background: 'rgba(37,99,235,0.1)' }}>
+                          <button onClick={() => navigate('/documents')} className="text-xs px-2 py-1 rounded transition-colors cursor-pointer" style={{ color: '#2563EB', background: 'rgba(37,99,235,0.1)' }}>
                             Открыть
                           </button>
                         </td>
@@ -509,7 +509,7 @@ function ProjectsView() {
   const navigate = useNavigate();
   const [expandedProject, setExpandedProject] = useState<string | null>(null);
   const { theme } = useTheme();
-  const isDark = theme === 'dark';
+  const isDark = theme === 'dark' || theme === 'midnight' || theme === 'contrast';
 
   const statusWeight = { overdue: 0, review: 1, active: 2, approved: 3 };
   const sortedProjects = [...projectData].sort((a, b) => statusWeight[a.status] - statusWeight[b.status]);
@@ -597,7 +597,7 @@ function ProjectsView() {
             <span className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: 'rgba(220,38,38,0.12)', color: '#DC2626' }}><AlertTriangle size={12} /></span>
           </div>
           <div className="text-xl font-bold" style={{ color: '#DC2626' }}>7</div>
-          <div className="text-[10px] flex items-center gap-1 font-medium" style={{ color: '#DC2626' }}><ArrowRight size={10} className="transition-transform group-hover:translate-x-1" />Срочно в Workflow</div>
+          <div className="text-xs flex items-center gap-1 font-medium" style={{ color: '#DC2626' }}><ArrowRight size={10} className="transition-transform group-hover:translate-x-1" />Срочно в Workflow</div>
         </button>
         <button onClick={() => navigate('/workflow')} className="group p-3 rounded-lg text-left transition-all hover:scale-[1.02] flex flex-col gap-1 cursor-pointer" style={{ background: 'var(--card-bg)', border: '1px solid rgba(212,175,55,0.35)' }}>
           <div className="flex items-center justify-between">
@@ -605,7 +605,7 @@ function ProjectsView() {
             <span className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: 'rgba(212,175,55,0.12)', color: '#D4AF37' }}><Clock size={12} /></span>
           </div>
           <div className="text-xl font-bold" style={{ color: '#D4AF37' }}>84</div>
-          <div className="text-[10px] flex items-center gap-1" style={{ color: 'var(--text-muted)' }}><ArrowRight size={10} className="transition-transform group-hover:translate-x-1" />Среднее время: 2.3 дня</div>
+          <div className="text-xs flex items-center gap-1" style={{ color: 'var(--text-muted)' }}><ArrowRight size={10} className="transition-transform group-hover:translate-x-1" />Среднее время: 2.3 дня</div>
         </button>
         <button onClick={() => navigate('/documents?dept=tender')} className="group p-3 rounded-lg text-left transition-all hover:scale-[1.02] flex flex-col gap-1 cursor-pointer" style={{ background: 'var(--card-bg)', border: '1px solid rgba(37,99,235,0.35)' }}>
           <div className="flex items-center justify-between">
@@ -613,7 +613,7 @@ function ProjectsView() {
             <span className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: 'rgba(37,99,235,0.12)', color: '#2563EB' }}><Users size={12} /></span>
           </div>
           <div className="text-xl font-bold" style={{ color: '#2563EB' }}>34/40</div>
-          <div className="text-[10px] flex items-center gap-1" style={{ color: 'var(--text-muted)' }}><ArrowRight size={10} className="transition-transform group-hover:translate-x-1" />Тендерный отдел — 85%</div>
+          <div className="text-xs flex items-center gap-1" style={{ color: 'var(--text-muted)' }}><ArrowRight size={10} className="transition-transform group-hover:translate-x-1" />Тендерный отдел — 85%</div>
         </button>
       </div>
 
@@ -630,10 +630,10 @@ function ProjectsView() {
               <div className="flex items-center justify-between mb-3">
                 <button onClick={() => navigate('/projects')} className="text-xs font-semibold text-left cursor-pointer" style={{ color: 'var(--text-primary)', background: 'none', border: 'none' }}>Прогресс проектов</button>
                 <div className="flex items-center gap-2">
-                  <button onClick={() => navigate('/projects')} className="text-[10px] flex items-center gap-0.5 px-1.5 py-0.5 rounded transition-colors cursor-pointer" style={{ color: 'var(--text-muted)', background: 'none', border: 'none' }}
+                  <button onClick={() => navigate('/projects')} className="text-xs flex items-center gap-0.5 px-1.5 py-0.5 rounded transition-colors cursor-pointer" style={{ color: 'var(--text-muted)', background: 'none', border: 'none' }}
                     onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)'; }}
                     onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}>Все <ArrowRight size={10} /></button>
-                  <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>По риску ↓</span>
+                  <span className="text-xs" style={{ color: 'var(--text-muted)' }}>По риску ↓</span>
                 </div>
               </div>
 
@@ -650,7 +650,7 @@ function ProjectsView() {
                           <div className="flex items-center gap-1.5 min-w-0">
                             <span style={{ color }}>{getProjectIcon(project.status)}</span>
                             <span className="text-xs font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{project.name}</span>
-                            <span className="text-[9px] px-1 py-0.5 rounded-full font-medium shrink-0" style={{ background: color + '20', color, border: `1px solid ${color}40` }}>{label}</span>
+                            <span className="text-xs px-1 py-0.5 rounded-full font-medium shrink-0" style={{ background: color + '20', color, border: `1px solid ${color}40` }}>{label}</span>
                           </div>
                           <div className="flex items-center gap-1.5 shrink-0 ml-1.5">
                             <span className="text-xs font-bold" style={{ color }}>{project.percent}%</span>
@@ -663,11 +663,11 @@ function ProjectsView() {
                         </div>
 
                         <div className="mt-1.5 flex items-center justify-between">
-                          <span className="text-[10px]" style={{ color: project.daysLeft <= 3 ? '#DC2626' : project.daysLeft <= 7 ? '#D4AF37' : 'var(--text-muted)' }}>
+                          <span className="text-xs" style={{ color: project.daysLeft <= 3 ? '#DC2626' : project.daysLeft <= 7 ? '#D4AF37' : 'var(--text-muted)' }}>
                             Дедлайн: {project.deadline} ({project.daysLeft} дн.)
                           </span>
                           {project.blockedBy && (
-                            <span className="text-[9px] flex items-center gap-0.5 shrink-0 ml-1.5" style={{ color: '#FF6B6B' }}><LinkIcon size={9} /> Блокирует: {project.blockedBy}</span>
+                            <span className="text-xs flex items-center gap-0.5 shrink-0 ml-1.5" style={{ color: '#FF6B6B' }}><LinkIcon size={9} /> Блокирует: {project.blockedBy}</span>
                           )}
                         </div>
                       </button>
@@ -676,16 +676,16 @@ function ProjectsView() {
                         <div className="px-2.5 pb-2.5 pt-0">
                           <div className="border-t pt-2 mt-0.5" style={{ borderColor: 'var(--border-color)' }}>
                             <div className="flex items-center justify-between mb-1.5">
-                              <span className="text-[10px] font-medium" style={{ color: 'var(--text-secondary)' }}>Документы</span>
-                              <button onClick={(e) => { e.stopPropagation(); navigate(project.route); }} className="text-[9px] flex items-center gap-0.5 px-1.5 py-0.5 rounded transition-colors cursor-pointer" style={{ color: '#2563EB', background: 'rgba(37,99,235,0.1)' }}>Все <ArrowRight size={8} /></button>
+                              <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Документы</span>
+                              <button onClick={(e) => { e.stopPropagation(); navigate(project.route); }} className="text-xs flex items-center gap-0.5 px-1.5 py-0.5 rounded transition-colors cursor-pointer" style={{ color: '#2563EB', background: 'rgba(37,99,235,0.1)' }}>Все <ArrowRight size={8} /></button>
                             </div>
                             <div className="flex flex-col gap-1.5">
                               {project.docs.map((doc, di) => (
                                 <div key={di} className="flex items-center justify-between">
-                                  <span className="text-[11px] truncate" style={{ color: 'var(--text-primary)' }}>{doc.name}</span>
+                                  <span className="text-sm truncate" style={{ color: 'var(--text-primary)' }}>{doc.name}</span>
                                   <div className="flex items-center gap-1.5 shrink-0 ml-1.5">
-                                    <span className="text-[9px] px-1 py-0.5 rounded-full" style={{ background: doc.status === 'Просрочен' ? 'rgba(239,68,68,0.15)' : 'rgba(37,99,235,0.15)', color: doc.status === 'Просрочен' ? '#EF4444' : '#2563EB', border: `1px solid ${doc.status === 'Просрочен' ? 'rgba(239,68,68,0.3)' : 'rgba(37,99,235,0.3)'}` }}>{doc.status}</span>
-                                    <span className="text-[9px]" style={{ color: 'var(--text-muted)' }}>{doc.date}</span>
+                                    <span className="text-xs px-1 py-0.5 rounded-full" style={{ background: doc.status === 'Просрочен' ? 'rgba(239,68,68,0.15)' : 'rgba(37,99,235,0.15)', color: doc.status === 'Просрочен' ? '#EF4444' : '#2563EB', border: `1px solid ${doc.status === 'Просрочен' ? 'rgba(239,68,68,0.3)' : 'rgba(37,99,235,0.3)'}` }}>{doc.status}</span>
+                                    <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{doc.date}</span>
                                   </div>
                                 </div>
                               ))}
@@ -713,21 +713,21 @@ function ProjectsView() {
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>Риски и требования внимания</h3>
               <div className="flex items-center gap-1">
-                <span className="text-[9px] px-1 py-0.5 rounded-full font-medium" style={{ background: 'rgba(220,38,38,0.15)', color: '#DC2626' }}>{riskItems.length}</span>
+                <span className="text-xs px-1 py-0.5 rounded-full font-medium" style={{ background: 'rgba(220,38,38,0.15)', color: '#DC2626' }}>{riskItems.length}</span>
                 <AlertTriangle size={14} style={{ color: 'var(--text-muted)' }} />
               </div>
             </div>
             <div className="flex flex-col gap-2">
               {visibleRisks.map((risk) => (
                 <div key={risk.id} className="p-2 rounded-md" style={{ borderLeft: '4px solid', borderColor: risk.color, background: risk.color + '08' }}>
-                  <div className="text-[10px] font-semibold mb-0.5" style={{ color: risk.color }}>{risk.level === 'high' ? 'Высокий' : 'Средний'}: {risk.title}</div>
-                  <div className="text-[10px] mb-1.5" style={{ color: 'var(--text-primary)' }}>{risk.desc}</div>
-                  <button onClick={() => navigate('/workflow')} className="text-[9px] px-1.5 py-0.5 rounded transition-colors cursor-pointer" style={{ color: risk.color, background: risk.color + '15' }}>{risk.action}</button>
+                  <div className="text-xs font-semibold mb-0.5" style={{ color: risk.color }}>{risk.level === 'high' ? 'Высокий' : 'Средний'}: {risk.title}</div>
+                  <div className="text-xs mb-1.5" style={{ color: 'var(--text-primary)' }}>{risk.desc}</div>
+                  <button onClick={() => navigate('/workflow')} className="text-xs px-1.5 py-0.5 rounded transition-colors cursor-pointer" style={{ color: risk.color, background: risk.color + '15' }}>{risk.action}</button>
                 </div>
               ))}
             </div>
             {riskItems.length > 3 && (
-              <button onClick={() => setShowAllRisks(!showAllRisks)} className="w-full text-center text-[10px] py-1 rounded-md cursor-pointer" style={{ color: 'var(--text-secondary)', background: 'var(--card-elevated)', border: '1px solid var(--border-color)' }}>
+              <button onClick={() => setShowAllRisks(!showAllRisks)} className="w-full text-center text-xs py-1 rounded-md cursor-pointer" style={{ color: 'var(--text-secondary)', background: 'var(--card-elevated)', border: '1px solid var(--border-color)' }}>
                 {showAllRisks ? 'Скрыть' : 'Показать все риски'}
               </button>
             )}
@@ -739,7 +739,7 @@ function ProjectsView() {
               <ChromeBot size={100} variant={isDark ? 'dark' : 'light'} />
               <div>
                 <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Рекомендации IRIS</h3>
-                <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>AI-ассистент</span>
+                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>AI-ассистент</span>
               </div>
             </div>
             <div className="p-2.5 rounded-lg" style={{ background: isDark ? 'rgba(12,114,5,0.08)' : 'rgba(12,114,5,0.06)', border: '1px solid rgba(12,114,5,0.2)' }}>
@@ -750,8 +750,8 @@ function ProjectsView() {
                     Перегруз тендерного отдела: <strong>85%</strong>. Переложить <strong>КЖ-02-014</strong> на проектный?
                   </p>
                   <div className="flex items-center gap-2 mt-2">
-                    <button onClick={() => navigate('/team')} className="text-[10px] px-2 py-1 rounded-md font-medium transition-colors hover:brightness-110" style={{ background: '#0C7205', color: '#fff' }}>Применить</button>
-                    <button onClick={() => navigate('/workflow')} className="text-[10px] px-2 py-1 rounded-md transition-colors" style={{ color: 'var(--text-secondary)', border: '1px solid var(--border-color)' }}>Подробнее</button>
+                    <button onClick={() => navigate('/team')} className="text-xs px-2 py-1 rounded-md font-medium transition-colors hover:brightness-110" style={{ background: '#0C7205', color: '#fff' }}>Применить</button>
+                    <button onClick={() => navigate('/workflow')} className="text-xs px-2 py-1 rounded-md transition-colors" style={{ color: 'var(--text-secondary)', border: '1px solid var(--border-color)' }}>Подробнее</button>
                   </div>
                 </div>
               </div>

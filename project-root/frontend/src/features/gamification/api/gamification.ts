@@ -1,5 +1,5 @@
 import apiClient from '@/shared/api/client';
-import type { LeaderboardEntry, GamificationProfile, Badge, DailyQuest } from '../types';
+import type { LeaderboardEntry, GamificationProfile, Badge, DailyQuest } from '@/types';
 
 export const getLeaderboard = async (): Promise<LeaderboardEntry[]> => {
   const { data } = await apiClient.get('/gamification/leaderboard');

@@ -54,12 +54,12 @@ function AuctionCard({ tender }: { tender: Tender }) {
           {tender.name}
         </span>
         {isUrgent && (
-          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: 'var(--iris-status-bg-coral)', color: 'var(--iris-accent-coral)' }}>
+          <span className="text-xs font-bold px-1.5 py-0.5 rounded" style={{ background: 'var(--iris-status-bg-coral)', color: 'var(--iris-accent-coral)' }}>
             СРОЧНО
           </span>
         )}
       </div>
-      <div className="text-[10px] mb-3" style={{ color: 'var(--text-muted)' }}>
+      <div className="text-xs mb-3" style={{ color: 'var(--text-muted)' }}>
         {tender.customer_name} · {tender.platform}
       </div>
       <div className="flex items-center gap-2 mb-2">
@@ -68,7 +68,7 @@ function AuctionCard({ tender }: { tender: Tender }) {
           {remaining}
         </span>
       </div>
-      <div className="grid grid-cols-2 gap-2 text-[10px]">
+      <div className="grid grid-cols-2 gap-2 text-xs">
         <div>
           <div style={{ color: 'var(--text-muted)' }}>Начальная цена</div>
           <div className="font-semibold" style={{ color: 'var(--text-primary)' }}>

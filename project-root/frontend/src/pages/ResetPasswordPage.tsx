@@ -7,7 +7,7 @@ import { authApi } from '@/features/auth/api/authApi';
 
 export default function ResetPasswordPage() {
   const { theme } = useTheme();
-  const isDark = theme === 'dark';
+  const isDark = theme === 'dark' || theme === 'midnight' || theme === 'contrast';
   const { setHidden } = useZoomStore();
   useEffect(() => {
     setHidden(true);
@@ -123,7 +123,7 @@ export default function ResetPasswordPage() {
 
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
-              <label htmlFor="new_password" className="block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: textMuted }}>Новый пароль</label>
+              <label htmlFor="new_password" className="block text-sm font-semibold uppercase tracking-wider mb-1.5" style={{ color: textMuted }}>Новый пароль</label>
               <div className="relative">
                 <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: iconColor }} />
                 <input id="new_password" type={showPassword ? 'text' : 'password'} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Минимум 6 символов" autoComplete="new-password" required minLength={6}
@@ -136,7 +136,7 @@ export default function ResetPasswordPage() {
             </div>
 
             <div className="mb-5">
-              <label htmlFor="confirm_password" className="block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: textMuted }}>Подтвердите пароль</label>
+              <label htmlFor="confirm_password" className="block text-sm font-semibold uppercase tracking-wider mb-1.5" style={{ color: textMuted }}>Подтвердите пароль</label>
               <div className="relative">
                 <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: iconColor }} />
                 <input id="confirm_password" type={showConfirm ? 'text' : 'password'} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Повторите пароль" autoComplete="new-password" required

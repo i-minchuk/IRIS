@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getProjects, getProject, createProject, createStage, createKit, createSection, type Project, type Stage, type Section } from '@/api/projects';
+import { getProjects, getProject, createProject, createStage, createKit, createSection, type Project, type Stage, type Section } from '@/features/projects/api/projects';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';

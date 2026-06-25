@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { FileText, Download, Printer, Play } from 'lucide-react';
 
-type ReportTemplate = 'projects' | 'tenders' | 'load' | 'finances';
+type ReportTemplate = 'projects' | 'tenders' | 'load' | 'finances' | 'employees';
 
 interface ReportRow {
   id: string;
@@ -14,9 +14,12 @@ interface ReportRow {
 const TEMPLATE_LABELS: Record<ReportTemplate, string> = {
   projects: 'Проекты',
   tenders: 'Тендеры',
-  load: 'Загрузка',
+  load: 'Загрузка по отделам',
+  employees: 'Загрузка по сотрудникам',
   finances: 'Финансы',
 };
+
+const REPORT_ACCENT = '#EC4899';
 
 const MOCK_DATA: Record<ReportTemplate, ReportRow[]> = {
   projects: [
@@ -31,6 +34,16 @@ const MOCK_DATA: Record<ReportTemplate, ReportRow[]> = {
     { id: 'T-102', name: 'Тендер ЖК Северный', status: 'Выигран', date: '2026-03-15', value: 950000 },
     { id: 'T-103', name: 'Тендер Мост Волга', status: 'В работе', date: '2026-05-05', value: 4200000 },
     { id: 'T-104', name: 'Тендер АЭС-2', status: 'Проигран', date: '2026-02-28', value: 5800000 },
+  ],
+  employees: [
+    { id: 'E-001', name: 'Иванов А.П.', status: 'Перегруз', date: '2026-05-01', value: 112 },
+    { id: 'E-002', name: 'Петрова М.С.', status: 'Норма', date: '2026-05-01', value: 88 },
+    { id: 'E-003', name: 'Сидоров К.В.', status: 'Недогруз', date: '2026-05-01', value: 62 },
+    { id: 'E-004', name: 'Козлова Е.А.', status: 'Норма', date: '2026-05-01', value: 95 },
+    { id: 'E-005', name: 'Морозов Д.И.', status: 'Перегруз', date: '2026-05-01', value: 108 },
+    { id: 'E-006', name: 'Новикова С.Р.', status: 'Норма', date: '2026-05-01', value: 91 },
+    { id: 'E-007', name: 'Волков А.Н.', status: 'Недогруз', date: '2026-05-01', value: 55 },
+    { id: 'E-008', name: 'Лебедева О.В.', status: 'Перегруз', date: '2026-05-01', value: 115 },
   ],
   load: [
     { id: 'L-201', name: 'Отдел КЖ', status: 'Перегруз', date: '2026-05-01', value: 120 },
@@ -48,12 +61,13 @@ const MOCK_DATA: Record<ReportTemplate, ReportRow[]> = {
 };
 
 function formatValue(template: ReportTemplate, value: number): string {
-  if (template === 'load') return `${value}%`;
+  if (template === 'load' || template === 'employees') return `${value}%`;
   return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', maximumFractionDigits: 0 }).format(value);
 }
 
 function toCSV(rows: ReportRow[], template: ReportTemplate): string {
-  const header = ['ID', 'Название', 'Статус', 'Дата', template === 'load' ? 'Загрузка (%)' : 'Сумма (₽)'];
+  const valueHeader = template === 'load' || template === 'employees' ? 'Загрузка (%)' : 'Сумма (₽)';
+  const header = ['ID', 'Название', 'Статус', 'Дата', valueHeader];
   const lines = rows.map((r) => [
     r.id,
     `"${r.name.replace(/"/g, '""')}"`,
@@ -167,9 +181,9 @@ export default function ReportsPage() {
           <button
             onClick={() => setGenerated(true)}
             className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors"
-            style={{ background: '#8B5CF6', color: '#FFFFFF' }}
-            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#7C3AED'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#8B5CF6'; }}
+            style={{ background: REPORT_ACCENT, color: '#FFFFFF' }}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#DB2777'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = REPORT_ACCENT; }}
           >
             <Play size={16} /> Сгенерировать
           </button>
@@ -219,7 +233,7 @@ export default function ReportsPage() {
                     <th className="text-left px-4 py-2.5 font-medium" style={{ color: 'var(--text-secondary)' }}>Статус</th>
                     <th className="text-left px-4 py-2.5 font-medium" style={{ color: 'var(--text-secondary)' }}>Дата</th>
                     <th className="text-right px-4 py-2.5 font-medium" style={{ color: 'var(--text-secondary)' }}>
-                      {template === 'load' ? 'Загрузка' : 'Сумма'}
+                      {template === 'load' || template === 'employees' ? 'Загрузка' : 'Сумма'}
                     </th>
                   </tr>
                 </thead>

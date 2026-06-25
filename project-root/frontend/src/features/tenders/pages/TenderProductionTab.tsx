@@ -74,7 +74,7 @@ export default function TenderProductionTab({ tenderId }: { tenderId: number }) 
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">
                   <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{wc.name}</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'var(--bg-surface-2)', color: 'var(--text-muted)' }}>{wc.code}</span>
+                  <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--bg-surface-2)', color: 'var(--text-muted)' }}>{wc.code}</span>
                 </div>
                 <span style={{ color: wc.utilization_pct > 80 ? '#DC2626' : wc.utilization_pct > 50 ? '#D4AF37' : '#0C7205' }}>
                   {wc.utilization_pct}%
@@ -90,11 +90,11 @@ export default function TenderProductionTab({ tenderId }: { tenderId: number }) 
                     }}
                   />
                 </div>
-                <span className="text-[10px] w-20 text-right" style={{ color: 'var(--text-muted)' }}>
+                <span className="text-xs w-20 text-right" style={{ color: 'var(--text-muted)' }}>
                   {wc.planned_hours} / {wc.capacity_hours} ч
                 </span>
               </div>
-              <div className="flex items-center gap-3 text-[10px]" style={{ color: 'var(--text-muted)' }}>
+              <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--text-muted)' }}>
                 <span>Операций: {wc.active_operations}</span>
                 <span>Факт: {wc.actual_hours} ч</span>
                 {wc.manager && <span>Руководитель: {wc.manager}</span>}
@@ -115,7 +115,7 @@ export default function TenderProductionTab({ tenderId }: { tenderId: number }) 
 function StatCard({ label, value, color }: { label: string; value: string; color: string }) {
   return (
     <div className="p-3 rounded-lg" style={{ background: 'var(--bg-surface-2)', border: '1px solid var(--border-default)' }}>
-      <div className="text-[10px] font-medium" style={{ color: 'var(--text-muted)' }}>{label}</div>
+      <div className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>{label}</div>
       <div className="text-sm font-bold" style={{ color }}>{value}</div>
     </div>
   );

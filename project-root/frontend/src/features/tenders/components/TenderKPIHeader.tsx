@@ -73,7 +73,7 @@ export function TenderKPIHeader({ summary, loading }: Props) {
             }}
           >
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
+              <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
                 {tile.label}
               </span>
               <Icon className="h-4 w-4" style={{ color: tile.color }} />
@@ -81,7 +81,7 @@ export function TenderKPIHeader({ summary, loading }: Props) {
             <div className="text-xl sm:text-2xl font-bold" style={{ color: tile.color, textShadow: `0 0 8px ${tile.glow}` }}>
               {tile.value}
             </div>
-            <div className="text-[11px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
+            <div className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
               {tile.sub}
             </div>
           </div>

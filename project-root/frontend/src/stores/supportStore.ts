@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { SupportTicket, Incident, KBArticle, TicketStatus, IncidentStatus } from '@/types/support';
-import { tickets as mockTickets, incidents as mockIncidents, kbArticles as mockKBArticles } from '@/api/mocks/support';
+import { tickets as mockTickets, incidents as mockIncidents, kbArticles as mockKBArticles } from '@/stores/mocks/support';
 
 interface SupportState {
   tickets: SupportTicket[];

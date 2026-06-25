@@ -1,10 +1,39 @@
 import React, { useMemo } from 'react';
-import { Operation, ProductionProject } from '../../types/production';
+import { Operation, ProductionProject, OperationStatus } from '../../types/production';
 import { OPERATION_STATUS_COLORS } from '../../constants/production';
 
 interface Props {
   operations: Operation[];
   projects: ProductionProject[];
+}
+
+const DEFAULT_OPERATIONS: { sequence: number; code: string; name: string; workCenterId: string; workCenterName: string; setupTime: number; runTime: number; responsible: string }[] = [
+  { sequence: 10, code: 'OP10', name: 'Подготовка деталей', workCenterId: 'wc-storage', workCenterName: 'Склад готовой продукции', setupTime: 0.5, runTime: 2, responsible: 'Иванов А.С.' },
+  { sequence: 20, code: 'OP20', name: 'Механическая обработка', workCenterId: 'wc-mech1', workCenterName: 'Мехобработка-1', setupTime: 1.5, runTime: 8, responsible: 'Петров В.К.' },
+  { sequence: 30, code: 'OP30', name: 'Сборка узла', workCenterId: 'wc-assembly', workCenterName: 'Сборочный участок', setupTime: 1, runTime: 6, responsible: 'Сидорова Е.М.' },
+  { sequence: 40, code: 'OP40', name: 'Сварка корпуса', workCenterId: 'wc-weld', workCenterName: 'Сварочный участок', setupTime: 1, runTime: 4, responsible: 'Козлов Д.А.' },
+  { sequence: 50, code: 'OP50', name: 'ОТК / Контроль качества', workCenterId: 'wc-qc', workCenterName: 'Отдел ОТК', setupTime: 0.5, runTime: 2, responsible: 'Новикова И.П.' },
+  { sequence: 60, code: 'OP60', name: 'Упаковка', workCenterId: 'wc-pack', workCenterName: 'Упаковка', setupTime: 0.5, runTime: 1.5, responsible: 'Смирнов О.Н.' },
+];
+
+const STATUS_ROTATION: OperationStatus[] = ['completed', 'completed', 'in_progress', 'planned', 'not_started', 'not_started'];
+
+function generateDefaultOperations(project: ProductionProject): Operation[] {
+  const seed = project.id.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+  return DEFAULT_OPERATIONS.map((op, idx) => {
+    const offset = (seed + idx) % DEFAULT_OPERATIONS.length;
+    const status = STATUS_ROTATION[offset];
+    return {
+      id: `${project.id}-${op.code}`,
+      projectId: project.id,
+      routeId: project.routeId || `route-${project.id}`,
+      ...op,
+      status,
+      plannedStart: project.plannedStart,
+      plannedFinish: project.plannedFinish,
+      responsible: op.responsible,
+    };
+  });
 }
 
 export const OperationBoard: React.FC<Props> = ({ operations, projects }) => {
@@ -22,8 +51,8 @@ export const OperationBoard: React.FC<Props> = ({ operations, projects }) => {
       <h2 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>🔧 ТЕХНОЛОГИЧЕСКИЕ КАРТЫ</h2>
 
       <div className="space-y-4">
-        {projects.filter(p => p.stage === 'production' || p.stage === 'production_prep').map(project => {
-          const ops = byProject[project.id] || [];
+        {projects.map(project => {
+          const ops = byProject[project.id]?.length ? byProject[project.id] : generateDefaultOperations(project);
 
           return (
             <div key={project.id} className="rounded-lg p-4" style={{ backgroundColor: 'var(--iris-bg-surface)', border: '1px solid var(--iris-border-subtle)' }}>

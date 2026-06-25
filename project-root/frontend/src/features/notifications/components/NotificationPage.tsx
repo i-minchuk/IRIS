@@ -153,7 +153,7 @@ export default function NotificationPage() {
                     {cfg.label}
                   </span>
                   {!n.is_read && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: '#FF6B6B', color: '#fff' }}>
+                    <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: '#FF6B6B', color: '#fff' }}>
                       Новое
                     </span>
                   )}
@@ -167,7 +167,7 @@ export default function NotificationPage() {
                 <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
                   {n.message}
                 </p>
-                <span className="text-[10px] mt-1 block" style={{ color: 'var(--text-muted)' }}>
+                <span className="text-xs mt-1 block" style={{ color: 'var(--text-muted)' }}>
                   {formatDate(n.created_at)}
                 </span>
               </div>
@@ -175,7 +175,7 @@ export default function NotificationPage() {
                 {!n.is_read && (
                   <button
                     onClick={() => handleMarkRead(n.id)}
-                    className="text-[11px] px-2 py-1 rounded transition-colors"
+                    className="text-sm px-2 py-1 rounded transition-colors"
                     style={{
                       background: 'var(--iris-bg-hover)',
                       color: 'var(--iris-accent-blue)',
@@ -187,7 +187,7 @@ export default function NotificationPage() {
                 {link && (
                   <button
                     onClick={() => navigate(link)}
-                    className="text-[11px] px-2 py-1 rounded transition-colors"
+                    className="text-sm px-2 py-1 rounded transition-colors"
                     style={{
                       background: 'var(--iris-bg-hover)',
                       color: 'var(--iris-accent-blue)',
@@ -198,7 +198,7 @@ export default function NotificationPage() {
                 )}
                 <button
                   onClick={() => handleDelete(n.id)}
-                  className="text-[11px] px-2 py-1 rounded transition-colors"
+                  className="text-sm px-2 py-1 rounded transition-colors"
                   style={{
                     background: 'transparent',
                     color: '#F87171',

@@ -1,0 +1,233 @@
+================================================================================
+FINAL DEAD CODE ANALYSIS
+================================================================================
+Total files scanned: 161
+Potentially unused items: 76
+
+Notes:
+- FastAPI handlers (@router.*) EXCLUDED
+- Dunder methods EXCLUDED
+- Private variables (_prefix) EXCLUDED
+- Type annotations, base classes, and instantiations are CHECKED
+
+
+ai\chatbot.py
+-------------
+  [function ] chat_with_ai                                   (never called or referenced)
+
+ai\models.py
+------------
+  [class    ] ChunkMetadata                                  (no name/attr refs; never instantiated; not in type hints or base classes)
+  [class    ] DocumentUploadRequest                          (no name/attr refs; never instantiated; not in type hints or base classes)
+
+core\config.py
+--------------
+  [function ] load_config                                    (never called or referenced)
+
+core\metrics.py
+---------------
+  [variable ] db_connections                                 (never referenced)
+  [variable ] documents_created                              (never referenced)
+
+core\security_utils.py
+----------------------
+  [function ] generate_secure_secret_key                     (never called or referenced)
+  [function ] rate_limit_auth_routes                         (never called or referenced)
+
+core\telegram.py
+----------------
+  [function ] notify_user_telegram                           (never called or referenced)
+
+crud\archive.py
+---------------
+  [function ] link_entries                                   (never called or referenced)
+
+models\archive.py
+-----------------
+  [class    ] ArchiveSearchIndex                             (no name/attr refs; never instantiated; not in type hints or base classes)
+
+modules\ai\router.py
+--------------------
+  [class    ] ChatMessage                                    (no name/attr refs; never instantiated; not in type hints or base classes)
+  [function ] _ai_disabled_response                          (never called or referenced)
+
+modules\audit\router.py
+-----------------------
+  [class    ] AuditLogCreate                                 (no name/attr refs; never instantiated; not in type hints or base classes)
+  [class    ] AuditLogFilter                                 (no name/attr refs; never instantiated; not in type hints or base classes)
+  [function ] log_audit                                      (never called or referenced)
+
+modules\audit\schemas.py
+------------------------
+  [class    ] AuditLogCreate                                 (no name/attr refs; never instantiated; not in type hints or base classes)
+  [class    ] AuditLogListResponse                           (no name/attr refs; never instantiated; not in type hints or base classes)
+
+modules\auth\deps.py
+--------------------
+  [function ] require_executive                              (never called or referenced)
+  [function ] require_manager_or_above                       (never called or referenced)
+
+modules\auth\repository.py
+--------------------------
+  [function ] get_user_repository                            (never called or referenced)
+
+modules\auth\schemas.py
+-----------------------
+  [class    ] TokenWithCookies                               (no name/attr refs; never instantiated; not in type hints or base classes)
+  [class    ] UserInDB                                       (no name/attr refs; never instantiated; not in type hints or base classes)
+
+modules\collaboration\schemas.py
+--------------------------------
+  [class    ] WSPresencePayload                              (no name/attr refs; never instantiated; not in type hints or base classes)
+  [class    ] WSSubscribePayload                             (no name/attr refs; never instantiated; not in type hints or base classes)
+
+modules\documents\crud.py
+-------------------------
+  [function ] delete_document                                (never called or referenced)
+
+modules\documents\schemas.py
+----------------------------
+  [class    ] ApprovalStageResponse                          (no name/attr refs; never instantiated; not in type hints or base classes)
+  [class    ] ApprovalWorkflowCreate                         (no name/attr refs; never instantiated; not in type hints or base classes)
+  [class    ] ApprovalWorkflowResponse                       (no name/attr refs; never instantiated; not in type hints or base classes)
+  [class    ] CascadeUpdateResponse                          (no name/attr refs; never instantiated; not in type hints or base classes)
+  [class    ] DocumentCreate                                 (no name/attr refs; never instantiated; not in type hints or base classes)
+  [class    ] DocumentLockResponse                           (no name/attr refs; never instantiated; not in type hints or base classes)
+  [class    ] DocumentRenderResponse                         (no name/attr refs; never instantiated; not in type hints or base classes)
+  [class    ] DocumentResponse                               (no name/attr refs; never instantiated; not in type hints or base classes)
+  [class    ] DocumentUpdate                                 (no name/attr refs; never instantiated; not in type hints or base classes)
+  [class    ] LockRequestInput                               (no name/attr refs; never instantiated; not in type hints or base classes)
+  [class    ] RevisionCreate                                 (no name/attr refs; never instantiated; not in type hints or base classes)
+  [class    ] RevisionResponse                               (no name/attr refs; never instantiated; not in type hints or base classes)
+
+modules\gamification\schemas.py
+-------------------------------
+  [class    ] BadgeDefinition                                (no name/attr refs; never instantiated; not in type hints or base classes)
+  [class    ] EventCreate                                    (no name/attr refs; never instantiated; not in type hints or base classes)
+  [class    ] GamificationProfile                            (no name/attr refs; never instantiated; not in type hints or base classes)
+
+modules\integrations\_1c\router.py
+----------------------------------
+  [class    ] OneCContractItem                               (no name/attr refs; never instantiated; not in type hints or base classes)
+  [class    ] OneCNomenclatureItem                           (no name/attr refs; never instantiated; not in type hints or base classes)
+
+modules\monitoring\router.py
+----------------------------
+  [class    ] MetricsRoute                                   (no name/attr refs; never instantiated; not in type hints or base classes)
+  [variable ] active_users                                   (never referenced)
+  [variable ] ai_requests_total                              (never referenced)
+  [variable ] auth_failures_total                            (never referenced)
+  [variable ] db_connections_active                          (never referenced)
+  [variable ] document_uploads_total                         (never referenced)
+  [variable ] workflow_completions_total                     (never referenced)
+
+modules\notifications\schemas.py
+--------------------------------
+  [class    ] NotificationType                               (no name/attr refs; never instantiated; not in type hints or base classes)
+
+modules\remarks\models.py
+-------------------------
+  [function ] receive_before_update                          (never called or referenced)
+
+modules\remarks\response_schemas.py
+-----------------------------------
+  [class    ] RemarkLinkResponse                             (no name/attr refs; never instantiated; not in type hints or base classes)
+
+modules\remarks\schemas.py
+--------------------------
+  [class    ] RemarkExportRow                                (no name/attr refs; never instantiated; not in type hints or base classes)
+  [class    ] RemarkTagUpdate                                (no name/attr refs; never instantiated; not in type hints or base classes)
+
+modules\remarks\service.py
+--------------------------
+  [class    ] RemarkNotFoundError                            (no name/attr refs; never instantiated; not in type hints or base classes)
+  [class    ] RemarkTagNotFoundError                         (no name/attr refs; never instantiated; not in type hints or base classes)
+
+modules\tenders\router.py
+-------------------------
+  [function ] _parse_date                                    (never called or referenced)
+
+modules\tenders\schemas.py
+--------------------------
+  [class    ] TenderUpdate                                   (no name/attr refs; never instantiated; not in type hints or base classes)
+
+modules\time_tracking\models.py
+-------------------------------
+  [class    ] EmployeeLoad                                   (no name/attr refs; never instantiated; not in type hints or base classes)
+
+modules\workflow\service.py
+---------------------------
+  [class    ] InstanceNotFoundError                          (no name/attr refs; never instantiated; not in type hints or base classes)
+
+parser\dwg_parser.py
+--------------------
+  [class    ] DWGHeader                                      (no name/attr refs; never instantiated; not in type hints or base classes)
+
+schemas\archive.py
+------------------
+  [class    ] ArchiveExport                                  (no name/attr refs; never instantiated; not in type hints or base classes)
+  [class    ] ArchiveSearchQuery                             (no name/attr refs; never instantiated; not in type hints or base classes)
+  [class    ] SearchResultItem                               (no name/attr refs; never instantiated; not in type hints or base classes)
+
+services\archive_service.py
+---------------------------
+  [function ] archive_document_event                         (never called or referenced)
+  [function ] archive_file_upload                            (never called or referenced)
+  [function ] archive_project_event                          (never called or referenced)
+  [function ] archive_remark_event                           (never called or referenced)
+  [function ] archive_workflow_event                         (never called or referenced)
+
+tasks\documents.py
+------------------
+  [function ] generate_pdf                                   (never called or referenced)
+  [function ] process_file                                   (never called or referenced)
+
+tasks\notifications.py
+----------------------
+  [function ] notify_project_members                         (never called or referenced)
+  [function ] send_push                                      (never called or referenced)
+
+tasks\reports.py
+----------------
+  [function ] export_data                                    (never called or referenced)
+  [function ] generate_report                                (never called or referenced)
+
+
+================================================================================
+TOP MODULES BY COUNT
+================================================================================
+ 12  modules\documents\schemas.py
+  7  modules\monitoring\router.py
+  5  services\archive_service.py
+  3  modules\audit\router.py
+  3  modules\gamification\schemas.py
+  3  schemas\archive.py
+  2  ai\models.py
+  2  core\metrics.py
+  2  core\security_utils.py
+  2  modules\ai\router.py
+  2  modules\audit\schemas.py
+  2  modules\auth\deps.py
+  2  modules\auth\schemas.py
+  2  modules\collaboration\schemas.py
+  2  modules\integrations\_1c\router.py
+  2  modules\remarks\schemas.py
+  2  modules\remarks\service.py
+  2  tasks\documents.py
+  2  tasks\notifications.py
+  2  tasks\reports.py
+  1  ai\chatbot.py
+  1  core\config.py
+  1  core\telegram.py
+  1  crud\archive.py
+  1  models\archive.py
+  1  modules\auth\repository.py
+  1  modules\documents\crud.py
+  1  modules\notifications\schemas.py
+  1  modules\remarks\models.py
+  1  modules\remarks\response_schemas.py
+  1  modules\tenders\router.py
+  1  modules\tenders\schemas.py
+  1  modules\time_tracking\models.py
+  1  modules\workflow\service.py
+  1  parser\dwg_parser.py

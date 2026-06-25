@@ -59,7 +59,7 @@ export const ProductionStrategyTab: React.FC = () => {
           >
             {highlightBottlenecks ? <Eye size={12} /> : <EyeOff size={12} />}
             Узкие места
-            <Badge variant="neutral" className="ml-1 text-[10px]">
+            <Badge variant="neutral" className="ml-1 text-xs">
               {bottleneckCount}
             </Badge>
           </Button>
@@ -71,7 +71,7 @@ export const ProductionStrategyTab: React.FC = () => {
           >
             {highlightDuplicates ? <Eye size={12} /> : <EyeOff size={12} />}
             Дубли
-            <Badge variant="neutral" className="ml-1 text-[10px]">
+            <Badge variant="neutral" className="ml-1 text-xs">
               {duplicateCount}
             </Badge>
           </Button>

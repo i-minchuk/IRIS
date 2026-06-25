@@ -45,7 +45,7 @@ export const RemarksPanel: React.FC<Props> = ({ document, remarks }) => {
         <div className="mx-2 mb-2 p-2 bg-[#0f172a] border border-dashed border-[#475569] rounded">
           <div className="text-xs font-bold text-[#e2e8f0] mb-2">✏️ Новое замечание</div>
           <div className="flex gap-2 mb-2">
-            <label className="flex items-center gap-1 text-[10px] text-[#e2e8f0]">
+            <label className="flex items-center gap-1 text-xs text-[#e2e8f0]">
               <input
                 type="radio"
                 checked={newType === 'customer'}
@@ -53,7 +53,7 @@ export const RemarksPanel: React.FC<Props> = ({ document, remarks }) => {
               />{' '}
               Заказчик
             </label>
-            <label className="flex items-center gap-1 text-[10px] text-[#e2e8f0]">
+            <label className="flex items-center gap-1 text-xs text-[#e2e8f0]">
               <input
                 type="radio"
                 checked={newType === 'internal'}
@@ -120,15 +120,15 @@ export const RemarksPanel: React.FC<Props> = ({ document, remarks }) => {
             >
               <div className="flex items-center gap-2 mb-1">
                 <div
-                  className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
+                  className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white"
                   style={{ backgroundColor: remark.author.color }}
                 >
                   {AUTHOR_LABELS[remark.author.type][0]}
                 </div>
-                <span className="text-[10px] font-bold" style={{ color: remark.author.color }}>
+                <span className="text-xs font-bold" style={{ color: remark.author.color }}>
                   {remark.author.name}
                 </span>
-                <span className="text-[10px] text-[#64748b] ml-auto">
+                <span className="text-xs text-[#64748b] ml-auto">
                   {new Date(remark.createdAt).toLocaleDateString('ru-RU')}
                 </span>
               </div>
@@ -143,19 +143,19 @@ export const RemarksPanel: React.FC<Props> = ({ document, remarks }) => {
 
               {remark.status !== 'info' && (
                 <div className="flex gap-1">
-                  <button className="px-2 py-0.5 bg-[#15803d] rounded text-[10px] text-white">
+                  <button className="px-2 py-0.5 bg-[#15803d] rounded text-xs text-white">
                     ✓
                   </button>
-                  <button className="px-2 py-0.5 bg-[#991b1b] rounded text-[10px] text-white">
+                  <button className="px-2 py-0.5 bg-[#991b1b] rounded text-xs text-white">
                     ✗
                   </button>
-                  <button className="px-2 py-0.5 bg-[#334155] rounded text-[10px] text-white">
+                  <button className="px-2 py-0.5 bg-[#334155] rounded text-xs text-white">
                     💬
                   </button>
                 </div>
               )}
 
-              <div className="text-[10px] mt-1" style={{ color: statusColor }}>
+              <div className="text-xs mt-1" style={{ color: statusColor }}>
                 {remark.status === 'open'
                   ? '🟡 Не исправлено'
                   : remark.status === 'fixed'

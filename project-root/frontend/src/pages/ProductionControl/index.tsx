@@ -1,10 +1,12 @@
+import { useTabState } from '@/shared/hooks/useTabState';
+import { PageTabs } from '@/shared/components/PageTabs';
 import React, { useState, useEffect } from 'react';
 import { ProductionProject, MTOItem } from './types/production';
 import { useProjects } from './hooks/useProjects';
 import { useOperations } from './hooks/useOperations';
 import { useWorkloads } from './hooks/useWorkloads';
 import { useDocuments } from './hooks/useDocuments';
-import { ProjectPipeline } from './components/ProjectPipeline';
+import { ProductionProjectsList } from './components/ProductionProjectsList';
 import { OperationBoard } from './components/OperationBoard';
 import { WorkloadHeatmap } from './components/WorkloadHeatmap';
 import { DocumentTracker } from './components/DocumentTracker';
@@ -12,14 +14,32 @@ import { MTOStatus } from './components/MTOStatus';
 import { ProjectCard } from './components/ProjectCard';
 import { ProductionStrategyTab } from './components/ProductionStrategy';
 
+import {
+  Target, Wrench, Zap, FileText, ShoppingCart, TrendingUp
+} from 'lucide-react';
+
 type TabId = 'pipeline' | 'operations' | 'workload' | 'documents' | 'mto' | 'strategy';
 
+const TAB_COLOR = '#F59E0B';
+
+const TABS = [
+  { key: 'pipeline' as TabId, label: 'Проекты', icon: <Target size={16} />, color: TAB_COLOR },
+  { key: 'operations' as TabId, label: 'Операции', icon: <Wrench size={16} />, color: TAB_COLOR },
+  { key: 'workload' as TabId, label: 'Загрузка', icon: <Zap size={16} />, color: TAB_COLOR },
+  { key: 'documents' as TabId, label: 'Документы', icon: <FileText size={16} />, color: TAB_COLOR },
+  { key: 'mto' as TabId, label: 'МТО', icon: <ShoppingCart size={16} />, color: TAB_COLOR },
+  { key: 'strategy' as TabId, label: 'Стратегия', icon: <TrendingUp size={16} />, color: TAB_COLOR },
+];
+
 export const ProductionControlPage: React.FC = () => {
-  const { projects } = useProjects();
+  const { projects, loading } = useProjects();
   const { operations } = useOperations();
   const { workCenters } = useWorkloads();
-  const { documents } = useDocuments();
+  const { documents, addComment } = useDocuments(projects.map(p => p.id));
   const [mtoItems, setMtoItems] = useState<MTOItem[]>([]);
+  const [activeTab, setActiveTab] = useTabState<TabId>('iris_production_tab', 'pipeline');
+  const [selectedProject, setSelectedProject] = useState<ProductionProject | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Load MTO data from documents API (documents with type 'spec' serve as MTO specs)
   useEffect(() => {
@@ -39,19 +59,6 @@ export const ProductionControlPage: React.FC = () => {
       setMtoItems(items);
     }
   }, [documents]);
-
-  const [activeTab, setActiveTab] = useState<TabId>('pipeline');
-  const [selectedProject, setSelectedProject] = useState<ProductionProject | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-
-  const tabs = [
-    { id: 'pipeline' as TabId, label: '🎯 Портфель', color: '#3b82f6' },
-    { id: 'operations' as TabId, label: '🔧 Операции', color: '#06b6d4' },
-    { id: 'workload' as TabId, label: '⚡ Загрузка', color: '#f59e0b' },
-    { id: 'documents' as TabId, label: '📄 Документы', color: '#8b5cf6' },
-    { id: 'mto' as TabId, label: '🛒 МТО', color: '#22c55e' },
-    { id: 'strategy' as TabId, label: '📈 Стратегия', color: '#c47a1a' },
-  ];
 
   const filteredProjects = projects.filter(p =>
     p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -73,12 +80,12 @@ export const ProductionControlPage: React.FC = () => {
           <h1 className="sr-only" style={{ color: 'var(--text-primary)' }}>
             🏭 Производственный контроль
           </h1>
-          <p className="text-[10px] sm:text-base md:text-lg font-medium leading-relaxed mt-1 mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+          <p className="text-xs sm:text-base md:text-lg font-medium leading-relaxed mt-1 mt-0.5" style={{ color: 'var(--text-secondary)' }}>
             Технологические карты, загрузка, документы, МТО
           </p>
         </div>
 
-        {/* Поиск проекта для быстрого ответа */}
+        {/* Поиск проекта */}
         <div className="flex items-center gap-3">
           <input
             type="text"
@@ -92,42 +99,14 @@ export const ProductionControlPage: React.FC = () => {
               color: 'var(--text-primary)',
             }}
           />
-          <button
-            className="px-3 py-2 rounded-lg text-xs font-medium transition-all hover:brightness-110"
-            style={{
-              background: 'var(--iris-accent-cyan)',
-              color: '#ffffff',
-              boxShadow: '0 0 12px var(--iris-glow-cyan)',
-            }}
-            onClick={() => {
-              if (selectedProject) {
-                alert(`📞 Ответ для ${selectedProject.customer}:\n\n«Проект ${selectedProject.name} (${selectedProject.code}) на стадии ${selectedProject.currentOperation || '—'}, готовность ${selectedProject.progressPercent}%. Следующий этап — ${selectedProject.nextMilestone || '—'} (${selectedProject.nextMilestoneDate ? new Date(selectedProject.nextMilestoneDate).toLocaleDateString('ru-RU') : '—'})»`);
-              }
-            }}
-          >
-            📞 Ответить заказчику
-          </button>
         </div>
       </div>
 
-      {/* Табы */}
-      <div className="flex gap-1 px-4 sm:px-6 py-2"
+      {/* Табы — PageTabs с округлыми вкладками */}
+      <div className="px-4 sm:px-6 py-2"
         style={{ background: 'var(--iris-bg-surface)', borderBottom: '1px solid var(--iris-border-subtle)' }}
       >
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
-              activeTab === tab.id
-                ? ''
-                : 'hover:brightness-110'
-            }`}
-            style={activeTab === tab.id ? { backgroundColor: tab.color, boxShadow: `0 0 12px ${tab.color}40`, color: '#ffffff' } : { backgroundColor: 'var(--iris-bg-subtle)', color: 'var(--text-secondary)' }}
-          >
-            {tab.label}
-          </button>
-        ))}
+        <PageTabs tabs={TABS} active={activeTab} onChange={setActiveTab} color={TAB_COLOR} />
       </div>
 
       {/* Контент */}
@@ -135,8 +114,9 @@ export const ProductionControlPage: React.FC = () => {
         {/* Основная зона */}
         <div className="flex-1 overflow-auto">
           {activeTab === 'pipeline' && (
-            <ProjectPipeline
+            <ProductionProjectsList
               projects={filteredProjects}
+              loading={loading}
               onSelect={handleSelectProject}
             />
           )}
@@ -155,6 +135,7 @@ export const ProductionControlPage: React.FC = () => {
             <DocumentTracker
               documents={documents}
               projects={filteredProjects}
+              onAddComment={addComment}
             />
           )}
           {activeTab === 'mto' && (
@@ -184,7 +165,7 @@ export const ProductionControlPage: React.FC = () => {
       </div>
     </div>
   );
-}
+};
 
 
 

@@ -281,7 +281,7 @@ export default function AddTenderModal({ isOpen, onClose, onCreated }: AddTender
           <Button variant="secondary" size="sm" leftIcon={<Calculator size={14} />} onClick={calculate} disabled={!isValid}>
             Рассчитать трудоёмкость
           </Button>
-          {!isValid && <span className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>Заполните название, заказчика, тип и объём</span>}
+          {!isValid && <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Заполните название, заказчика, тип и объём</span>}
         </div>
 
         {/* Результаты расчёта */}
@@ -310,13 +310,13 @@ export default function AddTenderModal({ isOpen, onClose, onCreated }: AddTender
                     <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: 'var(--border-default)' }}>
                       <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(avgUtilization * 100, 100)}%`, background: avgUtilization > 0.85 ? '#DC2626' : avgUtilization > 0.6 ? '#D4AF37' : '#0C7205' }} />
                     </div>
-                    <span className="text-[11px] font-medium w-12 text-right" style={{ color: avgUtilization > 0.85 ? '#DC2626' : 'var(--text-secondary)' }}>{Math.round(avgUtilization * 100)}%</span>
+                    <span className="text-sm font-medium w-12 text-right" style={{ color: avgUtilization > 0.85 ? '#DC2626' : 'var(--text-secondary)' }}>{Math.round(avgUtilization * 100)}%</span>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                     {workload.team.slice(0, 4).map((member) => {
                       const util = member.month_active_hours / 160;
                       return (
-                        <div key={member.id} className="flex items-center justify-between text-[11px] px-2 py-1 rounded" style={{ background: 'var(--bg-surface)' }}>
+                        <div key={member.id} className="flex items-center justify-between text-sm px-2 py-1 rounded" style={{ background: 'var(--bg-surface)' }}>
                           <span style={{ color: 'var(--text-secondary)' }}>{member.full_name}</span>
                           <span style={{ color: util > 0.85 ? '#DC2626' : util > 0.6 ? '#D4AF37' : '#0C7205' }}>{Math.round(util * 100)}%</span>
                         </div>
@@ -337,7 +337,7 @@ export default function AddTenderModal({ isOpen, onClose, onCreated }: AddTender
               </h5>
               <ul className="space-y-1">
                 {calculation.recommendations.map((rec, i) => (
-                  <li key={i} className="text-[11px] flex items-start gap-1.5" style={{ color: calculation.overloadRisk ? '#DC2626' : 'var(--text-secondary)' }}>
+                  <li key={i} className="text-sm flex items-start gap-1.5" style={{ color: calculation.overloadRisk ? '#DC2626' : 'var(--text-secondary)' }}>
                     <span className="mt-0.5">{calculation.overloadRisk ? <TrendingDown size={10} /> : <CheckCircle2 size={10} />}</span>
                     {rec}
                   </li>
@@ -374,7 +374,7 @@ export default function AddTenderModal({ isOpen, onClose, onCreated }: AddTender
 function MetricCard({ label, value, icon, color }: { label: string; value: string; icon: React.ReactNode; color: string }) {
   return (
     <div className="p-2.5 rounded-md space-y-1" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)' }}>
-      <div className="flex items-center gap-1 text-[10px] font-medium" style={{ color: 'var(--text-muted)' }}>
+      <div className="flex items-center gap-1 text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
         <span style={{ color }}>{icon}</span> {label}
       </div>
       <div className="text-sm font-bold" style={{ color }}>{value}</div>
@@ -475,7 +475,7 @@ E-mail: tender@dokpotok.ru
         </h5>
         <button
           onClick={handleCopy}
-          className="inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-md border transition-colors"
+          className="inline-flex items-center gap-1 text-sm px-2 py-1 rounded-md border transition-colors"
           style={{
             background: copied ? 'rgba(12,114,5,0.12)' : 'var(--bg-surface)',
             borderColor: copied ? 'rgba(12,114,5,0.4)' : 'var(--border-default)',
@@ -487,7 +487,7 @@ E-mail: tender@dokpotok.ru
         </button>
       </div>
       <div
-        className="rounded-md p-3 text-[11px] leading-relaxed whitespace-pre-wrap font-mono max-h-64 overflow-y-auto"
+        className="rounded-md p-3 text-sm leading-relaxed whitespace-pre-wrap font-mono max-h-64 overflow-y-auto"
         style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)', color: 'var(--text-secondary)' }}
       >
         {proposalText}

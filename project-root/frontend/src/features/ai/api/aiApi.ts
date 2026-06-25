@@ -94,7 +94,7 @@ export interface ExtractRequirementsResponse {
 export const getInlineSuggestions = async (
   payload: InlineSuggestionPayload
 ): Promise<InlineSuggestionRESTResponse> => {
-  const { data } = await client.post('/api/v1/ai/inline-suggest', payload);
+  const { data } = await client.post('/ai/inline-suggest', payload);
   return data;
 };
 
@@ -104,7 +104,7 @@ export const getInlineSuggestions = async (
 export const semanticSearch = async (
   request: SemanticSearchRequest
 ): Promise<SemanticSearchResponse> => {
-  const { data } = await client.post('/api/v1/ai/search', request);
+  const { data } = await client.post('/ai/search', request);
   return data;
 };
 
@@ -114,7 +114,7 @@ export const semanticSearch = async (
 export const analyzeDocument = async (
   documentId: string
 ): Promise<DocumentAnalysisResponse> => {
-  const { data } = await client.post(`/api/v1/ai/analyze/${documentId}`);
+  const { data } = await client.post(`/ai/analyze/${documentId}`);
   return data;
 };
 
@@ -124,7 +124,7 @@ export const analyzeDocument = async (
 export const chatWithAI = async (
   request: ChatRequest
 ): Promise<ChatResponse> => {
-  const { data } = await client.post('/api/v1/ai/chat', request);
+  const { data } = await client.post('/ai/chat', request);
   return data;
 };
 
@@ -134,6 +134,6 @@ export const chatWithAI = async (
 export const extractRequirements = async (
   documentId: string
 ): Promise<ExtractRequirementsResponse> => {
-  const { data } = await client.post(`/api/v1/ai/extract-requirements/${documentId}`);
+  const { data } = await client.post(`/ai/extract-requirements/${documentId}`);
   return data;
 };

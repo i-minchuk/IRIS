@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useRemarksStore } from '@/stores/remarksStore';
 import { RemarkStatus, RemarkPriority, RemarkCategory, RemarkFilter } from '@/types/remarks';
-import { getProjects } from '@/api/projects';
-import { getUsers } from '@/api/users';
+import { getProjects } from '@/features/projects/api/projects';
+import { getUsers } from '@/features/users/api/users';
 
 export const RemarksFilters: React.FC = () => {
   const { filters, setFilters, resetFilters, tags } = useRemarksStore();

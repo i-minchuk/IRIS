@@ -1,11 +1,11 @@
 @echo off
-chcp 1251 >nul
+chcp 65001 >nul
 title DokPotok IRIS - Start
 color 0B
 
-set "PROJECT_ROOT=%~dp0project-root"
-set "BACKEND_DIR=%PROJECT_ROOT%\backend"
-set "FRONTEND_DIR=%PROJECT_ROOT%\frontend"
+set "PROJECT_ROOT=%~dp0.."
+set "BACKEND_DIR=%PROJECT_ROOT%\project-root\backend"
+set "FRONTEND_DIR=%PROJECT_ROOT%\project-root\frontend"
 set "VENV_PYTHON=%BACKEND_DIR%\.venv\Scripts\python.exe"
 
 echo.
@@ -63,7 +63,7 @@ echo    Frontend:  http://localhost:5173
 echo    Backend:   http://localhost:8000
 echo    API Docs:  http://localhost:8000/docs
 echo.
-echo    Login:    admin
+echo    Login:    admin@iris.local
 echo    Password: admin123
 echo.
 echo    Do not close Backend and Frontend windows!

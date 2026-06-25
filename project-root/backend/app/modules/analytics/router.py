@@ -14,6 +14,8 @@ from app.modules.documents.models import Document
 from app.modules.remarks.models import Remark
 from app.modules.time_tracking.models import TimeSession
 from app.modules.tenders.models import Tender
+from app.modules.gamification.models import GamificationEvent
+from app.modules.analytics.schemas import TeamTimeAnalytics
 from app.core.cache import cache_response
 import hashlib
 
@@ -24,6 +26,29 @@ async def _get_db():
         yield session
 
 router = APIRouter(tags=["analytics"])
+
+
+# Period parsing helpers
+_PERIOD_STARTS = {
+    "today": timedelta(days=0),
+    "week": timedelta(days=7),
+    "month": timedelta(days=30),
+    "quarter": timedelta(days=90),
+    "year": timedelta(days=365),
+}
+
+
+def _parse_period_start(period: str | None) -> datetime | None:
+    """Return UTC start datetime for a named period, or None for all time."""
+    if not period or period == "all":
+        return None
+    delta = _PERIOD_STARTS.get(period)
+    if not delta:
+        return None
+    now = datetime.now(timezone.utc)
+    if period == "today":
+        return now.replace(hour=0, minute=0, second=0, microsecond=0)
+    return now - delta
 
 
 @router.get("/dashboard", response_model=dict)
@@ -658,8 +683,10 @@ async def get_tender_pipeline(
     win_rate = round(won_count / (won_count + lost_count) * 100, 0) if (won_count + lost_count) > 0 else 0
 
     # Average preparation days for sent tenders
+    # Cross-DB: use extract(epoch from ...) for PostgreSQL, fallback for SQLite
+    from sqlalchemy import text
     sent_result = await db.execute(
-        select(func.avg(func.julianday("now") - func.julianday(Tender.created_at)))
+        select(func.avg(func.extract('epoch', func.now() - Tender.created_at) / 86400))
         .where(Tender.status == "sent")
     )
     avg_prep = round(sent_result.scalar() or 14, 0)
@@ -755,13 +782,16 @@ async def get_action_items(
             and_(
                 Task.due_date.isnot(None),
                 Task.due_date < now,
-                ~Task.status.in_(["completed", "cancelled", "done"]),
+                ~Task.status.in_(["cancelled", "done"]),
             )
         ).limit(10)
     )
     overdue_tasks = overdue_tasks_result.scalars().all()
     for task in overdue_tasks:
-        days_overdue = max(1, (now - task.due_date).days)
+        task_due = task.due_date
+        if task_due.tzinfo is None:
+            task_due = task_due.replace(tzinfo=timezone.utc)
+        days_overdue = max(1, (now - task_due).days)
         items.append({
             "id": f"task_{task.id}",
             "text": task.title,
@@ -785,7 +815,10 @@ async def get_action_items(
     )
     old_remarks = old_remarks_result.scalars().all()
     for remark in old_remarks:
-        days_old = max(1, (now - remark.created_at).days)
+        remark_created = remark.created_at
+        if remark_created.tzinfo is None:
+            remark_created = remark_created.replace(tzinfo=timezone.utc)
+        days_old = max(1, (now - remark_created).days)
         items.append({
             "id": f"remark_{remark.id}",
             "text": remark.title,
@@ -807,7 +840,10 @@ async def get_action_items(
     )
     review_docs = review_docs_result.scalars().all()
     for doc in review_docs:
-        days_old = max(1, (now - doc.created_at).days)
+        doc_created = doc.created_at
+        if doc_created.tzinfo is None:
+            doc_created = doc_created.replace(tzinfo=timezone.utc)
+        days_old = max(1, (now - doc_created).days)
         items.append({
             "id": f"doc_{doc.id}",
             "text": f"Согласование: {doc.name}",
@@ -831,7 +867,10 @@ async def get_action_items(
     )
     urgent_tenders = urgent_tenders_result.scalars().all()
     for tender in urgent_tenders:
-        days_left = max(1, (tender.deadline - now).days)
+        tender_deadline = tender.deadline
+        if tender_deadline.tzinfo is None:
+            tender_deadline = tender_deadline.replace(tzinfo=timezone.utc)
+        days_left = max(1, (tender_deadline - now).days)
         items.append({
             "id": f"tender_{tender.id}",
             "text": tender.name,
@@ -939,3 +978,102 @@ async def get_production_sqcdp(
         ],
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
+
+
+
+@router.get("/time-tracking/team", response_model=list[TeamTimeAnalytics])
+async def get_team_time_tracking(
+    period: Optional[str] = Query(
+        None,
+        description="Aggregation period: today, week, month, quarter, year, all",
+    ),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Return aggregated time-tracking metrics per user for the dashboard.
+
+    Combines session statistics with a derived quality/speed score and the
+    actual gamification bonus points awarded for document approvals.
+    """
+    start_date = _parse_period_start(period)
+
+    # Aggregate time sessions per user
+    query = select(
+        TimeSession.user_id,
+        func.count(TimeSession.id).label("total_sessions"),
+        func.coalesce(func.sum(TimeSession.active_time), 0).label("total_active_time"),
+        func.coalesce(func.sum(TimeSession.total_duration), 0).label("total_duration"),
+        func.coalesce(func.avg(TimeSession.efficiency_score), 0).label("avg_efficiency"),
+        func.coalesce(func.sum(TimeSession.revisions_created), 0).label("total_revisions"),
+        func.coalesce(func.sum(TimeSession.remarks_resolved), 0).label("total_remarks_resolved"),
+        func.coalesce(func.sum(TimeSession.remarks_created), 0).label("total_remarks_created"),
+    ).group_by(TimeSession.user_id)
+
+    if start_date is not None:
+        query = query.where(TimeSession.started_at >= start_date)
+
+    result = await db.execute(query)
+    rows = result.mappings().all()
+
+    user_ids = [r["user_id"] for r in rows]
+    users: dict[int, str] = {}
+    if user_ids:
+        users_result = await db.execute(
+            select(User.id, User.full_name).where(User.id.in_(user_ids))
+        )
+        users = {u.id: (u.full_name or "Unknown") for u in users_result.scalars().all()}
+
+    # Bonus points actually awarded for document approvals in the same period
+    bonus_query = select(
+        GamificationEvent.user_id,
+        func.coalesce(func.sum(GamificationEvent.points_delta), 0).label("bonus_points"),
+    ).where(GamificationEvent.event_type == "document_approved")
+    if start_date is not None:
+        bonus_query = bonus_query.where(GamificationEvent.created_at >= start_date)
+    bonus_query = bonus_query.group_by(GamificationEvent.user_id)
+    bonus_result = await db.execute(bonus_query)
+    bonuses = {b["user_id"]: int(b["bonus_points"]) for b in bonus_result.mappings().all()}
+
+    output: list[TeamTimeAnalytics] = []
+    for r in rows:
+        total_active_time = int(r["total_active_time"] or 0)
+        total_duration = int(r["total_duration"] or 0)
+        avg_efficiency = float(r["avg_efficiency"] or 0)
+        total_revisions = int(r["total_revisions"] or 0)
+        remarks_resolved = int(r["total_remarks_resolved"] or 0)
+        remarks_created = int(r["total_remarks_created"] or 0)
+
+        # Quality score: efficiency + remark resolution ratio + low revision count
+        resolution_ratio = (
+            min((remarks_resolved / max(remarks_created, 1)) * 100, 100)
+        )
+        revision_penalty = max(0, 100 - total_revisions * 10)
+        quality_score = (
+            0.5 * avg_efficiency
+            + 0.3 * resolution_ratio
+            + 0.2 * revision_penalty
+        )
+        quality_score = max(0.0, min(100.0, quality_score))
+
+        # Speed score: higher active/total ratio means less idle time
+        speed_score = (
+            (total_active_time / max(total_duration, 1)) * 100
+        )
+        speed_score = max(0.0, min(100.0, speed_score))
+
+        output.append(
+            TeamTimeAnalytics(
+                user_id=r["user_id"],
+                full_name=users.get(r["user_id"], "Unknown"),
+                total_sessions=int(r["total_sessions"] or 0),
+                total_active_hours=round(total_active_time / 3600, 2),
+                avg_efficiency=round(avg_efficiency, 2),
+                quality_score=round(quality_score, 2),
+                speed_score=round(speed_score, 2),
+                bonus_points=bonuses.get(r["user_id"], 0),
+            )
+        )
+
+    # Preserve stable ordering by quality score desc for predictable charts
+    output.sort(key=lambda x: x.quality_score, reverse=True)
+    return output

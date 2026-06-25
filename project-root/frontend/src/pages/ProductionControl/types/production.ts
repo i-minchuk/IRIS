@@ -108,6 +108,27 @@ export interface WorkCenter {
 }
 
 // ===== ДОКУМЕНТ ПО ПРОЕКТУ =====
+export interface DocumentRemark {
+  id: string;
+  author: string;
+  role: string;
+  text: string;
+  status: 'open' | 'resolved';
+  createdAt: string;
+}
+
+export interface DocumentApprover {
+  name: string;
+  role: string;
+  status: 'pending' | 'approved' | 'rejected';
+}
+
+export interface DocumentHistoryItem {
+  date: string;
+  action: string;
+  user: string;
+}
+
 export interface ProjectDocument {
   id: string;
   projectId: string;
@@ -116,11 +137,17 @@ export interface ProjectDocument {
   number: string;                  // Номер документа
   name: string;                    // Наименование
 
-  status: 'draft' | 'in_review' | 'approved' | 'sent' | 'overdue' | 'rejected';
+  status: 'draft' | 'in_review' | 'approved' | 'sent' | 'overdue' | 'rejected' | 'in_production';
   responsible: string;             // Кто готовит
+  currentApprover?: string;        // У кого на согласовании
 
   plannedReady: string;            // Плановая готовность
   actualReady?: string;            // Фактическая
+
+  remarks?: DocumentRemark[];      // Замечания
+  approvers?: DocumentApprover[];  // Цепочка согласования
+  history?: DocumentHistoryItem[]; // История
+  comments?: { id: string; author: string; text: string; createdAt: string }[]; // Комментарии команды
 
   relatedOperationId?: string;     // К какой операции относится
 }

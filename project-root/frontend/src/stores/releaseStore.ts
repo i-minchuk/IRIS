@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { Release } from '@/types/release';
-import { releases as mockReleases } from '@/api/mocks/releases';
+import { releases as mockReleases } from '@/stores/mocks/releases';
 
 interface ReleaseState {
   releases: Release[];

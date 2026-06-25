@@ -69,7 +69,7 @@ export const InlineSuggestionWidget: React.FC<Props> = ({
                   {suggestion.display}
                 </div>
                 {suggestion.description && (
-                  <div className="text-[10px] text-[#64748b] truncate">
+                  <div className="text-xs text-[#64748b] truncate">
                     {suggestion.description}
                   </div>
                 )}
@@ -102,7 +102,7 @@ export const InlineSuggestionWidget: React.FC<Props> = ({
       </div>
 
       {/* Footer hint */}
-      <div className="px-3 py-1.5 border-t border-[#334155] flex justify-between text-[10px] text-[#475569]">
+      <div className="px-3 py-1.5 border-t border-[#334155] flex justify-between text-xs text-[#475569]">
         <span>Tab — принять</span>
         <span>Esc — закрыть</span>
       </div>

@@ -160,18 +160,18 @@ export const WorkflowPanel: React.FC<WorkflowPanelProps> = ({ instanceId, onClos
                   <div>
                     <div className="text-sm font-medium text-[var(--text-primary)]">{step.step_name}</div>
                     <div className="flex items-center gap-2 mt-1">
-                      <Badge variant={stepStatusColor(step.status)} className="text-[10px]">
+                      <Badge variant={stepStatusColor(step.status)} className="text-xs">
                         {stepStatusLabel(step.status)}
                       </Badge>
                       {step.approval_type === 'approve' && (
-                        <span className="text-[10px] text-[var(--text-muted)]">Требуется подпись</span>
+                        <span className="text-xs text-[var(--text-muted)]">Требуется подпись</span>
                       )}
                     </div>
                   </div>
                 </div>
 
                 {step.signed_by && step.signature_hash && (
-                  <div className="flex items-center gap-1 text-[10px] text-[var(--success)]">
+                  <div className="flex items-center gap-1 text-xs text-[var(--success)]">
                     <ShieldCheck size={12} />
                     <span title={step.signature_hash}>Подписано</span>
                   </div>
@@ -184,7 +184,7 @@ export const WorkflowPanel: React.FC<WorkflowPanelProps> = ({ instanceId, onClos
                   {step.assigned_users.map((u) => (
                     <span
                       key={u.id}
-                      className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--bg-surface-2)] text-[var(--text-secondary)]"
+                      className="text-xs px-1.5 py-0.5 rounded bg-[var(--bg-surface-2)] text-[var(--text-secondary)]"
                     >
                       {u.full_name}
                     </span>
@@ -196,7 +196,7 @@ export const WorkflowPanel: React.FC<WorkflowPanelProps> = ({ instanceId, onClos
               {stepSigs.length > 0 && (
                 <div className="mt-2 space-y-1">
                   {stepSigs.map((sig) => (
-                    <div key={sig.id} className="text-[10px] text-[var(--text-muted)] flex items-center gap-1">
+                    <div key={sig.id} className="text-xs text-[var(--text-muted)] flex items-center gap-1">
                       <Eye size={10} />
                       <span title={sig.signature_hash}>
                         {sig.user_name} · {new Date(sig.signed_at).toLocaleString('ru-RU')}

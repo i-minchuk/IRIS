@@ -208,19 +208,19 @@ export function ProjectPortfolio({ data, loading }: ProjectPortfolioProps) {
             Портфель проектов
           </h3>
           {isFs && (
-            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-bold" style={{ background: 'var(--iris-status-bg-blue)', color: 'var(--iris-accent-blue)' }}>
+            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-sm font-bold" style={{ background: 'var(--iris-status-bg-blue)', color: 'var(--iris-accent-blue)' }}>
               Режим демонстрации
             </span>
           )}
         </div>
-        <p className={`${isFs ? 'text-sm mt-1' : 'text-[11px] sm:text-xs'}`} style={{ color: 'var(--text-muted)' }}>
+        <p className={`${isFs ? 'text-sm mt-1' : 'text-sm sm:text-xs'}`} style={{ color: 'var(--text-muted)' }}>
           X = бюджет % · Y = график % · размер = бюджет проекта
         </p>
       </div>
       <div className="flex items-center gap-2 shrink-0">
         <div className="flex flex-wrap items-center gap-2">
           {Object.entries(ZONE_META).map(([key, zone]) => (
-            <span key={key} className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] sm:text-xs font-medium" style={{ backgroundColor: zone.bg, borderColor: 'var(--iris-border-subtle)', color: 'var(--text-secondary)' }}>
+            <span key={key} className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-sm sm:text-xs font-medium" style={{ backgroundColor: zone.bg, borderColor: 'var(--iris-border-subtle)', color: 'var(--text-secondary)' }}>
               <span className="hidden sm:inline">{zone.label}</span>
               <span className="sm:hidden">{zone.icon}</span>
               <span className="ml-1 tabular-nums">{data?.zones?.[key] ?? 0}</span>
@@ -240,7 +240,7 @@ export function ProjectPortfolio({ data, loading }: ProjectPortfolioProps) {
         ) : (
           <button
             onClick={() => setIsFullscreen(true)}
-            className="inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-medium transition-colors"
+            className="inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-sm font-medium transition-colors"
             style={{ background: 'var(--iris-bg-surface)', borderColor: 'var(--iris-border-subtle)', color: 'var(--text-muted)' }}
             title="Развернуть на весь экран"
           >

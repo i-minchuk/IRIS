@@ -14,15 +14,20 @@ import {
   type PortfolioChartData,
   type ActionItem,
   type AnalyticsPeriod,
+  type TeamTimeAnalytics,
+  type TeamTimePeriod,
 } from '@/features/analytics/api/analytics';
+import { CalendarWidget } from '@/features/analytics/components/CalendarWidget';
+import { LeaderboardWidget } from '@/features/leaderboard/components/LeaderboardWidget';
+import { AISearchWidget } from '@/features/ai/components/AISearchWidget';
+import { RemarksWidget } from '@/features/remarks/components/RemarksWidget';
 import {
   TrendingUp, TrendingDown, AlertTriangle,
   Award, DollarSign, Briefcase, Users, Clock,
-  ChevronRight, Zap, Sparkles, ArrowDown, Loader2
+  ChevronRight, Zap, Sparkles, ArrowDown, Loader2,
+  Gavel, BarChart3, Calendar as CalendarIcon
 } from 'lucide-react';
-import { BirthdayWidget } from '@/components/BirthdayWidget';
 import { DepartmentLoad } from '@/components/DepartmentLoad';
-import { LeaderboardWidget } from '@/components/gamification/LeaderboardWidget';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -34,6 +39,8 @@ import {
   Legend,
   BarChart,
   Bar,
+  ComposedChart,
+  Line,
   PieChart,
   Pie,
   Cell,
@@ -95,16 +102,6 @@ const MOCK_DEADLINES = [
   { day: 'Пн', date: '02.06', projects: ['ТЭЦ-5'], color: '#0C7205', urgent: false },
 ];
 
-const MOCK_BIRTHDAYS = [
-  { id: 'b1', name: 'Иванов П.С.', date: '05-15', role: 'Ведущий инженер' },
-  { id: 'b2', name: 'Петрова А.М.', date: '05-11', role: 'Инженер КЖ' },
-  { id: 'b3', name: 'Сидоров В.К.', date: '06-01', role: 'Младший инженер' },
-  { id: 'b4', name: 'Новикова А.В.', date: '12-25', role: 'Главный инженер' },
-  { id: 'b5', name: 'Кузнецов Д.И.', date: '06-15', role: 'ГИП' },
-  { id: 'b6', name: 'Смирнова Е.В.', date: '07-03', role: 'Нормоконтролёр' },
-  { id: 'b7', name: 'Волков А.Н.', date: '08-20', role: 'Менеджер проектов' },
-];
-
 /* ── Мини sparkline ── */
 function MiniSparkline({ data, color }: { data: number[]; color: string }) {
   const min = Math.min(...data);
@@ -143,7 +140,7 @@ function tooltipStyle(isDark: boolean) {
 export default function Dashboard() {
   const navigate = useNavigate();
   const { theme } = useTheme();
-  const isDark = theme === 'dark';
+  const isDark = theme === 'dark' || theme === 'midnight' || theme === 'contrast';
   const [period, setPeriod] = useState<AnalyticsPeriod>('today');
 
   // API states
@@ -157,9 +154,11 @@ export default function Dashboard() {
   const [trendDataRaw, setTrendDataRaw] = useState<TrendData | null>(null);
   const [portfolioDataRaw, setPortfolioDataRaw] = useState<PortfolioChartData | null>(null);
   const [actionItemsRaw, setActionItemsRaw] = useState<ActionItem[]>([]);
+  const [teamTimeData, setTeamTimeData] = useState<TeamTimeAnalytics[]>([]);
+  const [teamTimeLoading, setTeamTimeLoading] = useState(true);
 
   // Derived flags — no mock fallback, show empty states instead
-  const hasData = scorecard.length > 0 || alerts.length > 0 || tenderPipeline !== null;
+  const hasData = scorecard.length > 0 || alerts.length > 0 || tenderPipeline !== null || teamTimeData.length > 0;
 
   // Auto-refresh data every 30 seconds (silent — no loaders)
   useEffect(() => {
@@ -192,7 +191,8 @@ export default function Dashboard() {
       analyticsApi.getTrend(period),
       analyticsApi.getPortfolio(period),
       analyticsApi.getActionItems(),
-    ]).then(([dashboardRes, alertsRes, tenderRes, sparkRes, trendRes, portfolioRes, actionItemsRes]) => {
+      analyticsApi.getTeamTimeTracking(period as TeamTimePeriod),
+    ]).then(([dashboardRes, alertsRes, tenderRes, sparkRes, trendRes, portfolioRes, actionItemsRes, teamTimeRes]) => {
       if (cancelled) return;
 
       if (dashboardRes.status === 'fulfilled') {
@@ -216,6 +216,9 @@ export default function Dashboard() {
       if (actionItemsRes.status === 'fulfilled') {
         setActionItemsRaw(actionItemsRes.value.data.items ?? []);
       }
+      if (teamTimeRes.status === 'fulfilled') {
+        setTeamTimeData(teamTimeRes.value.data ?? []);
+      }
 
       const allFailed = [dashboardRes, alertsRes, tenderRes, sparkRes].every((r) => r.status === 'rejected');
       if (allFailed) {
@@ -227,6 +230,7 @@ export default function Dashboard() {
       if (!cancelled) {
         setLoading(false);
         setChartsLoading(false);
+        setTeamTimeLoading(false);
       }
     });
 
@@ -367,6 +371,9 @@ export default function Dashboard() {
     return MOCK_DEADLINES;
   }, [hasData, scorecard]);
 
+  // Keep deadlines variable to avoid breaking other code that may reference it
+  void deadlines;
+
   const trendData = useMemo(() => {
     if (trendDataRaw?.points && trendDataRaw.points.length > 0) {
       return trendDataRaw.points;
@@ -417,7 +424,7 @@ export default function Dashboard() {
   const chartGridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
 
   return (
-    <div className="w-full overflow-x-hidden px-3 md:px-6 py-4 md:pt-2 pb-6 text-base md:text-lg" style={{ background: 'var(--layout-bg)', color: 'var(--text-primary)' }}>
+    <div className="w-full overflow-x-hidden overflow-y-auto px-3 md:px-6 py-4 md:pt-2 pb-6 text-base md:text-lg" style={{ background: 'var(--layout-bg)', color: 'var(--text-primary)', minHeight: '100vh' }}>
       {/* Loading overlay */}
       {loading && (
         <div className="flex items-center justify-center gap-2 py-8">
@@ -443,7 +450,7 @@ export default function Dashboard() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <h1 className="sr-only" style={{ color: 'var(--text-primary)' }}>Панель аналитики</h1>
-              <p className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Стратегическая сводка по финансам, тендерам и проектам</p>
+              <h2 className="text-lg md:text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Стратегическая сводка по финансам, тендерам и проектам</h2>
             </div>
             <div className="flex items-center gap-3">
               <div className="flex items-center rounded-lg p-0.5" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
@@ -492,53 +499,66 @@ export default function Dashboard() {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] md:text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Выручка (план)</span>
-                <DollarSign size={14} style={{ color: '#3B82F6' }} />
+                <span className="text-xs md:text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Выручка (план)</span>
+                <div className="flex items-center justify-center h-7 w-7 rounded-lg" style={{ background: 'rgba(59, 130, 246, 0.12)' }}>
+                  <DollarSign size={14} style={{ color: '#3B82F6' }} />
+                </div>
               </div>
               <div className="text-xl md:text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
                 {revVal}<span className="text-base md:text-lg font-medium leading-relaxed mt-1 md:text-sm font-normal" style={{ color: 'var(--text-secondary)' }}> / {finance.revenue.plan} {finance.revenue.unit}</span>
               </div>
-              <div className="flex items-center gap-1 mt-1 text-[10px] md:text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: '#0C7205' }}><TrendingUp size={12} /> {finance.revenue.trend}</div>
+              <div className="flex items-center gap-1 mt-1 text-xs md:text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: '#0C7205' }}><TrendingUp size={12} /> {finance.revenue.trend}</div>
             </div>
 
             <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] md:text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Прибыль (план)</span>
-                <Award size={14} style={{ color: '#D4AF37' }} />
+                <span className="text-xs md:text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Прибыль (план)</span>
+                <div className="flex items-center justify-center h-7 w-7 rounded-lg" style={{ background: 'rgba(212, 175, 55, 0.12)' }}>
+                  <Award size={14} style={{ color: '#D4AF37' }} />
+                </div>
               </div>
               <div className="text-xl md:text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
                 {profVal}<span className="text-base md:text-lg font-medium leading-relaxed mt-1 md:text-sm font-normal" style={{ color: 'var(--text-secondary)' }}> / {finance.profit.plan} {finance.profit.unit}</span>
               </div>
-              <div className="flex items-center gap-1 mt-1 text-[10px] md:text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: '#0C7205' }}><TrendingUp size={12} /> {finance.profit.trend}</div>
+              <div className="flex items-center gap-1 mt-1 text-xs md:text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: '#0C7205' }}><TrendingUp size={12} /> {finance.profit.trend}</div>
             </div>
 
             <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: finance.receivables.risk ? '1px solid rgba(220,38,38,0.4)' : '1px solid var(--border-color)' }}>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] md:text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>ДЗО (дебиторка)</span>
-                <Clock size={14} style={{ color: finance.receivables.risk ? '#DC2626' : '#6B7280' }} />
+                <span className="text-xs md:text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>ДЗО (дебиторка)</span>
+                <div className="flex items-center justify-center h-7 w-7 rounded-lg" style={{ background: finance.receivables.risk ? 'rgba(220, 38, 38, 0.12)' : 'rgba(107, 114, 128, 0.12)' }}>
+                  <Clock size={14} style={{ color: finance.receivables.risk ? '#DC2626' : '#6B7280' }} />
+                </div>
               </div>
               <div className="text-xl md:text-2xl font-bold" style={{ color: finance.receivables.risk ? '#DC2626' : 'var(--text-primary)' }}>
                 {dzVal} <span className="text-base md:text-lg font-medium leading-relaxed mt-1 md:text-sm font-normal" style={{ color: 'var(--text-secondary)' }}>{finance.receivables.unit}</span>
               </div>
-              <div className="flex items-center gap-1 mt-1 text-[10px] md:text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: '#0C7205' }}><TrendingDown size={12} /> {finance.receivables.trend}</div>
+              <div className="flex items-center gap-1 mt-1 text-xs md:text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: '#0C7205' }}><TrendingDown size={12} /> {finance.receivables.trend}</div>
             </div>
 
             <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] md:text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Средняя маржа</span>
-                <Briefcase size={14} style={{ color: '#8B5CF6' }} />
+                <span className="text-xs md:text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Средняя маржа</span>
+                <div className="flex items-center justify-center h-7 w-7 rounded-lg" style={{ background: 'rgba(139, 92, 246, 0.12)' }}>
+                  <Briefcase size={14} style={{ color: '#8B5CF6' }} />
+                </div>
               </div>
               <div className="text-xl md:text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
                 {margVal}<span className="text-base md:text-lg font-medium leading-relaxed mt-1 md:text-sm font-normal" style={{ color: 'var(--text-secondary)' }}>{finance.avgMargin.unit}</span>
               </div>
-              <div className="flex items-center gap-1 mt-1 text-[10px] md:text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: '#0C7205' }}><TrendingUp size={12} /> {finance.avgMargin.trend}</div>
+              <div className="flex items-center gap-1 mt-1 text-xs md:text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: '#0C7205' }}><TrendingUp size={12} /> {finance.avgMargin.trend}</div>
             </div>
           </div>
 
           {/* Tender funnel */}
           <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
             <div className="flex items-center justify-between mb-4">
-              <p className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Тендерная воронка</p>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="flex items-center justify-center h-8 w-8 rounded-lg" style={{ background: 'rgba(124, 58, 237, 0.12)' }}>
+                  <Gavel size={16} style={{ color: '#7C3AED' }} />
+                </div>
+                <h2 className="text-lg md:text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Тендерная воронка</h2>
+              </div>
               <button onClick={() => navigate('/projects')} className="text-base md:text-lg font-medium leading-relaxed mt-1 flex items-center gap-1 transition-colors" style={{ color: 'var(--text-secondary)' }}>Все тендеры <ChevronRight size={12} /></button>
             </div>
             <div className="flex items-end justify-between gap-1 overflow-x-auto pb-1">
@@ -550,12 +570,12 @@ export default function Dashboard() {
                       onClick={() => navigate('/projects')}
                     />
                     <span className="text-base md:text-lg font-bold" style={{ color: step.color }}>{step.value}</span>
-                    <span className="text-[9px] md:text-[10px] text-center leading-tight" style={{ color: 'var(--text-muted)' }}>{step.stage}</span>
+                    <span className="text-xs md:text-xs text-center leading-tight" style={{ color: 'var(--text-muted)' }}>{step.stage}</span>
                   </div>
                   {i < tenderFunnel.length - 1 && (
                     <div className="flex flex-col items-center justify-end pb-5 px-0.5">
                       <ArrowDown size={12} style={{ color: 'var(--text-muted)', opacity: 0.5 }} />
-                      <span className="text-[9px] md:text-[10px] font-bold mt-0.5" style={{ color: step.color }}>{funnelConversion[i]}%</span>
+                      <span className="text-xs md:text-xs font-bold mt-0.5" style={{ color: step.color }}>{funnelConversion[i]}%</span>
                     </div>
                   )}
                 </div>
@@ -573,7 +593,7 @@ export default function Dashboard() {
             ].map((kpi, idx) => (
               <div key={idx} className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] md:text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>{kpi.label}</span>
+                  <span className="text-xs md:text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>{kpi.label}</span>
                   <span style={{ color: kpi.color }}>{kpi.icon}</span>
                 </div>
                 <div className="flex items-end justify-between">
@@ -582,7 +602,7 @@ export default function Dashboard() {
                       {kpi.decimals === 0 ? Math.round(kpiVals[idx]) : kpiVals[idx]}
                       <span className="text-base md:text-lg font-medium leading-relaxed mt-1 md:text-sm font-normal" style={{ color: 'var(--text-secondary)' }}>{kpi.suffix}</span>
                     </div>
-                    <div className="flex items-center gap-1 mt-1 text-[10px] md:text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: kpi.good ? '#0C7205' : '#D4AF37' }}>
+                    <div className="flex items-center gap-1 mt-1 text-xs md:text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: kpi.good ? '#0C7205' : '#D4AF37' }}>
                       {kpi.good ? <TrendingUp size={12} /> : <TrendingDown size={12} />}{kpi.trend}
                     </div>
                   </div>
@@ -595,9 +615,14 @@ export default function Dashboard() {
           {/* Portfolio — BarChart + PieChart */}
           <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
             <div className="flex items-center justify-between mb-3">
-              <p className="text-base md:text-xl font-medium" style={{ color: 'var(--text-secondary)' }}>
-                Структура портфеля по типам объектов
-              </p>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="flex items-center justify-center h-8 w-8 rounded-lg" style={{ background: 'rgba(59, 130, 246, 0.12)' }}>
+                  <BarChart3 size={16} style={{ color: '#3B82F6' }} />
+                </div>
+                <h2 className="text-lg md:text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                  Структура портфеля по типам объектов
+                </h2>
+              </div>
               <span className="text-xs md:text-sm" style={{ color: 'var(--text-muted)' }}>Выручка, млн ₽</span>
             </div>
             {chartsLoading && (
@@ -663,6 +688,98 @@ export default function Dashboard() {
                     <Legend wrapperStyle={{ fontSize: '12px', color: chartTextColor }} />
                   </PieChart>
                 </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+
+          {/* Учёт времени и качество работы */}
+          <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="flex items-center justify-center h-8 w-8 rounded-lg" style={{ background: 'rgba(12, 114, 5, 0.12)' }}>
+                  <Clock size={16} style={{ color: '#0C7205' }} />
+                </div>
+                <h2 className="text-lg md:text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                  Учёт времени и качество работы
+                </h2>
+              </div>
+              <span className="text-xs md:text-sm" style={{ color: 'var(--text-muted)' }}>
+                Баллы начисляются за быстрое и качественное утверждение документов
+              </span>
+            </div>
+            {teamTimeLoading && (
+              <div className="flex items-center justify-center gap-2 py-8">
+                <Loader2 size={16} className="animate-spin" style={{ color: 'var(--text-muted)' }} />
+                <span className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Загрузка графиков…</span>
+              </div>
+            )}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4" style={{ opacity: teamTimeLoading ? 0.4 : 1, transition: 'opacity 0.2s' }}>
+              <div className="lg:col-span-2 h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart
+                    data={teamTimeData.map((u) => ({
+                      name: u.full_name.split(' ').slice(0, 2).join(' '),
+                      hours: u.total_active_hours,
+                      quality: u.quality_score,
+                      speed: u.speed_score,
+                      bonus: u.bonus_points,
+                    }))}
+                    margin={{ top: 8, right: 8, left: -12, bottom: 0 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} />
+                    <XAxis dataKey="name" tick={{ fill: chartTextColor, fontSize: 11 }} axisLine={{ stroke: chartGridColor }} tickLine={false} />
+                    <YAxis yAxisId="left" tick={{ fill: chartTextColor, fontSize: 11 }} axisLine={{ stroke: chartGridColor }} tickLine={false} />
+                    <YAxis yAxisId="right" orientation="right" domain={[0, 100]} tick={{ fill: chartTextColor, fontSize: 11 }} axisLine={{ stroke: chartGridColor }} tickLine={false} />
+                    <Tooltip
+                      contentStyle={tooltipStyle(isDark)}
+                      formatter={(value, name) => {
+                        if (name === 'hours') return [`${value} ч`, 'Активные часы'];
+                        if (name === 'quality') return [`${value}`, 'Качество'];
+                        if (name === 'speed') return [`${value}`, 'Скорость'];
+                        if (name === 'bonus') return [`${value}`, 'Баллы'];
+                        return [value, name];
+                      }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: '12px', color: chartTextColor }} />
+                    <Bar yAxisId="left" dataKey="hours" name="Активные часы" fill="#3B82F6" radius={[4, 4, 0, 0]} fillOpacity={0.8} />
+                    <Bar yAxisId="left" dataKey="bonus" name="Баллы" fill="#D4AF37" radius={[4, 4, 0, 0]} fillOpacity={0.7} />
+                    <Line yAxisId="right" type="monotone" dataKey="quality" name="Качество (0–100)" stroke="#0C7205" strokeWidth={2} dot={{ r: 3 }} />
+                    <Line yAxisId="right" type="monotone" dataKey="speed" name="Скорость (0–100)" stroke="#8B5CF6" strokeWidth={2} dot={{ r: 3 }} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="space-y-3">
+                <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Топ по качеству</p>
+                {teamTimeData.length === 0 && !teamTimeLoading && (
+                  <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Нет данных за выбранный период</p>
+                )}
+                {teamTimeData.slice(0, 3).map((user, idx) => (
+                  <div
+                    key={user.user_id}
+                    className="flex items-center justify-between p-2.5 rounded-lg"
+                    style={{ background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)' }}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div
+                        className="flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold"
+                        style={{
+                          background: idx === 0 ? '#D4AF37' : idx === 1 ? '#94A3B8' : '#B45309',
+                          color: '#fff',
+                        }}
+                      >
+                        {idx + 1}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>{user.full_name}</div>
+                        <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{user.total_active_hours} ч · {user.total_sessions} сессий</div>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className="text-sm font-bold" style={{ color: '#0C7205' }}>{user.quality_score}</div>
+                      <div className="text-xs" style={{ color: 'var(--text-muted)' }}>+{user.bonus_points} баллов</div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -750,31 +867,22 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Deadlines */}
-          <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-base md:text-xl font-medium" style={{ color: 'var(--text-secondary)' }}>
-                Ближайшие дедлайны
-              </p>
-              <button onClick={() => navigate('/projects')} className="text-base md:text-lg font-medium leading-relaxed mt-1 flex items-center gap-1 transition-colors" style={{ color: 'var(--text-secondary)' }}>
-                Календарь <ChevronRight size={14} />
-              </button>
-            </div>
-            <div className="flex items-center gap-1 overflow-x-auto pb-1">
-              {deadlines.map((item, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center min-w-[64px]">
-                  <div className="w-full py-2 rounded-lg text-center cursor-pointer transition-all hover:scale-105"
-                    style={{ background: item.urgent ? item.color + '15' : 'var(--card-elevated)', border: `1px solid ${item.urgent ? item.color + '40' : 'var(--border-color)'}` }}
-                    onClick={() => navigate('/projects')}
-                  >
-                    <div className="text-xs md:text-sm font-medium" style={{ color: item.urgent ? item.color : 'var(--text-muted)' }}>{item.day}</div>
-                    <div className="text-sm md:text-base font-bold" style={{ color: 'var(--text-primary)' }}>{item.date}</div>
-                    <div className="text-xs md:text-sm mt-0.5 truncate px-1" style={{ color: 'var(--text-muted)' }}>{item.projects[0]}</div>
-                  </div>
-                  {i < deadlines.length - 1 && <div className="w-4 h-px mt-1" style={{ background: 'var(--border-color)' }} />}
+          {/* Ближайшие дедлайны — Календарь + дедлайны + дни рождения */}
+          <div className="p-4 md:p-5 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="flex items-center justify-center h-8 w-8 rounded-lg" style={{ background: 'rgba(236, 72, 153, 0.12)' }}>
+                  <CalendarIcon size={16} style={{ color: '#EC4899' }} />
                 </div>
-              ))}
+                <h2 className="text-lg md:text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                  Дедлайны, задачи, тендеры и дни рождения
+                </h2>
+              </div>
+              <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                
+              </p>
             </div>
+            <CalendarWidget isDark={isDark} />
           </div>
 
         </div>
@@ -782,10 +890,20 @@ export default function Dashboard() {
         {/* ═══ ПРАВАЯ КОЛОНКА — 1/3 экрана, увеличенные шрифты ═══ */}
         <div className="space-y-5 xl:sticky xl:top-5">
 
+          {/* AI-поиск */}
+          <div className="p-5 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+            <AISearchWidget isDark={isDark} />
+          </div>
+
           {/* Риски */}
           <div className="p-5 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>Риски и требования внимания</h3>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="flex items-center justify-center h-8 w-8 rounded-lg" style={{ background: 'rgba(220, 38, 38, 0.12)' }}>
+                  <AlertTriangle size={16} style={{ color: '#DC2626' }} />
+                </div>
+                <h3 className="text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>Риски и требования внимания</h3>
+              </div>
               <div className="flex items-center gap-2">
                 <span className="text-lg px-2 py-0.5 rounded-full font-medium" style={{ background: 'rgba(220,38,38,0.12)', color: '#DC2626' }}>{criticalAlerts.length}</span>
                 <AlertTriangle size={24} style={{ color: 'var(--text-muted)' }} />
@@ -853,18 +971,14 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Дни рождения */}
+          {/* Замечания */}
           <div className="p-5 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
-            <div className="[&_*]:text-xl">
-              <BirthdayWidget birthdays={MOCK_BIRTHDAYS} />
-            </div>
+            <RemarksWidget isDark={isDark} />
           </div>
 
           {/* Лидерборд */}
           <div className="p-5 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
-            <div className="[&_*]:text-xl">
-              <LeaderboardWidget />
-            </div>
+            <LeaderboardWidget />
           </div>
 
         </div>

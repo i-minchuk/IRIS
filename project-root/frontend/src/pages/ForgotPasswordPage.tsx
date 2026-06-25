@@ -9,7 +9,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function ForgotPasswordPage() {
   const { theme } = useTheme();
-  const isDark = theme === 'dark';
+  const isDark = theme === 'dark' || theme === 'midnight' || theme === 'contrast';
   const { setHidden } = useZoomStore();
   useEffect(() => {
     setHidden(true);
@@ -114,7 +114,7 @@ export default function ForgotPasswordPage() {
 
               <form onSubmit={handleSubmit}>
                 <div className="mb-5">
-                  <label htmlFor="email" className="block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: textMuted }}>Email</label>
+                  <label htmlFor="email" className="block text-sm font-semibold uppercase tracking-wider mb-1.5" style={{ color: textMuted }}>Email</label>
                   <div className="relative">
                     <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: iconColor }} />
                     <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="user@example.com" autoComplete="email" required

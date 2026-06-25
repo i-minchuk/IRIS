@@ -156,16 +156,55 @@ class DocumentService:
                 detail="Document not found"
             )
         
+        # Remember whether the document was already approved to avoid duplicate awards.
+        was_already_approved = doc.status == 'approved'
         doc = await self.doc_repo.update(doc, data)
         
-        # Gamification: award XP when document is approved
-        if data.get('status') == 'approved' and doc.author_id:
+        # Gamification: award XP/points when document is approved.
+        # Bonus points are given for speed (approved before planned deadline)
+        # and quality (minimal revisions).
+        if (
+            data.get('status') == 'approved'
+            and doc.author_id
+            and not was_already_approved
+        ):
             gamification = GamificationService(self.db)
+            base_points = 20
+            base_xp = 25
+            bonus_points = 0
+            bonus_xp = 0
+            meta: Dict[str, Any] = {
+                "base_points": base_points,
+                "base_xp": base_xp,
+            }
+            now = datetime.now(timezone.utc)
+
+            # Speed bonus: approved before planned end/ready date.
+            planned = doc.planned_end or doc.planned_ready
+            if planned and now <= planned:
+                bonus_points += 10
+                bonus_xp += 15
+                meta["speed_bonus"] = {
+                    "planned": planned.isoformat(),
+                    "actual": now.isoformat(),
+                }
+
+            # Quality bonus: first-time approval (0 or 1 revisions).
+            revision_count = len(doc.revisions) if doc.revisions else 0
+            if revision_count <= 1:
+                bonus_points += 10
+                bonus_xp += 10
+                meta["quality_bonus"] = {"revision_count": revision_count}
+
             await gamification.award_event(
                 user_id=doc.author_id,
                 event_type="document_approved",
-                points=20,
-                xp=25,
+                points=base_points + bonus_points,
+                xp=base_xp + bonus_xp,
+                ref_doc_id=doc.id,
+                project_id=doc.project_id,
+                comment=f"Document approved: +{bonus_points} quality/speed bonus",
+                meta=meta,
             )
         
         return {

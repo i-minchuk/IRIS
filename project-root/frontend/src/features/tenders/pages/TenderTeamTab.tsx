@@ -99,7 +99,7 @@ export default function TenderTeamTab({ tenderId }: { tenderId: number }) {
                         <span style={{ color: 'var(--text-muted)' }}>{c.department}</span>
                         <span style={{ color: c.load_pct > 80 ? '#DC2626' : c.load_pct > 50 ? '#D4AF37' : '#0C7205' }}>{c.load_pct}%</span>
                       </div>
-                      <div className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>
+                      <div className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
                         Свободен с {new Date(c.available_from).toLocaleDateString('ru-RU')}
                       </div>
                     </div>
@@ -163,7 +163,7 @@ export default function TenderTeamTab({ tenderId }: { tenderId: number }) {
 function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
   return (
     <div className="p-3 rounded-lg" style={{ background: 'var(--bg-surface-2)', border: '1px solid var(--border-default)' }}>
-      <div className="text-[10px] font-medium" style={{ color: 'var(--text-muted)' }}>{label}</div>
+      <div className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>{label}</div>
       <div className="text-xl font-bold" style={{ color }}>{value}</div>
     </div>
   );
@@ -177,7 +177,7 @@ function AvailabilityBadge({ status }: { status: string }) {
   };
   const c = config[status as keyof typeof config] || config.busy;
   return (
-    <span className="text-[10px] px-1.5 py-0.5 rounded font-medium" style={{ background: c.bg, color: c.color }}>
+    <span className="text-xs px-1.5 py-0.5 rounded font-medium" style={{ background: c.bg, color: c.color }}>
       {c.label}
     </span>
   );

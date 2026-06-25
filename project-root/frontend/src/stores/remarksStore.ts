@@ -25,7 +25,7 @@ import {
   getTags as apiGetTags,
   createTag as apiCreateTag,
   deleteTag as apiDeleteTag,
-} from '@/api/remarks';
+} from '@/features/remarks/api/remarks';
 
 interface RemarksState {
   // State

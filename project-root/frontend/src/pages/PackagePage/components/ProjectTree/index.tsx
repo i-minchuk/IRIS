@@ -90,11 +90,11 @@ export const ProjectTree: React.FC<Props> = ({
                   <span className="text-[#3b82f6] text-xs">{isExpanded ? '▼' : '▶'}</span>
                   <div className="flex-1 min-w-0">
                     <div className="text-xs font-bold text-[#93c5fd] truncate">{project.name}</div>
-                    <div className="text-[10px] text-[#64748b]">
+                    <div className="text-xs text-[#64748b]">
                       {project.code} | {project.customer}
                     </div>
                   </div>
-                  <span className="text-[10px] text-[#64748b]">{project.documents.length}</span>
+                  <span className="text-xs text-[#64748b]">{project.documents.length}</span>
                 </button>
 
                 {/* Документы проекта */}
@@ -123,19 +123,19 @@ export const ProjectTree: React.FC<Props> = ({
 
                           <div className="flex-1 min-w-0">
                             <div
-                              className="text-[11px] font-bold truncate"
+                              className="text-sm font-bold truncate"
                               style={{
                                 color: doc.status === 'deleted' ? '#FFFFFF' : sc.text,
                               }}
                             >
                               {doc.name}
                             </div>
-                            <div className="text-[10px] text-[#64748b]">
+                            <div className="text-xs text-[#64748b]">
                               Рев.{doc.revision} | {doc.responsible}
                             </div>
                           </div>
 
-                          {doc.hasRemarks && <span className="text-[10px]">⚠️</span>}
+                          {doc.hasRemarks && <span className="text-xs">⚠️</span>}
                         </button>
                       );
                     })}

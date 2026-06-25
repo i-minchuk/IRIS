@@ -32,12 +32,12 @@ export const DocumentViewer: React.FC<Props> = ({ document, project }) => {
         <span className="text-lg">📄</span>
         <div className="flex-1">
           <div className="text-sm font-bold text-[#e2e8f0]">{document.name}</div>
-          <div className="text-[10px] text-[#94a3b8]">
+          <div className="text-xs text-[#94a3b8]">
             Ревизия {document.revision} | {document.lastUpdated} | {project?.name}
           </div>
         </div>
         <span
-          className="px-2 py-0.5 rounded text-[10px] font-bold"
+          className="px-2 py-0.5 rounded text-xs font-bold"
           style={{ backgroundColor: sc.bg, color: sc.text }}
         >
           {sc.label}

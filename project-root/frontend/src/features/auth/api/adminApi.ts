@@ -23,12 +23,12 @@ export interface UserUpdatePayload {
 
 export const adminApi = {
   getUsers: async (): Promise<AdminUser[]> => {
-    const { data } = await client.get('/api/v1/auth/users');
+    const { data } = await client.get('/auth/users');
     return data;
   },
 
   updateUser: async (userId: number, payload: UserUpdatePayload): Promise<AdminUser> => {
-    const { data } = await client.patch(`/api/v1/auth/users/${userId}`, payload);
+    const { data } = await client.patch(`/auth/users/${userId}`, payload);
     return data;
   },
 };

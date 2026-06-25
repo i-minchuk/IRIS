@@ -63,7 +63,7 @@ export function BirthdayWidget({ birthdays }: Props) {
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Дни рождения</h3>
         <div className="flex items-center gap-1.5">
-          <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ background: 'rgba(236,72,153,0.12)', color: '#EC4899' }}>
+          <span className="text-xs px-1.5 py-0.5 rounded-full font-medium" style={{ background: 'rgba(236,72,153,0.12)', color: '#EC4899' }}>
             {todayBirthdays.length > 0 ? `${todayBirthdays.length} сегодня` : `${upcoming.length} ближайших`}
           </span>
           <Cake size={14} style={{ color: 'var(--text-muted)' }} />
@@ -84,11 +84,11 @@ export function BirthdayWidget({ birthdays }: Props) {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5">
                 <span className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>{b.name}</span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0" style={{ background: 'rgba(236,72,153,0.15)', color: '#EC4899' }}>
+                <span className="text-xs px-1.5 py-0.5 rounded-full font-medium shrink-0" style={{ background: 'rgba(236,72,153,0.15)', color: '#EC4899' }}>
                   Сегодня! 🎉
                 </span>
               </div>
-              <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{b.role}</div>
+              <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{b.role}</div>
             </div>
           </div>
         ))}
@@ -110,13 +110,13 @@ export function BirthdayWidget({ birthdays }: Props) {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>{b.name}</div>
-                <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{b.role}</div>
+                <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{b.role}</div>
               </div>
               <div className="text-right shrink-0">
                 <div className="text-xs font-medium" style={{ color: isTomorrow ? '#EC4899' : 'var(--text-secondary)' }}>
                   {isTomorrow ? 'Завтра' : `${formatDateShort(b.date)}`}
                 </div>
-                <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
+                <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
                   {isTomorrow ? '' : `через ${days} ${days === 1 ? 'день' : days < 5 ? 'дня' : 'дней'}`}
                 </div>
               </div>

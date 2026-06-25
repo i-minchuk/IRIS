@@ -26,7 +26,7 @@ export const ProblemsPanel: React.FC<ProblemsPanelProps> = ({ problems, nodes, o
             )}
             <h5 className="text-sm font-semibold text-[var(--iris-text-primary)]">{problem.title}</h5>
           </div>
-          <Badge variant={problem.severity === 'crit' ? 'error' : 'warning'} className="text-[10px]">
+          <Badge variant={problem.severity === 'crit' ? 'error' : 'warning'} className="text-xs">
             {problem.severity === 'crit' ? 'критично' : 'значимо'}
           </Badge>
         </div>
@@ -35,7 +35,7 @@ export const ProblemsPanel: React.FC<ProblemsPanelProps> = ({ problems, nodes, o
           <span className="font-medium text-[var(--iris-text-primary)]">Рекомендация:</span> {problem.recommendation}
         </div>
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1 text-[10px] text-[var(--iris-text-muted)]">
+          <div className="flex items-center gap-1 text-xs text-[var(--iris-text-muted)]">
             <GitMerge size={10} /> {taskNames}
           </div>
           <Button variant="ghost" size="sm" className="h-6 gap-1 text-xs" onClick={() => onSelectTask(problem.tasks[0])}>

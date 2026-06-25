@@ -21,10 +21,10 @@ interface TimerWidgetProps {
 }
 
 export default function TimerWidget({
-  documentId,
-  projectId,
-  documentName,
-  projectName,
+  documentId: propDocumentId,
+  projectId: propProjectId,
+  documentName: propDocumentName,
+  projectName: propProjectName,
   variant = 'floating',
 }: TimerWidgetProps) {
   const {
@@ -32,11 +32,18 @@ export default function TimerWidget({
     sessionId,
     elapsedSeconds,
     editCount,
+    documentId: storeDocumentId,
+    projectId: storeProjectId,
     startTimer,
     stopTimer,
     tick,
     incrementEditCount,
   } = useTimeTrackingStore();
+
+  const documentId = propDocumentId ?? (storeDocumentId || undefined);
+  const projectId = propProjectId ?? (storeProjectId || undefined);
+  const documentName = propDocumentName;
+  const projectName = propProjectName;
 
   const [isLoading, setIsLoading] = useState(false);
   const [isExpanded, setIsExpanded] = useState(true);
@@ -179,18 +186,18 @@ export default function TimerWidget({
               >
                 <div className="px-4 pb-4 space-y-3">
                   {/* Context info */}
-                  {(documentName || projectName) && (
+                  {(documentName || projectName || documentId || projectId) && (
                     <div className="space-y-1 text-xs text-[var(--iris-text-muted)]">
-                      {documentName && (
+                      {(documentName || documentId) && (
                         <div className="flex items-center gap-1.5">
                           <FileText size={12} />
-                          <span className="truncate">{documentName}</span>
+                          <span className="truncate">{documentName || `Документ #${documentId}`}</span>
                         </div>
                       )}
-                      {projectName && (
+                      {(projectName || projectId) && (
                         <div className="flex items-center gap-1.5">
                           <Briefcase size={12} />
-                          <span className="truncate">{projectName}</span>
+                          <span className="truncate">{projectName || `Проект #${projectId}`}</span>
                         </div>
                       )}
                     </div>

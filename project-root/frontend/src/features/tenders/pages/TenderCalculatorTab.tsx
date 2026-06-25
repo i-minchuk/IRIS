@@ -99,7 +99,7 @@ export default function TenderCalculatorTab({ tender }: TenderCalculatorTabProps
             </div>
             <div className="flex-1">
               <div className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>{tmpl.name}</div>
-              <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{tmpl.description}</div>
+              <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{tmpl.description}</div>
             </div>
             <ArrowRight size={14} style={{ color: 'var(--text-muted)' }} />
           </button>
@@ -158,7 +158,7 @@ export default function TenderCalculatorTab({ tender }: TenderCalculatorTabProps
           {/* Team composition */}
           {calcResult.team_composition && Object.keys(calcResult.team_composition).length > 0 && (
             <div className="mb-4">
-              <h4 className="text-[11px] font-medium mb-2" style={{ color: 'var(--text-muted)' }}>Состав команды</h4>
+              <h4 className="text-sm font-medium mb-2" style={{ color: 'var(--text-muted)' }}>Состав команды</h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 {Object.entries(calcResult.team_composition as Record<string, number>).map(([role, count]) => (
                   <div key={role} className="p-2 rounded text-xs" style={{ background: 'var(--bg-surface-2)' }}>
@@ -173,7 +173,7 @@ export default function TenderCalculatorTab({ tender }: TenderCalculatorTabProps
           {/* Monthly load */}
           {calcResult.monthly_load && calcResult.monthly_load.length > 0 && (
             <div className="mb-4">
-              <h4 className="text-[11px] font-medium mb-2" style={{ color: 'var(--text-muted)' }}>Ежемесячная загрузка</h4>
+              <h4 className="text-sm font-medium mb-2" style={{ color: 'var(--text-muted)' }}>Ежемесячная загрузка</h4>
               <div className="space-y-1">
                 {calcResult.monthly_load.map((m: any) => (
                   <div key={m.month} className="flex items-center gap-2 text-xs">
@@ -198,7 +198,7 @@ export default function TenderCalculatorTab({ tender }: TenderCalculatorTabProps
           {/* Document estimate */}
           {calcResult.document_estimate && Object.keys(calcResult.document_estimate).length > 0 && (
             <div className="mb-4">
-              <h4 className="text-[11px] font-medium mb-2" style={{ color: 'var(--text-muted)' }}>Оценка документов</h4>
+              <h4 className="text-sm font-medium mb-2" style={{ color: 'var(--text-muted)' }}>Оценка документов</h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 {Object.entries(calcResult.document_estimate as Record<string, number>).map(([doc, count]) => (
                   <div key={doc} className="p-2 rounded text-xs" style={{ background: 'var(--bg-surface-2)' }}>
@@ -213,7 +213,7 @@ export default function TenderCalculatorTab({ tender }: TenderCalculatorTabProps
           {/* Recommendations */}
           {calcResult.recommendations && calcResult.recommendations.length > 0 && (
             <div>
-              <h4 className="text-[11px] font-medium mb-2" style={{ color: 'var(--text-muted)' }}>Рекомендации</h4>
+              <h4 className="text-sm font-medium mb-2" style={{ color: 'var(--text-muted)' }}>Рекомендации</h4>
               <div className="space-y-1">
                 {calcResult.recommendations.map((rec: string, i: number) => (
                   <div key={i} className="flex items-start gap-2 text-xs p-2 rounded" style={{ background: 'var(--bg-surface-2)' }}>
@@ -265,7 +265,7 @@ export default function TenderCalculatorTab({ tender }: TenderCalculatorTabProps
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{ref.name}</span>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'rgba(107,91,149,0.12)', color: '#6B5B95' }}>
+                      <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'rgba(107,91,149,0.12)', color: '#6B5B95' }}>
                         {ref.similarity_score}% похож
                       </span>
                     </div>
@@ -290,7 +290,7 @@ export default function TenderCalculatorTab({ tender }: TenderCalculatorTabProps
                         source: 'reference',
                       });
                     }}
-                    className="px-2 py-1 rounded text-[10px] font-medium transition-colors"
+                    className="px-2 py-1 rounded text-xs font-medium transition-colors"
                     style={{ background: 'var(--brand-iris)', color: '#fff' }}
                   >
                     Применить
@@ -322,7 +322,7 @@ function CopyableMetric({ label, value, color, onCopy, copied }: {
       >
         {copied ? <Check size={10} style={{ color: '#0C7205' }} /> : <Copy size={10} style={{ color: 'var(--text-muted)' }} />}
       </button>
-      <div className="text-[10px] font-medium" style={{ color: 'var(--text-muted)' }}>{label}</div>
+      <div className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>{label}</div>
       <div className="text-sm font-bold" style={{ color }}>{value}</div>
     </div>
   );

@@ -1,6 +1,9 @@
 import { useState, useMemo } from 'react';
-import { Search, Plus, BookOpen, Hammer, FileCheck } from 'lucide-react';
+import { useTabState } from '@/shared/hooks/useTabState';
+import { PageTabs } from '@/shared/components/PageTabs';
+import { Search, Plus, BookOpen, Hammer, FileCheck, Library } from 'lucide-react';
 import { Button, Card } from '@/components/ui';
+import GlossaryPanel from './ReferencePage/GlossaryPanel';
 
 interface ReferenceItem {
   id: string;
@@ -35,22 +38,30 @@ const STANDARDS: ReferenceItem[] = [
   { id: 's5', name: 'ГОСТ 23118-99 Строительные конструкции из стали', code: 'ГОСТ 23118-99', category: 'ГОСТ' },
 ];
 
-type TabKey = 'materials' | 'constructions' | 'standards';
+type TabKey = 'materials' | 'constructions' | 'standards' | 'glossary';
 
-const TABS: { key: TabKey; label: string; icon: React.ElementType; data: ReferenceItem[] }[] = [
-  { key: 'materials', label: 'Материалы', icon: BookOpen, data: MATERIALS },
-  { key: 'constructions', label: 'Конструкции', icon: Hammer, data: CONSTRUCTIONS },
-  { key: 'standards', label: 'Нормативы', icon: FileCheck, data: STANDARDS },
+const TABS = [
+  { key: 'materials' as TabKey, label: 'Материалы', icon: <BookOpen size={16} />, color: '#14B8A6' },
+  { key: 'constructions' as TabKey, label: 'Конструкции', icon: <Hammer size={16} />, color: '#14B8A6' },
+  { key: 'standards' as TabKey, label: 'Нормативы', icon: <FileCheck size={16} />, color: '#14B8A6' },
+  { key: 'glossary' as TabKey, label: 'Глоссарий терминов', icon: <Library size={16} />, color: '#14B8A6' },
 ];
 
-const TAB_COLOR = '#14B8A6';
-
 export default function ReferencePage() {
-  const [activeTab, setActiveTab] = useState<TabKey>('materials');
+  const [activeTab, setActiveTab] = useTabState<TabKey>('iris_reference_tab', 'materials');
   const [searchQuery, setSearchQuery] = useState('');
 
   const currentData = useMemo(
-    () => TABS.find((t) => t.key === activeTab)?.data ?? [],
+    () => {
+      const tab = TABS.find((t) => t.key === activeTab);
+      if (!tab || activeTab === 'glossary') return [];
+      switch (activeTab) {
+        case 'materials': return MATERIALS;
+        case 'constructions': return CONSTRUCTIONS;
+        case 'standards': return STANDARDS;
+        default: return [];
+      }
+    },
     [activeTab]
   );
 
@@ -72,115 +83,96 @@ export default function ReferencePage() {
           <h1 className="sr-only" style={{ color: 'var(--text-primary)' }}>
             Справочники
           </h1>
+          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+            Материалы, конструкции, нормативы и термины
+          </p>
         </div>
         <Button variant="primary" leftIcon={<Plus size={16} />}>
           Добавить
         </Button>
       </div>
 
-      {/* Tabs */}
-      <div className="flex items-center gap-1 border-b" style={{ borderColor: 'var(--border-default)' }}>
-        {TABS.map((tab) => {
-          const isActive = activeTab === tab.key;
-          const Icon = tab.icon;
-          return (
-            <button
-              key={tab.key}
-              onClick={() => {
-                setActiveTab(tab.key);
-                setSearchQuery('');
-              }}
-              className="relative px-4 py-2.5 text-sm font-medium transition-all flex items-center gap-2"
-              style={{
-                color: isActive ? TAB_COLOR : 'var(--text-secondary)',
-                backgroundColor: isActive ? `${TAB_COLOR}26` : 'transparent',
-              }}
-            >
-              <Icon size={16} />
-              {tab.label}
-              {isActive && (
-                <span
-                  className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-4/5 rounded-full"
-                  style={{ backgroundColor: TAB_COLOR, boxShadow: `0 0 8px ${TAB_COLOR}` }}
-                />
-              )}
-            </button>
-          );
-        })}
-      </div>
+      <PageTabs tabs={TABS} active={activeTab} onChange={setActiveTab} color="#14B8A6" />
 
-      {/* Search */}
-      <div className="flex items-center gap-2 px-3 py-2 rounded-lg max-w-sm" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-default)' }}>
-        <Search size={14} style={{ color: 'var(--text-muted)' }} />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Поиск по названию или коду..."
-          className="bg-transparent text-sm outline-none w-full"
-          style={{ color: 'var(--text-primary)' }}
-        />
-      </div>
+      {/* Content */}
+      {activeTab === 'glossary' ? (
+        <GlossaryPanel />
+      ) : (
+        <>
+          {/* Search */}
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg max-w-sm" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-default)' }}>
+            <Search size={14} style={{ color: 'var(--text-muted)' }} />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Поиск по названию или коду..."
+              className="bg-transparent text-sm outline-none w-full"
+              style={{ color: 'var(--text-primary)' }}
+            />
+          </div>
 
-      {/* Table */}
-      <Card className="overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr style={{ background: 'var(--bg-surface-2)', borderBottom: '1px solid var(--border-default)' }}>
-                <th className="px-4 py-3 text-left font-medium" style={{ color: 'var(--text-muted)' }}>
-                  Код
-                </th>
-                <th className="px-4 py-3 text-left font-medium" style={{ color: 'var(--text-muted)' }}>
-                  Наименование
-                </th>
-                <th className="px-4 py-3 text-left font-medium" style={{ color: 'var(--text-muted)' }}>
-                  Категория
-                </th>
-                <th className="px-4 py-3 text-left font-medium" style={{ color: 'var(--text-muted)' }}>
-                  Ед. изм.
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-sm" style={{ color: 'var(--text-muted)' }}>
-                    Ничего не найдено
-                  </td>
-                </tr>
-              ) : (
-                filtered.map((item) => (
-                  <tr
-                    key={item.id}
-                    className="transition-colors"
-                    style={{ borderBottom: '1px solid var(--iris-border-subtle)' }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'var(--iris-bg-hover)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'transparent';
-                    }}
-                  >
-                    <td className="px-4 py-3 font-mono text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>
-                      {item.code || '—'}
-                    </td>
-                    <td className="px-4 py-3 font-medium" style={{ color: 'var(--text-primary)' }}>
-                      {item.name}
-                    </td>
-                    <td className="px-4 py-3 text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>
-                      {item.category || '—'}
-                    </td>
-                    <td className="px-4 py-3 text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>
-                      {item.unit || '—'}
-                    </td>
+          {/* Table */}
+          <Card className="overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr style={{ background: 'var(--bg-surface-2)', borderBottom: '1px solid var(--border-default)' }}>
+                    <th className="px-4 py-3 text-left font-medium" style={{ color: 'var(--text-muted)' }}>
+                      Код
+                    </th>
+                    <th className="px-4 py-3 text-left font-medium" style={{ color: 'var(--text-muted)' }}>
+                      Наименование
+                    </th>
+                    <th className="px-4 py-3 text-left font-medium" style={{ color: 'var(--text-muted)' }}>
+                      Категория
+                    </th>
+                    <th className="px-4 py-3 text-left font-medium" style={{ color: 'var(--text-muted)' }}>
+                      Ед. изм.
+                    </th>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+                </thead>
+                <tbody>
+                  {filtered.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="px-4 py-8 text-center text-sm" style={{ color: 'var(--text-muted)' }}>
+                        Ничего не найдено
+                      </td>
+                    </tr>
+                  ) : (
+                    filtered.map((item) => (
+                      <tr
+                        key={item.id}
+                        className="transition-colors"
+                        style={{ borderBottom: '1px solid var(--iris-border-subtle)' }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = 'var(--iris-bg-hover)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'transparent';
+                        }}
+                      >
+                        <td className="px-4 py-3 font-mono text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>
+                          {item.code || '—'}
+                        </td>
+                        <td className="px-4 py-3 font-medium" style={{ color: 'var(--text-primary)' }}>
+                          {item.name}
+                        </td>
+                        <td className="px-4 py-3 text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>
+                          {item.category || '—'}
+                        </td>
+                        <td className="px-4 py-3 text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>
+                          {item.unit || '—'}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </>
+      )}
     </div>
   );
 }

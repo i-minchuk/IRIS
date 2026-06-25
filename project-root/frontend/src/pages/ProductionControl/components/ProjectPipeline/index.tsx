@@ -10,7 +10,7 @@ interface Props {
 
 export const ProjectPipeline: React.FC<Props> = ({ projects, onSelect }) => {
   const { theme } = useTheme();
-  const isDark = theme === 'dark';
+  const isDark = theme === 'dark' || theme === 'midnight' || theme === 'contrast';
   const stages = Object.entries(STAGE_CONFIG).sort((a, b) => a[1].order - b[1].order);
 
   return (

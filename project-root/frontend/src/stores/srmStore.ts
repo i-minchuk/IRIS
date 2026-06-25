@@ -3,7 +3,7 @@ import type {
   Supplier, PurchaseRequest, Contract, PurchaseOrder, Invoice,
   SupplierStatus, PurchaseRequestStatus, ContractStatus, OrderStatus, InvoiceStatus
 } from '@/types/srm';
-import { mockSuppliers, mockPurchaseRequests, mockContracts, mockOrders, mockInvoices } from '@/api/mocks/srm';
+import { mockSuppliers, mockPurchaseRequests, mockContracts, mockOrders, mockInvoices } from '@/stores/mocks/srm';
 
 interface SRMState {
   suppliers: Supplier[];

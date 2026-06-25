@@ -254,7 +254,7 @@ export default function ExplorerSidebar({
             <div className="w-2.5 h-2.5 flex items-center justify-center shrink-0">
               {hasChildren && (
                 <span
-                  className="text-[9px] leading-none"
+                  className="text-xs leading-none"
                   style={{ color: 'var(--text-tertiary)' }}
                 >
                   {isExpanded ? '▼' : '▶'}
@@ -280,7 +280,7 @@ export default function ExplorerSidebar({
               </div>
               {node.code && (
                 <div
-                  className="text-[10px] font-mono truncate"
+                  className="text-xs font-mono truncate"
                   style={{ color: 'var(--text-tertiary)' }}
                 >
                   {node.code}
@@ -291,7 +291,7 @@ export default function ExplorerSidebar({
             {/* Count badge */}
             {node.count !== undefined && (
               <span
-                className="text-[10px] px-1 py-0.5 rounded shrink-0"
+                className="text-xs px-1 py-0.5 rounded shrink-0"
                 style={{
                   backgroundColor: 'var(--bg-surface-2)',
                   color: 'var(--text-tertiary)',
@@ -381,7 +381,7 @@ export default function ExplorerSidebar({
 
       {/* Footer со статистикой */}
       <div
-        className="px-2.5 py-1.5 border-t text-[10px]"
+        className="px-2.5 py-1.5 border-t text-xs"
         style={{
           borderColor: 'var(--border-default)',
           color: 'var(--text-tertiary)',

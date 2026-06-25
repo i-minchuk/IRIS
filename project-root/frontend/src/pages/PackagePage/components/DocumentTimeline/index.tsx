@@ -20,7 +20,7 @@ export const DocumentTimeline: React.FC<Props> = ({ timeline }) => {
       {/* Заголовок */}
       <div className="flex items-center justify-between px-4 py-1 bg-[#0f172a]">
         <span className="text-xs font-bold text-[#94a3b8]">📊 ДИНАМИКА ДОКУМЕНТОВ ПО ПРОЕКТУ</span>
-        <div className="flex gap-3 text-[10px] text-[#64748b]">
+        <div className="flex gap-3 text-xs text-[#64748b]">
           <span>█ Выполнен</span>
           <span>░ В работе</span>
           <span className="text-[#ef4444]">⚠ Заблокирован</span>
@@ -43,10 +43,10 @@ export const DocumentTimeline: React.FC<Props> = ({ timeline }) => {
               {i > 0 && (
                 <div className="flex items-center mb-1">
                   {node.isBlocked && (
-                    <span className="text-[10px] text-[#ef4444] mr-1">⚠ Ждет</span>
+                    <span className="text-xs text-[#ef4444] mr-1">⚠ Ждет</span>
                   )}
                   {timeline[i - 1].isBlocking && (
-                    <span className="text-[10px] text-[#f59e0b] mr-1">→</span>
+                    <span className="text-xs text-[#f59e0b] mr-1">→</span>
                   )}
                 </div>
               )}
@@ -63,7 +63,7 @@ export const DocumentTimeline: React.FC<Props> = ({ timeline }) => {
                 {/* Индикатор статуса */}
                 <div className="flex items-center gap-1.5 mb-1">
                   <div className="w-2 h-2 rounded-full" style={{ backgroundColor: sc.bg }} />
-                  <span className="text-[10px] font-bold truncate" style={{ color: sc.text }}>
+                  <span className="text-xs font-bold truncate" style={{ color: sc.text }}>
                     {node.documentName}
                   </span>
                 </div>
@@ -80,7 +80,7 @@ export const DocumentTimeline: React.FC<Props> = ({ timeline }) => {
                 </div>
 
                 {/* Инфо */}
-                <div className="flex justify-between text-[9px] text-[#64748b]">
+                <div className="flex justify-between text-xs text-[#64748b]">
                   <span>{node.responsible}</span>
                   <span>
                     {new Date(node.deadline).toLocaleDateString('ru-RU', {

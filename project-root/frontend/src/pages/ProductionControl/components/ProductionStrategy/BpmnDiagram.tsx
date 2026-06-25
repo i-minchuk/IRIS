@@ -389,10 +389,10 @@ export const BpmnDiagram: React.FC<BpmnDiagramProps> = ({
                     className="flex h-full flex-col justify-center leading-tight"
                     style={{ color: 'var(--iris-text-primary)' }}
                   >
-                    <div className="text-[10px] font-bold" style={{ lineHeight: 1.2 }}>
+                    <div className="text-xs font-bold" style={{ lineHeight: 1.2 }}>
                       {node.label}
                     </div>
-                    <div className="mt-0.5 text-[9px]" style={{ color: 'var(--iris-text-muted)' }}>
+                    <div className="mt-0.5 text-xs" style={{ color: 'var(--iris-text-muted)' }}>
                       {node.avgDays ? `~${node.avgDays} дн.` : 'мгновенно'}
                     </div>
                   </div>
@@ -409,9 +409,9 @@ export const BpmnDiagram: React.FC<BpmnDiagramProps> = ({
             <foreignObject x={tooltip.x} y={tooltip.y} width={260} height={120}>
               <div className="tooltip-bpmn rounded-lg border border-[var(--iris-border-default)] bg-[var(--iris-bg-surface)] p-2 shadow-md">
                 <div className="text-xs font-semibold text-[var(--iris-text-primary)]">{tooltip.node.label}</div>
-                <div className="text-[10px] text-[var(--iris-text-secondary)]">{tooltip.node.description.slice(0, 110)}...</div>
+                <div className="text-xs text-[var(--iris-text-secondary)]">{tooltip.node.description.slice(0, 110)}...</div>
                 {tooltip.node.avgDays > 0 && (
-                  <div className="mt-1 text-[10px] text-[var(--iris-text-muted)]">Средняя длительность: {tooltip.node.avgDays} дн.</div>
+                  <div className="mt-1 text-xs text-[var(--iris-text-muted)]">Средняя длительность: {tooltip.node.avgDays} дн.</div>
                 )}
               </div>
             </foreignObject>
@@ -425,7 +425,7 @@ export const BpmnDiagram: React.FC<BpmnDiagramProps> = ({
         <button onClick={zoomOut} className="rounded px-2 py-1 text-sm hover:bg-[var(--iris-bg-surface)]">−</button>
         <button onClick={reset} className="rounded px-2 py-1 text-xs hover:bg-[var(--iris-bg-surface)]">Сброс</button>
       </div>
-      <div className="absolute bottom-3 right-3 rounded-lg border border-[var(--iris-border-default)] bg-[var(--iris-bg-surface)] px-2 py-1 text-[10px] text-[var(--iris-text-muted)] shadow-sm">
+      <div className="absolute bottom-3 right-3 rounded-lg border border-[var(--iris-border-default)] bg-[var(--iris-bg-surface)] px-2 py-1 text-xs text-[var(--iris-text-muted)] shadow-sm">
         Колёсико — зум · Drag — панорама · Клик — детали
       </div>
     </div>

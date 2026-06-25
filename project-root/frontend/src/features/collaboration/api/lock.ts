@@ -7,11 +7,11 @@ export interface LockResult {
 }
 
 export const lockDocument = async (documentId: number): Promise<LockResult> => {
-  const { data } = await client.post(`/api/v1/documents/${documentId}/lock`);
+  const { data } = await client.post(`/documents/${documentId}/lock`);
   return data;
 };
 
 export const unlockDocument = async (documentId: number): Promise<LockResult> => {
-  const { data } = await client.post(`/api/v1/documents/${documentId}/unlock`);
+  const { data } = await client.post(`/documents/${documentId}/unlock`);
   return data;
 };

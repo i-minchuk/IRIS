@@ -7,7 +7,7 @@ import { ProjectDetail } from './components/ProjectDetail';
 import { ProjectForm } from './components/ProjectForm';
 import { ProjectAnalytics } from './components/ProjectAnalytics';
 import { Project, ProjectStats } from './types/project';
-import { getProjects } from '@/api/projects';
+import { getProjects } from '@/features/projects/api/projects';
 
 type ViewMode = 'pipeline' | 'list' | 'detail' | 'form' | 'analytics';
 

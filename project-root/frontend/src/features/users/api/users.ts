@@ -1,8 +1,8 @@
 import client from '@/shared/api/client';
-import type { User } from '../types';
+import type { User } from '@/types';
 
 export const getUsers = async (): Promise<User[]> => {
-  const { data } = await client.get('/api/v1/auth/users');
+  const { data } = await client.get('/auth/users');
   return data;
 };
 

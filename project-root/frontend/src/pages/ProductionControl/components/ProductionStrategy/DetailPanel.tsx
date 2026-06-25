@@ -107,9 +107,9 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({ node, employees, onClo
               <div key={emp.id} className="flex items-center justify-between rounded-md border border-[var(--iris-border-default)] px-2 py-1.5">
                 <div>
                   <div className="text-xs font-medium text-[var(--iris-text-primary)]">{emp.name}</div>
-                  <div className="text-[10px] text-[var(--iris-text-muted)]">{emp.role}</div>
+                  <div className="text-xs text-[var(--iris-text-muted)]">{emp.role}</div>
                 </div>
-                <Badge variant={emp.kpiLoad >= 90 ? 'error' : emp.kpiLoad >= 80 ? 'warning' : 'neutral'} className="text-[10px]">
+                <Badge variant={emp.kpiLoad >= 90 ? 'error' : emp.kpiLoad >= 80 ? 'warning' : 'neutral'} className="text-xs">
                   {emp.kpiLoad}%
                 </Badge>
               </div>

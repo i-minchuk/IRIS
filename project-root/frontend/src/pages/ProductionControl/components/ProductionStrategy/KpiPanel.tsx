@@ -37,7 +37,7 @@ export const KpiPanel: React.FC<KpiPanelProps> = ({ departments, nodes, employee
               <span className="text-xs font-medium">{c.label}</span>
             </div>
             <div className="text-xl font-bold text-[var(--iris-text-primary)]">{c.value}</div>
-            <Badge variant="neutral" className={`mt-1 text-[10px] ${statusClass(c.status)}`}>
+            <Badge variant="neutral" className={`mt-1 text-xs ${statusClass(c.status)}`}>
               {c.note}
             </Badge>
           </Card>
@@ -58,7 +58,7 @@ export const KpiPanel: React.FC<KpiPanelProps> = ({ departments, nodes, employee
                     <span className="h-3 w-3 rounded-full" style={{ backgroundColor: d.color }} />
                     <div>
                       <div className="text-xs font-medium text-[var(--iris-text-primary)]">{d.label}</div>
-                      <div className="text-[10px] text-[var(--iris-text-muted)]">{tasks} задач(и)</div>
+                      <div className="text-xs text-[var(--iris-text-muted)]">{tasks} задач(и)</div>
                     </div>
                   </div>
                   <Badge variant={avg >= 90 ? 'error' : avg >= 80 ? 'warning' : 'neutral'} className="text-xs">
@@ -79,7 +79,7 @@ export const KpiPanel: React.FC<KpiPanelProps> = ({ departments, nodes, employee
                 const pct = Math.max(2, Math.round((n.avgDays / totalCycle) * 100));
                 return (
                   <div key={n.id}>
-                    <div className="mb-1 flex items-center justify-between text-[10px]">
+                    <div className="mb-1 flex items-center justify-between text-xs">
                       <span className="text-[var(--iris-text-secondary)]">{n.label}</span>
                       <span className="text-[var(--iris-text-muted)]">{n.avgDays} дн.</span>
                     </div>

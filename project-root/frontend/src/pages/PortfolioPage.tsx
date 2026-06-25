@@ -1,6 +1,7 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useEffect } from 'react';
 import {
-  ArrowLeft, Gavel, ShoppingCart, FolderKanban, PackageOpen,
+  ArrowLeft, Gavel, ShoppingCart,
 } from 'lucide-react';
 import { useTabState } from '@/shared/hooks/useTabState';
 import { PageHeader } from '@/shared/components/PageHeader';
@@ -12,8 +13,6 @@ import PurchaseRequestsPage from '@/pages/srm/PurchaseRequests';
 import ContractsPage from '@/pages/srm/Contracts';
 import OrdersPage from '@/pages/srm/Orders';
 import InvoicesPage from '@/pages/srm/Invoices';
-import ProjectPortfolioPage from '@/pages/ProjectPortfolioPage';
-import PackagePage from '@/pages/PackagePage';
 import TenderDetailPage from '@/features/tenders/pages/TenderDetailPage';
 
 /* ─── SRM Sub-tabs ─── */
@@ -26,14 +25,18 @@ const SRM_TABS = [
 ];
 
 /* ─── Main tabs ─── */
+// Same violet accent as the "Портфель заказов" nav item in Layout.tsx
+const PORTFOLIO_ACCENT = '#7C3AED';
+const PORTFOLIO_ACCENT_SOFT = 'rgba(124, 58, 237, 0.15)';
+const PORTFOLIO_ACCENT_GLOW = 'rgba(124, 58, 237, 0.13)';
+const PORTFOLIO_ICON_GLOW = 'rgba(124, 58, 237, 0.55)';
+
 const MAIN_TABS = [
   { id: 'tenders' as const, label: 'Тендеры', icon: <Gavel size={16} /> },
   { id: 'srm' as const, label: 'SRM / Закупки', icon: <ShoppingCart size={16} /> },
-  { id: 'projects' as const, label: 'Портфель проектов', icon: <FolderKanban size={16} /> },
-  { id: 'package' as const, label: 'Пакет документации', icon: <PackageOpen size={16} /> },
 ];
 
-type MainTab = 'tenders' | 'srm' | 'projects' | 'package';
+type MainTab = 'tenders' | 'srm';
 type SRMTab = 'suppliers' | 'purchase-requests' | 'contracts' | 'orders' | 'invoices';
 
 export default function PortfolioPage() {
@@ -41,6 +44,19 @@ export default function PortfolioPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useTabState<MainTab>('iris_portfolio_tab', 'tenders');
   const [srmTab, setSrmTab] = useTabState<SRMTab>('iris_portfolio_srm_tab', 'suppliers');
+
+  // Sync with URL query params
+  const tabParam = searchParams.get('tab') as MainTab | null;
+  const srmTabParam = searchParams.get('srm_tab') as SRMTab | null;
+
+  useEffect(() => {
+    if (tabParam && MAIN_TABS.some(t => t.id === tabParam)) {
+      setActiveTab(tabParam);
+    }
+    if (srmTabParam && SRM_TABS.some(t => t.id === srmTabParam)) {
+      setSrmTab(srmTabParam);
+    }
+  }, [tabParam, srmTabParam]);
 
   // Check if tender detail view is requested via query param
   const tenderId = searchParams.get('tender');
@@ -79,21 +95,46 @@ export default function PortfolioPage() {
 
       {/* Main tabs */}
       <div className="flex items-center gap-1 mb-6 border-b pb-1" style={{ borderColor: 'var(--border-default)' }}>
-        {MAIN_TABS.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => handleTabChange(tab.id)}
-            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg transition-all"
-            style={{
-              color: activeTab === tab.id ? 'var(--brand-iris)' : 'var(--text-secondary)',
-              borderBottom: activeTab === tab.id ? '2px solid var(--brand-iris)' : '2px solid transparent',
-            }}
-          >
-            {tab.icon}
-            {tab.label}
-          </button>
-        ))}
+        {MAIN_TABS.map((tab) => {
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => handleTabChange(tab.id)}
+              className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg transition-all"
+              style={{
+                color: isActive ? PORTFOLIO_ACCENT : 'var(--text-secondary)',
+                backgroundColor: isActive ? PORTFOLIO_ACCENT_SOFT : 'transparent',
+                borderBottom: isActive ? `2px solid ${PORTFOLIO_ACCENT}` : '2px solid transparent',
+                boxShadow: isActive ? `0 4px 12px ${PORTFOLIO_ACCENT_GLOW}` : 'none',
+                transform: isActive ? 'translateY(-2px)' : 'translateY(0)',
+              }}
+              onMouseEnter={(e) => {
+                if (!isActive) {
+                  e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)';
+                  e.currentTarget.style.color = 'var(--text-primary)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isActive) {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.color = 'var(--text-secondary)';
+                }
+              }}
+            >
+              <span
+                style={{
+                  color: PORTFOLIO_ACCENT,
+                  filter: `drop-shadow(0 0 5px ${PORTFOLIO_ICON_GLOW})`,
+                }}
+              >
+                {tab.icon}
+              </span>
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* Content */}
@@ -103,20 +144,25 @@ export default function PortfolioPage() {
         <div className="space-y-4">
           {/* SRM sub-tabs */}
           <div className="flex items-center gap-1 flex-wrap">
-            {SRM_TABS.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setSrmTab(tab.id)}
-                className="px-3 py-1.5 text-xs font-medium rounded-lg transition-all"
-                style={{
-                  backgroundColor: srmTab === tab.id ? 'var(--brand-iris)' : 'var(--bg-surface-2)',
-                  color: srmTab === tab.id ? 'var(--text-inverse)' : 'var(--text-secondary)',
-                }}
-              >
-                {tab.label}
-              </button>
-            ))}
+            {SRM_TABS.map((tab) => {
+              const isSrmActive = srmTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setSrmTab(tab.id)}
+                  className="px-3 py-1.5 text-xs font-medium rounded-lg transition-all"
+                  style={{
+                    backgroundColor: isSrmActive ? PORTFOLIO_ACCENT_SOFT : 'var(--bg-surface-2)',
+                    color: isSrmActive ? PORTFOLIO_ACCENT : 'var(--text-secondary)',
+                    border: isSrmActive ? `2px solid ${PORTFOLIO_ACCENT}` : '2px solid transparent',
+                    boxShadow: isSrmActive ? `0 0 8px ${PORTFOLIO_ACCENT_GLOW}` : 'none',
+                  }}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
           </div>
           {srmTab === 'suppliers' && <SuppliersPage />}
           {srmTab === 'purchase-requests' && <PurchaseRequestsPage />}
@@ -125,10 +171,6 @@ export default function PortfolioPage() {
           {srmTab === 'invoices' && <InvoicesPage />}
         </div>
       )}
-
-      {activeTab === 'projects' && <ProjectPortfolioPage />}
-
-      {activeTab === 'package' && <PackagePage />}
     </div>
   );
 }

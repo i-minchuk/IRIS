@@ -137,7 +137,7 @@ const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
 export default function TeamPage() {
   const navigate = useNavigate();
   const { theme } = useTheme();
-  const isDark = theme === 'dark';
+  const isDark = theme === 'dark' || theme === 'midnight' || theme === 'contrast';
   const [activeTab, setActiveTab] = useState<TabKey>('leaderboard');
 
   // Leaderboard data
@@ -221,10 +221,10 @@ export default function TeamPage() {
                     <div className="text-xs font-medium mt-2 text-center truncate w-full" style={{ color: 'var(--text-primary)' }}>
                       {e.userName}
                     </div>
-                    <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{e.xp.toLocaleString()} XP</div>
+                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{e.xp.toLocaleString()} XP</div>
                     <div className="flex items-center gap-1 mt-0.5">
                       <Flame size={10} style={{ color: '#EF4444' }} />
-                      <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{e.streak}</span>
+                      <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{e.streak}</span>
                     </div>
                   </div>
                 );
@@ -236,7 +236,7 @@ export default function TeamPage() {
           <div className="p-3 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Полный рейтинг</h3>
-              <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{entries.length} участников</span>
+              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{entries.length} участников</span>
             </div>
             <div className="flex flex-col gap-1">
               {rest.map(entry => {
@@ -258,9 +258,9 @@ export default function TeamPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
-                        {entry.userName} {entry.isMe && <span className="text-[10px] font-normal" style={{ color: '#3B82F6' }}>(Вы)</span>}
+                        {entry.userName} {entry.isMe && <span className="text-xs font-normal" style={{ color: '#3B82F6' }}>(Вы)</span>}
                       </div>
-                      <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Уровень {entry.level}</div>
+                      <div className="text-xs" style={{ color: 'var(--text-muted)' }}>Уровень {entry.level}</div>
                     </div>
                     <div className="flex items-center gap-3 text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>
                       <span className="flex items-center gap-1"><Star size={12} style={{ color: '#D4AF37' }} /> {entry.xp.toLocaleString()}</span>
@@ -280,7 +280,7 @@ export default function TeamPage() {
         <div className="p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Загрузка по отделам</h3>
-            <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Сортировка: по загрузке ↓</span>
+            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Сортировка: по загрузке ↓</span>
           </div>
           <div className="flex flex-col gap-2">
             {sortedDepts.map((dept) => {
@@ -308,7 +308,7 @@ export default function TeamPage() {
                         <span style={{ color: dept.iconColor }}><FolderKanban size={14} /></span>
                         <span className="text-xs font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{dept.name}</span>
                         <span
-                          className="text-[9px] px-1.5 py-0.5 rounded-full font-medium shrink-0"
+                          className="text-xs px-1.5 py-0.5 rounded-full font-medium shrink-0"
                           style={{ background: statusColor + '20', color: statusColor, border: `1px solid ${statusColor}40` }}
                         >
                           {loadLabel}
@@ -323,11 +323,11 @@ export default function TeamPage() {
                       <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(pct, 100)}%`, background: statusColor, opacity: 0.8 }} />
                     </div>
                     <div className="mt-1 flex items-center justify-between">
-                      <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
+                      <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
                         Сотрудников: {dept.employees.length} | Задач: {dept.current}/{dept.max}
                       </span>
                       {dept.current > dept.max && (
-                        <span className="text-[9px] flex items-center gap-0.5 shrink-0" style={{ color: '#DC2626' }}>
+                        <span className="text-xs flex items-center gap-0.5 shrink-0" style={{ color: '#DC2626' }}>
                           <AlertTriangle size={9} /> Перегруз
                         </span>
                       )}
@@ -338,10 +338,10 @@ export default function TeamPage() {
                     <div className="px-3 pb-3 pt-0">
                       <div className="border-t pt-2 mt-0.5" style={{ borderColor: 'var(--border-default)' }}>
                         <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-[10px] font-medium" style={{ color: 'var(--text-secondary)' }}>Сотрудники</span>
+                          <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Сотрудники</span>
                           <button
                             onClick={(e) => { e.stopPropagation(); navigate(dept.route); }}
-                            className="text-[9px] flex items-center gap-0.5 px-1.5 py-0.5 rounded transition-colors"
+                            className="text-xs flex items-center gap-0.5 px-1.5 py-0.5 rounded transition-colors"
                             style={{ color: DEPT_COLORS.tender, background: 'rgba(37,99,235,0.1)' }}
                           >
                             Перейти <ChevronRight size={8} />
@@ -355,12 +355,12 @@ export default function TeamPage() {
                                 <span className="text-xs truncate" style={{ color: 'var(--text-primary)' }}>{emp.name}</span>
                                 <div className="flex items-center gap-1.5 shrink-0 ml-2">
                                   <span
-                                    className="text-[9px] px-1.5 py-0.5 rounded-full"
+                                    className="text-xs px-1.5 py-0.5 rounded-full"
                                     style={{ background: empColor + '20', color: empColor, border: `1px solid ${empColor}40` }}
                                   >
                                     {emp.current}{emp.max > 0 ? `/${emp.max}` : ''}
                                   </span>
-                                  <span className="text-[9px]" style={{ color: 'var(--text-muted)' }}>{emp.role}</span>
+                                  <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{emp.role}</span>
                                 </div>
                               </div>
                             );
@@ -403,7 +403,7 @@ export default function TeamPage() {
                   >
                     {BADGE_ICONS[badge.icon] || <Zap size={12} />}
                     <span>{badge.name}</span>
-                    <span className="text-[10px] opacity-60">+{badge.xpReward} XP</span>
+                    <span className="text-xs opacity-60">+{badge.xpReward} XP</span>
                   </div>
                 );
               })}
@@ -438,10 +438,10 @@ export default function TeamPage() {
                         <span className="text-base md:text-lg font-medium leading-relaxed mt-1 font-medium" style={{ color: isEarned ? 'var(--text-primary)' : 'var(--text-secondary)' }}>{badge.name}</span>
                         {isEarned && <Star size={10} style={{ color }} />}
                       </div>
-                      <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{badge.description}</div>
+                      <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{badge.description}</div>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[9px] px-1 py-0.5 rounded" style={{ background: `${color}15`, color }}>{badge.rarity}</span>
-                        <span className="text-[9px]" style={{ color: 'var(--text-muted)' }}>+{badge.xpReward} XP · {badge.coinReward} 🪙</span>
+                        <span className="text-xs px-1 py-0.5 rounded" style={{ background: `${color}15`, color }}>{badge.rarity}</span>
+                        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>+{badge.xpReward} XP · {badge.coinReward} 🪙</span>
                       </div>
                     </div>
                   </div>

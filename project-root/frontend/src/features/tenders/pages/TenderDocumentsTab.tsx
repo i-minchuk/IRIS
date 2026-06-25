@@ -92,15 +92,15 @@ export default function TenderDocumentsTab({ tenderId, existingDocuments }: Tend
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>{item.name}</span>
-                  <span className="text-[10px] px-1 py-0.5 rounded" style={{ background: 'var(--bg-surface)', color: 'var(--text-muted)' }}>{item.code}</span>
+                  <span className="text-xs px-1 py-0.5 rounded" style={{ background: 'var(--bg-surface)', color: 'var(--text-muted)' }}>{item.code}</span>
                   {item.required && (
-                    <span className="text-[10px] px-1 py-0.5 rounded" style={{ background: 'rgba(220,38,38,0.12)', color: '#DC2626' }}>Обязательно</span>
+                    <span className="text-xs px-1 py-0.5 rounded" style={{ background: 'rgba(220,38,38,0.12)', color: '#DC2626' }}>Обязательно</span>
                   )}
                 </div>
                 {item.documents.length > 0 ? (
                   <div className="mt-1 space-y-1">
                     {item.documents.map(doc => (
-                      <div key={doc.id} className="flex items-center gap-2 text-[10px]" style={{ color: 'var(--text-secondary)' }}>
+                      <div key={doc.id} className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
                         <FileText size={10} />
                         <span>{doc.number} — {doc.name}</span>
                         <span
@@ -116,7 +116,7 @@ export default function TenderDocumentsTab({ tenderId, existingDocuments }: Tend
                     ))}
                   </div>
                 ) : (
-                  <div className="mt-1 text-[10px]" style={{ color: 'var(--text-muted)' }}>
+                  <div className="mt-1 text-xs" style={{ color: 'var(--text-muted)' }}>
                     {item.required ? 'Документ отсутствует — требуется создание' : 'Опционально'}
                   </div>
                 )}
@@ -155,7 +155,7 @@ export default function TenderDocumentsTab({ tenderId, existingDocuments }: Tend
                     <td className="px-2 py-2" style={{ color: 'var(--text-secondary)' }}>{doc.doc_type}</td>
                     <td className="px-2 py-2">
                       <span
-                        className="text-[10px] px-1.5 py-0.5 rounded"
+                        className="text-xs px-1.5 py-0.5 rounded"
                         style={{
                           background: doc.status === 'approved' ? 'rgba(12,114,5,0.12)' : doc.status === 'review' ? 'rgba(212,175,55,0.12)' : 'rgba(37,99,235,0.12)',
                           color: doc.status === 'approved' ? '#0C7205' : doc.status === 'review' ? '#D4AF37' : '#2563EB',

@@ -73,8 +73,11 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 
 def add_middlewares(app: FastAPI) -> None:
+    from app.core.audit_middleware import AuditMiddleware
+
     app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(PerformanceMiddleware, threshold=1.0)
+    app.add_middleware(AuditMiddleware)
 
     # Gzip compression for responses > 1KB
     app.add_middleware(GZipMiddleware, minimum_size=1000)
@@ -126,7 +129,7 @@ async def metrics_middleware(request, call_next):
     http_requests_total.labels(
         method=request.method,
         endpoint=request.url.path,
-        status=response.status_code
+        status_code=response.status_code
     ).inc()
 
     http_request_duration.labels(

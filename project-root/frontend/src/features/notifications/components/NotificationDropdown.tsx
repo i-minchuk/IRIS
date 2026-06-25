@@ -116,7 +116,7 @@ export default function NotificationDropdown({
                 <p className="text-xs line-clamp-2" style={{ color: 'var(--text-muted)' }}>
                   {n.message}
                 </p>
-                <span className="text-[10px] mt-1 block" style={{ color: 'var(--text-muted)' }}>
+                <span className="text-xs mt-1 block" style={{ color: 'var(--text-muted)' }}>
                   {formatTimeAgo(n.created_at)}
                 </span>
               </div>

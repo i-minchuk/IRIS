@@ -6,7 +6,7 @@ import {
   getBadges,
   getDailyQuests,
   updateQuestProgress,
-} from '../api/gamification';
+} from '../features/gamification/api/gamification';
 import type {
   GamificationProfile,
   Badge as BadgeType,
@@ -515,7 +515,7 @@ function StatCard({
             <span className="text-3xl font-black">{value}</span>
           </div>
           {desc && (
-            <p className="text-[10px] font-medium opacity-60 mt-1 italic">
+            <p className="text-xs font-medium opacity-60 mt-1 italic">
               {desc}
             </p>
           )}

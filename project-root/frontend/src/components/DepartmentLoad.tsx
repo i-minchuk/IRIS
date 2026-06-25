@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/providers/ThemeProvider';
 import { 
-  FolderKanban, ChevronRight, ChevronDown, AlertTriangle
+  FolderKanban, ChevronRight, ChevronDown, AlertTriangle, Users
 } from 'lucide-react';
 
 const COLORS = {
@@ -40,7 +40,7 @@ interface Department {
 export function DepartmentLoad() {
   const navigate = useNavigate();
   const { theme } = useTheme();
-  const isDark = theme === 'dark';
+  const isDark = theme === 'dark' || theme === 'midnight' || theme === 'contrast';
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const departments: Department[] = [
@@ -105,8 +105,16 @@ export function DepartmentLoad() {
   return (
     <div className="w-full">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold" style={{ color: COLORS.textPrimary }}>Загрузка по отделам</h3>
-        <span className="text-[10px]" style={{ color: COLORS.textMuted }}>Сортировка: по загрузке ↓</span>
+        <div className="flex items-center gap-2">
+          <div
+            className="flex items-center justify-center h-8 w-8 rounded-lg"
+            style={{ background: 'rgba(59, 130, 246, 0.12)' }}
+          >
+            <Users size={16} style={{ color: '#3B82F6' }} />
+          </div>
+          <h3 className="text-sm font-semibold" style={{ color: COLORS.textPrimary }}>Загрузка по отделам</h3>
+        </div>
+        <span className="text-xs" style={{ color: COLORS.textMuted }}>Сортировка: по загрузке ↓</span>
       </div>
 
       <div className="flex flex-col gap-1">
@@ -139,7 +147,7 @@ export function DepartmentLoad() {
                       {dept.name}
                     </span>
                     <span 
-                      className="text-[9px] px-1 py-0.5 rounded-full font-medium shrink-0"
+                      className="text-xs px-1 py-0.5 rounded-full font-medium shrink-0"
                       style={{ 
                         background: statusColor + '20', 
                         color: statusColor,
@@ -160,11 +168,11 @@ export function DepartmentLoad() {
                 </div>
 
                 <div className="mt-1 flex items-center justify-between">
-                  <span className="text-[10px]" style={{ color: COLORS.textMuted }}>
+                  <span className="text-xs" style={{ color: COLORS.textMuted }}>
                     Сотрудников: {dept.employees.length} | Задач: {dept.current}
                   </span>
                   {dept.current > dept.max && (
-                    <span className="text-[9px] flex items-center gap-0.5 shrink-0 ml-1.5" style={{ color: '#DC2626' }}>
+                    <span className="text-xs flex items-center gap-0.5 shrink-0 ml-1.5" style={{ color: '#DC2626' }}>
                       <AlertTriangle size={9} /> Перегруз
                     </span>
                   )}
@@ -175,10 +183,10 @@ export function DepartmentLoad() {
                 <div className="px-2.5 pb-2.5 pt-0">
                   <div className="border-t pt-2 mt-0.5" style={{ borderColor: COLORS.borderColor }}>
                 <div className="flex items-center justify-between mb-1">
-                      <span className="text-[10px] font-medium" style={{ color: COLORS.textSecondary }}>Сотрудники</span>
+                      <span className="text-xs font-medium" style={{ color: COLORS.textSecondary }}>Сотрудники</span>
                       <button 
                         onClick={(e) => { e.stopPropagation(); navigate(dept.route); }}
-                        className="text-[9px] flex items-center gap-0.5 px-1.5 py-0.5 rounded transition-colors"
+                        className="text-xs flex items-center gap-0.5 px-1.5 py-0.5 rounded transition-colors"
                         style={{ color: COLORS.tender, background: 'rgba(37,99,235,0.1)' }}
                       >
                         Все <ChevronRight size={8} />
@@ -189,10 +197,10 @@ export function DepartmentLoad() {
                         const empColor = getStatusColor(emp.current, emp.max);
                         return (
                           <div key={ei} className="flex items-center justify-between">
-                            <span className="text-[10px] truncate" style={{ color: COLORS.textPrimary }}>{emp.name}</span>
+                            <span className="text-xs truncate" style={{ color: COLORS.textPrimary }}>{emp.name}</span>
                             <div className="flex items-center gap-1 shrink-0 ml-1.5">
                               <span 
-                                className="text-[9px] px-1 py-0.5 rounded-full"
+                                className="text-xs px-1 py-0.5 rounded-full"
                                 style={{ 
                                   background: empColor + '20', 
                                   color: empColor,
@@ -201,7 +209,7 @@ export function DepartmentLoad() {
                               >
                                 {emp.current}{emp.max > 0 ? `/${emp.max}` : ''}
                               </span>
-                              <span className="text-[9px]" style={{ color: COLORS.textMuted }}>{emp.role}</span>
+                              <span className="text-xs" style={{ color: COLORS.textMuted }}>{emp.role}</span>
                             </div>
                           </div>
                         );

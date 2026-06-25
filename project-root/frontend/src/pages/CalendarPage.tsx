@@ -32,28 +32,28 @@ const EVENT_META: Record<
 > = {
   project: {
     label: 'Проект',
-    icon: <Briefcase size={12} />,
+    icon: <Briefcase size={16} />,
     color: '#1A5ACC',
     bg: 'rgba(26, 90, 204, 0.10)',
     border: 'rgba(26, 90, 204, 0.35)',
   },
   task: {
     label: 'Задача',
-    icon: <CheckSquare size={12} />,
+    icon: <CheckSquare size={16} />,
     color: '#059669',
     bg: 'rgba(5, 150, 105, 0.10)',
     border: 'rgba(5, 150, 105, 0.35)',
   },
   tender: {
     label: 'Тендер',
-    icon: <Gavel size={12} />,
+    icon: <Gavel size={16} />,
     color: '#B86E00',
     bg: 'rgba(184, 110, 0, 0.10)',
     border: 'rgba(184, 110, 0, 0.35)',
   },
   birthday: {
     label: 'День рождения',
-    icon: <Cake size={12} />,
+    icon: <Cake size={16} />,
     color: '#EC4899',
     bg: 'rgba(236, 72, 153, 0.10)',
     border: 'rgba(236, 72, 153, 0.35)',
@@ -233,16 +233,16 @@ export default function CalendarPage() {
       >
         <div className="flex items-center gap-3">
           <div
-            className="flex items-center justify-center h-9 w-9 rounded-lg"
+            className="flex items-center justify-center h-11 w-11 rounded-xl"
             style={{ background: 'rgba(236, 72, 153, 0.12)' }}
           >
-            <CalendarIcon size={18} style={{ color: '#EC4899' }} />
+            <CalendarIcon size={24} style={{ color: '#EC4899' }} />
           </div>
           <div>
-            <h1 className="sr-only" style={{ color: 'var(--iris-text-primary)' }}>
+            <h1 className="text-xl font-semibold" style={{ color: 'var(--iris-text-primary)' }}>
               Календарь
             </h1>
-            <p className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--iris-text-secondary)' }}>
+            <p className="text-base font-medium leading-relaxed" style={{ color: 'var(--iris-text-secondary)' }}>
               Дедлайны, задачи, тендеры и дни рождения
             </p>
           </div>
@@ -356,11 +356,11 @@ export default function CalendarPage() {
         {view === 'month' ? (
           <div className="flex flex-col h-full">
             {/* Weekday headers */}
-            <div className="grid grid-cols-7 mb-1">
+            <div className="grid grid-cols-7 mb-2">
               {WEEK_DAYS.map((wd) => (
                 <div
                   key={wd}
-                  className="text-center text-xs font-medium py-1"
+                  className="text-center text-sm font-semibold py-2"
                   style={{ color: 'var(--iris-text-muted)' }}
                 >
                   {wd}
@@ -368,7 +368,7 @@ export default function CalendarPage() {
               ))}
             </div>
             {/* Days */}
-            <div className="grid grid-cols-7 flex-1 gap-1">
+            <div className="grid grid-cols-7 flex-1 gap-2">
               {gridDays.map((day, idx) => {
                 const iso = toISODate(day);
                 const dayEvents = eventsByDate[iso] || [];
@@ -377,7 +377,7 @@ export default function CalendarPage() {
                 return (
                   <div
                     key={idx}
-                    className="flex flex-col gap-1 rounded-lg border p-1.5 min-h-[80px] transition-colors"
+                    className="flex flex-col gap-1.5 rounded-xl border p-1.5 md:p-2.5 min-h-[80px] md:min-h-[120px] transition-colors"
                     style={{
                       background: isCurrentMonth ? 'var(--iris-bg-surface)' : 'var(--iris-bg-tertiary)',
                       borderColor: isToday ? 'var(--iris-accent-cyan)' : 'var(--iris-border-subtle)',
@@ -386,7 +386,7 @@ export default function CalendarPage() {
                   >
                     <div className="flex items-center justify-between">
                       <span
-                        className={`text-xs font-medium tabular-nums ${isToday ? 'px-1.5 py-0.5 rounded-full' : ''}`}
+                        className={`text-sm font-bold tabular-nums ${isToday ? 'px-2 py-1 rounded-full' : ''}`}
                         style={{
                           color: isToday ? '#FFFFFF' : 'var(--iris-text-primary)',
                           background: isToday ? 'var(--iris-accent-cyan)' : 'transparent',
@@ -396,35 +396,35 @@ export default function CalendarPage() {
                       </span>
                       {dayEvents.length > 0 && (
                         <span
-                          className="text-[10px] font-medium px-1 rounded"
+                          className="text-xs font-bold px-1.5 py-0.5 rounded-md"
                           style={{ background: 'var(--iris-bg-hover)', color: 'var(--iris-text-muted)' }}
                         >
                           {dayEvents.length}
                         </span>
                       )}
                     </div>
-                    <div className="flex flex-col gap-0.5 mt-0.5">
+                    <div className="flex flex-col gap-1 mt-1">
                       {dayEvents.slice(0, 3).map((ev) => {
                         const meta = EVENT_META[ev.type];
                         return (
                           <button
                             key={ev.id}
                             onClick={() => setSelectedEvent(ev)}
-                            className="flex items-center gap-1 text-left rounded px-1 py-0.5 text-[11px] leading-tight truncate transition-colors"
+                            className="flex items-center gap-1.5 text-left rounded-md px-2 py-1 text-sm leading-snug truncate transition-colors"
                             style={{
                               background: meta.bg,
                               color: meta.color,
-                              borderLeft: `2px solid ${meta.border}`,
+                              borderLeft: `3px solid ${meta.border}`,
                             }}
                             title={ev.title}
                           >
                             <span className="shrink-0">{meta.icon}</span>
-                            <span className="truncate">{ev.title}</span>
+                            <span className="truncate font-medium">{ev.title}</span>
                           </button>
                         );
                       })}
                       {dayEvents.length > 3 && (
-                        <span className="text-[10px] px-1" style={{ color: 'var(--iris-text-muted)' }}>
+                        <span className="text-xs px-1 font-medium" style={{ color: 'var(--iris-text-muted)' }}>
                           +{dayEvents.length - 3}
                         </span>
                       )}
@@ -437,14 +437,14 @@ export default function CalendarPage() {
         ) : (
           /* Week view */
           <div className="flex flex-col h-full">
-            <div className="grid grid-cols-7 gap-1 mb-1">
+            <div className="grid grid-cols-7 gap-1 mb-2">
               {WEEK_DAYS.map((wd, i) => {
                 const day = gridDays[i];
                 const isToday = sameDate(day, today);
                 return (
                   <div
                     key={wd}
-                    className="text-center text-xs font-medium py-2 rounded-lg"
+                    className="text-center text-sm font-semibold py-2.5 rounded-lg"
                     style={{
                       color: isToday ? '#FFFFFF' : 'var(--iris-text-muted)',
                       background: isToday ? 'var(--iris-accent-cyan)' : 'transparent',
@@ -455,7 +455,7 @@ export default function CalendarPage() {
                 );
               })}
             </div>
-            <div className="grid grid-cols-7 flex-1 gap-1">
+            <div className="grid grid-cols-7 flex-1 gap-2">
               {gridDays.map((day, idx) => {
                 const iso = toISODate(day);
                 const dayEvents = eventsByDate[iso] || [];
@@ -463,14 +463,14 @@ export default function CalendarPage() {
                 return (
                   <div
                     key={idx}
-                    className="flex flex-col gap-2 rounded-lg border p-2 min-h-[120px]"
+                    className="flex flex-col gap-2 rounded-xl border p-3 min-h-[160px]"
                     style={{
                       background: 'var(--iris-bg-surface)',
                       borderColor: isToday ? 'var(--iris-accent-cyan)' : 'var(--iris-border-subtle)',
                     }}
                   >
                     {dayEvents.length === 0 && (
-                      <span className="text-base md:text-lg font-medium leading-relaxed mt-1 mt-1" style={{ color: 'var(--iris-text-secondary)' }}>
+                      <span className="text-sm font-medium" style={{ color: 'var(--iris-text-secondary)' }}>
                         Нет событий
                       </span>
                     )}
@@ -480,16 +480,16 @@ export default function CalendarPage() {
                         <button
                           key={ev.id}
                           onClick={() => setSelectedEvent(ev)}
-                          className="flex flex-col gap-0.5 text-left rounded-md px-2 py-1.5 text-xs transition-colors"
+                          className="flex flex-col gap-1 text-left rounded-lg px-3 py-2 text-sm transition-colors"
                           style={{
                             background: meta.bg,
                             color: meta.color,
-                            borderLeft: `3px solid ${meta.border}`,
+                            borderLeft: `4px solid ${meta.border}`,
                           }}
                         >
-                          <span className="font-medium truncate">{ev.title}</span>
+                          <span className="font-semibold truncate">{ev.title}</span>
                           {ev.details?.status && (
-                            <span className="text-[10px] opacity-80">{ev.details.status}</span>
+                            <span className="text-xs opacity-80">{ev.details.status}</span>
                           )}
                         </button>
                       );

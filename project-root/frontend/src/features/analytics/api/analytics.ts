@@ -218,6 +218,19 @@ export interface ActionItemsData {
 
 export type AnalyticsPeriod = 'today' | 'week' | 'month' | 'quarter';
 
+export interface TeamTimeAnalytics {
+  user_id: number;
+  full_name: string;
+  total_sessions: number;
+  total_active_hours: number;
+  avg_efficiency: number;
+  quality_score: number;
+  speed_score: number;
+  bonus_points: number;
+}
+
+export type TeamTimePeriod = AnalyticsPeriod | 'year' | 'all';
+
 export const analyticsApi = {
   getDashboard: () => client.get<DashboardData>('/analytics/dashboard'),
   getKpiTiles: () => client.get<KpiTilesResponse>('/analytics/kpi'),
@@ -232,4 +245,8 @@ export const analyticsApi = {
   getTrend: (period?: AnalyticsPeriod) =>
     client.get<TrendData>('/analytics/trend', { params: period ? { period } : undefined }),
   getActionItems: () => client.get<ActionItemsData>('/analytics/action-items'),
+  getTeamTimeTracking: (period?: TeamTimePeriod) =>
+    client.get<TeamTimeAnalytics[]>('/analytics/time-tracking/team', {
+      params: period && period !== 'all' ? { period } : undefined,
+    }),
 };

@@ -1,4 +1,6 @@
-# app/modules/auth/router.py
+from app.modules.auth.recovery_codes import (
+    generate_recovery_codes, hash_recovery_codes, verify_recovery_code, consume_recovery_code
+)# app/modules/auth/router.py
 from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.responses import RedirectResponse
@@ -346,6 +348,7 @@ async def setup_2fa(
     """Настроить 2FA: сгенерировать секрет и вернуть QR-код."""
     secret = generate_totp_secret()
     current_user.totp_secret = secret
+    current_user.totp_enabled = False  # Reset until verified
     await db.commit()
     uri = get_totp_uri(secret, current_user.email)
     qr = generate_qr_code(uri)
@@ -383,6 +386,96 @@ async def disable_2fa(
         await db.commit()
         return {"status": "disabled"}
     raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid token")
+
+
+@router.post("/2fa/recovery-codes")
+async def generate_2fa_recovery_codes(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Generate recovery codes for 2FA account recovery."""
+    if not current_user.totp_enabled:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "2FA is not enabled")
+    
+    codes = generate_recovery_codes(10)
+    hashed = hash_recovery_codes(codes)
+    
+    # Store hashed codes in user (need to add recovery_codes field to User model)
+    # For now, store in a JSON field or separate table
+    # Using user metadata as temporary storage
+    from app.modules.auth.models import User as UserModel
+    result = await db.execute(select(UserModel).where(UserModel.id == current_user.id))
+    user = result.scalar_one()
+    
+    # Store in a separate table or JSON field - using content as temp
+    if not hasattr(user, 'recovery_codes'):
+        # Create a simple storage mechanism
+        import json
+        from sqlalchemy import text
+        await db.execute(
+            text("UPDATE users SET recovery_codes = :codes WHERE id = :id"),
+            {"codes": json.dumps(hashed), "id": user.id}
+        )
+        await db.commit()
+    
+    return {"codes": codes, "count": len(codes)}
+
+
+@router.post("/2fa/recover")
+async def recover_with_2fa_code(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """Recover account access using a recovery code."""
+    data = await request.json()
+    email = data.get("email")
+    recovery_code = data.get("recovery_code")
+    
+    if not email or not recovery_code:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Email and recovery code required")
+    
+    repo = UserRepository(db)
+    user = await repo.get_by_email(email)
+    if not user or not user.totp_enabled:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid credentials")
+    
+    # Check recovery codes
+    import json
+    from sqlalchemy import text
+    result = await db.execute(
+        text("SELECT recovery_codes FROM users WHERE id = :id"),
+        {"id": user.id}
+    )
+    row = result.scalar()
+    if not row:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "No recovery codes available")
+    
+    hashed_codes = json.loads(row)
+    if not verify_recovery_code(recovery_code, hashed_codes):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid recovery code")
+    
+    # Consume the used code
+    new_codes = consume_recovery_code(recovery_code, hashed_codes)
+    await db.execute(
+        text("UPDATE users SET recovery_codes = :codes WHERE id = :id"),
+        {"codes": json.dumps(new_codes), "id": user.id}
+    )
+    
+    # Generate tokens (bypass 2FA for this session)
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = security.create_access_token(
+        data={"sub": str(user.id)}, expires_delta=access_token_expires
+    )
+    refresh_token = security.create_refresh_token(data={"sub": str(user.id)})
+    
+    await db.commit()
+    
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+        "message": "Account recovered. Please re-enable 2FA in settings.",
+    }
 
 
 @router.post("/forgot-password", response_model=PasswordResetResponse)

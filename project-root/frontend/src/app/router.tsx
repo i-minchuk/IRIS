@@ -26,7 +26,9 @@ const DocumentCreate = lazy(() => import('@/pages/DocumentCreate'));
 const ImportExcel = lazy(() => import('@/pages/ImportExcel'));
 const DocumentDetail = lazy(() => import('@/pages/DocumentDetail'));
 const NotFound = lazy(() => import('@/pages/NotFound'));
+/* Скрытый импорт — календарь теперь в Dashboard
 const CalendarPage = lazy(() => import('@/pages/CalendarPage'));
+*/
 const ReportsPage = lazy(() => import('@/pages/ReportsPage'));
 const ProductionControlPage = lazy(() => import('@/pages/ProductionControl'));
 const NotificationPage = lazy(() => import('@/features/notifications/components/NotificationPage'));
@@ -89,17 +91,19 @@ export const router = createBrowserRouter([
           { path: '/portfolio', element: <SuspenseWrapper><PortfolioPage /></SuspenseWrapper> },
           { path: '/portfolio/*', element: <SuspenseWrapper><PortfolioPage /></SuspenseWrapper> },
           /* ── Redirects from old standalone pages ── */
-          { path: '/tenders', element: <Navigate to="/portfolio" replace /> },
-          { path: '/project-portfolio', element: <Navigate to="/portfolio" replace /> },
-          { path: '/project-tasks', element: <Navigate to="/portfolio" replace /> },
-          { path: '/package', element: <Navigate to="/portfolio" replace /> },
-          { path: '/srm/suppliers', element: <Navigate to="/portfolio" replace /> },
-          { path: '/srm/purchase-requests', element: <Navigate to="/portfolio" replace /> },
-          { path: '/srm/contracts', element: <Navigate to="/portfolio" replace /> },
-          { path: '/srm/orders', element: <Navigate to="/portfolio" replace /> },
-          { path: '/srm/invoices', element: <Navigate to="/portfolio" replace /> },
-  { path: '/tenders/:id', element: <Navigate to="/portfolio" replace /> },
-          { path: '/calendar', element: <SuspenseWrapper><CalendarPage /></SuspenseWrapper> },
+          { path: '/tenders', element: <Navigate to="/portfolio?tab=tenders" replace /> },
+          { path: '/project-portfolio', element: <Navigate to="/portfolio?tab=projects" replace /> },
+          { path: '/project-tasks', element: <Navigate to="/portfolio?tab=projects" replace /> },
+          { path: '/package', element: <Navigate to="/portfolio?tab=package" replace /> },
+          { path: '/srm/suppliers', element: <Navigate to="/portfolio?tab=srm&srm_tab=suppliers" replace /> },
+          { path: '/srm/purchase-requests', element: <Navigate to="/portfolio?tab=srm&srm_tab=purchase-requests" replace /> },
+          { path: '/srm/contracts', element: <Navigate to="/portfolio?tab=srm&srm_tab=contracts" replace /> },
+          { path: '/srm/orders', element: <Navigate to="/portfolio?tab=srm&srm_tab=orders" replace /> },
+          { path: '/srm/invoices', element: <Navigate to="/portfolio?tab=srm&srm_tab=invoices" replace /> },
+  { path: '/tenders/:id', element: <Navigate to="/portfolio?tender=:id" replace /> },
+          /* Скрытый роут /calendar — календарь теперь в Dashboard
+  { path: '/calendar', element: <SuspenseWrapper><CalendarPage /></SuspenseWrapper> },
+  */
           { path: '/reports', element: <SuspenseWrapper><ReportsPage /></SuspenseWrapper> },
           { path: '/profile', element: <SuspenseWrapper><ProfileSettingsPage /></SuspenseWrapper> },
           { path: '/profile/2fa', element: <SuspenseWrapper><TwoFactorSettingsPage /></SuspenseWrapper> },

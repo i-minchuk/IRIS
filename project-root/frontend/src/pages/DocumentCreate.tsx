@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, FileText, Check } from 'lucide-react';
-import { createDocument } from '../api/documents';
+import { createDocument } from '../features/documents/api/documents';
 import { Button, Input, Select, Card } from '../components/ui';
 import { toast } from 'sonner';
 

@@ -1,0 +1,707 @@
+======================================================================
+DEAD CODE ANALYSIS SUMMARY
+======================================================================
+Total files scanned: 161
+Potentially unused items: 432
+
+
+ai\chatbot.py
+-------------
+  [function ] chat_with_ai
+
+ai\models.py
+------------
+  [class    ] ChunkMetadata
+  [class    ] DocumentType
+  [class    ] DocumentUploadRequest
+
+api\routes\ai.py
+----------------
+  [function ] analyze_document
+  [function ] chat
+  [function ] get_ai_service
+  [function ] get_document_status
+  [function ] get_indexer
+  [function ] upload_document
+
+api\v1\endpoints\archive.py
+---------------------------
+  [function ] create_construction
+  [function ] create_entry
+  [function ] create_material
+  [function ] delete_construction
+  [function ] delete_entry
+  [function ] delete_material
+  [function ] export_archive
+  [function ] get_construction
+  [function ] get_entry
+  [function ] get_material
+  [function ] get_statistics
+  [function ] get_timeline
+  [function ] list_constructions
+  [function ] list_entries
+  [function ] list_materials
+  [function ] pin_entry
+  [function ] search_archive
+  [function ] search_suggestions
+  [function ] unpin_entry
+  [function ] update_construction
+  [function ] update_entry
+  [function ] update_material
+
+core\cache.py
+-------------
+  [function ] get_redis_client
+  [variable ] REDIS_AVAILABLE
+
+core\config.py
+--------------
+  [function ] load_config
+  [variable ] BASE_DIR
+
+core\email.py
+-------------
+  [variable ] sg
+
+core\encryption.py
+------------------
+  [function ] get_cipher
+  [variable ] _cipher
+
+core\enums.py
+-------------
+  [class    ] UserRole
+
+core\exceptions.py
+------------------
+  [function ] http_exception_handler
+  [function ] pydantic_validation_exception_handler
+  [function ] unhandled_exception_handler
+  [function ] validation_exception_handler
+
+core\metrics.py
+---------------
+  [variable ] db_connections
+  [variable ] documents_created
+
+core\security.py
+----------------
+  [function ] _add_jwt_claims
+  [function ] create_access_token
+  [function ] create_refresh_token
+  [function ] create_reset_token
+  [function ] verify_password
+  [function ] verify_reset_token
+  [variable ] pwd_context
+
+core\security_utils.py
+----------------------
+  [function ] generate_secure_secret_key
+  [function ] get_client_ip
+  [function ] get_limiter
+  [function ] rate_limit_auth_routes
+
+core\session.py
+---------------
+  [function ] get_session_redis
+  [variable ] _memory_sessions
+
+core\telegram.py
+----------------
+  [function ] notify_user_telegram
+  [variable ] bot
+
+crud\archive.py
+---------------
+  [function ] create_construction
+  [function ] create_entry
+  [function ] create_material
+  [function ] delete_construction
+  [function ] delete_material
+  [function ] get_entry
+  [function ] get_statistics
+  [function ] link_entries
+  [function ] list_entries
+  [function ] pin_entry
+  [function ] soft_delete_entry
+  [function ] unpin_entry
+  [function ] update_construction
+  [function ] update_material
+
+db\seed.py
+----------
+  [function ] seed_db
+
+db\session.py
+-------------
+  [variable ] AsyncSessionLocalReadOnly
+  [variable ] replica_engine
+
+main.py
+-------
+  [class    ] SecurityHeadersMiddleware
+  [function ] _check_db
+  [function ] add_middlewares
+  [function ] ai_inline_ws
+  [function ] api_health_check
+  [function ] collaboration_ws_endpoint
+  [function ] db_metrics
+  [function ] health_check
+  [function ] health_db
+  [function ] lifespan
+  [function ] metrics
+  [function ] metrics_middleware
+  [function ] root
+  [function ] security_health_check
+
+models\archive.py
+-----------------
+  [class    ] ArchiveSearchIndex
+
+modules\ai\router.py
+--------------------
+  [class    ] ChatMessage
+  [class    ] DocumentAnalysisResponse
+  [class    ] ExtractRequirementsResponse
+  [class    ] SemanticSearchRequest
+  [class    ] SemanticSearchResponse
+  [class    ] SemanticSearchResult
+  [function ] _ai_disabled_response
+  [function ] analyze_document_endpoint
+  [function ] chat_endpoint
+  [function ] extract_requirements_endpoint
+  [function ] inline_suggest_endpoint
+  [function ] semantic_search
+
+modules\analytics\router.py
+---------------------------
+  [function ] _get_db
+  [function ] _hash_seed
+  [function ] _parse_period_start
+  [function ] get_action_items
+  [function ] get_alerts
+  [function ] get_dashboard
+  [function ] get_documents_by_project
+  [function ] get_kpi_tiles
+  [function ] get_portfolio
+  [function ] get_production_sqcdp
+  [function ] get_shipments_calendar
+  [function ] get_sparklines
+  [function ] get_team_time_tracking
+  [function ] get_tender_pipeline
+  [function ] get_trend
+  [variable ] _PERIOD_STARTS
+
+modules\audit\router.py
+-----------------------
+  [class    ] AuditLogCreate
+  [class    ] AuditLogFilter
+  [class    ] AuditService
+  [function ] get_audit_logs
+  [function ] get_audit_stats
+  [function ] get_entity_audit_history
+  [function ] log_audit
+
+modules\audit\schemas.py
+------------------------
+  [class    ] AuditLogBase
+  [class    ] AuditLogCreate
+  [class    ] AuditLogListResponse
+
+modules\auth\deps.py
+--------------------
+  [function ] get_current_user
+  [function ] require_executive
+  [function ] require_manager_or_above
+  [function ] require_role
+  [variable ] oauth2_scheme
+
+modules\auth\repository.py
+--------------------------
+  [function ] get_user_repository
+
+modules\auth\router.py
+----------------------
+  [function ] _create_tokens_for_user
+  [function ] disable_2fa
+  [function ] forgot_password
+  [function ] generate_2fa_recovery_codes
+  [function ] get_or_create_user_by_email
+  [function ] link_telegram
+  [function ] list_users
+  [function ] login_json
+  [function ] login_oauth2
+  [function ] logout
+  [function ] read_users_me
+  [function ] recover_with_2fa_code
+  [function ] register
+  [function ] reset_password
+  [function ] saml_acs
+  [function ] saml_login
+  [function ] saml_metadata
+  [function ] setup_2fa
+  [function ] update_user
+  [function ] verify_2fa_setup
+
+modules\auth\saml.py
+--------------------
+  [variable ] SAML_CONFIG
+
+modules\auth\schemas.py
+-----------------------
+  [class    ] TokenWithCookies
+  [class    ] UserBase
+  [class    ] UserInDB
+
+modules\calendar\router.py
+--------------------------
+  [function ] _datetime_to_date
+  [function ] get_calendar_birthdays
+  [function ] get_calendar_events
+  [variable ] MOCK_BIRTHDAYS
+
+modules\collaboration\router.py
+-------------------------------
+  [function ] _decode_ws_token
+  [function ] _unlock_user_documents
+
+modules\collaboration\schemas.py
+--------------------------------
+  [class    ] WSPresencePayload
+  [class    ] WSSubscribePayload
+
+modules\documents\crud.py
+-------------------------
+  [function ] create_document
+  [function ] delete_document
+  [function ] get_document
+  [function ] update_document
+
+modules\documents\dependencies.py
+---------------------------------
+  [function ] create_dependency
+  [function ] delete_dependency
+  [function ] get_dependency_graph
+  [function ] list_dependencies
+  [function ] update_dependency
+
+modules\documents\models.py
+---------------------------
+  [class    ] ChangeSheet
+
+modules\documents\router.py
+---------------------------
+  [function ] cascade_update_endpoint
+  [function ] classify_document_endpoint
+  [function ] create_document
+  [function ] create_revision
+  [function ] list_documents
+  [function ] lock_document
+  [function ] render_document_endpoint
+  [function ] start_approval_workflow
+  [function ] submit_for_approval
+  [function ] submit_for_review
+  [function ] suggest_fields
+  [function ] unlock_document
+  [function ] update_document
+
+modules\documents\schemas.py
+----------------------------
+  [class    ] ApprovalStageBase
+  [class    ] ApprovalStageCreate
+  [class    ] ApprovalStageResponse
+  [class    ] ApprovalWorkflowBase
+  [class    ] ApprovalWorkflowCreate
+  [class    ] ApprovalWorkflowResponse
+  [class    ] CascadeUpdateResponse
+  [class    ] DocumentBase
+  [class    ] DocumentCreate
+  [class    ] DocumentDependencyBase
+  [class    ] DocumentLockResponse
+  [class    ] DocumentRenderResponse
+  [class    ] DocumentResponse
+  [class    ] DocumentUpdate
+  [class    ] LockRequestInput
+  [class    ] RevisionBase
+  [class    ] RevisionCreate
+  [class    ] RevisionResponse
+
+modules\documents\variable_engine.py
+------------------------------------
+  [function ] collect_variables
+  [function ] evaluate_expression
+  [function ] find_affected_documents
+  [function ] substitute_template
+  [variable ] VARIABLE_PATTERN
+
+modules\gamification\router.py
+------------------------------
+  [function ] available_badges
+  [function ] get_daily_quests
+  [function ] get_notifications
+  [function ] get_unread_count
+  [function ] leaderboard
+  [function ] mark_notification_read
+  [function ] my_profile
+  [function ] update_quest_progress
+  [variable ] BADGE_DEFINITIONS
+
+modules\gamification\schemas.py
+-------------------------------
+  [class    ] BadgeDefinition
+  [class    ] EventCreate
+  [class    ] GamificationProfile
+
+modules\gamification\service.py
+-------------------------------
+  [function ] calculate_level
+  [variable ] LEVELS
+
+modules\integrations\_1c\router.py
+----------------------------------
+  [class    ] OneCContractExport
+  [class    ] OneCContractItem
+  [class    ] OneCDocumentExport
+  [class    ] OneCExportResult
+  [class    ] OneCNomenclatureItem
+  [function ] _generate_enterprise_data_xml
+  [function ] _generate_json_export
+  [function ] export_batch_documents
+  [function ] export_documents_to_1c
+  [function ] get_export_formats
+  [function ] import_contracts_from_1c
+
+modules\integrations\gateway.py
+-------------------------------
+  [class    ] PartnerCreate
+  [class    ] PartnerResponse
+  [class    ] SyncLogEntry
+  [class    ] SyncResult
+  [class    ] WebhookPayload
+  [function ] _check_ip_whitelist
+  [function ] _verify_webhook_signature
+  [function ] create_partner
+  [function ] get_partner
+  [function ] get_sync_logs
+  [function ] list_partners
+  [function ] receive_webhook
+  [function ] sync_with_partner
+  [variable ] _partners
+  [variable ] _sync_logs
+
+modules\monitoring\router.py
+----------------------------
+  [class    ] MetricsRoute
+  [function ] db_health_check
+  [function ] health_check
+  [function ] metrics
+  [function ] qdrant_health_check
+  [variable ] active_users
+  [variable ] ai_requests_total
+  [variable ] auth_failures_total
+  [variable ] db_connections_active
+  [variable ] document_uploads_total
+  [variable ] http_request_duration_seconds
+  [variable ] http_request_size_bytes
+  [variable ] http_response_size_bytes
+  [variable ] qdrant_health
+  [variable ] workflow_completions_total
+
+modules\notifications\router.py
+-------------------------------
+  [function ] delete_notification
+  [function ] get_notif_repo
+  [function ] list_notifications
+  [function ] mark_all_notifications_read
+  [function ] mark_notification_read
+  [function ] test_email
+
+modules\notifications\schemas.py
+--------------------------------
+  [class    ] NotificationType
+
+modules\operations\models.py
+----------------------------
+  [class    ] OperationAssignment
+
+modules\projects\router.py
+--------------------------
+  [function ] create_kit
+  [function ] create_project
+  [function ] create_section
+  [function ] create_stage
+  [function ] get_project
+  [function ] get_project_tree
+  [function ] list_projects
+
+modules\remarks\models.py
+-------------------------
+  [function ] receive_before_update
+
+modules\remarks\response_schemas.py
+-----------------------------------
+  [class    ] RemarkLinkResponse
+
+modules\remarks\router.py
+-------------------------
+  [function ] add_comment
+  [function ] create_remark
+  [function ] create_tag
+  [function ] delete_comment
+  [function ] delete_remark
+  [function ] delete_tag
+  [function ] export_remarks
+  [function ] get_remark
+  [function ] get_statistics
+  [function ] link_remarks
+  [function ] list_remarks
+  [function ] list_tags
+  [function ] perform_action
+  [function ] start_remark_workflow
+  [function ] update_remark
+
+modules\remarks\schemas.py
+--------------------------
+  [class    ] RemarkAttachment
+  [class    ] RemarkExportRow
+  [class    ] RemarkHistoryEntry
+  [class    ] RemarkTagUpdate
+
+modules\remarks\service.py
+--------------------------
+  [class    ] RemarkCommentNotFoundError
+  [class    ] RemarkNotFoundError
+  [class    ] RemarkServiceError
+  [class    ] RemarkTagNotFoundError
+
+modules\reports\router.py
+-------------------------
+  [function ] _build_report_row
+  [function ] _generate_finances_report
+  [function ] _generate_load_report
+  [function ] _generate_projects_report
+  [function ] _generate_tenders_report
+  [function ] generate_report
+
+modules\resources\router.py
+---------------------------
+  [function ] get_heatmap
+  [function ] get_workload
+
+modules\resources\schemas.py
+----------------------------
+  [class    ] HeatmapDepartment
+  [class    ] HeatmapEmployee
+  [class    ] ProjectSummary
+  [class    ] UserWorkload
+  [class    ] WeeklyLoad
+
+modules\resources\service.py
+----------------------------
+  [class    ] _BoundedCache
+
+modules\tasks\router.py
+-----------------------
+  [function ] create_task
+  [function ] delete_task
+  [function ] get_recommendations
+  [function ] get_task
+  [function ] get_task_statistics
+  [function ] get_task_time
+  [function ] list_tasks
+  [function ] start_task
+  [function ] stop_task
+  [function ] update_task
+  [function ] update_task_status
+
+modules\tenders\calculator.py
+-----------------------------
+  [variable ] COMPLEXITY_MULT
+  [variable ] HOURS_PER_PERSON_MONTH
+  [variable ] NORMS
+  [variable ] TEAM_ROLES
+
+modules\tenders\router.py
+-------------------------
+  [function ] _iso_or_none
+  [function ] _parse_date
+  [function ] calculate_tender_endpoint
+  [function ] create_project_from_tender
+  [function ] create_tender
+  [function ] generate_preview
+  [function ] get_tender
+  [function ] get_tender_tasks
+  [function ] list_tenders
+  [function ] portfolio_summary
+  [function ] update_tender_stage
+
+modules\tenders\router_extended.py
+----------------------------------
+  [function ] _calc_similarity
+  [function ] _estimate_materials
+  [function ] _estimate_project_progress
+  [function ] _get_tender_or_404
+  [function ] _match_role
+  [function ] _role_to_dept
+  [function ] get_document_checklist
+  [function ] get_procurement_status
+  [function ] get_production_capacity
+  [function ] get_reference_tenders
+  [function ] get_team_availability
+  [function ] get_tender_detail
+  [variable ] DOCUMENT_CHECKLIST
+
+modules\tenders\schemas.py
+--------------------------
+  [class    ] TenderBase
+  [class    ] TenderUpdate
+
+modules\time_tracking\models.py
+-------------------------------
+  [class    ] EmployeeLoad
+
+modules\time_tracking\router.py
+-------------------------------
+  [function ] employee_analytics
+  [function ] list_sessions
+  [function ] start_session
+  [function ] stop_session
+
+modules\variables\router.py
+---------------------------
+  [function ] create_variable
+  [function ] list_variables
+  [function ] substitute_variable
+  [function ] update_variable
+
+modules\variables\schemas.py
+----------------------------
+  [class    ] VariableBase
+
+modules\workflow\notifications.py
+---------------------------------
+  [function ] _get_instance_starter
+  [function ] _get_step_assignee_ids
+  [function ] _get_user_emails
+  [function ] _notify_assignees
+
+modules\workflow\router.py
+--------------------------
+  [function ] approve_step
+  [function ] create_comment
+  [function ] create_template
+  [function ] delegate_step
+  [function ] delete_template
+  [function ] get_audit_log
+  [function ] get_document_instances
+  [function ] get_instance
+  [function ] get_step_comments
+  [function ] get_step_signatures
+  [function ] get_template
+  [function ] list_instances
+  [function ] list_predefined_templates
+  [function ] list_templates
+  [function ] reject_step
+  [function ] sign_step
+  [function ] start_workflow
+  [function ] update_template
+
+modules\workflow\schemas.py
+---------------------------
+  [class    ] WorkflowStepInstanceResponse
+  [class    ] WorkflowStepResponse
+  [class    ] WorkflowStepSchema
+
+modules\workflow\service.py
+---------------------------
+  [class    ] InstanceNotFoundError
+  [class    ] StepNotFoundError
+  [class    ] WorkflowNotFoundError
+  [class    ] WorkflowServiceError
+
+parser\dwg_parser.py
+--------------------
+  [class    ] DWGHeader
+
+schemas\archive.py
+------------------
+  [class    ] ArchiveConstructionType
+  [class    ] ArchiveExport
+  [class    ] ArchiveFilter
+  [class    ] ArchiveMaterialType
+  [class    ] ArchiveSearchQuery
+  [class    ] AttachmentCreate
+  [class    ] AttachmentResponse
+  [class    ] CertificateCreate
+  [class    ] CertificateResponse
+  [class    ] SearchResultItem
+
+services\archive_service.py
+---------------------------
+  [function ] archive_construction_created
+  [function ] archive_document_event
+  [function ] archive_file_upload
+  [function ] archive_material_created
+  [function ] archive_project_event
+  [function ] archive_remark_event
+  [function ] archive_workflow_event
+
+tasks\documents.py
+------------------
+  [function ] generate_pdf
+  [function ] process_file
+
+tasks\notifications.py
+----------------------
+  [function ] notify_project_members
+  [function ] send_push
+
+tasks\reports.py
+----------------
+  [function ] export_data
+  [function ] generate_report
+
+websocket\ai_ws.py
+------------------
+  [class    ] AIConnectionManager
+  [function ] _get_ai_service
+  [function ] _parse_uuid
+
+websocket\redis_pubsub.py
+-------------------------
+  [class    ] RedisPubSub
+
+
+======================================================================
+TOP UNUSED ITEMS BY MODULE (count)
+======================================================================
+ 22  api\v1\endpoints\archive.py
+ 20  modules\auth\router.py
+ 18  modules\documents\schemas.py
+ 18  modules\workflow\router.py
+ 16  modules\analytics\router.py
+ 15  modules\integrations\gateway.py
+ 15  modules\monitoring\router.py
+ 15  modules\remarks\router.py
+ 14  main.py
+ 14  crud\archive.py
+ 13  modules\documents\router.py
+ 13  modules\tenders\router_extended.py
+ 12  modules\ai\router.py
+ 11  modules\integrations\_1c\router.py
+ 11  modules\tasks\router.py
+ 11  modules\tenders\router.py
+ 10  schemas\archive.py
+  9  modules\gamification\router.py
+  7  core\security.py
+  7  modules\audit\router.py
+  7  modules\projects\router.py
+  7  services\archive_service.py
+  6  api\routes\ai.py
+  6  modules\notifications\router.py
+  6  modules\reports\router.py
+  5  modules\auth\deps.py
+  5  modules\documents\dependencies.py
+  5  modules\documents\variable_engine.py
+  5  modules\resources\schemas.py
+  4  core\exceptions.py

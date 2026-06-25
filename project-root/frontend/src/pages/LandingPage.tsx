@@ -5,10 +5,10 @@ import { ChromeBot } from '@/components/ChromeBot';
 
 const FeatureCard = ({ icon, title, lines }: { icon: React.ReactNode; title: string; lines: string[] }) => {
   const { theme } = useTheme();
-  const isDark = theme === 'dark';
+  const isDark = theme === 'dark' || theme === 'midnight' || theme === 'contrast';
   return (
     <div
-      className="p-4 md:p-5 lg:p-6 rounded-xl text-center transition-all duration-200 relative z-[2]"
+      className="p-2.5 md:p-3 rounded-xl text-center transition-all duration-200 relative z-[2]"
       style={{
         border: `1px solid ${isDark ? '#3D4554' : '#CED2DD'}`,
         background: isDark ? 'rgba(13,17,23,0.72)' : 'rgba(255,255,255,0.72)',
@@ -26,7 +26,7 @@ const FeatureCard = ({ icon, title, lines }: { icon: React.ReactNode; title: str
       }}
     >
       <div
-        className="w-10 h-10 md:w-11 md:h-11 rounded-[10px] flex items-center justify-center mx-auto mb-2 md:mb-2.5"
+        className="w-8 h-8 md:w-9 md:h-9 rounded-[8px] flex items-center justify-center mx-auto mb-1 md:mb-1.5"
         style={{
           background: isDark ? 'rgba(92,117,224,0.1)' : 'rgba(59,79,168,0.08)',
           color: isDark ? '#5C75E0' : '#3B4FA8',
@@ -34,8 +34,8 @@ const FeatureCard = ({ icon, title, lines }: { icon: React.ReactNode; title: str
       >
         {icon}
       </div>
-      <div className="text-xs md:text-[13px] font-semibold mb-1" style={{ color: isDark ? '#E2E5EC' : '#1E2230' }}>{title}</div>
-      <div className="text-[10px] md:text-[11px] leading-relaxed" style={{ color: isDark ? '#8B92A8' : '#6B7280' }}>
+      <div className="text-[11px] md:text-xs font-semibold mb-0.5" style={{ color: isDark ? '#E2E5EC' : '#1E2230' }}>{title}</div>
+      <div className="text-[10px] md:text-xs leading-snug" style={{ color: isDark ? '#8B92A8' : '#6B7280' }}>
         {lines.map((line, i) => (<span key={i}>{line}{i < lines.length - 1 && <br />}</span>))}
       </div>
     </div>
@@ -44,25 +44,25 @@ const FeatureCard = ({ icon, title, lines }: { icon: React.ReactNode; title: str
 
 export default function LandingPage() {
   const { theme, cycleTheme, themeLabel } = useTheme();
-  const isDark = theme === 'dark' || theme === 'midnight';
+  const isDark = theme === 'dark' || theme === 'midnight' || theme === 'contrast';
 
   const features = [
-    { icon: <FileText size={20} />, title: 'Документооборот', lines: ['Единое пространство', 'для ИТД и ИИД'] },
-    { icon: <FolderKanban size={20} />, title: 'Управление проектами', lines: ['Контроль сроков,', 'ресурсов и рисков'] },
-    { icon: <Gavel size={20} />, title: 'Тендерный отдел', lines: ['Подготовка КД', 'и спецификаций'] },
-    { icon: <Archive size={20} />, title: 'Архив и шаблоны', lines: ['Типовые решения', 'и ревизии'] },
-    { icon: <ShieldCheck size={20} />, title: 'Замечания и согласования', lines: ['Workflow', 'внутри компании'] },
-    { icon: <Zap size={20} />, title: 'AI-ассистент', lines: ['Проверка документов', 'и рекомендации'] },
+    { icon: <FileText size={18} />, title: 'Документооборот', lines: ['Единое пространство', 'для ИТД и ИИД'] },
+    { icon: <FolderKanban size={18} />, title: 'Управление проектами', lines: ['Контроль сроков,', 'ресурсов и рисков'] },
+    { icon: <Gavel size={18} />, title: 'Тендерный отдел', lines: ['Подготовка КД', 'и спецификаций'] },
+    { icon: <Archive size={18} />, title: 'Архив и шаблоны', lines: ['Типовые решения', 'и ревизии'] },
+    { icon: <ShieldCheck size={18} />, title: 'Замечания и согласования', lines: ['Workflow', 'внутри компании'] },
+    { icon: <Zap size={18} />, title: 'AI-ассистент', lines: ['Проверка документов', 'и рекомендации'] },
   ];
 
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden" style={{ background: isDark ? '#0D1117' : '#F5F6FA' }}>
+    <div className="h-screen w-full flex flex-col relative overflow-hidden" style={{ background: isDark ? '#0D1117' : '#F5F6FA' }}>
 
       {/* Theme toggle */}
-      <div className="fixed top-4 right-4 z-[100]">
+      <div className="fixed top-3 right-3 z-[100]">
         <button
           onClick={cycleTheme}
-          className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-150"
+          className="w-8 h-8 rounded-full flex items-center justify-center transition-all duration-150"
           style={{
             background: isDark ? '#151B38' : '#FFFFFF',
             border: `1px solid ${isDark ? '#3D4554' : '#CED2DD'}`,
@@ -71,7 +71,7 @@ export default function LandingPage() {
           title={`Тема: ${themeLabel}`}
         >
           {isDark ? (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="12" cy="12" r="5" />
               <line x1="12" y1="1" x2="12" y2="3" />
               <line x1="12" y1="21" x2="12" y2="23" />
@@ -83,7 +83,7 @@ export default function LandingPage() {
               <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
             </svg>
           ) : (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
             </svg>
           )}
@@ -106,12 +106,12 @@ export default function LandingPage() {
       />
 
       {/* Main Content */}
-      <div className="landing-content flex-1 flex flex-col items-center justify-center px-5 py-10 w-full">
+      <div className="landing-content flex-1 flex flex-col items-center justify-between px-4 py-3 md:py-4 w-full overflow-hidden">
 
         {/* Brand Block */}
-        <div className="flex items-center justify-center gap-4 md:gap-6 mb-3 relative z-[2]">
+        <div className="flex items-center justify-center gap-3 md:gap-4 relative z-[2] shrink-0">
           <div
-            className="w-16 h-16 md:w-20 md:h-20 rounded-2xl flex items-center justify-center"
+            className="w-12 h-12 md:w-14 md:h-14 rounded-xl flex items-center justify-center"
             style={{
               background: isDark ? '#151B38' : '#FFFFFF',
               boxShadow: isDark
@@ -120,7 +120,7 @@ export default function LandingPage() {
               animation: isDark ? 'iconGlow 3s ease-in-out infinite' : 'none',
             }}
           >
-            <svg width="40" height="40" viewBox="0 0 36 36" className="md:w-[48px] md:h-[48px]">
+            <svg width="28" height="28" viewBox="0 0 36 36" className="md:w-[32px] md:h-[32px]">
               <rect x="3" y="3" width="30" height="30" rx="6" fill={isDark ? '#5C75E0' : '#3B4FA8'} />
               <rect x="9" y="10" width="18" height="2.5" rx="1.25" fill="white" opacity="0.85" />
               <rect x="9" y="15" width="14" height="2.5" rx="1.25" fill="white" opacity="0.6" />
@@ -130,7 +130,7 @@ export default function LandingPage() {
           </div>
           <div>
             <div
-              className="text-[clamp(1.75rem,5vw,3rem)] font-bold tracking-tight"
+              className="text-[clamp(1.5rem,4vw,2.25rem)] font-bold tracking-tight"
               style={{
                 fontFamily: "'Montserrat', sans-serif",
                 color: isDark ? '#E2E5EC' : '#1E2230',
@@ -139,18 +139,18 @@ export default function LandingPage() {
             >
               ДокПоток{' '}
               <span
-                className="text-[clamp(1.25rem,3vw,1.75rem)] font-bold px-2 md:px-3 py-0.5 md:py-1 rounded-lg align-middle"
+                className="text-[clamp(1rem,2.5vw,1.25rem)] font-bold px-1.5 md:px-2 py-0.5 rounded-md align-middle"
                 style={{
                   background: isDark ? '#5C75E0' : '#3B4FA8',
                   color: '#fff',
-                  marginLeft: '6px',
+                  marginLeft: '4px',
                 }}
               >
                 IRIS
               </span>
             </div>
             <div
-              className="w-[140px] md:w-[180px] h-1 rounded-full mt-2"
+              className="w-[100px] md:w-[140px] h-0.5 rounded-full mt-1.5"
               style={{
                 background: isDark ? '#E8C44A' : '#D4A62A',
                 boxShadow: isDark ? '0 0 12px rgba(232,196,74,0.5)' : 'none',
@@ -161,22 +161,22 @@ export default function LandingPage() {
 
         {/* Subtitle */}
         <div
-          className="text-center mt-3 md:mt-4 mb-4 md:mb-6 max-w-lg md:max-w-xl relative z-[2]"
+          className="text-center max-w-md md:max-w-lg relative z-[2] shrink-0"
           style={{ color: isDark ? '#8B92A8' : '#6B7280' }}
         >
-          <p className="text-sm md:text-base leading-relaxed">
+          <p className="text-xs md:text-sm leading-snug">
             Интеллектуальная система управления технической документацией,
             проектами и тендерными процессами
           </p>
         </div>
 
         {/* ChromeBot */}
-        <div className="flex items-center justify-center mb-4 md:mb-6">
-          <ChromeBot size={260} variant={isDark ? 'dark' : 'light'} className="md:w-[320px] md:h-[320px]" />
+        <div className="flex items-center justify-center shrink-0">
+          <ChromeBot size={180} variant={isDark ? 'dark' : 'light'} className="md:w-[220px] md:h-[220px]" />
         </div>
 
         {/* Features Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 w-full max-w-[640px] lg:max-w-[720px] xl:max-w-[800px] mb-8 md:mb-10 relative z-[2]">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 md:gap-3 w-full max-w-[520px] lg:max-w-[640px] xl:max-w-[800px] relative z-[2] shrink-0">
           {features.map((f, idx) => (
             <FeatureCard key={idx} icon={f.icon} title={f.title} lines={f.lines} />
           ))}
@@ -185,7 +185,7 @@ export default function LandingPage() {
         {/* CTA Button */}
         <Link
           to="/login"
-          className="group relative z-[2] inline-flex items-center gap-2 px-8 py-3.5 rounded-xl text-[14px] font-semibold transition-all duration-200"
+          className="group relative z-[2] inline-flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold transition-all duration-200 shrink-0"
           style={{
             background: isDark ? '#5C75E0' : '#3B4FA8',
             color: '#fff',
@@ -207,12 +207,12 @@ export default function LandingPage() {
           }}
         >
           Войти в систему
-          <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
+          <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
         </Link>
 
         {/* Footer hint */}
         <div
-          className="mt-8 text-[11px] relative z-[2]"
+          className="text-[11px] relative z-[2] shrink-0"
           style={{ color: isDark ? 'rgba(139,146,168,0.5)' : 'rgba(107,114,128,0.6)' }}
         >
           © {new Date().getFullYear()} ДокПоток IRIS — технический документооборот

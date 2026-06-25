@@ -53,7 +53,7 @@ export default function TenderOverviewTab({ tender, tasks, workflows }: TenderOv
                     </span>
                   )}
                   <span
-                    className="px-1.5 py-0.5 rounded text-[10px] font-medium"
+                    className="px-1.5 py-0.5 rounded text-xs font-medium"
                     style={{
                       background: task.priority === 'high' ? 'rgba(220,38,38,0.12)' : task.priority === 'medium' ? 'rgba(212,175,55,0.12)' : 'rgba(107,114,128,0.12)',
                       color: task.priority === 'high' ? '#DC2626' : task.priority === 'medium' ? '#D4AF37' : '#6B7280',
@@ -80,7 +80,7 @@ export default function TenderOverviewTab({ tender, tasks, workflows }: TenderOv
                     {wf.document_name || `Согласование №${wf.id}`}
                   </span>
                   <span
-                    className="text-[10px] px-1.5 py-0.5 rounded"
+                    className="text-xs px-1.5 py-0.5 rounded"
                     style={{
                       background: wf.status === 'completed' ? 'rgba(12,114,5,0.12)' : 'rgba(37,99,235,0.12)',
                       color: wf.status === 'completed' ? '#0C7205' : '#2563EB',
@@ -93,7 +93,7 @@ export default function TenderOverviewTab({ tender, tasks, workflows }: TenderOv
                   {wf.steps.map((step, i) => (
                     <div key={step.id} className="flex items-center gap-1">
                       <div
-                        className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold"
+                        className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
                         style={{
                           background: step.status === 'approved' ? '#0C7205' : step.status === 'in_progress' ? '#2563EB' : 'var(--bg-surface-2)',
                           color: step.status === 'approved' || step.status === 'in_progress' ? '#fff' : 'var(--text-muted)',
@@ -135,7 +135,7 @@ export default function TenderOverviewTab({ tender, tasks, workflows }: TenderOv
 function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
   return (
     <div className="p-3 rounded-lg" style={{ background: 'var(--bg-surface-2)', border: '1px solid var(--border-default)' }}>
-      <div className="text-[10px] font-medium" style={{ color: 'var(--text-muted)' }}>{label}</div>
+      <div className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>{label}</div>
       <div className="text-xl font-bold" style={{ color }}>{value}</div>
     </div>
   );
@@ -151,7 +151,7 @@ function TaskStatusIcon({ status }: { status: string }) {
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{label}</div>
+      <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{label}</div>
       <div className="font-medium" style={{ color: 'var(--text-primary)' }}>{value}</div>
     </div>
   );

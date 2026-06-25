@@ -116,7 +116,7 @@ export default function ActivityBar() {
 
               {item.badge !== undefined && item.badge > 0 && (
                 <span
-                  className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[9px] font-semibold leading-none"
+                  className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-xs font-semibold leading-none"
                   style={{
                     backgroundColor: 'var(--notification-badge)',
                     color: 'var(--text-inverse)',

@@ -25,7 +25,7 @@ export const getCalendarEvents = async (
   month: number
 ): Promise<CalendarEvent[]> => {
   const { data } = await client.get<CalendarEventsResponse>(
-    '/api/v1/calendar/events',
+    '/calendar/events',
     {
       params: { year, month },
     }
@@ -116,7 +116,7 @@ export interface BirthdayEvent {
 }
 
 export const getCalendarBirthdays = async (): Promise<BirthdayEvent[]> => {
-  const { data } = await client.get<BirthdayEvent[]>('/api/v1/calendar/birthdays');
+  const { data } = await client.get<BirthdayEvent[]>('/calendar/birthdays');
   return data;
 };
 

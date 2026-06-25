@@ -78,7 +78,7 @@ function FilterBar({ options, active, onChange, count }: {
           <button
             key={opt.key}
             onClick={() => onChange(opt.key)}
-            className="text-[11px] px-2.5 py-1 rounded-full font-medium transition-all cursor-pointer"
+            className="text-sm px-2.5 py-1 rounded-full font-medium transition-all cursor-pointer"
             style={{
               background: isActive ? '#2563EB' : 'var(--card-bg)',
               color: isActive ? '#fff' : 'var(--text-secondary)',
@@ -89,7 +89,7 @@ function FilterBar({ options, active, onChange, count }: {
           </button>
         );
       })}
-      <span className="text-[10px] ml-auto" style={{ color: 'var(--text-muted)' }}>{count} шт.</span>
+      <span className="text-xs ml-auto" style={{ color: 'var(--text-muted)' }}>{count} шт.</span>
     </div>
   );
 }
@@ -100,11 +100,12 @@ function FilterBar({ options, active, onChange, count }: {
 export default function TendersPage() {
   // const navigate = useNavigate();
   const { theme } = useTheme();
-  const isDark = theme === 'dark';
+  const isDark = theme === 'dark' || theme === 'midnight' || theme === 'contrast';
   const [filter, setFilter] = useState<string>('all');
   const [search, setSearch] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [tenders, setTenders] = useState<TenderItem[]>([]);
+  const [selectedTender, setSelectedTender] = useState<TenderItem | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchTenders = useCallback(async () => {
@@ -167,15 +168,34 @@ export default function TendersPage() {
             <h1 className="sr-only" style={{ color: 'var(--text-primary)' }}>Тендеры</h1>
             <p className="text-base md:text-lg font-medium leading-relaxed mt-1 mt-0.5" style={{ color: 'var(--text-secondary)' }}>Управление тендерами и предложениями</p>
           </div>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md transition-colors cursor-pointer shrink-0"
-            style={{ background: '#2563EB', color: '#ffffff' }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = '#1d4ed8'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = '#2563EB'; }}
-          >
-            <Plus size={13} /> Добавить тендер
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => {
+                if (selectedTender) {
+                  alert(`📞 Ответ для ${selectedTender.customer}:\n\n«По тендеру ${selectedTender.number} «${selectedTender.name}» текущий статус — ${statusMeta[selectedTender.status].label}, бюджет ${selectedTender.budget}, срок ${selectedTender.deadline}. Шанс победы ${selectedTender.winChance}%.»`);
+                } else {
+                  alert('📞 Выберите тендер в таблице, чтобы ответить заказчику.');
+                }
+              }}
+              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md transition-all cursor-pointer"
+              style={{
+                background: 'var(--iris-accent-cyan, #0088AA)',
+                color: '#ffffff',
+                boxShadow: '0 0 12px var(--iris-glow-cyan, rgba(0,136,170,0.35))',
+              }}
+            >
+              📞 Ответить заказчику
+            </button>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md transition-colors cursor-pointer"
+              style={{ background: '#2563EB', color: '#ffffff' }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#1d4ed8'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#2563EB'; }}
+            >
+              <Plus size={13} /> Добавить тендер
+            </button>
+          </div>
         </div>
 
         {/* KPI */}
@@ -189,7 +209,7 @@ export default function TendersPage() {
                 </span>
               </div>
               <div className="text-xl font-bold" style={{ color: item.color }}>{item.value}</div>
-              <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{item.sub}</div>
+              <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{item.sub}</div>
             </div>
           ))}
         </div>
@@ -219,7 +239,7 @@ export default function TendersPage() {
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
                   {['№ тендера','Название','Заказчик','Статус','Срок','Бюджет','Шанс','Действия'].map((h) => (
-                    <th key={h} className="text-[10px] font-semibold uppercase tracking-wider px-3 py-2.5" style={{ color: 'var(--text-muted)' }}>{h}</th>
+                    <th key={h} className="text-xs font-semibold uppercase tracking-wider px-3 py-2.5" style={{ color: 'var(--text-muted)' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -231,35 +251,42 @@ export default function TendersPage() {
                     {filtered.map((t) => {
                       const meta = statusMeta[t.status];
                       return (
-                        <tr key={t.id} className="transition-colors" style={{ borderBottom: '1px solid var(--border-color)' }}
-                          onMouseEnter={(e) => { e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                        <tr
+                          key={t.id}
+                          className="transition-colors cursor-pointer"
+                          style={{
+                            borderBottom: '1px solid var(--border-color)',
+                            background: selectedTender?.id === t.id ? (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)') : 'transparent',
+                          }}
+                          onClick={() => setSelectedTender(t)}
+                          onMouseEnter={(e) => { if (selectedTender?.id !== t.id) e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = selectedTender?.id === t.id ? (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)') : 'transparent'; }}
                         >
-                          <td className="px-3 py-2.5 text-[11px] font-mono font-medium" style={{ color: 'var(--text-secondary)' }}>{t.number}</td>
-                          <td className="px-3 py-2.5 text-[11px] font-medium" style={{ color: 'var(--text-primary)' }}>{t.name}</td>
-                          <td className="px-3 py-2.5 text-[11px]" style={{ color: 'var(--text-secondary)' }}>{t.customer}</td>
+                          <td className="px-3 py-2.5 text-sm font-mono font-medium" style={{ color: 'var(--text-secondary)' }}>{t.number}</td>
+                          <td className="px-3 py-2.5 text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t.name}</td>
+                          <td className="px-3 py-2.5 text-sm" style={{ color: 'var(--text-secondary)' }}>{t.customer}</td>
                           <td className="px-3 py-2.5">
-                            <span className="inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-full font-medium"
+                            <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full font-medium"
                               style={{ background: meta.color + '15', color: meta.color, border: `1px solid ${meta.color}30` }}>
                               {meta.icon} {meta.label}
                             </span>
                           </td>
-                          <td className="px-3 py-2.5 text-[11px]" style={{ color: t.daysLeft < 0 ? '#DC2626' : t.daysLeft <= 3 ? '#D4AF37' : 'var(--text-secondary)' }}>
+                          <td className="px-3 py-2.5 text-sm" style={{ color: t.daysLeft < 0 ? '#DC2626' : t.daysLeft <= 3 ? '#D4AF37' : 'var(--text-secondary)' }}>
                             <span className="flex items-center gap-1"><Calendar size={10} /> {t.deadline} {t.daysLeft < 0 && `(${t.daysLeft} дн.)`}</span>
                           </td>
-                          <td className="px-3 py-2.5 text-[11px] font-medium" style={{ color: 'var(--text-primary)' }}>{t.budget}</td>
+                          <td className="px-3 py-2.5 text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t.budget}</td>
                           <td className="px-3 py-2.5">
                             <div className="flex items-center gap-1.5">
                               <div className="w-12 h-1.5 rounded-full overflow-hidden" style={{ background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }}>
                                 <div className="h-full rounded-full" style={{ width: `${t.winChance}%`, background: t.winChance >= 70 ? '#0C7205' : t.winChance >= 40 ? '#D4AF37' : '#DC2626' }} />
                               </div>
-                              <span className="text-[10px] font-medium" style={{ color: 'var(--text-secondary)' }}>{t.winChance}%</span>
+                              <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>{t.winChance}%</span>
                             </div>
                           </td>
                           <td className="px-3 py-2.5">
                             <a
                               href={`/portfolio?tender=${t.id}`}
-                              className="inline-block text-[9px] px-2 py-1 rounded transition-colors"
+                              className="inline-block text-xs px-2 py-1 rounded transition-colors"
                               style={{ color: '#2563EB', background: 'rgba(37,99,235,0.1)', textDecoration: 'none' }}
                               onClick={(e) => {
                                 e.stopPropagation();

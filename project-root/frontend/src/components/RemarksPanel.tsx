@@ -158,18 +158,18 @@ export default function RemarksPanel({ projectId, documentId }: RemarksPanelProp
             {/* Заголовок замечания */}
             <div className="flex justify-between items-start mb-1.5 gap-2">
               <div className="flex items-center gap-1 flex-wrap">
-                <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>#{remark.id}</span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-200">
+                <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>#{remark.id}</span>
+                <span className="text-xs px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-200">
                   {SOURCE_LABEL[remark.source] || remark.source}
                 </span>
               </div>
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full border font-medium whitespace-nowrap ${STATUS_UI[remark.status as RemarkStatus]?.cls}`}>
+              <span className={`text-xs px-1.5 py-0.5 rounded-full border font-medium whitespace-nowrap ${STATUS_UI[remark.status as RemarkStatus]?.cls}`}>
                 {STATUS_UI[remark.status as RemarkStatus]?.label}
               </span>
             </div>
 
             <p className="text-xs mb-1.5 leading-relaxed" style={{ color: 'var(--text-primary)' }}>{remark.text}</p>
-            <p className="text-[10px] mb-1.5" style={{ color: 'var(--text-tertiary)' }}>
+            <p className="text-xs mb-1.5" style={{ color: 'var(--text-tertiary)' }}>
               {remark.author_name} · {new Date(remark.created_at).toLocaleDateString("ru-RU")}
               {remark.assignee_name && ` → ${remark.assignee_name}`}
             </p>
@@ -179,9 +179,9 @@ export default function RemarksPanel({ projectId, documentId }: RemarksPanelProp
               <div key={resp.id}
                 className="mt-1.5 pl-2 border-l-2 rounded-r py-1 pr-1.5"
                 style={{ borderColor: 'var(--accent-engineering)', backgroundColor: 'rgba(124, 58, 237, 0.05)' }}>
-                <p className="text-[10px] font-semibold" style={{ color: 'var(--accent-engineering)' }}>{resp.author_name}:</p>
+                <p className="text-xs font-semibold" style={{ color: 'var(--accent-engineering)' }}>{resp.author_name}:</p>
                 <p className="text-xs" style={{ color: 'var(--text-primary)' }}>{resp.text}</p>
-                <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
                   {new Date(resp.created_at).toLocaleDateString("ru-RU")}
                 </p>
               </div>
@@ -215,17 +215,17 @@ export default function RemarksPanel({ projectId, documentId }: RemarksPanelProp
             {remark.status === "open" && (
               <div className="mt-2 flex gap-1 flex-wrap">
                 <button onClick={() => updateStatus(remark.id, "resolved", "Замечание устранено")}
-                  className="flex items-center gap-0.5 text-[10px] font-medium px-2 py-1 rounded transition-colors"
+                  className="flex items-center gap-0.5 text-xs font-medium px-2 py-1 rounded transition-colors"
                   style={{ backgroundColor: 'var(--success)', color: 'var(--text-inverse)' }}>
                   <CheckCircle size={10} /> Решено
                 </button>
                 <button onClick={() => updateStatus(remark.id, "rejected", "Ошибочно")}
-                  className="flex items-center gap-0.5 text-[10px] font-medium px-2 py-1 rounded transition-colors"
+                  className="flex items-center gap-0.5 text-xs font-medium px-2 py-1 rounded transition-colors"
                   style={{ backgroundColor: 'var(--text-tertiary)', color: 'var(--text-inverse)' }}>
                   <XCircle size={10} /> Ошибочно
                 </button>
                 <button onClick={() => updateStatus(remark.id, "superseded", "Изм. ТЗ")}
-                  className="flex items-center gap-0.5 text-[10px] font-medium px-2 py-1 rounded transition-colors"
+                  className="flex items-center gap-0.5 text-xs font-medium px-2 py-1 rounded transition-colors"
                   style={{ backgroundColor: 'var(--warning)', color: 'var(--text-inverse)' }}>
                   <RotateCcw size={10} /> Изм. ТЗ
                 </button>

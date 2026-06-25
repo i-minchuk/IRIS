@@ -4,12 +4,37 @@
 @tailwind utilities;
 
 /* Prevent horizontal scroll when zoom is applied */
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
 body {
   overflow-x: hidden;
   font-family: var(--font-body);
-  line-height: 1.5;
+  line-height: 1.6;
   color: var(--iris-text-primary);
-  background-color: var(--iris-bg-app);
+  background-color: var(--iris-bg-app) !important;
+}
+
+/* Убрать жёлтый/сепия autofill от браузера */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+textarea:-webkit-autofill:active,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus,
+select:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px var(--iris-bg-surface) inset !important;
+  -webkit-text-fill-color: var(--iris-text-primary) !important;
+  transition: background-color 5000s ease-in-out 0s;
 }
 /* Адаптивная сетка профиля */
 @media (max-width: 768px) {
@@ -341,13 +366,13 @@ body {
     --iris-status-bg-magenta: rgba(255, 153, 255, 0.15);
     --iris-status-bg-slate: rgba(170, 170, 170, 0.15);
 
-    --iris-shadow-sm: 0 0 0 1px #FFFFFF;
-    --iris-shadow-md: 0 0 0 2px #FFFFFF;
-    --iris-shadow-lg: 0 0 0 2px #FFFFFF;
-    --iris-shadow-xl: 0 0 0 3px #FFFFFF;
-    --iris-shadow-inset: inset 0 0 0 1px #FFFFFF;
-    --iris-shadow-card: 0 0 0 1px #FFFFFF;
-    --iris-shadow-tooltip: 0 0 0 2px #FFFFFF;
+    --iris-shadow-sm: 0 1px 3px rgba(255, 255, 255, 0.15);
+    --iris-shadow-md: 0 4px 12px rgba(255, 255, 255, 0.20);
+    --iris-shadow-lg: 0 8px 24px rgba(255, 255, 255, 0.25);
+    --iris-shadow-xl: 0 12px 40px rgba(255, 255, 255, 0.30);
+    --iris-shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.10);
+    --iris-shadow-card: 0 2px 8px rgba(255, 255, 255, 0.12), 0 1px 2px rgba(255, 255, 255, 0.08);
+    --iris-shadow-tooltip: 0 4px 24px rgba(255, 255, 255, 0.20);
 
     --iris-header-height: 56px;
 
@@ -539,9 +564,9 @@ body {
     transition: background-color 0.5s ease, color 0.5s ease;
   }
 
-  /* Smooth theme transition — only background and color */
+  /* Smooth theme transition — background, color, border, shadow */
   body {
-    transition: background-color 0.5s ease, color 0.5s ease;
+    transition: background-color 0.5s ease, color 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease;
   }
 
 
@@ -732,18 +757,18 @@ body {
 /* Mobile: smaller base */
 @media (max-width: 640px) {
   html {
-    font-size: 14px;
+    font-size: 15px;
   }
 }
 
 /* Tablet: normal base */
 @media (min-width: 641px) and (max-width: 1023px) {
   html {
-    font-size: 15px;
+    font-size: 16px;
   }
 }
 
-/* Desktop: slightly larger for readability */
+/* Desktop: comfortable for laptops (Huawei ~13-14") */
 @media (min-width: 1024px) {
   html {
     font-size: 16px;
@@ -757,10 +782,24 @@ body {
   }
 }
 
+/* 1440p / wide monitors */
+@media (min-width: 1920px) {
+  html {
+    font-size: 18px;
+  }
+}
+
 /* 4K: larger base */
 @media (min-width: 2560px) {
   html {
-    font-size: 18px;
+    font-size: 20px;
+  }
+}
+
+/* Ultra-wide / TV */
+@media (min-width: 3840px) {
+  html {
+    font-size: 22px;
   }
 }
 
@@ -807,6 +846,60 @@ main {
   .landing-content {
     padding-left: 4rem;
     padding-right: 4rem;
+  }
+}
+
+@media (min-width: 2560px) {
+  .landing-content {
+    padding-left: 6rem;
+    padding-right: 6rem;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   CONTAINER — RESPONSIVE MAX WIDTH
+   ═══════════════════════════════════════════ */
+
+.container-fluid {
+  width: 100%;
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@media (min-width: 1920px) {
+  .container-fluid {
+    max-width: 1800px;
+  }
+}
+
+@media (min-width: 2560px) {
+  .container-fluid {
+    max-width: 2200px;
+  }
+}
+
+@media (min-width: 3840px) {
+  .container-fluid {
+    max-width: 2800px;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE CARDS & GRID
+   ═══════════════════════════════════════════ */
+
+@media (min-width: 1920px) {
+  .responsive-card-grid {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)) !important;
+    gap: 1.5rem !important;
+  }
+}
+
+@media (min-width: 2560px) {
+  .responsive-card-grid {
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)) !important;
+    gap: 2rem !important;
   }
 }
 

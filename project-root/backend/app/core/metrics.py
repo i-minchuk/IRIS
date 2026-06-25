@@ -1,26 +1,15 @@
-from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
-from fastapi import Response
-
-# HTTP метрики
-http_requests_total = Counter(
-    'http_requests_total',
-    'Total HTTP requests',
-    ['method', 'endpoint', 'status']
+# Re-export metrics from monitoring module (single source of truth)
+from app.modules.monitoring.router import (
+    http_requests_total,
+    http_request_duration_seconds as http_request_duration,
 )
-
-http_request_duration = Histogram(
-    'http_request_duration_seconds',
-    'HTTP request duration',
-    ['method', 'endpoint']
-)
-
-# Бизнес метрики
-active_users = Gauge('active_users', 'Number of active users')
-documents_created = Counter('documents_created_total', 'Total documents created')
-
-# DB метрики
-db_connections = Gauge('db_connections', 'Active DB connections')
-
 
 def get_metrics():
+    from fastapi import Response
+    from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
+# Бизнес метрики (unique to this module)
+from prometheus_client import Counter, Gauge
+documents_created = Counter('documents_created_total', 'Total documents created')
+db_connections = Gauge('db_connections', 'Active DB connections')

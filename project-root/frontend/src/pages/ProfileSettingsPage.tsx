@@ -493,7 +493,7 @@ export default function ProfileSettingsPage() {
                         </div>
                         <div>
                           <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                            {session.device} {session.current && <Badge variant="success" className="ml-2 text-[10px]">Текущая</Badge>}
+                            {session.device} {session.current && <Badge variant="success" className="ml-2 text-xs">Текущая</Badge>}
                           </div>
                           <div className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>{session.ip} • {session.location}</div>
                         </div>
@@ -679,7 +679,7 @@ export default function ProfileSettingsPage() {
                             <div className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>{badge.name}</div>
                             <div className="text-base md:text-lg font-medium leading-relaxed mt-1 truncate" style={{ color: 'var(--text-secondary)' }}>{badge.description}</div>
                           </div>
-                          <Badge variant={badge.rarity === 'legendary' ? 'leaders' : badge.rarity === 'epic' ? 'engineering' : 'info'} className="text-[10px]">
+                          <Badge variant={badge.rarity === 'legendary' ? 'leaders' : badge.rarity === 'epic' ? 'engineering' : 'info'} className="text-xs">
                             {badge.rarity === 'legendary' ? 'Легендарный' : badge.rarity === 'epic' ? 'Эпический' : badge.rarity === 'rare' ? 'Редкий' : 'Обычный'}
                           </Badge>
                         </div>
@@ -702,7 +702,7 @@ export default function ProfileSettingsPage() {
                             <div className="text-sm font-medium truncate" style={{ color: 'var(--text-secondary)' }}>{badge.name}</div>
                             <div className="text-base md:text-lg font-medium leading-relaxed mt-1 truncate" style={{ color: 'var(--text-secondary)' }}>{badge.description}</div>
                           </div>
-                          <Badge variant="neutral" className="text-[10px]">Заблокирован</Badge>
+                          <Badge variant="neutral" className="text-xs">Заблокирован</Badge>
                         </div>
                       ))}
                     </div>
@@ -812,7 +812,7 @@ function ThemeSelector() {
 
             {active && (
               <div
-                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px]"
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center text-xs"
                 style={{ backgroundColor: t.preview.accent, color: t.preview.bg }}
               >
                 ✓
