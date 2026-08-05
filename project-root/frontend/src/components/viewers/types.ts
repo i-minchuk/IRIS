@@ -5,6 +5,7 @@
 export type ViewerType = 'pdf' | 'image' | 'excel' | 'word' | 'dwg' | 'csv' | 'unsupported';
 
 export interface ViewerProps {
+  file?: File;
   fileUrl?: string;
   fileName: string;
   mock?: boolean;
@@ -93,3 +94,46 @@ export const detectType = (fileName: string): ViewerType => {
 export const hasNativePreview = (type: ViewerType): boolean => {
   return VIEWER_CONFIGS[type].supportsPreview;
 };
+
+/**
+ * Read a local File as ArrayBuffer
+ */
+export function readFileAsArrayBuffer(file: File): Promise<ArrayBuffer> {
+  return file.arrayBuffer();
+}
+
+/**
+ * Read a local File as text
+ */
+export function readFileAsText(file: File): Promise<string> {
+  return file.text();
+}
+
+/**
+ * Fetch a remote URL as ArrayBuffer
+ */
+export async function fetchAsArrayBuffer(url: string): Promise<ArrayBuffer> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Не удалось загрузить файл (HTTP ${response.status})`);
+  }
+  return response.arrayBuffer();
+}
+
+/**
+ * Fetch a remote URL as text
+ */
+export async function fetchAsText(url: string): Promise<string> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Не удалось загрузить файл (HTTP ${response.status})`);
+  }
+  return response.text();
+}
+
+/**
+ * Create a temporary object URL for a local file and revoke it safely.
+ */
+export function createObjectUrlForFile(file: File): string {
+  return URL.createObjectURL(file);
+}

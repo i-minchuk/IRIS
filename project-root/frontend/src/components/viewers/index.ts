@@ -13,9 +13,21 @@
 // Экспорт ViewerContainer как главного компонента-роутера
 export { ViewerContainer, default } from './ViewerContainer';
 
+// Экспорт обёртки и базовых утилит
+export { ViewerShell } from './ViewerShell';
+export { MockViewerBase } from './MockViewerBase';
+
 // Экспорт типов
 export type { ViewerType, ViewerProps, ViewerConfig } from './types';
-export { VIEWER_CONFIGS, detectType } from './types';
+export {
+  VIEWER_CONFIGS,
+  detectType,
+  readFileAsArrayBuffer,
+  readFileAsText,
+  fetchAsArrayBuffer,
+  fetchAsText,
+  createObjectUrlForFile,
+} from './types';
 
 // Экспорт отдельных viewer компонентов (для продвинутого использования)
 export { PDFViewer } from './PDFViewer';
@@ -25,9 +37,3 @@ export { WordViewer } from './WordViewer';
 export { DWGViewer } from './DWGViewer';
 export { CSVViewer } from './CSVViewer';
 export { UnsupportedViewer } from './UnsupportedViewer';
-
-// Экспорт MockViewerBase для создания кастомных viewer
-export { MockViewerBase } from './MockViewerBase';
-
-// Экспорт утилит
-// (types.ts экспортируется выше)

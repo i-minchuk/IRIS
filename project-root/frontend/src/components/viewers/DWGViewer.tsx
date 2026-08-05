@@ -1,19 +1,44 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import type { ViewerProps } from './types';
-import { VIEWER_CONFIGS } from './types';
-import { MockViewerBase } from './MockViewerBase';
+import { ViewerShell } from './ViewerShell';
 import styles from './viewer.module.css';
 
-export const DWGViewer: React.FC<ViewerProps> = ({ fileUrl, fileName, mock: _mock = false }) => {
-  const config = VIEWER_CONFIGS.dwg;
+export const DWGViewer: React.FC<ViewerProps> = ({
+  file,
+  fileUrl,
+  fileName,
+  mock: _mock = false,
+}) => {
+  const hasSource = Boolean(file || fileUrl);
+
+  const handleDownload = useCallback(() => {
+    if (file) {
+      const url = URL.createObjectURL(file);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      a.click();
+      URL.revokeObjectURL(url);
+    } else if (fileUrl) {
+      const a = document.createElement('a');
+      a.href = fileUrl;
+      a.download = fileName;
+      a.click();
+    }
+  }, [file, fileUrl, fileName]);
+
+  const handleFileDrop = useCallback((_file: File) => {
+    /* integration hook: delegate to workspace store if needed */
+  }, []);
 
   return (
-    <MockViewerBase
-      title={fileName}
-      type={config.label}
-      bgColor={config.bgColor}
-      accentColor={config.accentColor}
+    <ViewerShell
+      file={file}
       fileUrl={fileUrl}
+      fileName={fileName}
+      fileType="dwg"
+      onFileDrop={handleFileDrop}
+      onDownload={hasSource ? handleDownload : undefined}
     >
       <div className={styles.dwgContainer}>
         {/* CAD placeholder */}
@@ -25,19 +50,17 @@ export const DWGViewer: React.FC<ViewerProps> = ({ fileUrl, fileName, mock: _moc
           </svg>
         </div>
 
-        <p className={styles.dwgMessage}>
-          CAD-формат требует специализированного просмотрщика
-        </p>
+        <p className={styles.dwgMessage}>CAD-формат требует специализированного просмотрщика</p>
 
         <div className={styles.dwgActions}>
-          {fileUrl && (
-            <a
-              href={fileUrl}
-              download={fileName}
+          {hasSource && (
+            <button
+              type="button"
+              onClick={handleDownload}
               className={`${styles.dwgBtn} ${styles.dwgBtnPrimary}`}
             >
               Скачать файл
-            </a>
+            </button>
           )}
           <a
             href="https://viewer.autodesk.com/"
@@ -69,7 +92,7 @@ export const DWGViewer: React.FC<ViewerProps> = ({ fileUrl, fileName, mock: _moc
           </ul>
         </div>
       </div>
-    </MockViewerBase>
+    </ViewerShell>
   );
 };
 

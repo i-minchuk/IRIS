@@ -1,6 +1,6 @@
 """Documents, revisions, remarks and approval workflow API router."""
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Query
+from fastapi import APIRouter, Depends, HTTPException, Request, Query, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
 
@@ -19,6 +19,8 @@ from app.modules.documents.schemas import (
     DocumentRenderRequest,
     CascadeUpdateRequest,
     LockRequestInput,
+    DocumentBulkImportItem,
+    DocumentBulkImportResponse,
 )
 from app.ai.classification import classify_document
 
@@ -121,6 +123,29 @@ async def create_revision(
     service: DocumentService = Depends(get_document_service),
 ):
     return await service.create_revision(document_id, data.model_dump(), current_user.id)
+
+
+@router.post("/import", response_model=DocumentBulkImportResponse, status_code=201)
+async def import_documents(
+    items: list[DocumentBulkImportItem],
+    current_user: User = Depends(get_current_active_user),
+    service: DocumentService = Depends(get_document_service),
+):
+    """Bulk import documents from an external registry (MDR / Excel)."""
+    imported = await service.bulk_import_documents([item.model_dump() for item in items], current_user.id)
+    return DocumentBulkImportResponse(created=len(imported), items=imported)
+
+
+@router.post("/{document_id}/upload", response_model=dict)
+async def upload_document_file(
+    document_id: int,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_active_user),
+    service: DocumentService = Depends(get_document_service),
+):
+    """Upload a file for a document and create a revision."""
+    content = await file.read()
+    return await service.upload_document_file(document_id, content, file.filename, current_user.id)
 
 
 @router.post("/{document_id}/approval-workflows", response_model=dict)

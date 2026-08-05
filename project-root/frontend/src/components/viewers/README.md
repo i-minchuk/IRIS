@@ -1,6 +1,6 @@
 # Document Viewers
 
-Компоненты для просмотра файлов различных форматов в документе.
+Компоненты для просмотра файлов различных форматов в документе. Поддерживают как загрузку по URL, так и прямую работу с `File`-объектами (drag-and-drop, автозагрузка).
 
 ## Поддерживаемые форматы
 
@@ -19,6 +19,7 @@
 viewers/
 ├── ViewerContainer.tsx      # Главный роутер (определяет тип → рендерит viewer)
 ├── DocumentViewerHost.tsx   # Интеграция с workspace (store → viewer)
+├── ViewerShell.tsx          # Единая обёртка: toolbar, загрузка, ошибки, drag-and-drop
 ├── MockViewerBase.tsx       # Базовый компонент для mock-режима
 ├── types.ts                 # Общие типы и утилиты
 ├── viewer.module.css        # Стили для всех viewer
@@ -55,14 +56,13 @@ export function ProjectsPage() {
 ```typescript
 import { ViewerContainer } from '@/components/viewers/ViewerContainer';
 
-// С реальным файлом:
+// С File-объектом (drag-and-drop / автозагрузка):
 <ViewerContainer file={fileObject} />
 
 // С URL:
 <ViewerContainer 
   fileUrl="https://example.com/doc.pdf" 
   fileName="document.pdf"
-  mock={false}
 />
 
 // В mock-режиме (демо):
@@ -77,16 +77,19 @@ import { ViewerContainer } from '@/components/viewers/ViewerContainer';
 ```typescript
 import { PDFViewer } from '@/components/viewers/PDFViewer';
 
-<PDFViewer 
-  fileUrl={url} 
-  fileName="document.pdf" 
-  mock={false} 
-/>
+// С File-объектом:
+<PDFViewer file={fileObject} fileName="document.pdf" />
+
+// С URL:
+<PDFViewer fileUrl={url} fileName="document.pdf" />
+
+// Mock-режим:
+<PDFViewer fileName="document.pdf" mock={true} />
 ```
 
 ## Mock-режим
 
-Когда `mock={true}` или `fileUrl` не указан, viewer показывает format-specific mock контент:
+Когда `mock={true}` или источник (`file` / `fileUrl`) не указан, viewer показывает format-specific mock контент:
 
 - **PDF**: Макет страницы с текстовыми блоками
 - **Image**: Placeholder с иконкой
@@ -100,14 +103,11 @@ import { PDFViewer } from '@/components/viewers/PDFViewer';
 ### ViewerContainer
 
 ```typescript
-interface Props {
-  // Legacy mode
-  file?: File;
-  
-  // New mode
-  fileName?: string;
-  fileUrl?: string;
-  mock?: boolean;
+interface ViewerContainerProps {
+  file?: File;           // Прямой File-объект
+  fileUrl?: string;      // URL файла (remote или blob)
+  fileName?: string;     // Имя файла (если не передан File)
+  mock?: boolean;        // Принудительный демо-режим
 }
 ```
 
@@ -115,23 +115,82 @@ interface Props {
 
 ```typescript
 interface ViewerProps {
-  fileUrl?: string;   // URL файла
-  fileName: string;   // Название файла (для заголовка)
-  mock?: boolean;     // Режим mock (демо без реального файла)
+  file?: File;           // Прямой File-объект
+  fileUrl?: string;      // URL файла
+  fileName: string;      // Название файла (для заголовка)
+  mock?: boolean;        // Режим mock (демо без реального файла)
+  documentId?: number;   // Для связи с remarks
 }
+```
+
+### ViewerShell (единая обёртка)
+
+```typescript
+import { ViewerShell } from '@/components/viewers/ViewerShell';
+
+<ViewerShell
+  file={file}
+  fileUrl={fileUrl}
+  fileName={fileName}
+  fileType="pdf"
+  onFileDrop={(f) => console.log('Dropped:', f)}
+  onDownload={() => downloadFile()}
+  loading={false}
+  error={null}
+  loadingText="Загрузка..."
+  errorActions={<button>Скачать</button>}
+  showZoom
+  zoom={1}
+  onZoomIn={() => {}}
+  onZoomOut={() => {}}
+  onZoomReset={() => {}}
+  showPagination
+  currentPage={1}
+  totalPages={5}
+  onPrevPage={() => {}}
+  onNextPage={() => {}}
+  onPageChange={(p) => {}}
+  sheets={['Sheet1', 'Sheet2']}
+  activeSheet="Sheet1"
+  onSheetChange={(s) => {}}
+>
+  {/* Контент viewer */}
+</ViewerShell>
 ```
 
 ### Утилиты
 
 ```typescript
-import { detectType, VIEWER_CONFIGS, type ViewerType } from '@/components/viewers/types';
+import {
+  detectType,
+  VIEWER_CONFIGS,
+  readFileAsArrayBuffer,
+  readFileAsText,
+  fetchAsArrayBuffer,
+  fetchAsText,
+  createObjectUrlForFile,
+  type ViewerType,
+} from '@/components/viewers/types';
 
 // Определить тип файла по названию:
 const type: ViewerType = detectType("document.pdf");  // 'pdf'
 
 // Конфигурация viewer:
 const config = VIEWER_CONFIGS.pdf;
-// { type: 'pdf', label: 'PDF', bgColor: '#fdf0d5', accentColor: '#dc2626' }
+// { type: 'pdf', label: 'PDF', bgColor: '#fdf0d5', accentColor: '#dc2626', supportsPreview: true }
+
+// Чтение File как ArrayBuffer:
+const buffer = await readFileAsArrayBuffer(file);
+
+// Чтение File как текст:
+const text = await readFileAsText(file);
+
+// Загрузка URL как ArrayBuffer:
+const buffer = await fetchAsArrayBuffer("https://example.com/file.xlsx");
+
+// Создание временного object URL:
+const url = createObjectUrlForFile(file);
+// Не забудьте: URL.revokeObjectURL(url) после использования
 ```
 
 ## Добавление нового формата
@@ -140,25 +199,30 @@ const config = VIEWER_CONFIGS.pdf;
 
 ```typescript
 import type { ViewerProps } from './types';
-import { VIEWER_CONFIGS } from './types';
-import { MockViewerBase } from './MockViewerBase';
+import { ViewerShell } from './ViewerShell';
+import styles from './viewer.module.css';
 
-export const NewFormatViewer: React.FC<ViewerProps> = ({ fileUrl, fileName, mock }) => {
-  const config = VIEWER_CONFIGS.newformat;
-  
-  if (mock || !fileUrl) {
-    return (
-      <MockViewerBase title={fileName} type={config.label} bgColor={config.bgColor}>
-        {/* Mock content */}
-      </MockViewerBase>
-    );
-  }
-  
-  // Real rendering
+export const NewFormatViewer: React.FC<ViewerProps> = ({
+  file,
+  fileUrl,
+  fileName,
+  mock = false,
+}) => {
+  const hasSource = Boolean(file || fileUrl);
+
   return (
-    <MockViewerBase title={fileName} type={config.label} bgColor={config.bgColor}>
-      {/* Real content */}
-    </MockViewerBase>
+    <ViewerShell
+      file={file}
+      fileUrl={fileUrl}
+      fileName={fileName}
+      fileType="newformat"
+    >
+      {mock || !hasSource ? (
+        <div>Mock content</div>
+      ) : (
+        <div>Real content</div>
+      )}
+    </ViewerShell>
   );
 };
 ```
@@ -175,6 +239,7 @@ export const VIEWER_CONFIGS: Record<ViewerType, ViewerConfig> = {
     label: 'New Format',
     bgColor: '#f0f0f0',
     accentColor: '#666666',
+    supportsPreview: true,
   },
 };
 ```
@@ -193,10 +258,10 @@ export const detectType = (fileName: string): ViewerType => {
 4. Добавьте в `ViewerContainer`:
 
 ```typescript
-const NewFormatViewer = lazy(() => import('./NewFormatViewer'));
+const NewFormatViewer = lazy(() => import('./NewFormatViewer').then(m => ({ default: m.NewFormatViewer })));
 
 // В component:
-{type === 'newformat' && <NewFormatViewer fileUrl={fileUrl} fileName={fileName} mock={mock} />}
+{type === 'newformat' && <NewFormatViewer file={file} fileUrl={fileUrl} fileName={fileName} mock={mock} />}
 ```
 
 ## Зависимости
@@ -216,6 +281,10 @@ const NewFormatViewer = lazy(() => import('./NewFormatViewer'));
 2. Проверяет наличие `file` в tab
 3. Если файл есть → рендерит viewer с реальным файлом
 4. Если файла нет → рендерит mock viewer по названию
+
+## Drag-and-drop
+
+Все viewers обёрнуты в `DragDropOverlay`. При перетаскивании файла поверх viewer появляется оверлей с приглашением отпустить файл. Обработка drop делегируется через `onFileDrop` пропс.
 
 ## Стили
 

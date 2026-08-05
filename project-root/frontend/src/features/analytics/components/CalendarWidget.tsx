@@ -7,6 +7,9 @@ import {
   CheckSquare,
   Gavel,
   Cake,
+  Cog,
+  FileText,
+  User,
 } from 'lucide-react';
 import {
   getCalendarEvents,
@@ -51,12 +54,33 @@ const EVENT_META: Record<
     bg: 'rgba(184, 110, 0, 0.10)',
     border: 'rgba(184, 110, 0, 0.35)',
   },
+  operation: {
+    label: 'Операция',
+    icon: <Cog size={14} />,
+    color: '#8B5CF6',
+    bg: 'rgba(139, 92, 246, 0.10)',
+    border: 'rgba(139, 92, 246, 0.35)',
+  },
+  document: {
+    label: 'Документ',
+    icon: <FileText size={14} />,
+    color: '#06B6D4',
+    bg: 'rgba(6, 182, 212, 0.10)',
+    border: 'rgba(6, 182, 212, 0.35)',
+  },
   birthday: {
     label: 'День рождения',
     icon: <Cake size={14} />,
     color: '#EC4899',
     bg: 'rgba(236, 72, 153, 0.10)',
     border: 'rgba(236, 72, 153, 0.35)',
+  },
+  personal: {
+    label: 'Личное',
+    icon: <User size={14} />,
+    color: '#6366F1',
+    bg: 'rgba(99, 102, 241, 0.10)',
+    border: 'rgba(99, 102, 241, 0.35)',
   },
 };
 
@@ -137,7 +161,9 @@ function birthdaysToEvents(birthdays: BirthdayEvent[], year: number): CalendarEv
       type: 'birthday' as CalendarEventType,
       title: `🎂 ${b.name}`,
       date: `${year}-${month}-${day}`,
-      sourceId: 0,
+      is_global: true,
+      is_editable: false,
+      source: 'system',
       details: {
         status: b.role,
         description: 'День рождения сотрудника',

@@ -14,6 +14,7 @@ import { DocumentTracker } from './components/DocumentTracker';
 import { MTOStatus } from './components/MTOStatus';
 import { ProjectCard } from './components/ProjectCard';
 import { ProductionStrategyTab } from './components/ProductionStrategy';
+import { useGlobalSearchStore } from '@/stores/globalSearchStore';
 
 import {
   Target, Wrench, Zap, FileText, ShoppingCart, TrendingUp
@@ -40,7 +41,7 @@ export const ProductionControlPage: React.FC = () => {
   const [mtoItems, setMtoItems] = useState<MTOItem[]>([]);
   const [activeTab, setActiveTab] = useTabState<TabId>('iris_production_tab', 'pipeline');
   const [selectedProject, setSelectedProject] = useState<ProductionProject | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const searchQuery = useGlobalSearchStore((state) => state.query);
 
   // Load MTO data from documents API (documents with type 'spec' serve as MTO specs)
   useEffect(() => {
@@ -84,22 +85,6 @@ export const ProductionControlPage: React.FC = () => {
           <p className="text-xs sm:text-base md:text-lg font-medium leading-relaxed mt-1 mt-0.5" style={{ color: 'var(--text-secondary)' }}>
             Технологические карты, загрузка, документы, МТО
           </p>
-        </div>
-
-        {/* Поиск проекта */}
-        <div className="flex items-center gap-3">
-          <input
-            type="text"
-            placeholder="🔍 Поиск по проекту / заказчику..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="px-3 py-2 rounded-lg text-sm w-64 transition-colors"
-            style={{
-              background: 'var(--iris-bg-app)',
-              border: '1px solid var(--iris-border-subtle)',
-              color: 'var(--text-primary)',
-            }}
-          />
         </div>
       </div>
 

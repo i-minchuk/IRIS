@@ -44,7 +44,7 @@ export const ToolbarSeparator: React.FC<ToolbarSeparatorProps> = ({ orientation 
   />
 );
 
-interface ToolbarProps {
+export interface ToolbarProps {
   fileName: string;
   fileType: ViewerType;
   onClose?: () => void;

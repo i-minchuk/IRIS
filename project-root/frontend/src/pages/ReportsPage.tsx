@@ -3,7 +3,7 @@ import { FileText, Download, Printer, Play } from 'lucide-react';
 import { useTheme } from '@/providers/ThemeProvider';
 import { IRISRecommendations } from '@/components/IRISRecommendations';
 
-type ReportTemplate = 'projects' | 'tenders' | 'load' | 'finances' | 'employees';
+type ReportTemplate = 'projects' | 'tenders' | 'load' | 'finances' | 'employees' | 'documents';
 
 interface ReportRow {
   id: string;
@@ -19,6 +19,7 @@ const TEMPLATE_LABELS: Record<ReportTemplate, string> = {
   load: 'Загрузка по отделам',
   employees: 'Загрузка по сотрудникам',
   finances: 'Финансы',
+  documents: 'Отчёт по документам',
 };
 
 const REPORT_ACCENT = '#EC4899';
@@ -60,15 +61,26 @@ const MOCK_DATA: Record<ReportTemplate, ReportRow[]> = {
     { id: 'F-303', name: 'Расходы на ПО', status: 'Закрыто', date: '2026-04-15', value: 180000 },
     { id: 'F-304', name: 'ФОТ', status: 'В работе', date: '2026-05-31', value: 1200000 },
   ],
+  documents: [
+    { id: 'D-001', name: 'Пояснительная записка ТЭЦ-5', status: 'Утверждён', date: '2026-05-12', value: 142 },
+    { id: 'D-002', name: 'Архитектурные решения ЖК «Северный»', status: 'На проверке', date: '2026-05-18', value: 86 },
+    { id: 'D-003', name: 'Конструктив Мост через Волгу', status: 'В разработке', date: '2026-05-20', value: 215 },
+    { id: 'D-004', name: 'Отопление и вентиляция АЭС-2', status: 'Утверждён', date: '2026-04-28', value: 98 },
+    { id: 'D-005', name: 'Электроснабжение ТРЦ «Галерея»', status: 'Архив', date: '2026-03-15', value: 64 },
+  ],
 };
 
 function formatValue(template: ReportTemplate, value: number): string {
   if (template === 'load' || template === 'employees') return `${value}%`;
+  if (template === 'documents') return `${value} стр.`;
   return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', maximumFractionDigits: 0 }).format(value);
 }
 
 function toCSV(rows: ReportRow[], template: ReportTemplate): string {
-  const valueHeader = template === 'load' || template === 'employees' ? 'Загрузка (%)' : 'Сумма (₽)';
+  let valueHeader: string;
+  if (template === 'load' || template === 'employees') valueHeader = 'Загрузка (%)';
+  else if (template === 'documents') valueHeader = 'Объём (стр.)';
+  else valueHeader = 'Сумма (₽)';
   const header = ['ID', 'Название', 'Статус', 'Дата', valueHeader];
   const lines = rows.map((r) => [
     r.id,
@@ -238,7 +250,11 @@ export default function ReportsPage() {
                     <th className="text-left px-4 py-2.5 font-medium" style={{ color: 'var(--text-secondary)' }}>Статус</th>
                     <th className="text-left px-4 py-2.5 font-medium" style={{ color: 'var(--text-secondary)' }}>Дата</th>
                     <th className="text-right px-4 py-2.5 font-medium" style={{ color: 'var(--text-secondary)' }}>
-                      {template === 'load' || template === 'employees' ? 'Загрузка' : 'Сумма'}
+                      {template === 'load' || template === 'employees'
+                        ? 'Загрузка'
+                        : template === 'documents'
+                        ? 'Объём'
+                        : 'Сумма'}
                     </th>
                   </tr>
                 </thead>
@@ -259,17 +275,17 @@ export default function ReportsPage() {
                           className="inline-block px-2 py-0.5 rounded text-xs font-medium"
                           style={{
                             background:
-                              row.status === 'Активен' || row.status === 'Выигран' || row.status === 'Норма'
+                              row.status === 'Активен' || row.status === 'Выигран' || row.status === 'Норма' || row.status === 'Утверждён'
                                 ? 'rgba(79, 122, 76, 0.15)'
-                                : row.status === 'Завершён' || row.status === 'Закрыто'
+                                : row.status === 'Завершён' || row.status === 'Закрыто' || row.status === 'Архив'
                                 ? 'rgba(107, 114, 128, 0.15)'
                                 : row.status === 'Приостановлен' || row.status === 'Проигран' || row.status === 'Перегруз'
                                 ? 'rgba(255, 107, 107, 0.15)'
                                 : 'rgba(20, 184, 166, 0.15)',
                             color:
-                              row.status === 'Активен' || row.status === 'Выигран' || row.status === 'Норма'
+                              row.status === 'Активен' || row.status === 'Выигран' || row.status === 'Норма' || row.status === 'Утверждён'
                                 ? '#4F7A4C'
-                                : row.status === 'Завершён' || row.status === 'Закрыто'
+                                : row.status === 'Завершён' || row.status === 'Закрыто' || row.status === 'Архив'
                                 ? '#6B7280'
                                 : row.status === 'Приостановлен' || row.status === 'Проигран' || row.status === 'Перегруз'
                                 ? '#FF6B6B'

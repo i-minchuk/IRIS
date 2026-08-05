@@ -1,36 +1,66 @@
 import client from '@/shared/api/client';
 
-export type CalendarEventType = 'project' | 'task' | 'tender' | 'birthday';
+export type CalendarEventType =
+  | 'project'
+  | 'task'
+  | 'tender'
+  | 'operation'
+  | 'document'
+  | 'birthday'
+  | 'personal';
 
 export interface CalendarEvent {
   id: string;
   type: CalendarEventType;
   title: string;
   date: string; // ISO date YYYY-MM-DD
-  sourceId: number;
-  details?: {
+  is_global: boolean;
+  is_editable: boolean;
+  source: 'system' | 'user';
+  details: {
     status?: string;
     priority?: string;
     customer?: string;
     description?: string;
+    entity_id?: number;
   };
 }
 
-export interface CalendarEventsResponse {
-  events: CalendarEvent[];
+export interface CalendarEventCreatePayload {
+  title: string;
+  date: string; // YYYY-MM-DD
+  type?: CalendarEventType;
+  description?: string;
+}
+
+function getMonthBounds(year: number, month: number): { from_date: string; to_date: string } {
+  const from = new Date(year, month - 1, 1);
+  const to = new Date(year, month, 0);
+  const fmt = (d: Date) => d.toISOString().split('T')[0];
+  return { from_date: fmt(from), to_date: fmt(to) };
 }
 
 export const getCalendarEvents = async (
   year: number,
-  month: number
+  month: number,
 ): Promise<CalendarEvent[]> => {
-  const { data } = await client.get<CalendarEventsResponse>(
-    '/calendar/events',
-    {
-      params: { year, month },
-    }
-  );
-  return data.events;
+  const bounds = getMonthBounds(year, month);
+  const { data } = await client.get<CalendarEvent[]>('/calendar/events', {
+    params: bounds,
+  });
+  return data;
+};
+
+export const createCalendarEvent = async (
+  payload: CalendarEventCreatePayload,
+): Promise<CalendarEvent> => {
+  const { data } = await client.post<CalendarEvent>('/calendar/events', payload);
+  return data;
+};
+
+export const deleteCalendarEvent = async (eventId: string): Promise<void> => {
+  const numericId = eventId.startsWith('user-') ? eventId.replace('user-', '') : eventId;
+  await client.delete(`/calendar/events/${numericId}`);
 };
 
 /* ── Mock fallback ── */
@@ -42,8 +72,10 @@ const MOCK_EVENTS: CalendarEvent[] = [
     date: new Date(new Date().getFullYear(), new Date().getMonth(), 5)
       .toISOString()
       .split('T')[0],
-    sourceId: 1,
-    details: { status: 'active', customer: 'ООО СтройГранд' },
+    is_global: true,
+    is_editable: false,
+    source: 'system',
+    details: { status: 'active', customer: 'ООО СтройГранд', entity_id: 1 },
   },
   {
     id: 'mock-p2',
@@ -52,8 +84,10 @@ const MOCK_EVENTS: CalendarEvent[] = [
     date: new Date(new Date().getFullYear(), new Date().getMonth(), 12)
       .toISOString()
       .split('T')[0],
-    sourceId: 2,
-    details: { status: 'active', customer: 'Мосэнерго' },
+    is_global: true,
+    is_editable: false,
+    source: 'system',
+    details: { status: 'active', customer: 'Мосэнерго', entity_id: 2 },
   },
   {
     id: 'mock-t1',
@@ -62,8 +96,10 @@ const MOCK_EVENTS: CalendarEvent[] = [
     date: new Date(new Date().getFullYear(), new Date().getMonth(), 7)
       .toISOString()
       .split('T')[0],
-    sourceId: 101,
-    details: { status: 'in_progress', priority: 'high' },
+    is_global: true,
+    is_editable: false,
+    source: 'system',
+    details: { status: 'in_progress', priority: 'high', entity_id: 101 },
   },
   {
     id: 'mock-t2',
@@ -72,8 +108,10 @@ const MOCK_EVENTS: CalendarEvent[] = [
     date: new Date(new Date().getFullYear(), new Date().getMonth(), 14)
       .toISOString()
       .split('T')[0],
-    sourceId: 102,
-    details: { status: 'pending', priority: 'medium' },
+    is_global: true,
+    is_editable: false,
+    source: 'system',
+    details: { status: 'pending', priority: 'medium', entity_id: 102 },
   },
   {
     id: 'mock-t3',
@@ -82,8 +120,10 @@ const MOCK_EVENTS: CalendarEvent[] = [
     date: new Date(new Date().getFullYear(), new Date().getMonth(), 22)
       .toISOString()
       .split('T')[0],
-    sourceId: 103,
-    details: { status: 'pending', priority: 'low' },
+    is_global: true,
+    is_editable: false,
+    source: 'system',
+    details: { status: 'pending', priority: 'low', entity_id: 103 },
   },
   {
     id: 'mock-tr1',
@@ -92,8 +132,10 @@ const MOCK_EVENTS: CalendarEvent[] = [
     date: new Date(new Date().getFullYear(), new Date().getMonth(), 18)
       .toISOString()
       .split('T')[0],
-    sourceId: 201,
-    details: { status: 'open', customer: 'ООО ЮжСтрой' },
+    is_global: true,
+    is_editable: false,
+    source: 'system',
+    details: { status: 'open', customer: 'ООО ЮжСтрой', entity_id: 201 },
   },
   {
     id: 'mock-tr2',
@@ -102,8 +144,10 @@ const MOCK_EVENTS: CalendarEvent[] = [
     date: new Date(new Date().getFullYear(), new Date().getMonth(), 25)
       .toISOString()
       .split('T')[0],
-    sourceId: 202,
-    details: { status: 'evaluation', customer: 'ЛогистикПро' },
+    is_global: true,
+    is_editable: false,
+    source: 'system',
+    details: { status: 'evaluation', customer: 'ЛогистикПро', entity_id: 202 },
   },
 ];
 

@@ -1,6 +1,7 @@
 // src/pages/ArchivePage/components/ArchiveSearch/index.tsx
 import React, { useState, useEffect } from 'react';
 import { useArchiveStore } from '../../store/archiveStore';
+import { useGlobalSearchStore } from '@/stores/globalSearchStore';
 import { ArchiveEntryType } from '../../types/archive';
 
 interface HighlightedTextProps {
@@ -32,7 +33,7 @@ const escapeRegExp = (string: string) => {
 };
 
 export const ArchiveSearch: React.FC = () => {
-  const [query, setQuery] = useState('');
+  const globalQuery = useGlobalSearchStore((state) => state.query);
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [filters, setFilters] = useState<{
     entryTypes: ArchiveEntryType[];
@@ -48,22 +49,25 @@ export const ArchiveSearch: React.FC = () => {
 
   const { search, entries, isSearchLoading, currentFilters } = useArchiveStore();
 
-  // Debounce поиска
+  // Debounce глобального запроса
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedQuery(query);
-      if (query.trim() && currentFilters.projectId) {
-        search(query.trim(), {
-          entry_types: filters.entryTypes,
-          date_from: filters.dateFrom || undefined,
-          date_to: filters.dateTo || undefined,
-          has_attachments: filters.hasAttachments,
-        });
-      }
+      setDebouncedQuery(globalQuery);
     }, 300);
-
     return () => clearTimeout(timer);
-  }, [query, filters, currentFilters.projectId]);
+  }, [globalQuery]);
+
+  // Запуск поиска при изменении запроса или фильтров
+  useEffect(() => {
+    if (debouncedQuery.trim() && currentFilters.projectId) {
+      search(debouncedQuery.trim(), {
+        entry_types: filters.entryTypes,
+        date_from: filters.dateFrom || undefined,
+        date_to: filters.dateTo || undefined,
+        has_attachments: filters.hasAttachments,
+      });
+    }
+  }, [debouncedQuery, filters, currentFilters.projectId]);
 
   const allEntryTypes: { value: ArchiveEntryType; label: string; icon: string }[] = [
     { value: 'document', label: 'Документы', icon: '📄' },
@@ -86,26 +90,12 @@ export const ArchiveSearch: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      {/* Поиск */}
-      <div className="relative">
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Поиск по архиву..."
-          className="w-full px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--iris-accent-blue)] focus:border-transparent"
-          style={{
-            background: 'var(--iris-bg-surface)',
-            border: '1px solid var(--iris-border-default)',
-            color: 'var(--iris-text-primary)',
-          }}
-        />
-        {isSearchLoading && (
-          <div className="absolute right-3 top-1/2 -translate-y-1/2">
-            <div className="animate-spin rounded-full h-5 w-5 border-b-2" style={{ borderColor: 'var(--iris-accent-blue)' }} />
-          </div>
-        )}
-      </div>
+      {/* Поиск теперь находится в шапке — ArchiveSearch использует глобальный запрос */}
+      {isSearchLoading && (
+        <div className="flex items-center justify-center py-2">
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2" style={{ borderColor: 'var(--iris-accent-blue)' }} />
+        </div>
+      )}
 
       {/* Фильтры */}
       <div className="flex flex-wrap gap-2">
@@ -142,7 +132,7 @@ export const ArchiveSearch: React.FC = () => {
       {debouncedQuery && (
         <div className="space-y-2">
           <p className="text-sm" style={{ color: 'var(--iris-text-muted)' }}>
-            Найдено: {entries.length} записей{query && ` по запросу "${query}"`}
+            Найдено: {entries.length} записей{globalQuery && ` по запросу "${globalQuery}"`}
           </p>
 
           {entries.map((entry) => (

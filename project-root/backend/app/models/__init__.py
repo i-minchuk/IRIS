@@ -7,6 +7,9 @@ from app.db.base import Base  # noqa
 # 1. Auth — нет внешних ссылок
 from app.modules.auth.models import User  # noqa
 
+# 1.5 Calendar — ссылается на User
+from app.modules.calendar.models import CalendarEventModel  # noqa
+
 # 2. Projects — ссылается на User
 from app.modules.projects.models import (  # noqa
     Project,

@@ -1,22 +1,34 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+  Calendar as CalendarIcon,
+  ChevronDown,
+  ChevronUp,
   ChevronLeft,
   ChevronRight,
-  Calendar as CalendarIcon,
   X,
+  Plus,
+  Trash2,
   Briefcase,
   CheckSquare,
   Gavel,
   Cake,
+  Cog,
+  FileText,
+  User,
+  Clock,
 } from 'lucide-react';
 import {
+  createCalendarEvent,
+  deleteCalendarEvent,
+  getCalendarBirthdays,
   getCalendarEvents,
   getCalendarEventsMock,
-  getCalendarBirthdays,
   type CalendarEvent,
+  type CalendarEventCreatePayload,
   type CalendarEventType,
   type BirthdayEvent,
 } from '@/features/calendar/api/calendar';
+import { toast } from 'sonner';
 
 type ViewMode = 'month' | 'week';
 
@@ -26,37 +38,58 @@ const EVENT_META: Record<
     label: string;
     icon: React.ReactNode;
     color: string;
+    dot: string;
     bg: string;
-    border: string;
   }
 > = {
   project: {
     label: 'Проект',
-    icon: <Briefcase size={16} />,
-    color: '#1A5ACC',
-    bg: 'rgba(26, 90, 204, 0.10)',
-    border: 'rgba(26, 90, 204, 0.35)',
+    icon: <Briefcase size={14} />,
+    color: '#3B82F6',
+    dot: 'bg-blue-500',
+    bg: 'bg-blue-500/10',
   },
   task: {
     label: 'Задача',
-    icon: <CheckSquare size={16} />,
-    color: '#059669',
-    bg: 'rgba(5, 150, 105, 0.10)',
-    border: 'rgba(5, 150, 105, 0.35)',
+    icon: <CheckSquare size={14} />,
+    color: '#10B981',
+    dot: 'bg-emerald-500',
+    bg: 'bg-emerald-500/10',
   },
   tender: {
     label: 'Тендер',
-    icon: <Gavel size={16} />,
-    color: '#B86E00',
-    bg: 'rgba(184, 110, 0, 0.10)',
-    border: 'rgba(184, 110, 0, 0.35)',
+    icon: <Gavel size={14} />,
+    color: '#F59E0B',
+    dot: 'bg-amber-500',
+    bg: 'bg-amber-500/10',
+  },
+  operation: {
+    label: 'Операция',
+    icon: <Cog size={14} />,
+    color: '#8B5CF6',
+    dot: 'bg-violet-500',
+    bg: 'bg-violet-500/10',
+  },
+  document: {
+    label: 'Документ',
+    icon: <FileText size={14} />,
+    color: '#06B6D4',
+    dot: 'bg-cyan-500',
+    bg: 'bg-cyan-500/10',
   },
   birthday: {
     label: 'День рождения',
-    icon: <Cake size={16} />,
+    icon: <Cake size={14} />,
     color: '#EC4899',
-    bg: 'rgba(236, 72, 153, 0.10)',
-    border: 'rgba(236, 72, 153, 0.35)',
+    dot: 'bg-pink-500',
+    bg: 'bg-pink-500/10',
+  },
+  personal: {
+    label: 'Личное',
+    icon: <User size={14} />,
+    color: '#6366F1',
+    dot: 'bg-indigo-500',
+    bg: 'bg-indigo-500/10',
   },
 };
 
@@ -90,22 +123,25 @@ function addMonths(date: Date, months: number) {
   return d;
 }
 
+function addDays(date: Date, days: number) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
 function getMonthGrid(date: Date): Date[] {
   const start = startOfMonth(date);
   const end = endOfMonth(date);
-  const startDay = start.getDay() || 7; // 1..7 (Mon..Sun)
+  const startDay = start.getDay() || 7;
   const totalDays = end.getDate();
   const days: Date[] = [];
-  // Previous month padding
   const prevMonthEnd = new Date(start.getFullYear(), start.getMonth(), 0);
   for (let i = startDay - 1; i > 0; i--) {
     days.push(new Date(prevMonthEnd.getFullYear(), prevMonthEnd.getMonth(), prevMonthEnd.getDate() - i + 1));
   }
-  // Current month
   for (let i = 1; i <= totalDays; i++) {
     days.push(new Date(start.getFullYear(), start.getMonth(), i));
   }
-  // Next month padding to fill 6 weeks (42 cells)
   const remaining = 42 - days.length;
   for (let i = 1; i <= remaining; i++) {
     days.push(new Date(end.getFullYear(), end.getMonth() + 1, i));
@@ -147,14 +183,13 @@ function birthdaysToEvents(birthdays: BirthdayEvent[], year: number): CalendarEv
     const [month, day] = b.date.split('-');
     return {
       id: `birthday-${b.id}`,
-      type: 'birthday' as CalendarEventType,
+      type: 'birthday',
       title: `🎂 ${b.name}`,
       date: `${year}-${month}-${day}`,
-      sourceId: 0,
-      details: {
-        status: b.role,
-        description: 'День рождения сотрудника',
-      },
+      is_global: true,
+      is_editable: false,
+      source: 'system',
+      details: { description: b.role },
     };
   });
 }
@@ -164,7 +199,11 @@ export default function CalendarPage() {
   const [view, setView] = useState<ViewMode>('month');
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+  const [showPanel, setShowPanel] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newDescription, setNewDescription] = useState('');
+  const [newType, setNewType] = useState<CalendarEventType>('personal');
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth() + 1;
@@ -224,6 +263,67 @@ export default function CalendarPage() {
           return `${start.getDate()} ${MONTH_NAMES[start.getMonth()]} – ${end.getDate()} ${MONTH_NAMES[end.getMonth()]} ${end.getFullYear()}`;
         })();
 
+  const upcomingDeadlines = useMemo(() => {
+    const system = events
+      .filter((e) => e.source === 'system' && e.type !== 'birthday')
+      .sort((a, b) => a.date.localeCompare(b.date));
+    return system.slice(0, 5);
+  }, [events]);
+
+  const handlePrev = () => {
+    setCurrentDate((d) =>
+      view === 'month' ? addMonths(d, -1) : addDays(d, -7),
+    );
+  };
+
+  const handleNext = () => {
+    setCurrentDate((d) =>
+      view === 'month' ? addMonths(d, 1) : addDays(d, 7),
+    );
+  };
+
+  const handleDayClick = (day: Date) => {
+    setSelectedDay(day);
+    setShowPanel(true);
+  };
+
+  const handleAddEvent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedDay || !newTitle.trim()) return;
+    try {
+      const payload: CalendarEventCreatePayload = {
+        title: newTitle.trim(),
+        date: toISODate(selectedDay),
+        type: newType,
+        description: newDescription.trim() || undefined,
+      };
+      const created = await createCalendarEvent(payload);
+      setEvents((prev) => [...prev, created]);
+      setNewTitle('');
+      setNewDescription('');
+      setNewType('personal');
+      toast.success('Событие добавлено');
+    } catch {
+      toast.error('Не удалось добавить событие');
+    }
+  };
+
+  const handleDeleteEvent = async (event: CalendarEvent) => {
+    if (!event.is_editable) return;
+    try {
+      await deleteCalendarEvent(event.id);
+      setEvents((prev) => prev.filter((e) => e.id !== event.id));
+      toast.success('Событие удалено');
+    } catch {
+      toast.error('Не удалось удалить событие');
+    }
+  };
+
+  const panelEvents = useMemo(() => {
+    if (!selectedDay) return [];
+    return eventsByDate[toISODate(selectedDay)] || [];
+  }, [selectedDay, eventsByDate]);
+
   return (
     <div className="flex flex-col h-full" style={{ background: 'var(--iris-bg-app)' }}>
       {/* Toolbar */}
@@ -242,7 +342,7 @@ export default function CalendarPage() {
             <h1 className="text-xl font-semibold" style={{ color: 'var(--iris-text-primary)' }}>
               Календарь
             </h1>
-            <p className="text-base font-medium leading-relaxed" style={{ color: 'var(--iris-text-secondary)' }}>
+            <p className="text-sm" style={{ color: 'var(--iris-text-secondary)' }}>
               Дедлайны, задачи, тендеры и дни рождения
             </p>
           </div>
@@ -274,19 +374,13 @@ export default function CalendarPage() {
 
           <div className="flex items-center gap-1">
             <button
-              onClick={() =>
-                setCurrentDate((d) => (view === 'month' ? addMonths(d, -1) : new Date(d.getTime() - 7 * 86400000)))
-              }
+              onClick={handlePrev}
               className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors"
               style={{ color: 'var(--iris-text-secondary)' }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-              }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
             >
-              <ChevronLeft size={18} />
+              {view === 'month' ? <ChevronUp size={18} /> : <ChevronLeft size={18} />}
             </button>
             <span
               className="text-sm font-medium min-w-[140px] text-center tabular-nums"
@@ -295,19 +389,13 @@ export default function CalendarPage() {
               {headerTitle}
             </span>
             <button
-              onClick={() =>
-                setCurrentDate((d) => (view === 'month' ? addMonths(d, 1) : new Date(d.getTime() + 7 * 86400000)))
-              }
+              onClick={handleNext}
               className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors"
               style={{ color: 'var(--iris-text-secondary)' }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-              }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
             >
-              <ChevronRight size={18} />
+              {view === 'month' ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
             </button>
           </div>
 
@@ -319,187 +407,186 @@ export default function CalendarPage() {
               color: 'var(--iris-text-secondary)',
               border: '1px solid var(--iris-border-default)',
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--iris-bg-subtle)';
-            }}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--iris-bg-subtle)'; }}
           >
             Сегодня
           </button>
         </div>
       </div>
 
-      {/* Legend */}
-      <div className="flex flex-wrap items-center gap-3 px-4 md:px-6 py-2 border-b" style={{ borderColor: 'var(--iris-border-subtle)' }}>
-        {(Object.keys(EVENT_META) as CalendarEventType[]).map((type) => {
-          const meta = EVENT_META[type];
-          return (
-            <div key={type} className="flex items-center gap-1.5">
-              <span
-                className="inline-flex items-center justify-center h-4 w-4 rounded"
-                style={{ background: meta.bg, color: meta.color }}
-              >
-                {meta.icon}
-              </span>
-              <span className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--iris-text-secondary)' }}>
-                {meta.label}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Calendar grid */}
-      <div className="flex-1 overflow-auto px-4 md:px-6 py-4">
-        {view === 'month' ? (
-          <div className="flex flex-col h-full">
+      {/* Main content */}
+      <div className="flex-1 overflow-auto p-4 md:p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 h-full">
+          {/* Calendar */}
+          <div className="flex flex-col">
             {/* Weekday headers */}
             <div className="grid grid-cols-7 mb-2">
               {WEEK_DAYS.map((wd) => (
-                <div
-                  key={wd}
-                  className="text-center text-sm font-semibold py-2"
-                  style={{ color: 'var(--iris-text-muted)' }}
-                >
+                <div key={wd} className="text-center text-xs font-medium py-2 uppercase tracking-wider" style={{ color: 'var(--iris-text-muted)' }}>
                   {wd}
                 </div>
               ))}
             </div>
-            {/* Days */}
-            <div className="grid grid-cols-7 flex-1 gap-2">
-              {gridDays.map((day, idx) => {
-                const iso = toISODate(day);
-                const dayEvents = eventsByDate[iso] || [];
-                const isCurrentMonth = day.getMonth() === currentDate.getMonth();
-                const isToday = sameDate(day, today);
-                return (
-                  <div
-                    key={idx}
-                    className="flex flex-col gap-1.5 rounded-xl border p-1.5 md:p-2.5 min-h-[80px] md:min-h-[120px] transition-colors"
-                    style={{
-                      background: isCurrentMonth ? 'var(--iris-bg-surface)' : 'var(--iris-bg-tertiary)',
-                      borderColor: isToday ? 'var(--iris-accent-cyan)' : 'var(--iris-border-subtle)',
-                      opacity: isCurrentMonth ? 1 : 0.55,
-                    }}
-                  >
-                    <div className="flex items-center justify-between">
+
+            {view === 'month' ? (
+              <div className="grid grid-cols-7 flex-1 gap-2">
+                {gridDays.map((day, idx) => {
+                  const iso = toISODate(day);
+                  const dayEvents = eventsByDate[iso] || [];
+                  const isCurrentMonth = day.getMonth() === currentDate.getMonth();
+                  const isToday = sameDate(day, today);
+                  const eventTypes = Array.from(new Set(dayEvents.map((e) => e.type)));
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => handleDayClick(day)}
+                      className="flex flex-col items-center justify-start gap-2 rounded-xl p-2 transition-colors min-h-[72px]"
+                      style={{
+                        background: isCurrentMonth ? 'var(--iris-bg-surface)' : 'transparent',
+                        border: '1px solid var(--iris-border-subtle)',
+                        opacity: isCurrentMonth ? 1 : 0.4,
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = isCurrentMonth ? 'var(--iris-bg-surface)' : 'transparent'; }}
+                    >
                       <span
-                        className={`text-sm font-bold tabular-nums ${isToday ? 'px-2 py-1 rounded-full' : ''}`}
+                        className={`flex items-center justify-center h-8 w-8 text-sm font-semibold ${isToday ? 'rounded-full' : ''}`}
                         style={{
                           color: isToday ? '#FFFFFF' : 'var(--iris-text-primary)',
-                          background: isToday ? 'var(--iris-accent-cyan)' : 'transparent',
+                          background: isToday ? 'var(--iris-accent-coral, #FF6B6B)' : 'transparent',
                         }}
                       >
                         {day.getDate()}
                       </span>
-                      {dayEvents.length > 0 && (
-                        <span
-                          className="text-xs font-bold px-1.5 py-0.5 rounded-md"
-                          style={{ background: 'var(--iris-bg-hover)', color: 'var(--iris-text-muted)' }}
-                        >
-                          {dayEvents.length}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex flex-col gap-1 mt-1">
-                      {dayEvents.slice(0, 3).map((ev) => {
-                        const meta = EVENT_META[ev.type];
-                        return (
-                          <button
-                            key={ev.id}
-                            onClick={() => setSelectedEvent(ev)}
-                            className="flex items-center gap-1.5 text-left rounded-md px-2 py-1 text-sm leading-snug truncate transition-colors"
-                            style={{
-                              background: meta.bg,
-                              color: meta.color,
-                              borderLeft: `3px solid ${meta.border}`,
-                            }}
-                            title={ev.title}
-                          >
-                            <span className="shrink-0">{meta.icon}</span>
-                            <span className="truncate font-medium">{ev.title}</span>
-                          </button>
-                        );
-                      })}
-                      {dayEvents.length > 3 && (
-                        <span className="text-xs px-1 font-medium" style={{ color: 'var(--iris-text-muted)' }}>
-                          +{dayEvents.length - 3}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ) : (
-          /* Week view */
-          <div className="flex flex-col h-full">
-            <div className="grid grid-cols-7 gap-1 mb-2">
-              {WEEK_DAYS.map((wd, i) => {
-                const day = gridDays[i];
-                const isToday = sameDate(day, today);
-                return (
-                  <div
-                    key={wd}
-                    className="text-center text-sm font-semibold py-2.5 rounded-lg"
-                    style={{
-                      color: isToday ? '#FFFFFF' : 'var(--iris-text-muted)',
-                      background: isToday ? 'var(--iris-accent-cyan)' : 'transparent',
-                    }}
-                  >
-                    {wd}, {day.getDate()}
-                  </div>
-                );
-              })}
-            </div>
-            <div className="grid grid-cols-7 flex-1 gap-2">
-              {gridDays.map((day, idx) => {
-                const iso = toISODate(day);
-                const dayEvents = eventsByDate[iso] || [];
-                const isToday = sameDate(day, today);
-                return (
-                  <div
-                    key={idx}
-                    className="flex flex-col gap-2 rounded-xl border p-3 min-h-[160px]"
-                    style={{
-                      background: 'var(--iris-bg-surface)',
-                      borderColor: isToday ? 'var(--iris-accent-cyan)' : 'var(--iris-border-subtle)',
-                    }}
-                  >
-                    {dayEvents.length === 0 && (
-                      <span className="text-sm font-medium" style={{ color: 'var(--iris-text-secondary)' }}>
-                        Нет событий
+                      <div className="flex flex-wrap items-center justify-center gap-1">
+                        {eventTypes.slice(0, 4).map((type) => (
+                          <span
+                            key={type}
+                            className={`h-1.5 w-1.5 rounded-full ${EVENT_META[type].dot}`}
+                            title={EVENT_META[type].label}
+                          />
+                        ))}
+                        {eventTypes.length > 4 && (
+                          <span className="text-[10px] leading-none" style={{ color: 'var(--iris-text-muted)' }}>
+                            +{eventTypes.length - 4}
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="grid grid-cols-7 flex-1 gap-2">
+                {gridDays.map((day, idx) => {
+                  const iso = toISODate(day);
+                  const dayEvents = eventsByDate[iso] || [];
+                  const isToday = sameDate(day, today);
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => handleDayClick(day)}
+                      className="flex flex-col items-start gap-2 rounded-xl p-2 transition-colors text-left"
+                      style={{
+                        background: 'var(--iris-bg-surface)',
+                        border: '1px solid var(--iris-border-subtle)',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--iris-bg-surface)'; }}
+                    >
+                      <span
+                        className={`text-sm font-semibold ${isToday ? 'px-2 py-0.5 rounded-full' : ''}`}
+                        style={{
+                          color: isToday ? '#FFFFFF' : 'var(--iris-text-primary)',
+                          background: isToday ? 'var(--iris-accent-coral, #FF6B6B)' : 'transparent',
+                        }}
+                      >
+                        {WEEK_DAYS[idx]}, {day.getDate()}
                       </span>
-                    )}
-                    {dayEvents.map((ev) => {
-                      const meta = EVENT_META[ev.type];
-                      return (
-                        <button
-                          key={ev.id}
-                          onClick={() => setSelectedEvent(ev)}
-                          className="flex flex-col gap-1 text-left rounded-lg px-3 py-2 text-sm transition-colors"
-                          style={{
-                            background: meta.bg,
-                            color: meta.color,
-                            borderLeft: `4px solid ${meta.border}`,
-                          }}
-                        >
-                          <span className="font-semibold truncate">{ev.title}</span>
-                          {ev.details?.status && (
-                            <span className="text-xs opacity-80">{ev.details.status}</span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                );
-              })}
+                      <div className="flex flex-col gap-1 w-full">
+                        {dayEvents.slice(0, 3).map((ev) => {
+                          const meta = EVENT_META[ev.type];
+                          return (
+                            <div
+                              key={ev.id}
+                              className={`flex items-center gap-1.5 rounded-md px-2 py-1 text-xs truncate ${meta.bg}`}
+                              style={{ color: meta.color }}
+                              title={ev.title}
+                            >
+                              <span className="shrink-0">{meta.icon}</span>
+                              <span className="truncate">{ev.title}</span>
+                            </div>
+                          );
+                        })}
+                        {dayEvents.length > 3 && (
+                          <span className="text-xs px-1" style={{ color: 'var(--iris-text-muted)' }}>
+                            +{dayEvents.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Sidebar */}
+          <div className="flex flex-col gap-4">
+            <div className="rounded-xl border p-4" style={{ background: 'var(--iris-bg-surface)', borderColor: 'var(--iris-border-subtle)' }}>
+              <div className="flex items-center gap-2 mb-3">
+                <Clock size={18} style={{ color: 'var(--iris-accent-cyan)' }} />
+                <h3 className="text-sm font-semibold" style={{ color: 'var(--iris-text-primary)' }}>
+                  Ближайшие дедлайны
+                </h3>
+              </div>
+              <div className="flex flex-col gap-2">
+                {upcomingDeadlines.length === 0 && (
+                  <span className="text-xs" style={{ color: 'var(--iris-text-muted)' }}>
+                    Нет дедлайнов в выбранном периоде
+                  </span>
+                )}
+                {upcomingDeadlines.map((ev) => {
+                  const meta = EVENT_META[ev.type];
+                  return (
+                    <div key={ev.id} className="flex items-start gap-2 rounded-lg p-2 transition-colors" style={{ background: 'var(--iris-bg-tertiary)' }}>
+                      <span className={`shrink-0 mt-0.5 ${meta.bg} rounded p-1`} style={{ color: meta.color }}>
+                        {meta.icon}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium truncate" style={{ color: 'var(--iris-text-primary)' }}>
+                          {ev.title}
+                        </p>
+                        <p className="text-[10px] truncate" style={{ color: 'var(--iris-text-muted)' }}>
+                          {ev.date}
+                        </p>
+                      </div>
+                      <span className="text-xs font-semibold shrink-0" style={{ color: meta.color }}>
+                        {ev.type === 'tender' ? 'Тендер' : ev.type === 'task' ? 'Задача' : ev.type === 'project' ? 'Проект' : meta.label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="rounded-xl border p-4" style={{ background: 'var(--iris-bg-surface)', borderColor: 'var(--iris-border-subtle)' }}>
+              <h3 className="text-sm font-semibold mb-2" style={{ color: 'var(--iris-text-primary)' }}>Легенда</h3>
+              <div className="grid grid-cols-2 gap-2">
+                {(Object.keys(EVENT_META) as CalendarEventType[]).map((type) => {
+                  const meta = EVENT_META[type];
+                  return (
+                    <div key={type} className="flex items-center gap-1.5">
+                      <span className={`h-2 w-2 rounded-full ${meta.dot}`} />
+                      <span className="text-xs" style={{ color: 'var(--iris-text-secondary)' }}>{meta.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
-        )}
+        </div>
       </div>
 
       {/* Loading overlay */}
@@ -512,114 +599,113 @@ export default function CalendarPage() {
         </div>
       )}
 
-      {/* Event detail modal */}
-      {selectedEvent && (
+      {/* Day panel */}
+      {showPanel && selectedDay && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ background: 'var(--iris-bg-backdrop)' }}
-          onClick={() => setSelectedEvent(null)}
+          onClick={() => setShowPanel(false)}
         >
           <div
-            className="w-full max-w-sm rounded-xl border shadow-lg p-5"
-            style={{
-              background: 'var(--iris-bg-surface)',
-              borderColor: 'var(--iris-border-subtle)',
-              boxShadow: 'var(--iris-shadow-lg)',
-            }}
+            className="w-full max-w-md rounded-xl border shadow-lg p-5 max-h-[80vh] overflow-auto"
+            style={{ background: 'var(--iris-bg-surface)', borderColor: 'var(--iris-border-subtle)', boxShadow: 'var(--iris-shadow-lg)' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <span
-                  className="inline-flex items-center justify-center h-6 w-6 rounded"
-                  style={{
-                    background: EVENT_META[selectedEvent.type].bg,
-                    color: EVENT_META[selectedEvent.type].color,
-                  }}
-                >
-                  {EVENT_META[selectedEvent.type].icon}
-                </span>
-                <span
-                  className="text-xs font-medium px-2 py-0.5 rounded"
-                  style={{
-                    background: EVENT_META[selectedEvent.type].bg,
-                    color: EVENT_META[selectedEvent.type].color,
-                  }}
-                >
-                  {EVENT_META[selectedEvent.type].label}
-                </span>
-              </div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-semibold" style={{ color: 'var(--iris-text-primary)' }}>
+                {selectedDay.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', weekday: 'short' })}
+              </h3>
               <button
-                onClick={() => setSelectedEvent(null)}
+                onClick={() => setShowPanel(false)}
                 className="flex h-7 w-7 items-center justify-center rounded-lg transition-colors"
                 style={{ color: 'var(--iris-text-muted)' }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
               >
                 <X size={16} />
               </button>
             </div>
 
-            <h3 className="text-sm font-semibold mb-2" style={{ color: 'var(--iris-text-primary)' }}>
-              {selectedEvent.title}
-            </h3>
+            <div className="flex flex-col gap-2 mb-4">
+              {panelEvents.length === 0 && (
+                <span className="text-sm" style={{ color: 'var(--iris-text-muted)' }}>Нет событий</span>
+              )}
+              {panelEvents.map((ev) => {
+                const meta = EVENT_META[ev.type];
+                return (
+                  <div key={ev.id} className="flex items-start gap-2 rounded-lg p-2 border" style={{ borderColor: 'var(--iris-border-subtle)', background: 'var(--iris-bg-tertiary)' }}>
+                    <span className={`shrink-0 rounded p-1 ${meta.bg}`} style={{ color: meta.color }}>
+                      {meta.icon}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium" style={{ color: 'var(--iris-text-primary)' }}>{ev.title}</p>
+                      {ev.details.description && (
+                        <p className="text-xs" style={{ color: 'var(--iris-text-muted)' }}>{ev.details.description}</p>
+                      )}
+                      {ev.details.customer && (
+                        <p className="text-xs" style={{ color: 'var(--iris-text-muted)' }}>{ev.details.customer}</p>
+                      )}
+                    </div>
+                    {ev.is_editable && (
+                      <button
+                        onClick={() => handleDeleteEvent(ev)}
+                        className="shrink-0 p-1 rounded transition-colors"
+                        style={{ color: 'var(--iris-text-muted)' }}
+                        onMouseEnter={(e) => { e.currentTarget.style.color = '#EF4444'; e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--iris-text-muted)'; e.currentTarget.style.backgroundColor = 'transparent'; }}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
 
-            <div className="space-y-2 text-xs">
-              <div className="flex items-center gap-2">
-                <span style={{ color: 'var(--iris-text-muted)' }}>Дата:</span>
-                <span style={{ color: 'var(--iris-text-secondary)' }}>
-                  {new Date(selectedEvent.date).toLocaleDateString('ru-RU')}
-                </span>
+            <form onSubmit={handleAddEvent} className="border-t pt-4" style={{ borderColor: 'var(--iris-border-subtle)' }}>
+              <div className="flex items-center gap-2 mb-3">
+                <Plus size={16} style={{ color: 'var(--iris-accent-cyan)' }} />
+                <h4 className="text-sm font-semibold" style={{ color: 'var(--iris-text-primary)' }}>Добавить событие</h4>
               </div>
-              {selectedEvent.details?.status && (
-                <div className="flex items-center gap-2">
-                  <span style={{ color: 'var(--iris-text-muted)' }}>Статус:</span>
-                  <span style={{ color: 'var(--iris-text-secondary)' }}>{selectedEvent.details.status}</span>
-                </div>
-              )}
-              {selectedEvent.details?.priority && (
-                <div className="flex items-center gap-2">
-                  <span style={{ color: 'var(--iris-text-muted)' }}>Приоритет:</span>
-                  <span style={{ color: 'var(--iris-text-secondary)' }}>{selectedEvent.details.priority}</span>
-                </div>
-              )}
-              {selectedEvent.details?.customer && (
-                <div className="flex items-center gap-2">
-                  <span style={{ color: 'var(--iris-text-muted)' }}>Заказчик:</span>
-                  <span style={{ color: 'var(--iris-text-secondary)' }}>{selectedEvent.details.customer}</span>
-                </div>
-              )}
-              {selectedEvent.details?.description && (
-                <div className="flex items-start gap-2">
-                  <span style={{ color: 'var(--iris-text-muted)' }}>Описание:</span>
-                  <span style={{ color: 'var(--iris-text-secondary)' }}>{selectedEvent.details.description}</span>
-                </div>
-              )}
-            </div>
-
-            <div className="mt-4 flex justify-end">
-              <button
-                onClick={() => setSelectedEvent(null)}
-                className="px-4 py-1.5 rounded-lg text-xs font-medium transition-colors"
-                style={{
-                  background: 'var(--iris-bg-subtle)',
-                  color: 'var(--iris-text-secondary)',
-                  border: '1px solid var(--iris-border-default)',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'var(--iris-bg-subtle)';
-                }}
-              >
-                Закрыть
-              </button>
-            </div>
+              <div className="flex flex-col gap-2">
+                <input
+                  type="text"
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                  placeholder="Название события"
+                  className="w-full rounded-lg border px-3 py-2 text-sm outline-none"
+                  style={{ background: 'var(--iris-bg-tertiary)', borderColor: 'var(--iris-border-default)', color: 'var(--iris-text-primary)' }}
+                  required
+                />
+                <textarea
+                  value={newDescription}
+                  onChange={(e) => setNewDescription(e.target.value)}
+                  placeholder="Описание (необязательно)"
+                  rows={2}
+                  className="w-full rounded-lg border px-3 py-2 text-sm outline-none resize-none"
+                  style={{ background: 'var(--iris-bg-tertiary)', borderColor: 'var(--iris-border-default)', color: 'var(--iris-text-primary)' }}
+                />
+                <select
+                  value={newType}
+                  onChange={(e) => setNewType(e.target.value as CalendarEventType)}
+                  className="w-full rounded-lg border px-3 py-2 text-sm outline-none"
+                  style={{ background: 'var(--iris-bg-tertiary)', borderColor: 'var(--iris-border-default)', color: 'var(--iris-text-primary)' }}
+                >
+                  <option value="personal">Личное</option>
+                  <option value="task">Задача</option>
+                  <option value="meeting">Встреча</option>
+                  <option value="reminder">Напоминание</option>
+                </select>
+                <button
+                  type="submit"
+                  disabled={!newTitle.trim()}
+                  className="flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50"
+                  style={{ background: 'var(--iris-accent-cyan)', color: '#FFFFFF' }}
+                >
+                  <Plus size={14} /> Добавить
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

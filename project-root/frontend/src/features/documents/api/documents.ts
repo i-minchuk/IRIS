@@ -101,7 +101,36 @@ export const submitForReview = async (documentId: number): Promise<{ document_id
   return data;
 };
 
-export const classifyDocument = async (documentId: number): Promise<{ type: string; confidence: number; keywords: string[] }> => {
-  const { data } = await client.post(`/documents/${documentId}/classify`);
+export interface BulkImportDocumentItem {
+  name: string;
+  number?: string;
+  doc_type?: string;
+  status?: string;
+  crs_code?: string;
+  project_id?: number;
+  section_id?: number;
+}
+
+export interface BulkImportDocumentResult {
+  created: number;
+  items: { id: number; number: string; name: string; status: string }[];
+}
+
+export const bulkImportDocuments = async (items: BulkImportDocumentItem[]): Promise<BulkImportDocumentResult> => {
+  const { data } = await client.post<BulkImportDocumentResult>('/documents/import', items);
+  return data;
+};
+
+export const classifyDocument = async (id: number): Promise<{ type: string; confidence: number }> => {
+  const { data } = await client.post(`/documents/${id}/classify`);
+  return data;
+};
+
+export const uploadDocumentFile = async (documentId: number, file: File): Promise<unknown> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const { data } = await client.post(`/documents/${documentId}/upload`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
   return data;
 };

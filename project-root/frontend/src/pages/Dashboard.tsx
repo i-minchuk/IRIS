@@ -663,34 +663,48 @@ export default function Dashboard() {
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={portfolioPieData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={90}
-                      paddingAngle={3}
-                      dataKey="value"
-                      nameKey="name"
-                      label={({ name, percent }) => `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`}
-                      labelLine={{ stroke: chartTextColor, strokeOpacity: 0.4 }}
-                    >
-                      {portfolioPieData.map((entry, index) => (
-                        <Cell key={`slice-${index}`} fill={entry.color} fillOpacity={0.85} stroke={isDark ? '#2A3042' : '#FFFFFF'} strokeWidth={2} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={tooltipStyle(isDark)}
-                      formatter={(value, _name, props) => {
-                        return [`${value}%`, (props as { payload?: { name?: string } })?.payload?.name ?? ''];
-                      }}
-                    />
-                    <Legend wrapperStyle={{ fontSize: '12px', color: chartTextColor }} />
-                  </PieChart>
-                </ResponsiveContainer>
+              <div className="h-64 flex flex-col md:flex-row items-center gap-3">
+                <div className="relative flex-1 h-44 md:h-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={portfolioPieData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius="45%"
+                        outerRadius="75%"
+                        paddingAngle={3}
+                        dataKey="value"
+                        nameKey="name"
+                      >
+                        {portfolioPieData.map((entry, index) => (
+                          <Cell key={`slice-${index}`} fill={entry.color} fillOpacity={0.85} stroke={isDark ? '#2A3042' : '#FFFFFF'} strokeWidth={2} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={tooltipStyle(isDark)}
+                        formatter={(value, _name, props) => {
+                          return [`${value}%`, (props as { payload?: { name?: string } })?.payload?.name ?? ''];
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="text-center">
+                      <div className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>100%</div>
+                      <div className="text-[10px] md:text-xs" style={{ color: 'var(--text-muted)' }}>всего</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-row md:flex-col flex-wrap md:flex-nowrap justify-center md:justify-start gap-x-4 gap-y-1 md:gap-2 px-2 md:px-0 text-xs md:text-sm w-full md:w-auto min-w-0">
+                  {portfolioPieData.map((item) => (
+                    <div key={item.name} className="flex items-center gap-2 min-w-0 max-w-[160px] md:max-w-none" title={`${item.name}: ${item.value}%`}>
+                      <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: item.color }} />
+                      <span className="truncate" style={{ color: 'var(--text-secondary)' }}>{item.name}</span>
+                      <span className="font-medium flex-shrink-0" style={{ color: 'var(--text-primary)' }}>{item.value}%</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -890,8 +904,8 @@ export default function Dashboard() {
 
         </div>
 
-        {/* ═══ ПРАВАЯ КОЛОНКА — ~1/4 экрана, компактные отступы ═══ */}
-        <div className="space-y-3 xl:sticky xl:top-5 min-w-0 max-w-[320px] xl:max-w-[280px]">
+        {/* ═══ ПРАВАЯ КОЛОНКА — растянута на всё доступное пространство ═══ */}
+        <div className="space-y-3 xl:sticky xl:top-5 min-w-0 w-full">
 
           {/* Риски — компактные */}
           <div className="p-3 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>

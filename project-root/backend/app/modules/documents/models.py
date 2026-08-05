@@ -166,6 +166,9 @@ class Revision(Base):
     superseded_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    file_path: Mapped[Optional[str]] = mapped_column(
+        String(500), nullable=True
+    )
 
     changes_summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     diff_before: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)

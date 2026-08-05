@@ -310,6 +310,85 @@ class DocumentService:
             "status": revision.status
         }
     
+    async def bulk_import_documents(
+        self,
+        items: list[Dict[str, Any]],
+        user_id: int
+    ) -> List[Dict[str, Any]]:
+        """Bulk import documents from external registry (Excel/MDR)."""
+        created: List[Dict[str, Any]] = []
+        for item in items:
+            doc_data = {
+                "project_id": item.get("project_id"),
+                "stage_id": item.get("stage_id"),
+                "kit_id": item.get("kit_id"),
+                "section_id": item.get("section_id"),
+                "number": item.get("number") or "",
+                "name": item.get("name"),
+                "doc_type": item.get("doc_type") or "specification",
+                "status": item.get("status") or "draft",
+                "crs_code": item.get("crs_code"),
+                "author_id": user_id,
+                "content": item.get("content", {}),
+                "variables_snapshot": item.get("variables_snapshot", {}),
+            }
+            doc = await self.doc_repo.create(doc_data)
+            created.append({
+                "id": doc.id,
+                "number": doc.number,
+                "name": doc.name,
+                "status": doc.status,
+            })
+        return created
+    
+    async def upload_document_file(
+        self,
+        document_id: int,
+        file_stream: bytes,
+        file_name: str,
+        user_id: int
+    ) -> Dict[str, Any]:
+        """Upload a file for a document, create a revision and index content."""
+        doc = await self.doc_repo.get_by_id(document_id)
+        if not doc:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Document not found"
+            )
+        
+        from app.core.config import settings
+        import os
+        import uuid
+        
+        ext = os.path.splitext(file_name)[1].lower()
+        safe_name = f"{uuid.uuid4().hex}{ext}"
+        doc_dir = os.path.join(settings.IRIS_STORAGE_ROOT, "documents", str(document_id))
+        os.makedirs(doc_dir, exist_ok=True)
+        file_path = os.path.join(doc_dir, safe_name)
+        
+        with open(file_path, "wb") as f:
+            f.write(file_stream)
+        
+        revision = await self.create_revision(
+            document_id,
+            {
+                "number": "A",
+                "status": "draft",
+                "changes_summary": f"File uploaded: {file_name}",
+                "file_path": file_path,
+            },
+            user_id,
+        )
+        
+        await self.index_document(document_id, file_stream=file_stream, file_name=file_name)
+        
+        return {
+            "document_id": document_id,
+            "revision_id": revision["id"],
+            "file_path": file_path,
+            "original_name": file_name,
+        }
+
     async def start_approval_workflow(
         self,
         document_id: int,

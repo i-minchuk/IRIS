@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { BpmnDiagram } from './BpmnDiagram';
 import { DetailPanel } from './DetailPanel';
 import { KpiPanel } from './KpiPanel';
@@ -6,7 +6,7 @@ import { ProblemsPanel } from './ProblemsPanel';
 import { EmployeesPanel } from './EmployeesPanel';
 import { DEPARTMENTS, EMPLOYEES, BPMN_NODES, BPMN_EDGES, PROBLEMS } from './data';
 import { Button, Badge } from '@/components/ui';
-import { Activity, BarChart3, AlertTriangle, Users, Eye, EyeOff } from 'lucide-react';
+import { Activity, BarChart3, AlertTriangle, Users, Eye, EyeOff, Maximize2, Minimize2 } from 'lucide-react';
 
 type SubTab = 'diagram' | 'kpi' | 'problems' | 'employees';
 
@@ -23,15 +23,45 @@ export const ProductionStrategyTab: React.FC = () => {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [highlightBottlenecks, setHighlightBottlenecks] = useState(true);
   const [highlightDuplicates, setHighlightDuplicates] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const selectedNode = useMemo(() => BPMN_NODES.find((n) => n.id === selectedId) || null, [selectedId]);
 
   const bottleneckCount = BPMN_NODES.filter((n) => n.issue === 'bottleneck').length;
   const duplicateCount = BPMN_NODES.filter((n) => n.issue === 'duplicate').length;
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullscreen) setIsFullscreen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isFullscreen]);
+
+  useEffect(() => {
+    if (isFullscreen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [isFullscreen]);
+
   return (
-    <div className="flex h-[calc(100vh-220px)] min-h-[540px] flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--iris-border-default)] bg-[var(--iris-bg-surface)] p-3">
+    <div
+      className={`flex flex-col gap-3 transition-all ${
+        isFullscreen
+          ? 'fixed inset-0 z-50 p-3 sm:p-6 lg:p-10'
+          : 'h-[calc(100vh-220px)] min-h-[540px]'
+      }`}
+      style={
+        isFullscreen
+          ? { background: 'var(--iris-bg-backdrop)', backdropFilter: 'blur(8px)' }
+          : undefined
+      }
+    >
+      <div className={`flex h-full flex-col gap-3 ${isFullscreen ? 'rounded-2xl p-5 sm:p-8 overflow-hidden neon-card' : ''}`}>
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--iris-border-default)] bg-[var(--iris-bg-surface)] p-3">
         <div className="flex items-center gap-1">
           {subTabs.map((t) => {
             const activeTab = active === t.id;
@@ -75,6 +105,16 @@ export const ProductionStrategyTab: React.FC = () => {
               {duplicateCount}
             </Badge>
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 gap-1 text-xs"
+            onClick={() => setIsFullscreen((v) => !v)}
+            title={isFullscreen ? 'Свернуть (Esc)' : 'Развернуть на весь экран'}
+          >
+            {isFullscreen ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
+            <span className="hidden sm:inline">{isFullscreen ? 'Свернуть' : 'На весь экран'}</span>
+          </Button>
         </div>
       </div>
 
@@ -110,6 +150,7 @@ export const ProductionStrategyTab: React.FC = () => {
       )}
 
       {active === 'employees' && <EmployeesPanel employees={EMPLOYEES} departments={DEPARTMENTS} nodes={BPMN_NODES} />}
+      </div>
     </div>
   );
 };

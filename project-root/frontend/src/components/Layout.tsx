@@ -5,20 +5,22 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 const prefetchDashboard = () => import('@/pages/Dashboard');
 const prefetchDocuments = () => import('@/pages/DocumentsPage');
 import {
-  User, LogOut, ChevronDown, X,
+  User, LogOut, ChevronDown,
   BarChart3, FileText, Archive,
-  Search, Shield, Briefcase, Factory,
+  Shield, Briefcase, Factory,
   BookOpen, Settings,
 } from 'lucide-react';
 
 import { useTheme } from '@/providers/ThemeProvider';
 import { useLanguageContext } from "@/features/profile/i18n/LanguageContext";
 import { t } from "@/features/profile/i18n/translations";
-import { useZoomStore, MIN_SCALE, MAX_SCALE } from "@/features/zoom/store/zoomStore";
+import { useZoomStore } from "@/features/zoom/store/zoomStore";
 import { useAuth } from '@/context/useAuth';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import Breadcrumbs from '@/components/Breadcrumbs';
 import NotificationBell from '@/features/notifications/components/NotificationBell';
+import GlobalSearch from '@/components/GlobalSearch';
+import { useGlobalSearchStore } from '@/stores/globalSearchStore';
 import type { UserRole } from '@/features/auth/store/authStore';
 
 /* ── Role-based nav config ── */
@@ -48,41 +50,15 @@ export default function Layout() {
     if (typeof window === 'undefined') return null;
     return localStorage.getItem('iris_profile_avatar');
   });
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isDraggingZoom, setIsDraggingZoom] = useState(false);
-  const zoomSliderRef = useRef<HTMLDivElement | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
+  const setActiveTab = useGlobalSearchStore((state) => state.setActiveTab);
   const userMenuRef = useRef<HTMLDivElement | null>(null);
   const isDark = theme === 'dark' || theme === 'midnight' || theme === 'contrast';
   const { user } = useAuth();
   const navItems = getNavItems(user?.role);
 
   const scale = useZoomStore((state) => state.scale);
-  const setScale = useZoomStore((state) => state.setScale);
-
-  const updateScaleFromMouse = (clientX: number) => {
-    if (!zoomSliderRef.current) return;
-    const rect = zoomSliderRef.current.getBoundingClientRect();
-    const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
-    const pct = x / rect.width;
-    const raw = MIN_SCALE + pct * (MAX_SCALE - MIN_SCALE);
-    const stepped = Math.round(raw / 0.05) * 0.05;
-    setScale(Math.max(MIN_SCALE, Math.min(MAX_SCALE, stepped)));
-  };
-
-  useEffect(() => {
-    const handleMove = (e: MouseEvent) => { if (isDraggingZoom) updateScaleFromMouse(e.clientX); };
-    const handleUp = () => setIsDraggingZoom(false);
-    if (isDraggingZoom) {
-      window.addEventListener('mousemove', handleMove);
-      window.addEventListener('mouseup', handleUp);
-    }
-    return () => {
-      window.removeEventListener('mousemove', handleMove);
-      window.removeEventListener('mouseup', handleUp);
-    };
-  }, [isDraggingZoom]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -121,6 +97,11 @@ export default function Layout() {
   const isActive = (path: string) =>
     location.pathname === path || location.pathname.startsWith(`${path}/`);
 
+  useEffect(() => {
+    const activeItem = navItems.find((item) => isActive(item.to));
+    setActiveTab(activeItem?.to ?? null);
+  }, [location.pathname, navItems, setActiveTab]);
+
   return (
     <div
       className="flex flex-col min-h-screen"
@@ -147,55 +128,6 @@ export default function Layout() {
 
             {/* Right panel */}
             <div className="flex shrink-0 items-center gap-2">
-              {/* ── Масштаб (Word-style) ── */}
-              <div className="flex items-center gap-1 px-2 py-1 rounded-md" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)' }}>
-                <Search size={14} style={{ color: 'var(--text-muted)' }} />
-                <button
-                  onClick={() => setScale(Math.max(scale - 0.1, MIN_SCALE))}
-                  className="flex h-5 w-4 items-center justify-center text-sm font-medium transition-colors rounded"
-                  style={{ color: 'var(--text-secondary)' }}
-                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
-                >
-                  −
-                </button>
-                <div
-                  ref={zoomSliderRef}
-                  className="relative w-20 h-4 select-none"
-                  style={{ cursor: isDraggingZoom ? 'grabbing' : 'grab' }}
-                  onMouseDown={(e) => { setIsDraggingZoom(true); updateScaleFromMouse(e.clientX); }}
-                >
-                  <div className="absolute top-1/2 left-0 right-0 h-px" style={{ background: isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.2)' }} />
-                  <div
-                    className="absolute top-1/2 h-2 w-px -translate-y-1/2"
-                    style={{
-                      left: `${((1.0 - MIN_SCALE) / (MAX_SCALE - MIN_SCALE)) * 100}%`,
-                      background: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.3)',
-                    }}
-                  />
-                  <div
-                    className="absolute top-1/2 h-3 w-1 -translate-y-1/2 -translate-x-1/2 rounded-sm"
-                    style={{
-                      left: `${((scale - MIN_SCALE) / (MAX_SCALE - MIN_SCALE)) * 100}%`,
-                      background: isDraggingZoom ? (isDark ? '#60A5FA' : '#2563EB') : (isDark ? 'rgba(255,255,255,0.7)' : 'var(--text-secondary)'),
-                      boxShadow: isDraggingZoom ? (isDark ? '0 0 0 3px rgba(96,165,250,0.4)' : '0 0 0 2px rgba(37,99,235,0.3)') : 'none',
-                    }}
-                  />
-                </div>
-                <button
-                  onClick={() => setScale(Math.min(scale + 0.1, MAX_SCALE))}
-                  className="flex h-5 w-4 items-center justify-center text-sm font-medium transition-colors rounded"
-                  style={{ color: 'var(--text-secondary)' }}
-                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
-                >
-                  +
-                </button>
-                <span className="text-sm font-sans tabular-nums select-none min-w-[28px] text-right" style={{ color: 'var(--text-secondary)' }}>
-                  {Math.round(scale * 100)}%
-                </span>
-              </div>
-
               {/* Notifications */}
               <NotificationBell />
 
@@ -283,39 +215,11 @@ export default function Layout() {
 
         {/* ===== ТАБЫ + ГЛОБАЛЬНЫЙ ПОИСК ===== */}
         <div className="shrink-0 relative pt-3" style={{ borderColor: 'var(--header-border)' }}>
-          {/* Background "stacked" tabs effect - inactive tabs peeking behind */}
-          <div className="absolute bottom-0 left-0 right-0 h-full pointer-events-none overflow-hidden">
-            {navItems.map((item, idx) => {
-              const active = isActive(item.to);
-              if (active) return null;
-              // Each inactive tab peeks from behind with offset
-              const offset = (navItems.length - idx) * 3;
-              return (
-                <div
-                  key={`bg-${item.to}`}
-                  className="absolute bottom-0 h-8 rounded-t-lg"
-                  style={{
-                    left: `${idx * 12 + offset}px`,
-                    width: '80px',
-                    backgroundColor: item.bgActive.replace('0.15', '0.08'),
-                    borderTop: `2px solid ${item.color}44`,
-                    borderLeft: '1px solid var(--iris-border-subtle)',
-                    borderRight: '1px solid var(--iris-border-subtle)',
-                    zIndex: idx,
-                    transform: `translateY(${offset}px)`,
-                  }}
-                />
-              );
-            })}
-          </div>
-
           <div className="w-full px-4 md:px-6 flex items-end justify-between gap-4 relative z-10">
-            <nav className="flex items-end gap-0" aria-label="Главная навигация">
-              {/* Табы — стиль папок-ярлыков */}
-              {navItems.map((item, idx) => {
+            <nav className="flex items-end gap-2 lg:gap-3" aria-label="Главная навигация">
+              {navItems.map((item) => {
                 const active = isActive(item.to);
                 const iconOnly = (item as any).iconOnly;
-                // Folder tab style: rounded top, flat bottom, peeking effect
                 return (
                   <Link
                     key={item.to}
@@ -330,34 +234,33 @@ export default function Layout() {
                     `}
                     style={{
                       color: active ? item.color : 'var(--text-secondary)',
-                      backgroundColor: active ? 'var(--iris-bg-surface)' : 'transparent',
+                      backgroundColor: active ? 'var(--iris-bg-surface)' : 'var(--iris-bg-app)',
                       borderTopLeftRadius: '10px',
                       borderTopRightRadius: '10px',
-                      borderBottom: active ? 'none' : '1px solid var(--iris-border-subtle)',
+                      borderBottom: active ? '1px solid var(--iris-bg-surface)' : '1px solid var(--iris-border-subtle)',
                       borderTop: active ? `3px solid ${item.color}` : `2px solid ${item.color}44`,
-                      borderLeft: active ? '1px solid var(--iris-border-subtle)' : '1px solid transparent',
-                      borderRight: active ? '1px solid var(--iris-border-subtle)' : '1px solid transparent',
-                      marginLeft: idx > 0 ? '-6px' : '0',
-                      transform: active ? 'translateY(0)' : `translateY(${2 + idx}px)`,
+                      borderLeft: '1px solid var(--iris-border-subtle)',
+                      borderRight: '1px solid var(--iris-border-subtle)',
+                      transform: active ? 'translateY(0)' : 'translateY(2px)',
                       boxShadow: active
                         ? `0 -2px 6px ${item.color}18, 0 0 0 1px var(--iris-border-subtle)`
                         : 'none',
-                      zIndex: active ? 20 : 10 - idx,
-                      paddingBottom: active ? '10px' : '6px',
+                      zIndex: active ? 20 : 10,
+                      paddingBottom: active ? '10px' : '8px',
                     }}
                     onMouseEnter={(e) => {
                       if (!active) {
                         e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)';
                         e.currentTarget.style.color = 'var(--text-primary)';
-                        e.currentTarget.style.transform = 'translateY(-1px)';
+                        e.currentTarget.style.transform = 'translateY(0)';
                         e.currentTarget.style.zIndex = '25';
                       }
                     }}
                     onMouseLeave={(e) => {
                       if (!active) {
-                        e.currentTarget.style.backgroundColor = 'transparent';
+                        e.currentTarget.style.backgroundColor = 'var(--iris-bg-app)';
                         e.currentTarget.style.color = 'var(--text-secondary)';
-                        e.currentTarget.style.transform = `translateY(${2 + idx}px)`;
+                        e.currentTarget.style.transform = 'translateY(2px)';
                         e.currentTarget.style.zIndex = '10';
                       }
                     }}
@@ -367,7 +270,7 @@ export default function Layout() {
                     <span style={{ color: item.color, opacity: active ? 1 : 0.7 }}>{item.icon}</span>
                     {!iconOnly && (
                       <>
-                        {/* Ноутбук: полные названия */}
+                        {/* Ноутбук: короткие названия */}
                         <span className="hidden lg:inline-block xl:hidden whitespace-nowrap">{item.shortLabel || item.label}</span>
                         {/* Десктоп: полные названия */}
                         <span className="hidden xl:inline-block whitespace-nowrap">{item.label}</span>
@@ -382,40 +285,8 @@ export default function Layout() {
             </nav>
 
             {/* Глобальный поиск */}
-            <div className="relative shrink-0 w-full max-w-[120px] lg:max-w-[160px] xl:max-w-[200px] mb-1">
-              <Search
-                size={14}
-                className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
-                style={{ color: 'var(--text-muted)' }}
-              />
-              <input
-                id="global-search"
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Escape') setSearchQuery(''); }}
-                placeholder="Поиск"
-                title="Глобальный поиск (Ctrl+K)"
-                className="w-full rounded-lg border pl-8 pr-6 py-1.5 text-xs outline-none transition-colors"
-                style={{
-                  background: 'var(--bg-surface)',
-                  borderColor: 'var(--border-default)',
-                  color: 'var(--text-primary)',
-                }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--accent-engineering)'; }}
-                onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border-default)'; }}
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 transition-colors"
-                  style={{ color: 'var(--text-muted)' }}
-                  onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-primary)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-muted)'; }}
-                >
-                  <X size={10} />
-                </button>
-              )}
+            <div className="relative shrink-0 w-full max-w-[180px] lg:max-w-[240px] xl:max-w-[300px] mb-1">
+              <GlobalSearch />
             </div>
           </div>
           {/* Bottom border line */}

@@ -251,6 +251,28 @@ class RevisionCreateInput(BaseModel):
     status: Optional[str] = Field(default="draft", max_length=50)
     changes: Optional[str] = Field(None, max_length=2000)
     variables: Optional[dict] = Field(default_factory=dict)
+    file_path: Optional[str] = Field(None, max_length=500)
+
+
+class DocumentBulkImportItem(BaseModel):
+    """Single document for bulk import."""
+    model_config = ConfigDict(from_attributes=True)
+
+    name: str = Field(..., min_length=1, max_length=255)
+    number: Optional[str] = Field(None, max_length=100)
+    doc_type: Optional[str] = Field(None, max_length=50)
+    status: Optional[str] = Field(default="draft", max_length=50)
+    crs_code: Optional[str] = Field(None, max_length=50)
+    project_id: Optional[int] = None
+    section_id: Optional[int] = None
+
+
+class DocumentBulkImportResponse(BaseModel):
+    """Result of bulk import."""
+    model_config = ConfigDict(from_attributes=True)
+
+    created: int
+    items: list[dict]
 
 
 class ApprovalWorkflowCreateInput(BaseModel):

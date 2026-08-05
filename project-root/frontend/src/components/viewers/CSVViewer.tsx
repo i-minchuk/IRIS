@@ -1,16 +1,30 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import type { ViewerProps } from './types';
-import { VIEWER_CONFIGS } from './types';
-import { MockViewerBase } from './MockViewerBase';
+import { ViewerShell } from './ViewerShell';
 import styles from './viewer.module.css';
 
-export const CSVViewer: React.FC<ViewerProps> = ({ fileUrl, fileName, mock = false }) => {
+const DEMO_ROWS = [
+  ['Колонка 1', 'Колонка 2', 'Колонка 3', 'Колонка 4'],
+  ['Значение 1-1', 'Значение 1-2', '10', 'Да'],
+  ['Значение 2-1', 'Значение 2-2', '20', 'Нет'],
+  ['Значение 3-1', 'Значение 3-2', '30', 'Да'],
+  ['Значение 4-1', 'Значение 4-2', '40', 'Нет'],
+  ['Значение 5-1', 'Значение 5-2', '50', 'Да'],
+  ['Значение 6-1', 'Значение 6-2', '60', 'Нет'],
+];
+
+export const CSVViewer: React.FC<ViewerProps> = ({
+  file,
+  fileUrl,
+  fileName,
+  mock = false,
+}) => {
   const [rows, setRows] = useState<string[][]>([]);
   const [headers, setHeaders] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sortConfig, setSortConfig] = useState<{ key: number; direction: 'asc' | 'desc' } | null>(null);
-  const config = VIEWER_CONFIGS.csv;
+  const hasSource = Boolean(file || fileUrl);
 
   const handleSort = (key: number) => {
     setSortConfig((prev) => {
@@ -32,17 +46,27 @@ export const CSVViewer: React.FC<ViewerProps> = ({ fileUrl, fileName, mock = fal
   }, [rows, sortConfig]);
 
   useEffect(() => {
-    if (!fileUrl || mock) return;
+    if (mock || !hasSource) {
+      setHeaders(DEMO_ROWS[0]);
+      setRows(DEMO_ROWS.slice(1));
+      return;
+    }
 
+    let cancelled = false;
     setIsLoading(true);
     setError(null);
 
-    fetch(fileUrl)
-      .then((r) => r.text())
-      .then((text) => {
+    (async () => {
+      try {
+        const text = file
+          ? await file.text()
+          : await fetch(fileUrl!).then(async (res) => {
+              if (!res.ok) throw new Error(`HTTP ${res.status}`);
+              return res.text();
+            });
+        if (cancelled) return;
         const lines = text.split('\n').filter((line) => line.trim());
         const data = lines.map((line) => {
-          // Simple CSV parsing (handles basic cases)
           const result: string[] = [];
           let current = '';
           let inQuotes = false;
@@ -66,112 +90,68 @@ export const CSVViewer: React.FC<ViewerProps> = ({ fileUrl, fileName, mock = fal
           setHeaders(data[0]);
           setRows(data.slice(1));
         }
-        setIsLoading(false);
-      })
-      .catch((err) => {
-        setError(err.message);
-        setIsLoading(false);
-      });
-  }, [fileUrl, mock]);
+      } catch (err) {
+        if (cancelled) return;
+        setError(err instanceof Error ? err.message : 'Ошибка чтения CSV');
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    })();
 
-  // Mock mode
-  if (mock || !fileUrl) {
-    return (
-      <MockViewerBase
-        title={fileName}
-        type={config.label}
-        bgColor={config.bgColor}
-        accentColor={config.accentColor}
-        fileUrl={fileUrl}
-      >
-        <div className={styles.csvContainer}>
-          <table className={styles.csvTable}>
-            <thead>
-              <tr>
-                <th>Колонка 1</th>
-                <th>Колонка 2</th>
-                <th>Колонка 3</th>
-                <th>Колонка 4</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[...Array(6)].map((_, rowIdx) => (
-                <tr key={rowIdx}>
-                  <td>Значение {rowIdx + 1}-1</td>
-                  <td>Значение {rowIdx + 1}-2</td>
-                  <td>{(rowIdx + 1) * 10}</td>
-                  <td>{rowIdx % 2 === 0 ? 'Да' : 'Нет'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+    return () => {
+      cancelled = true;
+    };
+  }, [file, fileUrl, mock, hasSource]);
 
-          <p style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '12px' }}>
-            6 строк
-          </p>
-        </div>
-      </MockViewerBase>
-    );
-  }
+  const handleDownload = useCallback(() => {
+    if (file) {
+      const url = URL.createObjectURL(file);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      a.click();
+      URL.revokeObjectURL(url);
+    } else if (fileUrl) {
+      const a = document.createElement('a');
+      a.href = fileUrl;
+      a.download = fileName;
+      a.click();
+    }
+  }, [file, fileUrl, fileName]);
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <MockViewerBase
-        title={fileName}
-        type={config.label}
-        bgColor={config.bgColor}
-        accentColor={config.accentColor}
-        fileUrl={fileUrl}
-      >
-        <div className={styles.loading}>
-          <div className={styles.spinner} />
-          <span style={{ marginLeft: '12px' }}>Загрузка CSV...</span>
-        </div>
-      </MockViewerBase>
-    );
-  }
+  const handleFileDrop = useCallback((_file: File) => {
+    /* integration hook: delegate to workspace store if needed */
+  }, []);
 
-  // Error state
-  if (error) {
-    return (
-      <MockViewerBase
-        title={fileName}
-        type={config.label}
-        bgColor={config.bgColor}
-        accentColor={config.accentColor}
-        fileUrl={fileUrl}
-      >
-        <div className={styles.emptyState}>
-          <p style={{ color: 'var(--error)' }}>Ошибка: {error}</p>
-          <a
-            href={fileUrl}
-            download={fileName}
-            style={{
-              background: 'var(--accent-engineering)',
-              color: 'var(--text-inverse)',
-              padding: '8px 16px',
-              borderRadius: '6px',
-              textDecoration: 'none',
-              marginTop: '12px',
-              display: 'inline-block',
-            }}
-          >
-            Скачать
-          </a>
-        </div>
-      </MockViewerBase>
-    );
-  }
+  const errorActions = (file || fileUrl) ? (
+    <button
+      type="button"
+      onClick={handleDownload}
+      style={{
+        background: 'var(--accent-engineering)',
+        color: 'var(--text-inverse)',
+        padding: '8px 16px',
+        borderRadius: '6px',
+        border: 'none',
+        cursor: 'pointer',
+      }}
+    >
+      Скачать
+    </button>
+  ) : null;
 
-  // Real CSV rendering
   return (
-    <MockViewerBase
-      title={fileName}
-      type={config.label}
-      bgColor={config.bgColor}
-      accentColor={config.accentColor}
+    <ViewerShell
+      file={file}
       fileUrl={fileUrl}
+      fileName={fileName}
+      fileType="csv"
+      onFileDrop={handleFileDrop}
+      onDownload={handleDownload}
+      loading={isLoading}
+      error={error}
+      loadingText="Загрузка CSV..."
+      errorActions={errorActions}
     >
       <div className={styles.csvContainer}>
         <table className={styles.csvTable}>
@@ -207,11 +187,11 @@ export const CSVViewer: React.FC<ViewerProps> = ({ fileUrl, fileName, mock = fal
           </tbody>
         </table>
 
-        <p style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '12px' }}>
+        <p style={{ fontSize: 12, color: 'var(--text-tertiary)', marginTop: 12 }}>
           {sortedRows.length} строк
         </p>
       </div>
-    </MockViewerBase>
+    </ViewerShell>
   );
 };
 

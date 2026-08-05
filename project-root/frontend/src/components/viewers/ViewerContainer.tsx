@@ -1,22 +1,23 @@
-import React, { lazy, Suspense } from 'react';
+import React, { lazy, Suspense, useMemo } from 'react';
 import { detectType, type ViewerType } from './types';
 
 // Lazy load viewers
-const PDFViewer = lazy(() => import('./PDFViewer').then(m => ({ default: m.PDFViewer })));
-const ImageViewer = lazy(() => import('./ImageViewer').then(m => ({ default: m.ImageViewer })));
-const ExcelViewer = lazy(() => import('./ExcelViewer').then(m => ({ default: m.ExcelViewer })));
-const WordViewer = lazy(() => import('./WordViewer').then(m => ({ default: m.WordViewer })));
-const DWGViewer = lazy(() => import('./DWGViewer').then(m => ({ default: m.DWGViewer })));
-const CSVViewer = lazy(() => import('./CSVViewer').then(m => ({ default: m.CSVViewer })));
-const UnsupportedViewer = lazy(() => import('./UnsupportedViewer').then(m => ({ default: m.UnsupportedViewer })));
+const PDFViewer = lazy(() => import('./PDFViewer').then((m) => ({ default: m.PDFViewer })));
+const ImageViewer = lazy(() => import('./ImageViewer').then((m) => ({ default: m.ImageViewer })));
+const ExcelViewer = lazy(() => import('./ExcelViewer').then((m) => ({ default: m.ExcelViewer })));
+const WordViewer = lazy(() => import('./WordViewer').then((m) => ({ default: m.WordViewer })));
+const DWGViewer = lazy(() => import('./DWGViewer').then((m) => ({ default: m.DWGViewer })));
+const CSVViewer = lazy(() => import('./CSVViewer').then((m) => ({ default: m.CSVViewer })));
+const UnsupportedViewer = lazy(() => import('./UnsupportedViewer').then((m) => ({ default: m.UnsupportedViewer })));
 
-interface LegacyProps {
+interface ViewerContainerProps {
+  /** Прямой File-объект — используется при автозагрузке / drag-and-drop */
   file?: File;
-}
-
-interface NewProps {
-  fileName?: string;
+  /** URL файла (remote или blob) */
   fileUrl?: string;
+  /** Имя файла (если не передан File, обязательно) */
+  fileName?: string;
+  /** Принудительный демо-режим */
   mock?: boolean;
 }
 
@@ -42,40 +43,40 @@ const ViewerLoader: React.FC = () => (
 );
 
 // Main ViewerContainer
-export const ViewerContainer: React.FC<LegacyProps | NewProps> = (props) => {
-  // Detect if using legacy or new props
-  const isLegacy = 'file' in props && props.file;
-
-  let fileUrl: string | undefined;
-  let fileName: string;
-  let mock: boolean;
-  let type: ViewerType;
-
-  if (isLegacy) {
-    // Legacy mode: file object
-    const file = (props as LegacyProps).file;
-    fileUrl = file ? URL.createObjectURL(file) : undefined;
-    fileName = file?.name || 'Документ';
-    mock = !file;
-    type = detectType(fileName);
-  } else {
-    // New mode: fileUrl, fileName, mock
-    const newProps = props as NewProps;
-    fileUrl = newProps.fileUrl;
-    fileName = newProps.fileName || 'Документ';
-    mock = newProps.mock ?? !fileUrl;
-    type = detectType(fileName);
-  }
+export const ViewerContainer: React.FC<ViewerContainerProps> = ({
+  file,
+  fileName: fileNameProp,
+  fileUrl: fileUrlProp,
+  mock: mockProp,
+}) => {
+  const fileName = file?.name || fileNameProp || 'Документ';
+  const fileUrl = fileUrlProp;
+  const mock = mockProp ?? (!fileUrl && !file);
+  const type: ViewerType = useMemo(() => detectType(fileName), [fileName]);
 
   return (
     <Suspense fallback={<ViewerLoader />}>
-      {type === 'pdf' && <PDFViewer fileUrl={fileUrl} fileName={fileName} mock={mock} />}
-      {type === 'image' && <ImageViewer fileUrl={fileUrl} fileName={fileName} mock={mock} />}
-      {type === 'excel' && <ExcelViewer fileUrl={fileUrl} fileName={fileName} mock={mock} />}
-      {type === 'word' && <WordViewer fileUrl={fileUrl} fileName={fileName} mock={mock} />}
-      {type === 'dwg' && <DWGViewer fileUrl={fileUrl} fileName={fileName} mock={mock} />}
-      {type === 'csv' && <CSVViewer fileUrl={fileUrl} fileName={fileName} mock={mock} />}
-      {type === 'unsupported' && <UnsupportedViewer fileName={fileName} fileUrl={fileUrl} />}
+      {type === 'pdf' && (
+        <PDFViewer file={file} fileUrl={fileUrl} fileName={fileName} mock={mock} />
+      )}
+      {type === 'image' && (
+        <ImageViewer file={file} fileUrl={fileUrl} fileName={fileName} mock={mock} />
+      )}
+      {type === 'excel' && (
+        <ExcelViewer file={file} fileUrl={fileUrl} fileName={fileName} mock={mock} />
+      )}
+      {type === 'word' && (
+        <WordViewer file={file} fileUrl={fileUrl} fileName={fileName} mock={mock} />
+      )}
+      {type === 'dwg' && (
+        <DWGViewer file={file} fileUrl={fileUrl} fileName={fileName} mock={mock} />
+      )}
+      {type === 'csv' && (
+        <CSVViewer file={file} fileUrl={fileUrl} fileName={fileName} mock={mock} />
+      )}
+      {type === 'unsupported' && (
+        <UnsupportedViewer file={file} fileUrl={fileUrl} fileName={fileName} mock={mock} />
+      )}
     </Suspense>
   );
 };

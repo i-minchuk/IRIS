@@ -1,19 +1,47 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import type { ViewerProps } from './types';
-import { MockViewerBase } from './MockViewerBase';
+import { ViewerShell } from './ViewerShell';
 import styles from './viewer.module.css';
 
 /**
  * UnsupportedViewer - fallback для неподдерживаемых форматов файлов
  */
-export const UnsupportedViewer: React.FC<ViewerProps> = ({ fileUrl, fileName }) => {
+export const UnsupportedViewer: React.FC<ViewerProps> = ({
+  file,
+  fileUrl,
+  fileName,
+  mock: _mock = false,
+}) => {
+  const hasSource = Boolean(file || fileUrl);
+
+  const handleDownload = useCallback(() => {
+    if (file) {
+      const url = URL.createObjectURL(file);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      a.click();
+      URL.revokeObjectURL(url);
+    } else if (fileUrl) {
+      const a = document.createElement('a');
+      a.href = fileUrl;
+      a.download = fileName;
+      a.click();
+    }
+  }, [file, fileUrl, fileName]);
+
+  const handleFileDrop = useCallback((_file: File) => {
+    /* integration hook: delegate to workspace store if needed */
+  }, []);
+
   return (
-    <MockViewerBase
-      title={fileName}
-      type="Неподдерживаемый"
-      bgColor="#f3f4f6"
-      accentColor="#6b7280"
+    <ViewerShell
+      file={file}
       fileUrl={fileUrl}
+      fileName={fileName}
+      fileType="unsupported"
+      onFileDrop={handleFileDrop}
+      onDownload={hasSource ? handleDownload : undefined}
     >
       <div className={styles.unsupportedContainer}>
         {/* Icon */}
@@ -31,19 +59,13 @@ export const UnsupportedViewer: React.FC<ViewerProps> = ({ fileUrl, fileName }) 
           </svg>
         </div>
 
-        <p className={styles.unsupportedMessage}>
-          Этот формат файла не поддерживается для предпросмотра
-        </p>
+        <p className={styles.unsupportedMessage}>Этот формат файла не поддерживается для предпросмотра</p>
 
         <div className={styles.unsupportedActions}>
-          {fileUrl && (
-            <a
-              href={fileUrl}
-              download={fileName}
-              className={styles.unsupportedBtnPrimary}
-            >
+          {hasSource && (
+            <button type="button" onClick={handleDownload} className={styles.unsupportedBtnPrimary}>
               Скачать файл
-            </a>
+            </button>
           )}
         </div>
 
@@ -58,7 +80,7 @@ export const UnsupportedViewer: React.FC<ViewerProps> = ({ fileUrl, fileName }) 
           </ul>
         </div>
       </div>
-    </MockViewerBase>
+    </ViewerShell>
   );
 };
 

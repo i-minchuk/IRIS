@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useTheme } from '@/providers/ThemeProvider';
 import {
-  Search, Calendar, TrendingUp, TrendingDown,
+  Calendar, TrendingUp, TrendingDown,
   CheckCircle2, AlertCircle, Clock3, Factory,
 } from 'lucide-react';
 import { ProductionProject } from '../../types/production';
@@ -58,20 +58,11 @@ export function ProductionProjectsList({
   const { theme } = useTheme();
   const isDark = theme === 'dark' || theme === 'midnight' || theme === 'contrast';
   const [filter, setFilter] = useState<StatusFilter>('all');
-  const [search, setSearch] = useState('');
 
   const filtered = useMemo(() => projects.filter((p) => {
     if (filter !== 'all' && p.status !== filter) return false;
-    if (search) {
-      const q = search.toLowerCase();
-      return (
-        p.name.toLowerCase().includes(q) ||
-        p.code.toLowerCase().includes(q) ||
-        p.customer.toLowerCase().includes(q)
-      );
-    }
     return true;
-  }), [projects, filter, search]);
+  }), [projects, filter]);
 
   const inProductionCount = projects.filter((p) => p.stage === 'production').length;
   const atRiskCount = projects.filter((p) => p.status === 'at_risk' || p.status === 'delayed').length;
@@ -130,19 +121,8 @@ export function ProductionProjectsList({
 
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2">
-        <div className="flex items-center gap-2 px-2 py-1.5 rounded-md flex-1 min-w-[200px] max-w-sm" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
-          <Search size={14} style={{ color: 'var(--text-muted)' }} />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Поиск по коду, названию или заказчику..."
-            className="bg-transparent text-xs outline-none w-full"
-            style={{ color: 'var(--text-primary)' }}
-          />
-        </div>
+        <FilterBar options={filterOptions} active={filter} onChange={setFilter} />
       </div>
-
-      <FilterBar options={filterOptions} active={filter} onChange={setFilter} />
 
       {/* Table */}
       <div className="rounded-xl overflow-hidden" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
