@@ -3,7 +3,7 @@ import type { DragEvent } from 'react';
 import { detectType } from './types';
 
 interface DragDropOverlayProps {
-  onFileDrop: (file: File) => void;
+  onFileDrop?: (file: File) => void;
   children: React.ReactNode;
   accept?: string[];
 }
@@ -55,7 +55,7 @@ export const DragDropOverlay: React.FC<DragDropOverlayProps> = ({
     setIsDragging(false);
     
     const files = e.dataTransfer.files;
-    if (files && files.length > 0) {
+    if (files && files.length > 0 && onFileDrop) {
       onFileDrop(files[0]);
     }
   }, [onFileDrop]);

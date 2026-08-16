@@ -65,8 +65,8 @@ class TestArchitecture:
             text=True
         )
         
-        # Check that analytics has auth, documents, projects, remarks, tasks, tenders, time_tracking dependencies
-        assert "analytics: auth, documents, projects, remarks, tasks, tenders, time_tracking" in result.stdout
+        # Check that analytics has auth, documents, gamification, projects, remarks, tasks, tenders, time_tracking dependencies
+        assert "analytics: auth, documents, gamification, projects, remarks, tasks, tenders, time_tracking" in result.stdout
 
     def test_resources_module_dependencies(self):
         """Test that resources module has expected dependencies."""

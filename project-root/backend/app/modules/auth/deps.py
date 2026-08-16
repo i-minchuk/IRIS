@@ -68,6 +68,11 @@ async def get_current_active_user(
     return current_user
 
 
+def is_admin(user: User) -> bool:
+    """Административный доступ: superuser или роль admin."""
+    return bool(user.is_superuser) or user.role == "admin"
+
+
 def require_role(*roles: str):
     """Dependency factory that checks user role."""
     async def checker(current_user: User = Depends(get_current_active_user)) -> User:

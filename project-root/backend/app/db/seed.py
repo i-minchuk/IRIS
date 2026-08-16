@@ -27,6 +27,7 @@ async def seed_db():
                 "hashed_password": "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYILp92S.0i",  # "admin123"
                 "full_name": "Администратор",
                 "role": "admin",
+                "is_superuser": True,
                 "is_active": True,
                 "email_verified": True,
             },

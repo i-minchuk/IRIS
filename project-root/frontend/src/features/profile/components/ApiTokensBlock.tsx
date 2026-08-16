@@ -1,8 +1,9 @@
-import { Key, Plus, Trash2, Copy, Eye, EyeOff } from "lucide-react";
+import { Key, Plus, Trash2, Copy, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useState } from "react";
 import type { ApiToken } from "../data/mockProfile";
 import { t } from "../i18n/translations";
 import type { Language } from "../i18n/translations";
+import { tokensApi } from "../api/tokens";
 
 interface Props {
   tokens: ApiToken[];
@@ -14,25 +15,38 @@ export function ApiTokensBlock({ tokens: initialTokens, lang }: Props) {
   const [showNewToken, setShowNewToken] = useState(false);
   const [newTokenValue, setNewTokenValue] = useState("");
   const [showTokenId, setShowTokenId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleCreate = () => {
-    const id = Math.random().toString(36).substring(2, 10);
-    const token = `iris_${id}_live`;
-    setNewTokenValue(token);
-    setShowNewToken(true);
-    
-    const newToken: ApiToken = {
-      id: Date.now().toString(),
-      name: `Token ${tokens.length + 1}`,
-      createdAt: new Date().toISOString().split('T')[0],
-      last4: token.slice(-4),
-    };
-    setTokens(prev => [...prev, newToken]);
+  const handleCreate = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data } = await tokensApi.create(`Token ${tokens.length + 1}`);
+      setNewTokenValue(data.token);
+      setShowNewToken(true);
+
+      const newToken: ApiToken = {
+        id: data.id,
+        name: data.name,
+        createdAt: data.created_at,
+        last4: data.token.slice(-4),
+      };
+      setTokens((prev) => [...prev, newToken]);
+    } catch (err: any) {
+      setError(err?.response?.data?.detail || "Не удалось создать токен");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleRevoke = (id: string) => {
-    if (confirm(t("revoke", lang) + "?")) {
-      setTokens(prev => prev.filter(t => t.id !== id));
+  const handleRevoke = async (id: string) => {
+    if (!confirm(t("revoke", lang) + "?")) return;
+    try {
+      await tokensApi.revoke(id);
+      setTokens((prev) => prev.filter((tok) => tok.id !== id));
+    } catch (err: any) {
+      setError(err?.response?.data?.detail || "Не удалось отозвать токен");
     }
   };
 
@@ -49,12 +63,19 @@ export function ApiTokensBlock({ tokens: initialTokens, lang }: Props) {
         </div>
         <button
           onClick={handleCreate}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 rounded-lg text-xs transition-colors border border-purple-500/30"
+          disabled={loading}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 rounded-lg text-xs transition-colors border border-purple-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <Plus className="w-3.5 h-3.5" />
+          {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
           {t("create", lang)}
         </button>
       </div>
+
+      {error && (
+        <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-xs text-red-400">
+          {error}
+        </div>
+      )}
 
       {showNewToken && (
         <div className="mb-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">

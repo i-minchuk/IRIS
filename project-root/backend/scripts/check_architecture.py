@@ -216,9 +216,11 @@ class ImportChecker:
             
             # Level 3 (integration/reporting modules — flexible dependencies)
             "audit": {"auth"},  # Audit logs depend on auth for user tracking
-            "calendar": {"auth", "projects", "tasks", "tenders"},  # Calendar aggregates events
+            "calendar": {"auth", "documents", "operations", "projects", "tasks", "tenders"},  # Calendar aggregates events
             "notifications": {"auth", "gamification"},  # Notifications for gamification and auth events
             "reports": {"auth", "documents", "projects", "tasks", "tenders", "time_tracking"},  # Reports aggregate all data
+            "ai": {"auth", "documents"},  # AI assistant works with user context and documents
+            "integrations": {"auth"},  # External integrations require authenticated user
         }
         
         has_violations = False

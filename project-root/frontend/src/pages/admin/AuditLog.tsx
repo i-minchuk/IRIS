@@ -1,16 +1,41 @@
-import { useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Card } from '@/components/ui';
 import { Badge } from '@/components/ui';
 import { useAuditStore } from '@/stores/auditStore';
-import type { AuditFilter } from '@/types/audit';
 import { AuditLogFilters } from '@/components/admin/AuditLogFilters';
 import { AuditLogTable } from '@/components/admin/AuditLogTable';
 import { AlertCircle, AlertTriangle, Info } from 'lucide-react';
 
 export default function AuditLogPage() {
-  const [filter, setFilter] = useState<AuditFilter>({});
-  const stats = useAuditStore(s => s.getStats());
-  const filteredEntries = useAuditStore(s => s.getFilteredEntries());
+  const entries = useAuditStore(s => s.entries);
+  const filter = useAuditStore(s => s.filter);
+  const setFilter = useAuditStore(s => s.setFilter);
+  const fetchEntries = useAuditStore(s => s.fetchEntries);
+
+  useEffect(() => {
+    fetchEntries();
+  }, [fetchEntries]);
+
+  const stats = useMemo(() => ({
+    total: entries.length,
+    critical: entries.filter(e => e.severity === 'critical').length,
+    warning: entries.filter(e => e.severity === 'warning').length,
+    info: entries.filter(e => e.severity === 'info').length,
+  }), [entries]);
+
+  const filteredEntries = useMemo(() => entries.filter(entry => {
+    if (filter.dateFrom && entry.timestamp < filter.dateFrom) return false;
+    if (filter.dateTo && entry.timestamp > filter.dateTo) return false;
+    if (filter.userId && entry.user_id !== filter.userId) return false;
+    if (filter.action && entry.action !== filter.action) return false;
+    if (filter.severity && entry.severity !== filter.severity) return false;
+    if (filter.search) {
+      const search = filter.search.toLowerCase();
+      const text = `${entry.user_name} ${entry.details} ${entry.action}`.toLowerCase();
+      if (!text.includes(search)) return false;
+    }
+    return true;
+  }), [entries, filter]);
 
   return (
     <div className="space-y-6 px-3 md:px-6 py-4 md:pt-2 pb-6">

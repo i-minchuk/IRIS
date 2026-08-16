@@ -33,6 +33,15 @@ class UserUpdate(BaseModel):
     is_superuser: Optional[bool] = None
 
 
+class UserMeUpdate(BaseModel):
+    """Поля, которые пользователь может менять у себя сам."""
+    email: Optional[str] = None
+    full_name: Optional[str] = None
+    phone: Optional[str] = None
+    current_password: Optional[str] = None
+    new_password: Optional[str] = None
+
+
 class UserInDB(UserBase):
     id: int
     hashed_password: str
@@ -117,3 +126,28 @@ class ResetPasswordRequest(BaseModel):
 
 class PasswordResetResponse(BaseModel):
     message: str
+
+
+# ---------------------------------------------------------------------------
+# API Tokens
+# ---------------------------------------------------------------------------
+
+
+class ApiTokenCreate(BaseModel):
+    name: str
+
+
+class ApiTokenResponse(BaseModel):
+    id: str
+    name: str
+    token: str  # full token returned only on creation
+    created_at: str
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ApiTokenListItem(BaseModel):
+    id: str
+    name: str
+    created_at: str
+    last4: str
+    model_config = ConfigDict(from_attributes=True)

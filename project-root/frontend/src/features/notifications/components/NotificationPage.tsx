@@ -123,7 +123,10 @@ export default function NotificationPage() {
 
       {!loading && items.length === 0 && (
         <div className="text-sm" style={{ color: 'var(--text-muted)' }}>
-          Нет уведомлений
+          <p>Нет уведомлений</p>
+          <p className="mt-1">
+            Здесь появятся уведомления о согласованиях, задачах и упоминаниях
+          </p>
         </div>
       )}
 

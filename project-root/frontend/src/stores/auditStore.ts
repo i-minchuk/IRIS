@@ -1,12 +1,15 @@
 import { create } from 'zustand';
+import { toast } from 'sonner';
 import type { AuditLogEntry, AuditFilter, AuditAction, AuditSeverity } from '@/types/audit';
-import { auditLogs as mockAuditLogs } from '@/stores/mocks/auditLogs';
+import { getAuditLogs } from '@/features/admin/api/auditApi';
 
 interface AuditState {
   entries: AuditLogEntry[];
   filter: AuditFilter;
   isLoading: boolean;
+  error: string | null;
 
+  fetchEntries: () => Promise<void>;
   setEntries: (entries: AuditLogEntry[]) => void;
   setFilter: (filter: AuditFilter) => void;
   getFilteredEntries: () => AuditLogEntry[];
@@ -17,9 +20,22 @@ interface AuditState {
 }
 
 export const useAuditStore = create<AuditState>((set, get) => ({
-  entries: mockAuditLogs,
+  entries: [],
   filter: {},
   isLoading: false,
+  error: null,
+
+  fetchEntries: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const entries = await getAuditLogs();
+      set({ entries, isLoading: false });
+    } catch (err) {
+      console.error('Failed to load audit logs:', err);
+      set({ isLoading: false, error: 'Не удалось загрузить журнал аудита' });
+      toast.error('Не удалось загрузить журнал аудита');
+    }
+  },
 
   setEntries: (entries) => set({ entries }),
   setFilter: (filter) => set({ filter }),

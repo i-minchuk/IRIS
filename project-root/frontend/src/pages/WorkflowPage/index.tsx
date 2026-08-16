@@ -19,24 +19,6 @@ import {
   Line,
 } from 'recharts';
 
-/* ── Mock fallback data ── */
-const mockTasks: Task[] = [
-  { id: 1, title: 'Согласовать КЖ-01-001 ЖК «Северный»', status: 'NEW', priority: 'HIGH', due_date: '2026-05-25', project_id: 1, assignee_id: 2, creator_id: 1, document_id: null, type: null, description: null, started_at: null, completed_at: null, planned_start: null, planned_finish: null, planned_hours: 0, actual_hours: 0, percent_complete: 0, engineer: null, is_critical: false, es: null, ef: null, ls: null, lf: null, slack: null },
-  { id: 2, title: 'Проверить АР-03-015 ТЦ «Меридиан»', status: 'IN_PROGRESS', priority: 'NORMAL', due_date: '2026-05-28', project_id: 2, assignee_id: 3, creator_id: 1, document_id: null, type: null, description: null, started_at: null, completed_at: null, planned_start: null, planned_finish: null, planned_hours: 0, actual_hours: 0, percent_complete: 0, engineer: null, is_critical: false, es: null, ef: null, ls: null, lf: null, slack: null },
-  { id: 3, title: 'Утвердить ОВиК-02-008 Склад А-12', status: 'DONE', priority: 'LOW', due_date: '2026-05-20', project_id: 3, assignee_id: 4, creator_id: 2, document_id: null, type: null, description: null, started_at: null, completed_at: null, planned_start: null, planned_finish: null, planned_hours: 0, actual_hours: 0, percent_complete: 100, engineer: null, is_critical: false, es: null, ef: null, ls: null, lf: null, slack: null },
-  { id: 4, title: 'Согласовать ЭОМ-05-003 ТЭЦ-5', status: 'NEW', priority: 'HIGH', due_date: '2026-05-30', project_id: 4, assignee_id: 2, creator_id: 3, document_id: null, type: null, description: null, started_at: null, completed_at: null, planned_start: null, planned_finish: null, planned_hours: 0, actual_hours: 0, percent_complete: 0, engineer: null, is_critical: false, es: null, ef: null, ls: null, lf: null, slack: null },
-  { id: 5, title: 'Проверить КР-01-002 ТЭЦ-5 (расчёт)', status: 'IN_PROGRESS', priority: 'NORMAL', due_date: '2026-06-05', project_id: 4, assignee_id: 5, creator_id: 1, document_id: null, type: null, description: null, started_at: null, completed_at: null, planned_start: null, planned_finish: null, planned_hours: 0, actual_hours: 0, percent_complete: 0, engineer: null, is_critical: false, es: null, ef: null, ls: null, lf: null, slack: null },
-  { id: 6, title: 'Утвердить АР-04-001 Офис «Гамма»', status: 'DONE', priority: 'LOW', due_date: '2026-05-18', project_id: 5, assignee_id: 3, creator_id: 2, document_id: null, type: null, description: null, started_at: null, completed_at: null, planned_start: null, planned_finish: null, planned_hours: 0, actual_hours: 0, percent_complete: 100, engineer: null, is_critical: false, es: null, ef: null, ls: null, lf: null, slack: null },
-];
-
-const mockRemarks: RemarkListItem[] = [
-  { id: 'r1', title: 'Несоответствие арматуры в КЖ-01-001', status: 'new', priority: 'high', category: 'design_error', author_id: 1, author_name: 'Иванов А.С.', created_at: '2026-05-22', updated_at: '2026-05-22', project_name: 'ЖК «Северный»', document_name: 'КЖ-01-001', assignee_name: 'Петров В.К.' },
-  { id: 'r2', title: 'Уточнение вентфасада ТЦ «Меридиан»', status: 'in_progress', priority: 'medium', category: 'discrepancy', author_id: 2, author_name: 'Сидорова Е.М.', created_at: '2026-05-21', updated_at: '2026-05-21', project_name: 'ТЦ «Меридиан»', document_name: 'АР-03-015', assignee_name: 'Козлов Д.А.' },
-  { id: 'r3', title: 'Замечания по гидроизоляции подвала', status: 'resolved', priority: 'high', category: 'norm_violation', author_id: 3, author_name: 'Новикова И.П.', created_at: '2026-05-20', updated_at: '2026-05-20', project_name: 'ЖК «Северный»', document_name: 'КР-01-002', assignee_name: 'Петров В.К.' },
-  { id: 'r4', title: 'Корректировка однолинейной схемы', status: 'new', priority: 'low', category: 'incompleteness', author_id: 4, author_name: 'Козлов Д.А.', created_at: '2026-05-23', updated_at: '2026-05-23', project_name: 'ТЭЦ-5', document_name: 'ЭОМ-05-003', assignee_name: 'Иванов А.С.' },
-  { id: 'r5', title: 'Узел балка-колонна: уточнить защитный слой', status: 'in_progress', priority: 'medium', category: 'design_error', author_id: 5, author_name: 'Петров В.К.', created_at: '2026-05-19', updated_at: '2026-05-19', project_name: 'ЖК «Южный парк»', document_name: 'КЖ-02-004', assignee_name: 'Сидорова Е.М.' },
-];
-
 const TAB_COLOR = '#F59E0B';
 
 const PIE_COLORS = ['#3B82F6', '#10B981', '#EF4444', '#F59E0B', '#8B5CF6', '#EC4899'];
@@ -58,30 +40,39 @@ export function WorkflowPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [remarks, setRemarks] = useState<RemarkListItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [taskSearch, setTaskSearch] = useState('');
   const [taskFilter, setTaskFilter] = useState<'all' | 'NEW' | 'IN_PROGRESS' | 'DONE'>('all');
   const [remarkSearch, setRemarkSearch] = useState('');
   const [remarkFilter, setRemarkFilter] = useState<'all' | 'new' | 'in_progress' | 'resolved'>('all');
 
   useEffect(() => {
-    loadData();
+    const controller = new AbortController();
+    loadData(controller.signal);
+    return () => controller.abort();
   }, []);
 
-  const loadData = async () => {
+  const loadData = async (signal?: AbortSignal) => {
     setLoading(true);
+    setError(null);
     try {
       const [tasksData, remarksData] = await Promise.all([
         getTasks(),
         getRemarks({ page: 1, page_size: 50 }),
       ]);
-      setTasks(tasksData.length ? tasksData : mockTasks);
-      setRemarks(remarksData.items?.length ? remarksData.items : mockRemarks);
-    } catch (err) {
+      if (signal?.aborted) return;
+      setTasks(tasksData);
+      setRemarks(remarksData.items ?? []);
+    } catch (err: any) {
+      if (err.name === 'AbortError' || err.code === 'ERR_CANCELED') return;
       console.error('Failed to load workflow data:', err);
-      setTasks(mockTasks);
-      setRemarks(mockRemarks);
+      setError('Не удалось загрузить данные. Попробуйте обновить страницу.');
+      setTasks([]);
+      setRemarks([]);
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) {
+        setLoading(false);
+      }
     }
   };
 
@@ -180,12 +171,6 @@ export function WorkflowPage() {
         counts[m] = (counts[m] || 0) + 1;
       }
     });
-    // Fallback: distribute mock tasks across months if no real dates
-    if (Object.values(counts).every(v => v === 0)) {
-      counts['Май'] = 2;
-      counts['Июн'] = 3;
-      counts['Июл'] = 1;
-    }
     return months.map(m => ({ month: m, count: counts[m] || 0 }));
   }, [tasks]);
 
@@ -315,6 +300,19 @@ export function WorkflowPage() {
         <div className="flex items-center justify-center py-12">
           <Loader2 className="w-6 h-6 animate-spin" style={{ color: TAB_COLOR }} />
           <span className="ml-2 text-sm" style={{ color: 'var(--text-secondary)' }}>Загрузка...</span>
+        </div>
+      )}
+
+      {error && !loading && (
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-sm text-red-400">
+          <AlertCircle size={16} />
+          {error}
+          <button
+            onClick={() => loadData()}
+            className="ml-auto text-xs px-2 py-1 rounded bg-red-500/20 hover:bg-red-500/30 transition-colors"
+          >
+            Обновить
+          </button>
         </div>
       )}
 

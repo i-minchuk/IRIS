@@ -34,8 +34,31 @@ class User(Base):
 
     @property
     def phone(self):
-        return decrypt(self._phone) if self._phone else None
+        if not self._phone:
+            return None
+        try:
+            return decrypt(self._phone)
+        except Exception:
+            # Значение зашифровано другим ключом (ротация/эфемерный ключ) — не роняем запрос
+            return None
 
     @phone.setter
     def phone(self, value):
         self._phone = encrypt(value) if value else None
+
+
+class ApiToken(Base):
+    __tablename__ = "api_tokens"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    token_hash: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+    token_prefix: Mapped[str] = mapped_column(String(16), nullable=False)
+    last4: Mapped[str] = mapped_column(String(4), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc)
+    )

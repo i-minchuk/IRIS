@@ -1,14 +1,28 @@
+import base64
+import hashlib
+
 from cryptography.fernet import Fernet
 from app.core.config import settings
 
 _cipher = None
 
 
+def _derive_key() -> bytes:
+    """Стабильный ключ: явный ENCRYPTION_KEY, иначе — производный от SECRET_KEY.
+
+    Раньше при отсутствии ENCRYPTION_KEY ключ генерировался случайно на каждый
+    старт процесса, и зашифрованные данные становились нечитаемыми после рестарта.
+    """
+    if settings.ENCRYPTION_KEY:
+        return settings.ENCRYPTION_KEY.encode()
+    digest = hashlib.sha256(settings.SECRET_KEY.encode()).digest()
+    return base64.urlsafe_b64encode(digest)
+
+
 def get_cipher():
     global _cipher
     if _cipher is None:
-        key = settings.ENCRYPTION_KEY or Fernet.generate_key()
-        _cipher = Fernet(key)
+        _cipher = Fernet(_derive_key())
     return _cipher
 
 

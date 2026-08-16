@@ -740,6 +740,13 @@ function ProjectsView() {
               <div>
                 <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Рекомендации IRIS</h3>
                 <span className="text-xs" style={{ color: 'var(--text-muted)' }}>AI-ассистент</span>
+                <span
+                  className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded ml-2 align-middle"
+                  style={{ background: 'var(--iris-bg-hover, rgba(100,116,139,0.15))', color: 'var(--text-muted)' }}
+                  title="Демонстрационные рекомендации, не основаны на реальных данных"
+                >
+                  Демо
+                </span>
               </div>
             </div>
             <div className="p-2.5 rounded-lg" style={{ background: isDark ? 'rgba(12,114,5,0.08)' : 'rgba(12,114,5,0.06)', border: '1px solid rgba(12,114,5,0.2)' }}>

@@ -156,23 +156,7 @@ export default function ProfileSettingsPage() {
     setLoading(true);
     setSaved(false);
     try {
-      const payload: Record<string, unknown> = {
-        full_name: profile.full_name,
-        email: profile.email,
-        phone: profile.phone,
-        position: profile.position,
-        department: profile.department,
-        location: profile.location,
-        bio: profile.bio,
-        language,
-        timezone,
-        avatar_url: avatarUrl,
-      };
       const changingPassword = password.current_password && password.new_password;
-      if (changingPassword) {
-        payload.current_password = password.current_password;
-        payload.new_password = password.new_password;
-      }
 
       if (isDemoMode) {
         // Demo mode: save to localStorage only
@@ -190,7 +174,31 @@ export default function ProfileSettingsPage() {
         toast.success('Профиль сохранён (демо-режим)');
       } else {
         // Real mode: send to backend
-        await apiClient.put('/users/me', payload);
+        await apiClient.patch('/auth/users/me', {
+          full_name: profile.full_name,
+          email: profile.email,
+          phone: profile.phone,
+          ...(changingPassword
+            ? { current_password: password.current_password, new_password: password.new_password }
+            : {}),
+        });
+        // Поля, которых нет в серверной модели, храним локально
+        localStorage.setItem('iris_profile_phone', profile.phone);
+        localStorage.setItem('iris_profile_position', profile.position);
+        localStorage.setItem('iris_profile_department', profile.department);
+        localStorage.setItem('iris_profile_location', profile.location);
+        localStorage.setItem('iris_profile_bio', profile.bio);
+        localStorage.setItem('iris_profile_language', language);
+        localStorage.setItem('iris_profile_timezone', timezone);
+        if (avatarUrl) localStorage.setItem('iris_profile_avatar', avatarUrl);
+        else localStorage.removeItem('iris_profile_avatar');
+        // Обновляем пользователя в сторе, чтобы шапка показала новые данные
+        const storeUser = useAuthStore.getState().user;
+        if (storeUser) {
+          useAuthStore.setState({
+            user: { ...storeUser, full_name: profile.full_name, email: profile.email },
+          });
+        }
         toast.success('Профиль сохранён');
       }
 

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MessageSquareWarning, Plus, Download, Filter } from 'lucide-react';
+import { toast } from 'sonner';
+import apiClient from '@/shared/api/client';
 import { useRemarksStore } from '@/stores/remarksStore';
 import { RemarkPriority, RemarkStatus } from '@/types/remarks';
 import { RemarksFilters } from './components/RemarksFilters';
@@ -27,6 +29,27 @@ export const RemarksPage: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRemarks, setSelectedRemarks] = useState<Set<string>>(new Set());
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const response = await apiClient.get('/remarks/export', { responseType: 'blob' });
+      const url = URL.createObjectURL(response.data);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'remarks_export.csv';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Failed to export remarks:', err);
+      toast.error('Не удалось выгрузить файл');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   useEffect(() => {
     fetchRemarks();
@@ -106,9 +129,13 @@ export const RemarksPage: React.FC = () => {
             <Filter className="w-3.5 h-3.5" />
             Фильтры
           </button>
-          <button className="flex items-center gap-1 px-3 py-1.5 bg-[#334155] rounded text-xs font-medium hover:bg-[#475569] transition-colors">
+          <button
+            onClick={handleExport}
+            disabled={exporting}
+            className="flex items-center gap-1 px-3 py-1.5 bg-[#334155] rounded text-xs font-medium hover:bg-[#475569] transition-colors disabled:opacity-50"
+          >
             <Download className="w-3.5 h-3.5" />
-            Экспорт
+            {exporting ? 'Выгрузка…' : 'Экспорт'}
           </button>
           <button
             onClick={() => setIsModalOpen(true)}

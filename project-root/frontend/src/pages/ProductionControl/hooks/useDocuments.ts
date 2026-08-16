@@ -83,7 +83,8 @@ export function useDocuments(projectIds: string[] = []) {
       try {
         setLoading(true);
         const data = await getDocuments();
-        const transformed: ProjectDocument[] = data.map((d) => ({
+        const list = (Array.isArray(data) ? data : ((data as any)?.items ?? [])) as any[];
+        const transformed: ProjectDocument[] = list.map((d) => ({
           id: String(d.id),
           projectId: String(d.project_id),
           type: (d.doc_type?.includes('spec') ? 'spec' : d.doc_type?.includes('draw') ? 'drawing' : 'other') as ProjectDocument['type'],
@@ -103,7 +104,7 @@ export function useDocuments(projectIds: string[] = []) {
       } catch (err) {
         setError('Не удалось загрузить документы');
         console.error(err);
-        setDocuments(generateMockDocuments(projectIds));
+        setDocuments([]);
       } finally {
         setLoading(false);
       }

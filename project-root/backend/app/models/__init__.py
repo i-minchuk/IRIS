@@ -5,7 +5,7 @@
 from app.db.base import Base  # noqa
 
 # 1. Auth — нет внешних ссылок
-from app.modules.auth.models import User  # noqa
+from app.modules.auth.models import User, ApiToken  # noqa
 
 # 1.5 Calendar — ссылается на User
 from app.modules.calendar.models import CalendarEventModel  # noqa

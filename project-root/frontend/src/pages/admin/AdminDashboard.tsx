@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useTabState } from '@/shared/hooks/useTabState';
 import { PageTabs } from '@/shared/components/PageTabs';
 import { Card } from '@/components/ui';
@@ -29,9 +29,14 @@ const TABS = [
    ═══════════════════════════════════════════════════════════ */
 function DashboardOverview() {
   const auditEntries = useAuditStore(s => s.entries);
+  const fetchAuditEntries = useAuditStore(s => s.fetchEntries);
   const tickets = useSupportStore(s => s.tickets);
   const incidents = useSupportStore(s => s.incidents);
   const releases = useReleaseStore(s => s.releases);
+
+  useEffect(() => {
+    fetchAuditEntries();
+  }, [fetchAuditEntries]);
 
   const auditStats = useMemo(() => ({
     total: auditEntries.length,

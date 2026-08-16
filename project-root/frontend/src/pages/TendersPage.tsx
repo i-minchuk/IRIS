@@ -299,7 +299,12 @@ export default function TendersPage() {
                       );
                     })}
                     {filtered.length === 0 && (
-                      <tr><td colSpan={8} className="px-3 py-8 text-center text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Ничего не найдено</td></tr>
+                      <tr><td colSpan={8} className="px-3 py-8 text-center text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>
+                        Ничего не найдено
+                        <div className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
+                          Попробуйте изменить фильтры или создайте первый тендер
+                        </div>
+                      </td></tr>
                     )}
                   </>
                 )}

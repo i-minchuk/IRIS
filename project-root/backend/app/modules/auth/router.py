@@ -13,11 +13,13 @@ from app.core.config import settings
 from app.core.security_utils import limiter, rate_limit_standard, rate_limit_refresh_route
 from app.db.session import get_db
 from app.modules.auth.schemas import (
-    User, UserResponse, UserCreate, UserUpdate, Token, LoginRequest, RefreshTokenRequest,
+    User, UserResponse, UserCreate, UserUpdate, UserMeUpdate, Token, LoginRequest, RefreshTokenRequest,
     ForgotPasswordRequest, ResetPasswordRequest, PasswordResetResponse,
+    ApiTokenCreate, ApiTokenResponse, ApiTokenListItem,
 )
+from app.modules.auth.models import ApiToken as ApiTokenModel
 from app.modules.auth.repository import UserRepository
-from app.modules.auth.deps import get_current_active_user
+from app.modules.auth.deps import get_current_active_user, is_admin
 from app.modules.auth.totp import generate_totp_secret, get_totp_uri, generate_qr_code, verify_totp
 from app.core.session import SessionStore
 
@@ -268,6 +270,50 @@ async def read_users_me(
     return current_user
 
 
+@router.patch("/users/me", response_model=UserResponse)
+@rate_limit_standard()
+async def update_users_me(
+    request: Request,
+    updates: UserMeUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Обновить профиль текущего пользователя (имя, email, телефон, пароль)."""
+    update_data = updates.model_dump(exclude_unset=True)
+
+    new_email = update_data.get("email")
+    if new_email and new_email != current_user.email:
+        repo = UserRepository(db)
+        existing = await repo.get_by_email(new_email)
+        if existing and existing.id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Email уже используется",
+            )
+
+    new_password = update_data.pop("new_password", None)
+    current_password = update_data.pop("current_password", None)
+    if new_password:
+        from app.core.security import get_password_hash, verify_password
+        if not current_password or not verify_password(
+            current_password, current_user.hashed_password
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Неверный текущий пароль",
+            )
+        if len(new_password) < 6:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Пароль должен быть не короче 6 символов",
+            )
+        update_data["hashed_password"] = get_password_hash(new_password)
+
+    repo = UserRepository(db)
+    user = await repo.update(current_user, **update_data)
+    return user
+
+
 @router.post("/users/me/telegram")
 async def link_telegram(
     chat_id: str,
@@ -280,6 +326,94 @@ async def link_telegram(
     return {"status": "linked"}
 
 
+# ---------------------------------------------------------------------------
+# API Tokens
+# ---------------------------------------------------------------------------
+
+
+@router.get("/users/me/tokens", response_model=list[ApiTokenListItem])
+@rate_limit_standard()
+async def list_api_tokens(
+    request: Request,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Список API-токенов текущего пользователя."""
+    result = await db.execute(
+        select(ApiTokenModel).where(
+            ApiTokenModel.user_id == current_user.id,
+            ApiTokenModel.is_active == True,  # noqa: E712
+        )
+    )
+    tokens = result.scalars().all()
+    return [
+        ApiTokenListItem(
+            id=str(t.id),
+            name=t.name,
+            created_at=t.created_at.isoformat() if t.created_at else "",
+            last4=t.last4,
+        )
+        for t in tokens
+    ]
+
+
+@router.post("/users/me/tokens", response_model=ApiTokenResponse)
+@rate_limit_standard()
+async def create_api_token(
+    request: Request,
+    data: ApiTokenCreate,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Создать новый API-токен для текущего пользователя."""
+    import secrets
+
+    raw_token = f"iris_{secrets.token_urlsafe(24)}"
+    token_hash = security.get_password_hash(raw_token)
+
+    db_token = ApiTokenModel(
+        user_id=current_user.id,
+        name=data.name,
+        token_hash=token_hash,
+        token_prefix=raw_token[:12],
+        last4=raw_token[-4:],
+    )
+    db.add(db_token)
+    await db.commit()
+    await db.refresh(db_token)
+
+    return ApiTokenResponse(
+        id=str(db_token.id),
+        name=db_token.name,
+        token=raw_token,
+        created_at=db_token.created_at.isoformat() if db_token.created_at else "",
+    )
+
+
+@router.delete("/users/me/tokens/{token_id}")
+@rate_limit_standard()
+async def revoke_api_token(
+    request: Request,
+    token_id: str,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Отозвать API-токен текущего пользователя."""
+    result = await db.execute(
+        select(ApiTokenModel).where(
+            ApiTokenModel.id == int(token_id),
+            ApiTokenModel.user_id == current_user.id,
+        )
+    )
+    token = result.scalar_one_or_none()
+    if not token:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Token not found")
+
+    token.is_active = False
+    await db.commit()
+    return {"status": "revoked"}
+
+
 @router.get("/users", response_model=list[UserResponse])
 @rate_limit_standard()
 async def list_users(
@@ -288,7 +422,7 @@ async def list_users(
     current_user: User = Depends(get_current_active_user),
 ):
     """Список всех пользователей (только для админов)."""
-    if not current_user.is_superuser:
+    if not is_admin(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required",
@@ -308,7 +442,7 @@ async def update_user(
     current_user: User = Depends(get_current_active_user),
 ):
     """Обновить пользователя (только для админов)."""
-    if not current_user.is_superuser:
+    if not is_admin(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required",

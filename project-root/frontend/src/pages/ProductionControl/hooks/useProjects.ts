@@ -67,7 +67,8 @@ export function useProjects() {
       try {
         setLoading(true);
         const data = await getProjects();
-        const transformed: ProductionProject[] = data.map((p) => ({
+        const list = (Array.isArray(data) ? data : ((data as any)?.items ?? [])) as any[];
+        const transformed: ProductionProject[] = list.map((p) => ({
           id: String(p.id),
           code: p.code,
           name: p.name,
@@ -90,7 +91,7 @@ export function useProjects() {
       } catch (err) {
         setError('Не удалось загрузить проекты');
         console.error(err);
-        setProjects(MOCK_PROJECTS);
+        setProjects([]);
       } finally {
         setLoading(false);
       }

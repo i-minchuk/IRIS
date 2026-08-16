@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/features/auth/store/authStore';
 
@@ -18,13 +18,8 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps = {}) => {
 
   const [checking, setChecking] = useState(true);
   const [checkTimedOut, setCheckTimedOut] = useState(false);
-  const checkStarted = useRef(false);
 
   useEffect(() => {
-    // Prevent double-check in StrictMode
-    if (checkStarted.current) return;
-    checkStarted.current = true;
-
     let mounted = true;
     let timeoutId: ReturnType<typeof setTimeout>;
 

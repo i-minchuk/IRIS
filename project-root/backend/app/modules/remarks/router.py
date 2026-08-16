@@ -166,8 +166,14 @@ async def export_remarks(
     
     from app.modules.remarks.models import Remark
     from sqlalchemy import select
-    
-    query = select(Remark)
+    from sqlalchemy.orm import selectinload
+
+    query = select(Remark).options(
+        selectinload(Remark.project),
+        selectinload(Remark.document),
+        selectinload(Remark.author),
+        selectinload(Remark.assignee),
+    )
     if project_id:
         query = query.where(Remark.project_id == project_id)
     if document_id:
@@ -188,18 +194,19 @@ async def export_remarks(
     ])
     
     # Rows
+    # В БД поля хранятся строками; getattr(..., 'value', x) — на случай enum-значений
     for remark in remarks:
         writer.writerow([
             str(remark.id),
             remark.title,
-            remark.status.value,
-            remark.priority.value,
-            remark.category.value,
-            remark.source.value,
+            getattr(remark.status, 'value', remark.status),
+            getattr(remark.priority, 'value', remark.priority),
+            getattr(remark.category, 'value', remark.category),
+            getattr(remark.source, 'value', remark.source),
             remark.project.name if remark.project else '',
             remark.document.name if remark.document else '',
             remark.location_ref or '',
-            remark.author.email,
+            remark.author.email if remark.author else '',
             remark.assignee.email if remark.assignee else '',
             remark.due_date.isoformat() if remark.due_date else '',
             remark.resolution or '',

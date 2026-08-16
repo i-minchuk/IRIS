@@ -17,11 +17,11 @@ from sqlalchemy import String, DateTime, JSON, Integer, Text
 # Use the canonical model from app.models.audit
 from app.models.audit import AuditLog
 from app.db.session import get_db
-from app.modules.auth.deps import get_current_active_user
+from app.modules.auth.deps import get_current_active_user, is_admin
 from app.modules.auth.models import User
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/audit", tags=["Audit"])
+router = APIRouter(tags=["Audit"])
 
 
 # ---------------------------------------------------------------------------
@@ -146,9 +146,13 @@ class AuditService:
         if entity_id:
             query = query.where(AuditLog.entity_id == entity_id)
         if date_from:
-            query = query.where(AuditLog.created_at >= date_from)
+            query = query.where(
+                AuditLog.created_at >= datetime.strptime(date_from, "%Y-%m-%d")
+            )
         if date_to:
-            query = query.where(AuditLog.created_at <= date_to)
+            query = query.where(
+                AuditLog.created_at <= datetime.strptime(date_to, "%Y-%m-%d")
+            )
 
         query = query.limit(limit).offset(offset)
         result = await self.db.execute(query)
@@ -180,6 +184,7 @@ class AuditService:
         user_id: Optional[int] = None,
         action: Optional[str] = None,
         entity_type: Optional[str] = None,
+        date_from: Optional[str] = None,
     ) -> int:
         """Count audit logs with filters."""
         from sqlalchemy import func
@@ -191,6 +196,10 @@ class AuditService:
             query = query.where(AuditLog.action == action)
         if entity_type:
             query = query.where(AuditLog.entity_type == entity_type)
+        if date_from:
+            query = query.where(
+                AuditLog.created_at >= datetime.strptime(date_from, "%Y-%m-%d")
+            )
 
         result = await self.db.execute(query)
         return result.scalar() or 0
@@ -236,6 +245,39 @@ async def log_audit(
 # Endpoints
 # ---------------------------------------------------------------------------
 
+
+def _to_response(log) -> AuditLogResponse:
+    """Сериализация AuditLog; old_value/new_value могут отсутствовать в модели."""
+    return AuditLogResponse(
+        id=log.id,
+        user_id=log.user_id,
+        user_email=log.user_email,
+        action=log.action,
+        entity_type=log.entity_type,
+        entity_id=log.entity_id,
+        old_value=getattr(log, "old_value", None),
+        new_value=getattr(log, "new_value", None),
+        ip_address=log.ip_address,
+        user_agent=log.user_agent,
+        created_at=log.created_at.isoformat() if log.created_at else None,
+    )
+
+
+@router.get("")
+async def get_audit_logs_paginated(
+    limit: int = 50,
+    offset: int = 0,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Пагинированный список записей аудита. Админ видит все, остальные — свои."""
+    user_id = None if is_admin(current_user) else current_user.id
+    service = AuditService(db)
+    logs = await service.get_logs(user_id=user_id, limit=limit, offset=offset)
+    total = await service.count_logs(user_id=user_id)
+    return {"items": [_to_response(log) for log in logs], "total": total}
+
+
 @router.get("/logs", response_model=List[AuditLogResponse])
 async def get_audit_logs(
     user_id: Optional[int] = None,
@@ -250,7 +292,7 @@ async def get_audit_logs(
     current_user: User = Depends(get_current_active_user),
 ):
     """Get audit logs with filters. Admin only."""
-    if not current_user.is_superuser:
+    if not is_admin(current_user):
         # Regular users can only see their own logs
         user_id = current_user.id
 
@@ -265,22 +307,7 @@ async def get_audit_logs(
         limit=limit,
         offset=offset,
     )
-    return [
-        AuditLogResponse(
-            id=log.id,
-            user_id=log.user_id,
-            user_email=log.user_email,
-            action=log.action,
-            entity_type=log.entity_type,
-            entity_id=log.entity_id,
-            old_value=log.old_value,
-            new_value=log.new_value,
-            ip_address=log.ip_address,
-            user_agent=log.user_agent,
-            created_at=log.created_at.isoformat() if log.created_at else None,
-        )
-        for log in logs
-    ]
+    return [_to_response(log) for log in logs]
 
 
 @router.get("/logs/{entity_type}/{entity_id}", response_model=List[AuditLogResponse])
@@ -294,22 +321,7 @@ async def get_entity_audit_history(
     """Get audit history for a specific entity."""
     service = AuditService(db)
     logs = await service.get_entity_history(entity_type, entity_id, limit)
-    return [
-        AuditLogResponse(
-            id=log.id,
-            user_id=log.user_id,
-            user_email=log.user_email,
-            action=log.action,
-            entity_type=log.entity_type,
-            entity_id=log.entity_id,
-            old_value=log.old_value,
-            new_value=log.new_value,
-            ip_address=log.ip_address,
-            user_agent=log.user_agent,
-            created_at=log.created_at.isoformat() if log.created_at else None,
-        )
-        for log in logs
-    ]
+    return [_to_response(log) for log in logs]
 
 
 @router.get("/stats")
@@ -318,7 +330,7 @@ async def get_audit_stats(
     current_user: User = Depends(get_current_active_user),
 ):
     """Get audit statistics. Admin only."""
-    if not current_user.is_superuser:
+    if not is_admin(current_user):
         raise HTTPException(status_code=403, detail="Admin access required")
 
     service = AuditService(db)

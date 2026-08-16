@@ -104,6 +104,7 @@ export const router = createBrowserRouter([
           /* Скрытый роут /calendar — календарь теперь в Dashboard
   { path: '/calendar', element: <SuspenseWrapper><CalendarPage /></SuspenseWrapper> },
   */
+          { path: '/calendar', element: <Navigate to="/dashboard" replace /> },
           { path: '/reports', element: <SuspenseWrapper><ReportsPage /></SuspenseWrapper> },
           { path: '/profile', element: <SuspenseWrapper><ProfileSettingsPage /></SuspenseWrapper> },
           { path: '/profile/2fa', element: <SuspenseWrapper><TwoFactorSettingsPage /></SuspenseWrapper> },

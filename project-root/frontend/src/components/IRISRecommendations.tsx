@@ -164,6 +164,13 @@ export function IRISRecommendations({ page, isDark = false }: IRISRecommendation
         <div>
           <h3 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>Рекомендации IRIS</h3>
           <span className="text-xs" style={{ color: 'var(--text-muted)' }}>AI-ассистент</span>
+          <span
+            className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded ml-2 align-middle"
+            style={{ background: 'var(--iris-bg-hover, rgba(100,116,139,0.15))', color: 'var(--text-muted)' }}
+            title="Демонстрационные рекомендации, не основаны на реальных данных"
+          >
+            Демо
+          </span>
         </div>
       </div>
       <div className="space-y-2">

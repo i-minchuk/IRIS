@@ -45,7 +45,7 @@ export const ViewerShell: React.FC<ViewerShellProps> = ({
     <div className={styles.viewer}>
       <Toolbar {...toolbarProps} />
 
-      <DragDropOverlay onFileDrop={onFileDrop ?? (() => {})}>
+      <DragDropOverlay onFileDrop={onFileDrop}>
         <div className={styles.content}>
           {loading ? (
             <div className={styles.loading}>

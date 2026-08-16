@@ -3,9 +3,11 @@ import {
   FileText, FileCheck, AlertCircle, Clock, Printer,
   Eye, CheckCircle2, XCircle, Send,
   Calendar, ChevronDown, ChevronUp, Plus, Search as SearchIcon,
+  Loader2,
 } from 'lucide-react';
 import { ProjectDocument, ProductionProject } from '../../types/production';
 import { useAutoTimeTracker } from '@/features/time_tracking/hooks/useAutoTimeTracker';
+import Modal from '@/components/ui/Modal';
 
 interface Props {
   documents: ProjectDocument[];
@@ -52,6 +54,9 @@ export const DocumentTracker: React.FC<Props> = ({ documents, projects, onAddCom
   const [commentText, setCommentText] = useState<Record<string, string>>({});
   const [filter, setFilter] = useState<ProjectDocument['status'] | 'all'>('all');
   const [search, setSearch] = useState('');
+  const [selectedDoc, setSelectedDoc] = useState<ProjectDocument | null>(null);
+  const [modalLoading, setModalLoading] = useState(false);
+  const [modalError, setModalError] = useState<string | null>(null);
 
   const byProject = useMemo(() => {
     const grouped: Record<string, ProjectDocument[]> = {};
@@ -117,8 +122,22 @@ export const DocumentTracker: React.FC<Props> = ({ documents, projects, onAddCom
       projectName: projects.find(p => p.id === doc.projectId)?.name,
     });
 
-    // Placeholder viewer — shows document details in alert for now
-    alert(`📄 ${doc.number}\n${doc.name}\n\nСтатус: ${statusConfig[doc.status].label}\nОтветственный: ${doc.responsible}${doc.currentApprover ? `\nНа согласовании у: ${doc.currentApprover}` : ''}\n\nПлановая готовность: ${formatDate(doc.plannedReady)}\nФактическая готовность: ${formatDate(doc.actualReady)}`);
+    setModalLoading(true);
+    setModalError(null);
+    try {
+      // Simulate async load for modal content (could fetch fresh data here)
+      await new Promise(resolve => setTimeout(resolve, 300));
+      setSelectedDoc(doc);
+    } catch (err: any) {
+      setModalError(err?.message || 'Не удалось загрузить детали документа');
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setSelectedDoc(null);
+    setModalError(null);
   };
 
   const handleAddComment = (docId: string) => {
@@ -371,6 +390,109 @@ export const DocumentTracker: React.FC<Props> = ({ documents, projects, onAddCom
           );
         })}
       </div>
+
+      {/* Document Detail Modal */}
+      <Modal
+        isOpen={selectedDoc !== null}
+        onClose={handleCloseModal}
+        title={`📄 ${selectedDoc?.number || 'Документ'}`}
+        size="lg"
+      >
+        {modalLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--iris-accent-blue)' }} />
+            <span className="ml-2 text-sm" style={{ color: 'var(--text-secondary)' }}>Загрузка...</span>
+          </div>
+        ) : modalError ? (
+          <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/30 text-sm text-red-400">
+            {modalError}
+          </div>
+        ) : selectedDoc ? (
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-base font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>{selectedDoc.name}</h3>
+              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{typeLabels[selectedDoc.type]}</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <span className="text-xs uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Статус</span>
+                <div className="mt-1">
+                  <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium"
+                    style={{
+                      background: statusConfig[selectedDoc.status].bg,
+                      color: statusConfig[selectedDoc.status].color,
+                      border: `1px solid ${statusConfig[selectedDoc.status].color}30`
+                    }}>
+                    {statusConfig[selectedDoc.status].icon} {statusConfig[selectedDoc.status].label}
+                  </span>
+                </div>
+              </div>
+              <div>
+                <span className="text-xs uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Ответственный</span>
+                <div className="mt-1 text-sm" style={{ color: 'var(--text-primary)' }}>{selectedDoc.responsible}</div>
+              </div>
+              <div>
+                <span className="text-xs uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Плановая готовность</span>
+                <div className="mt-1 text-sm" style={{ color: 'var(--text-primary)' }}>{formatDate(selectedDoc.plannedReady)}</div>
+              </div>
+              <div>
+                <span className="text-xs uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Фактическая готовность</span>
+                <div className="mt-1 text-sm" style={{ color: 'var(--text-primary)' }}>{formatDate(selectedDoc.actualReady) || '—'}</div>
+              </div>
+              {selectedDoc.currentApprover && (
+                <div className="col-span-2">
+                  <span className="text-xs uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>На согласовании у</span>
+                  <div className="mt-1 text-sm" style={{ color: 'var(--iris-accent-amber)' }}>{selectedDoc.currentApprover}</div>
+                </div>
+              )}
+            </div>
+
+            {selectedDoc.remarks && selectedDoc.remarks.length > 0 && (
+              <div>
+                <span className="text-xs uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Замечания</span>
+                <div className="mt-2 space-y-2">
+                  {selectedDoc.remarks.map(r => (
+                    <div key={r.id} className="p-2 rounded text-xs" style={{
+                      background: r.status === 'open' ? 'rgba(239,68,68,0.06)' : 'rgba(34,197,94,0.06)',
+                      border: '1px solid var(--iris-border-subtle)'
+                    }}>
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{r.author}</span>
+                        <span className="px-1.5 py-0.5 rounded-full" style={{
+                          background: r.status === 'open' ? 'rgba(239,68,68,0.12)' : 'rgba(34,197,94,0.12)',
+                          color: r.status === 'open' ? '#ef4444' : '#22c55e'
+                        }}>
+                          {r.status === 'open' ? 'Открыто' : 'Устранено'}
+                        </span>
+                      </div>
+                      <div className="mt-1" style={{ color: 'var(--text-secondary)' }}>{r.text}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {selectedDoc.approvers && selectedDoc.approvers.length > 0 && (
+              <div>
+                <span className="text-xs uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Цепочка согласования</span>
+                <div className="mt-2 space-y-1">
+                  {selectedDoc.approvers.map((a, i) => (
+                    <div key={i} className="flex items-center justify-between text-xs">
+                      <span style={{ color: 'var(--text-secondary)' }}>{a.name} <span style={{ color: 'var(--text-muted)' }}>({a.role})</span></span>
+                      <span style={{
+                        color: a.status === 'approved' ? '#22c55e' : a.status === 'rejected' ? '#ef4444' : '#f59e0b',
+                      }}>
+                        {a.status === 'approved' ? '✓' : a.status === 'rejected' ? '✕' : '…'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : null}
+      </Modal>
     </div>
   );
 };
