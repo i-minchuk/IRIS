@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Card } from '@/components/ui';
 import { Badge } from '@/components/ui';
 import { useSRMStore } from '@/stores/srmStore';
@@ -23,6 +24,11 @@ const TOTAL_STEPS = 11;
 
 export default function OrdersPage() {
   const orders = useSRMStore(s => s.orders);
+  const fetchOrders = useSRMStore(s => s.fetchOrders);
+
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
 
   return (
     <div className="space-y-6 px-3 md:px-6 py-4 md:pt-2 pb-6">

@@ -11,18 +11,18 @@ interface UseApiDataReturn<T> extends UseApiDataState<T> {
 }
 
 /**
- * Хук для загрузки данных из API с fallback на mock-данные.
+ * Хук для загрузки данных из API с fallback на начальное значение.
  * Загрузка начинается автоматически при монтировании.
  *
  * @param fetcher — async функция, возвращающая данные
- * @param fallback — данные по умолчанию (mock), пока идёт загрузка или при ошибке
+ * @param fallback — данные по умолчанию, пока идёт загрузка или при ошибке
  * @param deps — зависимости для перезагрузки (опционально)
  * @returns { data, loading, error, refetch }
  *
  * @example
  * const { data: tasks, loading, error, refetch } = useApiData(
  *   () => getTasks(),
- *   mockTasks,
+ *   [],
  *   [projectId]
  * );
  */
@@ -84,7 +84,7 @@ export function useApiData<T>(
  * @example
  * const { data, loading, refetch } = useLazyApiData(
  *   () => getTasks(),
- *   mockTasks
+ *   []
  * );
  * // вызвать refetch() когда таб станет активным
  */

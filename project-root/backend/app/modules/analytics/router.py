@@ -17,7 +17,6 @@ from app.modules.tenders.models import Tender
 from app.modules.gamification.models import GamificationEvent
 from app.modules.analytics.schemas import TeamTimeAnalytics
 from app.core.cache import cache_response
-import hashlib
 
 
 async def _get_db():
@@ -145,7 +144,7 @@ async def get_dashboard(
             "documents_total": total,
             "documents_approved": approved,
             "open_remarks": proj_remarks,
-            "deadline": (project.created_at + timedelta(days=90)).isoformat() if project.created_at else None,
+            "deadline": project.planned_finish.isoformat() if project.planned_finish else None,
         })
 
     # --- Team Performance ---
@@ -222,10 +221,14 @@ async def get_kpi_tiles(
     efficiency_result = await db.execute(
         select(func.avg(TimeSession.efficiency_score)).where(TimeSession.efficiency_score.isnot(None))
     )
-    avg_efficiency = efficiency_result.scalar() or 0.75
+    avg_efficiency = efficiency_result.scalar() or 0
     personnel_load = round(avg_efficiency * 100, 0)
 
-    # Mock departmental breakdown
+    sessions_result = await db.execute(
+        select(func.count()).where(TimeSession.efficiency_score.isnot(None))
+    )
+    rated_sessions = sessions_result.scalar() or 0
+
     personnel_status = "green" if personnel_load > 80 else "yellow" if personnel_load >= 60 else "red"
 
     # --- Tile 2: Projects in Work ---
@@ -256,7 +259,26 @@ async def get_kpi_tiles(
     )
     active_tenders = tender_result.scalar() or 0
 
-    overdue_tenders = 0  # Mock: no deadline field easily queryable
+    draft_tenders_result = await db.execute(
+        select(func.count()).where(Tender.status == "draft")
+    )
+    draft_tenders = draft_tenders_result.scalar() or 0
+
+    sent_tenders_result = await db.execute(
+        select(func.count()).where(Tender.status == "sent")
+    )
+    sent_tenders = sent_tenders_result.scalar() or 0
+
+    overdue_tenders_result = await db.execute(
+        select(func.count()).where(
+            and_(
+                Tender.deadline.isnot(None),
+                Tender.deadline < datetime.now(timezone.utc),
+                ~Tender.status.in_(["won", "lost", "cancelled", "archived"]),
+            )
+        )
+    )
+    overdue_tenders = overdue_tenders_result.scalar() or 0
     tender_status = "green" if overdue_tenders < 3 else "yellow" if overdue_tenders <= 5 else "red"
 
     # --- Tile 4: Overdue Documents ---
@@ -272,13 +294,15 @@ async def get_kpi_tiles(
     overdue_docs = overdue_docs_result.scalar() or 0
     doc_status = "red" if overdue_docs > 0 else "green"
 
-    # --- Tile 5: FPY OTK (Mock) ---
-    fpy = 91.2
+    # --- Tile 5: FPY OTK ---
+    # TODO: no data source yet — returning empty
+    fpy = 0.0
     fpy_status = "green" if fpy > 95 else "yellow" if fpy >= 90 else "red"
 
-    # --- Tile 6: Shipments Week (Mock) ---
-    shipments_done = 3
-    shipments_plan = 5
+    # --- Tile 6: Shipments Week ---
+    # TODO: no data source yet — returning empty
+    shipments_done = 0
+    shipments_plan = 0
     ship_pct = (shipments_done / shipments_plan * 100) if shipments_plan > 0 else 0
     ship_status = "green" if ship_pct >= 80 else "yellow" if ship_pct >= 50 else "red"
 
@@ -288,17 +312,17 @@ async def get_kpi_tiles(
                 "id": "personnel_load",
                 "label": "Загруженность персонала",
                 "value": f"{int(personnel_load)}%",
-                "trend": "▼ -3%",
-                "trend_direction": "down",
+                "trend": None,
+                "trend_direction": None,
                 "status": personnel_status,
-                "subtext": "ПДО: 92% | Произв: 71% | ОТК: 85% | Тендер: 70%",
+                "subtext": f"По данным {rated_sessions} сессий учёта времени",
             },
             {
                 "id": "projects_work",
                 "label": "Проектов в работе",
                 "value": str(total_work),
-                "trend": "▲ +2",
-                "trend_direction": "up",
+                "trend": None,
+                "trend_direction": None,
                 "status": project_status,
                 "subtext": f"В срок: {on_time} | Риск: {at_risk_count} | Критично: {critical_count}",
             },
@@ -309,44 +333,38 @@ async def get_kpi_tiles(
                 "trend": None,
                 "trend_direction": None,
                 "status": tender_status,
-                "subtext": f"На подготовке: {max(0, active_tenders - 5)} | Подано: 5 | Просрочено: {overdue_tenders}",
+                "subtext": f"На подготовке: {draft_tenders} | Подано: {sent_tenders} | Просрочено: {overdue_tenders}",
             },
             {
                 "id": "overdue_docs",
                 "label": "Просроченных документов",
                 "value": str(overdue_docs),
-                "trend": "▼ -2",
-                "trend_direction": "down",
+                "trend": None,
+                "trend_direction": None,
                 "status": doc_status,
-                "subtext": "ПДО: 3 | ОТК: 2 | Тендер: 2",
+                "subtext": "Не согласованы более 30 дней",
                 "clickable": True,
             },
             {
                 "id": "fpy_otk",
                 "label": "FPY ОТК (первый проход)",
                 "value": f"{fpy}%",
-                "trend": "▼ -1.8%",
-                "trend_direction": "down",
+                "trend": None,
+                "trend_direction": None,
                 "status": fpy_status,
-                "subtext": "Цель: >95% | Брак: 8.8% | Повторная приёмка: 3",
+                "subtext": "Цель: >95% | Брак: 0% | Повторная приёмка: 0",
             },
             {
                 "id": "shipments_week",
                 "label": "Отгрузок неделя",
                 "value": f"{shipments_done}/{shipments_plan}",
-                "trend": "▲ +1",
-                "trend_direction": "up",
+                "trend": None,
+                "trend_direction": None,
                 "status": ship_status,
-                "subtext": "Готово: 3 | В пути: 1 | Задержка: 1",
+                "subtext": "Готово: 0 | В пути: 0 | Задержка: 0",
             },
         ]
     }
-
-
-def _hash_seed(project_id: int, field: str) -> float:
-    """Deterministic pseudo-random 0..1 from project id + field name."""
-    h = hashlib.md5(f"{project_id}:{field}".encode()).hexdigest()
-    return int(h, 16) / (2 ** 128)
 
 
 @router.get("/portfolio", response_model=dict)
@@ -362,12 +380,28 @@ async def get_portfolio(
     )
     projects = projects_result.scalars().all()
 
+    now = datetime.now(timezone.utc)
     bubbles = []
     for p in projects:
-        # Deterministic mock values based on project id
-        budget_pct = round(70 + _hash_seed(p.id, "budget") * 80, 1)      # 70..150
-        schedule_pct = round(60 + _hash_seed(p.id, "schedule") * 90, 1)  # 60..150
-        total_budget = round(2 + _hash_seed(p.id, "value") * 48, 2)      # 2..50 млн
+        # Schedule usage: elapsed share of the planned duration
+        # (created_at -> planned_finish). 0 when dates are missing.
+        schedule_pct = 0.0
+        if p.planned_finish and p.created_at:
+            planned_finish = p.planned_finish
+            created_at = p.created_at
+            if planned_finish.tzinfo is None:
+                planned_finish = planned_finish.replace(tzinfo=timezone.utc)
+            if created_at.tzinfo is None:
+                created_at = created_at.replace(tzinfo=timezone.utc)
+            planned = (planned_finish - created_at).total_seconds()
+            elapsed = (now - created_at).total_seconds()
+            if planned > 0:
+                schedule_pct = round(elapsed / planned * 100, 1)
+
+        # TODO: no data source yet — returning empty
+        budget_pct = 0.0
+        # TODO: no data source yet — returning empty
+        total_budget = 0.0
 
         # Zone classification
         if budget_pct > 100 and schedule_pct > 100:
@@ -414,20 +448,15 @@ async def get_trend(
     db: AsyncSession = Depends(_get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    """Return 12 data points for trend charts (mock data)."""
+    """Return 12 data points for trend charts."""
+    # TODO: no data source yet (no financial tables) — returning empty
+    months = [
+        "Янв", "Фев", "Мар", "Апр", "Май", "Июн",
+        "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек",
+    ]
     points = [
-        {"month": "Янв", "revenue": 10.5, "profit": 2.1, "expenses": 8.4},
-        {"month": "Фев", "revenue": 12.3, "profit": 3.0, "expenses": 9.3},
-        {"month": "Мар", "revenue": 14.1, "profit": 3.8, "expenses": 10.3},
-        {"month": "Апр", "revenue": 13.5, "profit": 3.2, "expenses": 10.3},
-        {"month": "Май", "revenue": 15.8, "profit": 4.5, "expenses": 11.3},
-        {"month": "Июн", "revenue": 17.2, "profit": 5.1, "expenses": 12.1},
-        {"month": "Июл", "revenue": 16.9, "profit": 4.8, "expenses": 12.1},
-        {"month": "Авг", "revenue": 18.5, "profit": 5.5, "expenses": 13.0},
-        {"month": "Сен", "revenue": 19.1, "profit": 5.8, "expenses": 13.3},
-        {"month": "Окт", "revenue": 18.3, "profit": 5.2, "expenses": 13.1},
-        {"month": "Ноя", "revenue": 20.2, "profit": 6.1, "expenses": 14.1},
-        {"month": "Дек", "revenue": 22.0, "profit": 7.0, "expenses": 15.0},
+        {"month": m, "revenue": 0.0, "profit": 0.0, "expenses": 0.0}
+        for m in months
     ]
     return {
         "points": points,
@@ -442,21 +471,12 @@ async def get_shipments_calendar(
 ):
     """Return weekly shipment calendar with status pipeline."""
 
-    # Mock shipment data — no shipment tables yet
+    # TODO: no data source yet (no shipment tables) — returning empty
     today = datetime.now(timezone.utc).date()
     weekday = today.weekday()  # 0=Mon
     monday = today - timedelta(days=weekday)
 
     days = ["ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ", "ВС"]
-    mock_items = [
-        [{"name": "Газопровод", "tons": 15, "status": "accepted"}, {"name": "НПЗ", "tons": 8, "status": "packed"}],
-        [{"name": "ТЭЦ", "tons": 12, "status": "qc"}],
-        [{"name": "ЖК", "tons": 5, "status": "accepted"}],
-        [{"name": "Мост Волга", "tons": 22, "status": "collected"}, {"name": "АЗС", "tons": 3, "status": "packed"}],
-        [{"name": "Котельная", "tons": 7, "status": "collected"}],
-        [],
-        [],
-    ]
 
     calendar = []
     for i in range(7):
@@ -465,15 +485,15 @@ async def get_shipments_calendar(
             "day_label": days[i],
             "date": date.isoformat(),
             "is_weekend": i >= 5,
-            "items": mock_items[i],
+            "items": [],
         })
 
     pipeline = [
-        {"key": "collected", "label": "Собрано", "tons": 45, "color": "amber"},
-        {"key": "qc", "label": "На ОТК", "tons": 12, "color": "purple"},
-        {"key": "accepted", "label": "Принято ОТК", "tons": 38, "color": "emerald"},
-        {"key": "packed", "label": "Упаковано", "tons": 30, "color": "blue"},
-        {"key": "shipped", "label": "Отгружено", "tons": 25, "color": "blue"},
+        {"key": "collected", "label": "Собрано", "tons": 0, "color": "amber"},
+        {"key": "qc", "label": "На ОТК", "tons": 0, "color": "purple"},
+        {"key": "accepted", "label": "Принято ОТК", "tons": 0, "color": "emerald"},
+        {"key": "packed", "label": "Упаковано", "tons": 0, "color": "blue"},
+        {"key": "shipped", "label": "Отгружено", "tons": 0, "color": "blue"},
     ]
 
     return {
@@ -491,22 +511,39 @@ async def get_sparklines(
 ):
     """Return 30-day sparkline data for trend charts."""
 
-    import random
-    random.seed(42)
+    now = datetime.now(timezone.utc)
+    start = (now - timedelta(days=29)).replace(hour=0, minute=0, second=0, microsecond=0)
 
-    def make_series(base: float, variance: float, count: int = 30):
-        vals = []
-        cur = base
-        for _ in range(count):
-            cur += random.uniform(-variance, variance)
-            cur = max(0, round(cur, 1))
-            vals.append(cur)
-        return vals
+    # Workload: real daily average efficiency from time tracking sessions
+    workload_result = await db.execute(
+        select(
+            func.date(TimeSession.started_at).label("day"),
+            func.avg(TimeSession.efficiency_score).label("avg_eff"),
+        )
+        .where(
+            and_(
+                TimeSession.started_at >= start,
+                TimeSession.efficiency_score.isnot(None),
+            )
+        )
+        .group_by(func.date(TimeSession.started_at))
+    )
+    eff_by_day = {
+        str(row.day): row.avg_eff for row in workload_result.mappings().all()
+    }
 
-    schedule_dev = make_series(3.5, 1.2)
-    workload = make_series(75, 8)
-    fpy = make_series(91, 2)
-    shipments = make_series(30, 6)
+    workload = []
+    for i in range(30):
+        day = (start + timedelta(days=i)).date().isoformat()
+        eff = eff_by_day.get(day)
+        workload.append(round(eff * 100, 1) if eff is not None else 0)
+
+    # TODO: no data source yet — returning empty
+    schedule_dev = [0] * 30
+    # TODO: no data source yet — returning empty
+    fpy = [0] * 30
+    # TODO: no data source yet — returning empty
+    shipments = [0] * 30
 
     return {
         "charts": [
@@ -555,59 +592,61 @@ async def get_alerts(
     """Return top auto-generated alerts with suggested actions."""
 
     alerts = []
+    now = datetime.now(timezone.utc)
 
-    # Alert 1: PDO idle — check avg efficiency from time tracking
+    # Alert 1: Low personnel load — real time tracking efficiency
     efficiency_result = await db.execute(
         select(func.avg(TimeSession.efficiency_score)).where(TimeSession.efficiency_score.isnot(None))
     )
-    avg_eff = (efficiency_result.scalar() or 0.75) * 100
-    if avg_eff < 50:
-        alerts.append({
-            "id": "pdo_idle",
-            "severity": "critical",
-            "icon": "idle",
-            "title": "ПДО простаивает 3 дня",
-            "message": f"Средняя загрузка отдела ПДО: {avg_eff:.0f}%. Срочно перераспределите задачи.",
-            "action_label": "Перераспределить",
-            "action_path": "/resources",
-        })
+    avg_eff_raw = efficiency_result.scalar()
+    if avg_eff_raw is not None:
+        avg_eff = avg_eff_raw * 100
+        if avg_eff < 50:
+            alerts.append({
+                "id": "pdo_idle",
+                "severity": "critical",
+                "icon": "idle",
+                "title": "Низкая загрузка персонала",
+                "message": (
+                    f"Средняя загрузка: {avg_eff:.0f}%. "
+                    "Перераспределите задачи."
+                ),
+                "action_label": "Перераспределить",
+                "action_path": "/resources",
+            })
 
-    # Alert 2: QC FPY drop — mock threshold
-    fpy = 91.2
-    if fpy < 95:
-        alerts.append({
-            "id": "qc_fpy_drop",
-            "severity": "warning" if fpy >= 90 else "critical",
-            "icon": "qc",
-            "title": "FPY ОТК ниже цели",
-            "message": f"Первый проход ОТК: {fpy}% (цель >95%). Брак вырос до {100-fpy:.1f}%.",
-            "action_label": "Открыть протокол",
-            "action_path": "/remarks",
-        })
-
-    # Alert 3: Tender deadline <48h — mock (no deadline field yet)
-    active_tenders = await db.execute(
-        select(func.count()).where(~Tender.status.in_(["closed", "archived", "lost", "won"]))
+    # Alert 2: Tender deadline <48h — real deadline data
+    urgent_tenders_result = await db.execute(
+        select(func.count()).where(
+            and_(
+                Tender.deadline.isnot(None),
+                Tender.deadline >= now,
+                Tender.deadline < now + timedelta(hours=48),
+                ~Tender.status.in_(["won", "lost", "cancelled", "archived"]),
+            )
+        )
     )
-    active_tender_count = active_tenders.scalar() or 0
-    if active_tender_count > 0:
-        # Mock: pretend 1 tender is urgent
+    urgent_tender_count = urgent_tenders_result.scalar() or 0
+    if urgent_tender_count > 0:
         alerts.append({
             "id": "tender_urgent",
             "severity": "warning",
             "icon": "tender",
             "title": "Тендер: дедлайн < 48 ч",
-            "message": f"Активных тендеров: {active_tender_count}. 1 заявка требует срочной подачи.",
+            "message": (
+                f"Срочных тендеров: {urgent_tender_count}. "
+                "Требуется подача заявки."
+            ),
             "action_label": "Подать заявку",
             "action_path": "/tenders",
         })
 
-    # Alert 4: Overdue documents
+    # Alert 3: Overdue documents
     overdue_docs = await db.execute(
         select(func.count()).where(
             and_(
                 Document.status != "approved",
-                Document.created_at < datetime.now(timezone.utc) - timedelta(days=30),
+                Document.created_at < now - timedelta(days=30),
             )
         )
     )
@@ -630,7 +669,7 @@ async def get_alerts(
     return {
         "alerts": alerts[:3],  # Top-3
         "total": len(alerts),
-        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": now.isoformat(),
     }
 
 
@@ -689,7 +728,7 @@ async def get_tender_pipeline(
         select(func.avg(func.extract('epoch', func.now() - Tender.created_at) / 86400))
         .where(Tender.status == "sent")
     )
-    avg_prep = round(sent_result.scalar() or 14, 0)
+    avg_prep = round(sent_result.scalar() or 0, 0)
 
     # Overdue: deadline passed and not finalized
     overdue_result = await db.execute(
@@ -894,7 +933,11 @@ async def get_production_sqcdp(
 ):
     """Return SQCDP production metrics."""
 
-    # All mock data — no production tables yet
+    # TODO: no data source yet (no production tables) — returning empty
+    # Only total headcount is available from the users table.
+    headcount_result = await db.execute(select(func.count()).select_from(User))
+    total_headcount = headcount_result.scalar() or 0
+
     return {
         "pillars": [
             {
@@ -905,74 +948,60 @@ async def get_production_sqcdp(
                 "status": "green",
                 "details": {
                     "last_incident": "—",
-                    "days_without": 142,
-                    "training_completion": "98%",
+                    "days_without": 0,
+                    "training_completion": "0%",
                 },
             },
             {
                 "id": "quality",
                 "label": "Q — Quality / FPY",
-                "value": "91.2%",
+                "value": "0%",
                 "target": "цель: >95%",
                 "status": "yellow",
                 "details": {
-                    "shifts": [
-                        {"name": "Смена А", "fpy": 94},
-                        {"name": "Смена Б", "fpy": 85},
-                        {"name": "Смена В", "fpy": 93},
-                    ],
-                    "top_defects": [
-                        {"name": "Сварной шов", "pct": 45},
-                        {"name": "Геометрия", "pct": 30},
-                        {"name": "Покрытие", "pct": 25},
-                    ],
-                    "rework_batches": 3,
-                    "rework_tons": 12,
+                    "shifts": [],
+                    "top_defects": [],
+                    "rework_batches": 0,
+                    "rework_tons": 0,
                 },
             },
             {
                 "id": "cost",
                 "label": "C — Cost",
-                "value": "+3.2% перерасход",
+                "value": "0% перерасход",
                 "target": "цель: <±2%",
-                "status": "red",
+                "status": "yellow",
                 "details": {
-                    "budget_m": 28.5,
-                    "actual_m": 29.4,
-                    "variance_pct": 3.2,
-                    "top_overruns": [
-                        {"name": "Материалы", "pct": 4.1},
-                        {"name": "Субподряд", "pct": 2.8},
-                    ],
+                    "budget_m": 0,
+                    "actual_m": 0,
+                    "variance_pct": 0,
+                    "top_overruns": [],
                 },
             },
             {
                 "id": "delivery",
                 "label": "D — Delivery",
-                "value": "87% плана выполнено",
+                "value": "0% плана выполнено",
                 "target": "цель: >95%",
                 "status": "yellow",
                 "details": {
-                    "plan_units": 120,
-                    "actual_units": 104,
-                    "completion_pct": 87,
-                    "delay_reasons": [
-                        {"name": "Поставка материалов", "count": 3},
-                        {"name": "Неквалифицированный персонал", "count": 2},
-                    ],
+                    "plan_units": 0,
+                    "actual_units": 0,
+                    "completion_pct": 0,
+                    "delay_reasons": [],
                 },
             },
             {
                 "id": "people",
                 "label": "P — People",
-                "value": "71% загрузка",
+                "value": "0% загрузка",
                 "target": "цель: >80%",
                 "status": "yellow",
                 "details": {
-                    "total_headcount": 42,
-                    "present": 38,
-                    "absence_pct": 9.5,
-                    "training_hours_avg": 4.2,
+                    "total_headcount": total_headcount,
+                    "present": 0,
+                    "absence_pct": 0,
+                    "training_hours_avg": 0,
                 },
             },
         ],

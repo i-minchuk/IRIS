@@ -1,6 +1,12 @@
 import { create } from 'zustand';
 import type { SupportTicket, Incident, KBArticle, TicketStatus, IncidentStatus } from '@/types/support';
-import { tickets as mockTickets, incidents as mockIncidents, kbArticles as mockKBArticles } from '@/stores/mocks/support';
+import {
+  getTickets,
+  getIncidents,
+  getKbArticles,
+  updateTicket,
+  updateIncident,
+} from '@/features/admin/api/supportApi';
 
 interface SupportState {
   tickets: SupportTicket[];
@@ -8,12 +14,17 @@ interface SupportState {
   kbArticles: KBArticle[];
   selectedTicket: SupportTicket | null;
   selectedIncident: Incident | null;
+  isLoading: boolean;
+  error: string | null;
 
+  fetchTickets: () => Promise<void>;
+  fetchIncidents: () => Promise<void>;
+  fetchKbArticles: () => Promise<void>;
   setTickets: (tickets: SupportTicket[]) => void;
   setIncidents: (incidents: Incident[]) => void;
   setKBArticles: (articles: KBArticle[]) => void;
-  updateTicketStatus: (ticketId: number, status: TicketStatus) => void;
-  updateIncidentStatus: (incidentId: number, status: IncidentStatus) => void;
+  updateTicketStatus: (ticketId: number, status: TicketStatus) => Promise<void>;
+  updateIncidentStatus: (incidentId: number, status: IncidentStatus) => Promise<void>;
   getTicketsByStatus: (status: TicketStatus) => SupportTicket[];
   getOpenTickets: () => SupportTicket[];
   getOpenIncidents: () => Incident[];
@@ -23,30 +34,75 @@ interface SupportState {
 }
 
 export const useSupportStore = create<SupportState>((set, get) => ({
-  tickets: mockTickets,
-  incidents: mockIncidents,
-  kbArticles: mockKBArticles,
+  tickets: [],
+  incidents: [],
+  kbArticles: [],
   selectedTicket: null,
   selectedIncident: null,
+  isLoading: false,
+  error: null,
+
+  fetchTickets: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const tickets = await getTickets();
+      set({ tickets, isLoading: false });
+    } catch (err) {
+      console.error('Failed to load support tickets:', err);
+      set({ isLoading: false, error: 'Не удалось загрузить тикеты поддержки' });
+    }
+  },
+
+  fetchIncidents: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const incidents = await getIncidents();
+      set({ incidents, isLoading: false });
+    } catch (err) {
+      console.error('Failed to load incidents:', err);
+      set({ isLoading: false, error: 'Не удалось загрузить инциденты' });
+    }
+  },
+
+  fetchKbArticles: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const kbArticles = await getKbArticles();
+      set({ kbArticles, isLoading: false });
+    } catch (err) {
+      console.error('Failed to load KB articles:', err);
+      set({ isLoading: false, error: 'Не удалось загрузить базу знаний' });
+    }
+  },
 
   setTickets: (tickets) => set({ tickets }),
   setIncidents: (incidents) => set({ incidents }),
   setKBArticles: (articles) => set({ kbArticles: articles }),
 
-  updateTicketStatus: (ticketId, status) => {
-    set(state => ({
-      tickets: state.tickets.map(t =>
-        t.id === ticketId ? { ...t, status, updated_at: new Date().toISOString() } : t
-      ),
-    }));
+  updateTicketStatus: async (ticketId, status) => {
+    try {
+      const updated = await updateTicket(ticketId, { status });
+      set(state => ({
+        tickets: state.tickets.map(t => (t.id === ticketId ? updated : t)),
+        selectedTicket: state.selectedTicket?.id === ticketId ? updated : state.selectedTicket,
+      }));
+    } catch (err) {
+      console.error('Failed to update ticket status:', err);
+      set({ error: 'Не удалось обновить статус тикета' });
+    }
   },
 
-  updateIncidentStatus: (incidentId, status) => {
-    set(state => ({
-      incidents: state.incidents.map(i =>
-        i.id === incidentId ? { ...i, status } : i
-      ),
-    }));
+  updateIncidentStatus: async (incidentId, status) => {
+    try {
+      const updated = await updateIncident(incidentId, { status });
+      set(state => ({
+        incidents: state.incidents.map(i => (i.id === incidentId ? updated : i)),
+        selectedIncident: state.selectedIncident?.id === incidentId ? updated : state.selectedIncident,
+      }));
+    } catch (err) {
+      console.error('Failed to update incident status:', err);
+      set({ error: 'Не удалось обновить статус инцидента' });
+    }
   },
 
   getTicketsByStatus: (status) => get().tickets.filter(t => t.status === status),

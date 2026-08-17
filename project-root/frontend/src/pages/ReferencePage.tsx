@@ -4,8 +4,6 @@ import { PageTabs } from '@/shared/components/PageTabs';
 import { Search, Plus, BookOpen, Hammer, FileCheck, Library } from 'lucide-react';
 import { Button, Card } from '@/components/ui';
 import GlossaryPanel from './ReferencePage/GlossaryPanel';
-import { useTheme } from '@/providers/ThemeProvider';
-import { IRISRecommendations } from '@/components/IRISRecommendations';
 
 interface ReferenceItem {
   id: string;
@@ -52,8 +50,6 @@ const TABS = [
 export default function ReferencePage() {
   const [activeTab, setActiveTab] = useTabState<TabKey>('iris_reference_tab', 'materials');
   const [searchQuery, setSearchQuery] = useState('');
-  const { theme } = useTheme();
-  const isDark = theme === 'dark' || theme === 'midnight' || theme === 'contrast';
 
   const currentData = useMemo(
     () => {
@@ -82,7 +78,6 @@ export default function ReferencePage() {
   return (
     <div className="w-full pt-2 pb-6 px-4 space-y-6">
       {/* Header */}
-      <IRISRecommendations page="references" isDark={isDark} />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="sr-only" style={{ color: 'var(--text-primary)' }}>

@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Card } from '@/components/ui';
 import { Badge } from '@/components/ui';
 import { useSupportStore } from '@/stores/supportStore';
@@ -7,8 +8,13 @@ import { Ticket, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
 export default function SupportTicketsPage() {
   const tickets = useSupportStore(s => s.tickets);
   const updateTicketStatus = useSupportStore(s => s.updateTicketStatus);
+  const fetchTickets = useSupportStore(s => s.fetchTickets);
   const openTickets = useSupportStore(s => s.getOpenTickets());
   const slaCompliance = useSupportStore(s => s.getSLACompliance());
+
+  useEffect(() => {
+    fetchTickets();
+  }, [fetchTickets]);
 
   const resolvedCount = tickets.filter(t => t.status === 'resolved' || t.status === 'closed').length;
   const criticalCount = tickets.filter(t => t.priority === 'critical' && t.status !== 'resolved' && t.status !== 'closed').length;

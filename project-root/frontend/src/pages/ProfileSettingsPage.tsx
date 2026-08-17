@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Save, User, Lock, Bell, Shield, Palette, Globe,
-  Star, Flame, Coins, Trophy, Award, Zap, Crown, Gamepad2,
+  Star, Coins, Trophy, Award, Zap, Crown, Gamepad2,
   ChevronRight, BarChart3, Camera, Trash2,
   Sun, Moon, Coffee, Contrast, Sparkles, TrendingUp,
 } from 'lucide-react';
@@ -55,7 +55,10 @@ export default function ProfileSettingsPage() {
   const isDemoMode = useAuthStore((state) => state.isDemoMode);
 
   /* Gamification */
-  const { xp, coins, streak, badges, quests, getCurrentLevel, getLevelProgress } = useGamificationStore();
+  const { xp, coins, badges, quests, getCurrentLevel, getLevelProgress, fetchAll } = useGamificationStore();
+  useEffect(() => {
+    void fetchAll();
+  }, [fetchAll]);
   const level = getCurrentLevel();
   const progress = getLevelProgress();
   const levelInfo = getLevelInfo(level);
@@ -88,11 +91,11 @@ export default function ProfileSettingsPage() {
   const [profile, setProfile] = useState<ProfileForm>({
     full_name: user?.full_name || '',
     email: user?.email || '',
-    phone: '+7 (999) 123-45-67',
-    position: 'Главный инженер',
-    department: 'Отдел КМ',
-    location: 'Москва, офис 304',
-    bio: 'Инженер-конструктор с 8-летним опытом в проектировании металлоконструкций.',
+    phone: '',
+    position: '',
+    department: '',
+    location: '',
+    bio: '',
   });
 
   /* Avatar */
@@ -574,7 +577,7 @@ export default function ProfileSettingsPage() {
               </Card>
 
               {/* Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <Card padding="sm" className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${levelInfo.tierColor}18` }}>
                     <Star size={18} style={{ color: levelInfo.tierColor }} />
@@ -591,15 +594,6 @@ export default function ProfileSettingsPage() {
                   <div>
                     <div className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{coins}</div>
                     <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Монет</div>
-                  </div>
-                </Card>
-                <Card padding="sm" className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'color-mix(in srgb, #EF4444 10%, var(--bg-surface))' }}>
-                    <Flame size={18} style={{ color: '#EF4444' }} />
-                  </div>
-                  <div>
-                    <div className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{streak}</div>
-                    <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Streak 🔥</div>
                   </div>
                 </Card>
                 <Card padding="sm" className="flex items-center gap-3">
@@ -687,8 +681,8 @@ export default function ProfileSettingsPage() {
                             <div className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>{badge.name}</div>
                             <div className="text-base md:text-lg font-medium leading-relaxed mt-1 truncate" style={{ color: 'var(--text-secondary)' }}>{badge.description}</div>
                           </div>
-                          <Badge variant={badge.rarity === 'legendary' ? 'leaders' : badge.rarity === 'epic' ? 'engineering' : 'info'} className="text-xs">
-                            {badge.rarity === 'legendary' ? 'Легендарный' : badge.rarity === 'epic' ? 'Эпический' : badge.rarity === 'rare' ? 'Редкий' : 'Обычный'}
+                          <Badge variant="info" className="text-xs">
+                            Получен
                           </Badge>
                         </div>
                       ))}

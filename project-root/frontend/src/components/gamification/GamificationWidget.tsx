@@ -1,24 +1,15 @@
+import { useEffect } from 'react';
 import { Card } from '@/components/ui';
 import { useGamificationStore } from '@/stores/gamificationStore';
 import { getLevelInfo, getLevelProgress } from '@/lib/levelSystem';
-import { Flame, Coins, Zap, Award } from 'lucide-react';
-
-function getLevelFromXP(xp: number): number {
-  let level = 1;
-  let total = 0;
-  while (true) {
-    const needed = Math.round(100 * Math.pow(level, 1.8));
-    if (total + needed > xp) break;
-    total += needed;
-    level++;
-    if (level >= 50) break;
-  }
-  return Math.min(level, 50);
-}
+import { Coins, Zap, Award } from 'lucide-react';
 
 export function GamificationWidget() {
-  const { xp, coins, streak, badges, quests } = useGamificationStore();
-  const levelNum = getLevelFromXP(xp);
+  const { xp, coins, badges, quests, fetchAll } = useGamificationStore();
+  useEffect(() => {
+    void fetchAll();
+  }, [fetchAll]);
+  const levelNum = useGamificationStore(s => s.level);
   const level = getLevelInfo(levelNum);
   const progress = getLevelProgress(xp, levelNum);
   const earnedBadges = badges.filter(b => b.earnedAt);
@@ -57,10 +48,6 @@ export function GamificationWidget() {
         <div className="flex items-center gap-1" style={{ color: 'var(--text-secondary)' }}>
           <Coins size={12} style={{ color: '#F59E0B' }} />
           <span>{coins}</span>
-        </div>
-        <div className="flex items-center gap-1" style={{ color: 'var(--text-secondary)' }}>
-          <Flame size={12} style={{ color: '#EF4444' }} />
-          <span>{streak}д</span>
         </div>
         <div className="flex items-center gap-1" style={{ color: 'var(--text-secondary)' }}>
           <Award size={12} style={{ color: '#D4AF37' }} />

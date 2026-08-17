@@ -221,6 +221,9 @@ class ImportChecker:
             "reports": {"auth", "documents", "projects", "tasks", "tenders", "time_tracking"},  # Reports aggregate all data
             "ai": {"auth", "documents"},  # AI assistant works with user context and documents
             "integrations": {"auth"},  # External integrations require authenticated user
+            "releases": {"auth"},  # Release management
+            "support": {"auth"},  # Support tickets, incidents, KB
+            "srm": {"auth", "projects"},  # Procurement linked to projects
         }
         
         has_violations = False

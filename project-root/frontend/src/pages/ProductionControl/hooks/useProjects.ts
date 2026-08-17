@@ -18,45 +18,6 @@ const stageMap: Record<string, ProductionStage> = {
   archived: 'shipped',
 };
 
-const MOCK_PROJECTS: ProductionProject[] = [
-  {
-    id: 'p-101', code: 'ПР-2026-101', name: 'Корпус редуктора РМ-500', customer: 'ООО «СтройГаз»',
-    stage: 'production', status: 'on_track',
-    plannedStart: '2026-01-15T00:00:00Z', plannedFinish: '2026-07-20T00:00:00Z', forecastFinish: '2026-07-18T00:00:00Z',
-    progressPercent: 65, criticalPathDays: 28, contractSum: 12.5,
-    routeId: 'route-101', currentOperation: 'Механическая обработка', currentWorkCenter: 'Мехобработка-1',
-    nextMilestone: 'Сборка узла', nextMilestoneDate: '2026-06-25T00:00:00Z',
-    createdAt: '2026-01-15T00:00:00Z', updatedAt: '2026-06-01T00:00:00Z',
-  },
-  {
-    id: 'p-102', code: 'ПР-2026-102', name: 'Рама опорная РО-1200', customer: 'ПАО «Транснефть»',
-    stage: 'production', status: 'at_risk',
-    plannedStart: '2026-02-01T00:00:00Z', plannedFinish: '2026-08-10T00:00:00Z', forecastFinish: '2026-08-22T00:00:00Z',
-    progressPercent: 40, criticalPathDays: 45, contractSum: 8.3,
-    routeId: 'route-102', currentOperation: 'Сварка корпуса', currentWorkCenter: 'Сварочный участок',
-    nextMilestone: 'ОТК / Контроль качества', nextMilestoneDate: '2026-07-05T00:00:00Z',
-    createdAt: '2026-02-01T00:00:00Z', updatedAt: '2026-06-01T00:00:00Z',
-  },
-  {
-    id: 'p-103', code: 'ПР-2026-103', name: 'Вал приводной ВП-80', customer: 'АО «Нефтемаш»',
-    stage: 'production_prep', status: 'on_track',
-    plannedStart: '2026-05-10T00:00:00Z', plannedFinish: '2026-09-15T00:00:00Z', forecastFinish: '2026-09-15T00:00:00Z',
-    progressPercent: 15, criticalPathDays: 60, contractSum: 4.7,
-    routeId: 'route-103', currentOperation: 'Подготовка деталей', currentWorkCenter: 'Склад готовой продукции',
-    nextMilestone: 'Механическая обработка', nextMilestoneDate: '2026-06-30T00:00:00Z',
-    createdAt: '2026-05-10T00:00:00Z', updatedAt: '2026-06-01T00:00:00Z',
-  },
-  {
-    id: 'p-104', code: 'ПР-2026-104', name: 'Кожух защитный КЗ-45', customer: 'ООО «ПромСталь»',
-    stage: 'production', status: 'delayed',
-    plannedStart: '2026-03-01T00:00:00Z', plannedFinish: '2026-06-15T00:00:00Z', forecastFinish: '2026-07-10T00:00:00Z',
-    progressPercent: 80, criticalPathDays: 12, contractSum: 3.2,
-    routeId: 'route-104', currentOperation: 'Упаковка', currentWorkCenter: 'Упаковка',
-    nextMilestone: 'Отгрузка', nextMilestoneDate: '2026-07-10T00:00:00Z',
-    createdAt: '2026-03-01T00:00:00Z', updatedAt: '2026-06-01T00:00:00Z',
-  },
-];
-
 export function useProjects() {
   const [projects, setProjects] = useState<ProductionProject[]>([]);
   const [loading, setLoading] = useState(true);
@@ -85,8 +46,8 @@ export function useProjects() {
           createdAt: p.created_at || '',
           updatedAt: p.created_at || '',
         }));
-        // Fallback to mock data when API returns empty list
-        setProjects(transformed.length ? transformed : MOCK_PROJECTS);
+        // Мок-фолбэк удалён: при пустом портфеле показываем честный empty-state
+        setProjects(transformed);
         setError(null);
       } catch (err) {
         setError('Не удалось загрузить проекты');

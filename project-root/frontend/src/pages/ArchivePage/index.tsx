@@ -9,8 +9,6 @@ import { ConstructionsList } from './components/ConstructionsList';
 import { ArchiveStatistics } from './components/ArchiveStatistics';
 import { useArchiveStore } from './store/archiveStore';
 import { TimelineEvent } from './types/archive';
-import { useTheme } from '@/providers/ThemeProvider';
-import { IRISRecommendations } from '@/components/IRISRecommendations';
 
 import {
   CalendarDays, Search, BrickWall, Construction, BarChart3
@@ -42,8 +40,6 @@ const ArchivePage: React.FC = () => {
     setProjectId,
     isLoading 
   } = useArchiveStore();
-  const { theme } = useTheme();
-  const isDark = theme === 'dark' || theme === 'midnight' || theme === 'contrast';
 
   // При загрузке страницы - запросить projectId из URL или использовать дефолтный
   useEffect(() => {
@@ -70,7 +66,6 @@ const ArchivePage: React.FC = () => {
     <div className="flex h-screen flex-col" style={{ background: 'var(--iris-bg-app)', color: 'var(--iris-text-primary)' }}>
       {/* Шапка + табы */}
       <div className="px-4 sm:px-6 py-3 border-b" style={{ background: 'var(--iris-bg-surface-elevated)', borderColor: 'var(--iris-border-default)' }}>
-        <IRISRecommendations page="archive" isDark={isDark} />
         <div className="flex items-center justify-between mb-2">
           <div>
             <h1 className="sr-only" style={{ color: 'var(--iris-text-primary)' }}>📁 АРХИВ</h1>

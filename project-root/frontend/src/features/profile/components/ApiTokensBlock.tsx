@@ -1,9 +1,15 @@
 import { Key, Plus, Trash2, Copy, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useState } from "react";
-import type { ApiToken } from "../data/mockProfile";
 import { t } from "../i18n/translations";
 import type { Language } from "../i18n/translations";
 import { tokensApi } from "../api/tokens";
+
+export interface ApiToken {
+  id: string;
+  name: string;
+  createdAt: string;
+  last4: string;
+}
 
 interface Props {
   tokens: ApiToken[];

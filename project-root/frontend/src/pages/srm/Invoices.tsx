@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui';
 import { useSRMStore } from '@/stores/srmStore';
 import type { InvoiceStatus } from '@/types/srm';
 import { FileText, Calendar, AlertCircle, TrendingUp } from 'lucide-react';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 
 const STATUS_CONFIG: Record<InvoiceStatus, { label: string; variant: 'success' | 'warning' | 'error' | 'info' | 'neutral' }> = {
   received: { label: 'Получен', variant: 'neutral' },
@@ -16,6 +16,11 @@ const STATUS_CONFIG: Record<InvoiceStatus, { label: string; variant: 'success' |
 
 export default function InvoicesPage() {
   const invoices = useSRMStore(s => s.invoices);
+  const fetchInvoices = useSRMStore(s => s.fetchInvoices);
+
+  useEffect(() => {
+    fetchInvoices();
+  }, [fetchInvoices]);
 
   // Use useMemo to avoid recalculating on every render and prevent infinite loops
   const stats = useMemo(() => {

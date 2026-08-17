@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui';
 import { Badge } from '@/components/ui';
 import { Input } from '@/components/ui';
@@ -18,8 +18,13 @@ const STATUS_CONFIG: Record<SupplierStatus, { label: string; variant: 'success' 
 
 export default function SuppliersPage() {
   const suppliers = useSRMStore(s => s.suppliers);
+  const fetchSuppliers = useSRMStore(s => s.fetchSuppliers);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<SupplierStatus | 'all'>('all');
+
+  useEffect(() => {
+    fetchSuppliers();
+  }, [fetchSuppliers]);
 
   const filtered = suppliers.filter(s => {
     const matchesSearch = search === '' ||

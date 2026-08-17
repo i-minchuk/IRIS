@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Plus } from 'lucide-react';
 import type { Tender, TenderStage, TenderSummary, TenderTask } from '@/features/tenders/types/tender';
 import { getTenders, getTenderSummary } from '@/features/tenders/api/tenders';
-import { mockTenders, mockSummary, mockTasks } from '@/features/tenders/mocks/tenderData';
 import { TenderKPIHeader } from '@/features/tenders/components/TenderKPIHeader';
 import { TenderPipeline } from '@/features/tenders/components/TenderPipeline';
 import { TenderAuctionPanel } from '@/features/tenders/components/TenderAuctionPanel';
@@ -13,7 +12,7 @@ import { TenderAnalytics } from '@/features/tenders/components/TenderAnalytics';
 export default function TenderPortfolioPage() {
   const [tenders, setTenders] = useState<Tender[]>([]);
   const [summary, setSummary] = useState<TenderSummary | null>(null);
-  const [tasks] = useState<TenderTask[]>(mockTasks);
+  const [tasks] = useState<TenderTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedStage, setSelectedStage] = useState<TenderStage | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -22,7 +21,6 @@ export default function TenderPortfolioPage() {
     const load = async () => {
       try {
         setLoading(true);
-        // Try real API first, fallback to mocks
         try {
           const [tendersData, summaryData] = await Promise.all([
             getTenders(),
@@ -31,9 +29,9 @@ export default function TenderPortfolioPage() {
           setTenders(tendersData);
           setSummary(summaryData);
         } catch {
-          // Fallback to mocks for demo/development
-          setTenders(mockTenders);
-          setSummary(mockSummary);
+          // API недоступен — показываем честный пустой портфель
+          setTenders([]);
+          setSummary(null);
         }
         setError(null);
       } catch (err) {

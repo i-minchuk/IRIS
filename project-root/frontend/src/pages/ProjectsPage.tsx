@@ -1,14 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/providers/ThemeProvider';
-import { ChromeBot } from '@/components/ChromeBot';
 import AddTenderModal from '@/features/tenders/components/AddTenderModal';
 import {
   FolderKanban, FileCheck, Clock, AlertTriangle,
   ArrowRight, Users, ChevronRight, ChevronDown,
   Link as LinkIcon, Gavel, Search,
   Calendar, TrendingUp, TrendingDown,
-  CheckCircle2, XCircle, Clock3, Send, Sparkles,
+  CheckCircle2, XCircle, Clock3, Send,
   FileText, HardHat, Layers, Bookmark, Eye, Download,
   Plus
 } from 'lucide-react';
@@ -731,38 +730,6 @@ function ProjectsView() {
                 {showAllRisks ? 'Скрыть' : 'Показать все риски'}
               </button>
             )}
-          </div>
-
-          {/* IRIS — плашка рекомендаций */}
-          <div className="p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
-            <div className="flex items-center gap-3 mb-3">
-              <ChromeBot size={100} variant={isDark ? 'dark' : 'light'} />
-              <div>
-                <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Рекомендации IRIS</h3>
-                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>AI-ассистент</span>
-                <span
-                  className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded ml-2 align-middle"
-                  style={{ background: 'var(--iris-bg-hover, rgba(100,116,139,0.15))', color: 'var(--text-muted)' }}
-                  title="Демонстрационные рекомендации, не основаны на реальных данных"
-                >
-                  Демо
-                </span>
-              </div>
-            </div>
-            <div className="p-2.5 rounded-lg" style={{ background: isDark ? 'rgba(12,114,5,0.08)' : 'rgba(12,114,5,0.06)', border: '1px solid rgba(12,114,5,0.2)' }}>
-              <div className="flex items-start gap-2">
-                <Sparkles size={14} className="shrink-0 mt-0.5" style={{ color: '#0C7205' }} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs leading-relaxed" style={{ color: 'var(--text-primary)' }}>
-                    Перегруз тендерного отдела: <strong>85%</strong>. Переложить <strong>КЖ-02-014</strong> на проектный?
-                  </p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <button onClick={() => navigate('/team')} className="text-xs px-2 py-1 rounded-md font-medium transition-colors hover:brightness-110" style={{ background: '#0C7205', color: '#fff' }}>Применить</button>
-                    <button onClick={() => navigate('/workflow')} className="text-xs px-2 py-1 rounded-md transition-colors" style={{ color: 'var(--text-secondary)', border: '1px solid var(--border-color)' }}>Подробнее</button>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
 
         </div>

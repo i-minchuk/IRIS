@@ -10,8 +10,6 @@ import {
   type EmployeeProfile,
 } from '@/features/auth/api/adminApi';
 import { toast } from 'sonner';
-import { useTheme } from '@/providers/ThemeProvider';
-import { IRISRecommendations } from '@/components/IRISRecommendations';
 
 /* ─── Role config ─── */
 const ROLE_OPTIONS = [
@@ -106,8 +104,6 @@ export const AdminPage: React.FC = () => {
   const [employeeUser, setEmployeeUser] = useState<AdminUser | null>(null);
   const [employeeLoading, setEmployeeLoading] = useState(false);
 
-  const { theme } = useTheme();
-  const isDark = theme === 'dark' || theme === 'midnight' || theme === 'contrast';
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -260,7 +256,6 @@ export const AdminPage: React.FC = () => {
 
   return (
     <div className="space-y-6 px-3 md:px-6 py-4 md:pt-2 pb-6">
-      <IRISRecommendations page="admin" isDark={isDark} />
 
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">

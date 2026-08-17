@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui';
 import { Button } from '@/components/ui';
 import { useReleaseStore } from '@/stores/releaseStore';
@@ -22,7 +22,12 @@ export default function ReleasesPage() {
   const selectedRelease = useReleaseStore(s => s.selectedRelease);
   const selectRelease = useReleaseStore(s => s.selectRelease);
   const toggleChecklistItem = useReleaseStore(s => s.toggleChecklistItem);
+  const fetchReleases = useReleaseStore(s => s.fetchReleases);
   const [activeTab, setActiveTab] = useState<Release['status'] | 'all'>('all');
+
+  useEffect(() => {
+    fetchReleases();
+  }, [fetchReleases]);
 
   const filtered = activeTab === 'all'
     ? releases

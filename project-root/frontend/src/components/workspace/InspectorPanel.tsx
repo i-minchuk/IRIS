@@ -1,10 +1,12 @@
 import { User, MessageSquare, Pencil, Send, X, Save, ChevronLeft, Plus, Clock } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { getRemarks } from '@/features/remarks/api/remarks';
+import type { RemarkListItem, RemarkStatus } from '@/types/remarks';
 
 export interface Remark {
-  id: number;
+  id: string;
   number: string;
-  type: 'internal' | 'customer' | 'reviewer' | 'construction';
+  type: string;
   text: string;
   status: 'open' | 'in-progress' | 'resolved' | 'rejected' | 'verification';
   priority: 'low' | 'medium' | 'high' | 'critical';
@@ -33,88 +35,81 @@ interface ProgressUpdate {
   date: string;
 }
 
+const CATEGORY_LABELS: Record<string, string> = {
+  design_error: 'Ошибка проектирования',
+  discrepancy: 'Несоответствие',
+  incompleteness: 'Неполнота данных',
+  norm_violation: 'Нарушение норм',
+  customer_request: 'Запрос заказчика',
+  other: 'Прочее',
+};
+
+function mapApiStatus(status: RemarkStatus): Remark['status'] {
+  switch (status) {
+    case 'in_progress':
+      return 'in-progress';
+    case 'resolved':
+    case 'closed':
+      return 'resolved';
+    case 'rejected':
+      return 'rejected';
+    default:
+      return 'open';
+  }
+}
+
+function mapApiRemark(r: RemarkListItem): Remark {
+  return {
+    id: r.id,
+    number: `#${r.id}`,
+    type: '',
+    text: r.title,
+    status: mapApiStatus(r.status),
+    priority: r.priority,
+    category: CATEGORY_LABELS[r.category] || r.category,
+    author: r.author_name || '—',
+    assignee: r.assignee_name || '—',
+    date: r.created_at,
+    dueDate: r.due_date || r.created_at,
+    responses: [],
+    progressUpdates: [],
+  };
+}
+
 interface InspectorPanelProps {
   documentId?: string;
   selectedRemark?: Remark | null;
   onSelectRemark: (remark: Remark | null) => void;
 }
 
-export default function InspectorPanel({ selectedRemark, onSelectRemark }: InspectorPanelProps) {
+export default function InspectorPanel({ documentId, selectedRemark, onSelectRemark }: InspectorPanelProps) {
   const [newRemarkText, setNewRemarkText] = useState('');
   const [isAddingRemark, setIsAddingRemark] = useState(false);
+  const [remarks, setRemarks] = useState<Remark[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  // Мок-данные замечаний
-  const remarks: Remark[] = [
-    {
-      id: 1,
-      number: 'Р-001',
-      type: 'customer',
-      text: 'Не указана толщина шва сварки на узле 3.4. Требуется уточнение согласно ЕСКД.',
-      status: 'in-progress',
-      priority: 'high',
-      category: 'Конструкция',
-      author: 'Иванов А.В.',
-      assignee: 'Петров С.К.',
-      date: '2025-01-10',
-      dueDate: '2025-01-20',
-      responses: [
-        {
-          id: 1,
-          author: 'Петров С.К.',
-          text: 'Указана в спецификации на листе 5, п. 2.3',
-          date: '2025-01-11',
-          isOfficial: true,
-        },
-      ],
-      progressUpdates: [
-        {
-          id: 1,
-          author: 'Петров С.К.',
-          text: 'Добавлена ссылка на спецификацию',
-          whatChanged: 'Добавлено примечание на листе 1 с ссылкой на спецификацию',
-          date: '2025-01-12',
-        },
-      ],
-    },
-    {
-      id: 2,
-      number: 'Р-002',
-      type: 'reviewer',
-      text: 'Проверить соответствие нормам СНиП 2.03.01-84 для бетонных конструкций.',
-      status: 'open',
-      priority: 'medium',
-      category: 'Нормативы',
-      author: 'Сидоров В.М.',
-      assignee: 'Иванов А.В.',
-      date: '2025-01-08',
-      dueDate: '2025-01-18',
-      responses: [],
-      progressUpdates: [],
-    },
-    {
-      id: 3,
-      number: 'Р-003',
-      type: 'internal',
-      text: 'Исправить опечатку в маркировке арматурных стержней.',
-      status: 'resolved',
-      priority: 'low',
-      category: 'Документация',
-      author: 'Кузнецов О.П.',
-      assignee: 'Иванов А.В.',
-      date: '2025-01-05',
-      dueDate: '2025-01-15',
-      responses: [],
-      progressUpdates: [
-        {
-          id: 1,
-          author: 'Иванов А.В.',
-          text: 'Опечатка исправлена',
-          whatChanged: 'Исправлена маркировка на листе 2, все стержни A500C',
-          date: '2025-01-06',
-        },
-      ],
-    },
-  ];
+  useEffect(() => {
+    const numericId = Number(documentId);
+    if (!documentId || !numericId) {
+      setRemarks([]);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    getRemarks({ document_id: numericId, page: 1, page_size: 100 })
+      .then((res) => {
+        if (!cancelled) setRemarks(res.items.map(mapApiRemark));
+      })
+      .catch(() => {
+        if (!cancelled) setRemarks([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [documentId]);
 
   const openCount = remarks.filter((r) => r.status === 'open' || r.status === 'in-progress').length;
 
@@ -212,13 +207,23 @@ export default function InspectorPanel({ selectedRemark, onSelectRemark }: Inspe
 
       {/* Список замечаний */}
       <div className="flex-1 overflow-y-auto px-2 pb-2 space-y-1.5">
-        {remarks.map((remark) => (
-          <RemarkCard
-            key={remark.id}
-            remark={remark}
-            onClick={() => onSelectRemark(remark)}
-          />
-        ))}
+        {loading ? (
+          <p className="text-xs text-center py-4" style={{ color: 'var(--text-tertiary)' }}>
+            Загрузка замечаний…
+          </p>
+        ) : remarks.length === 0 ? (
+          <p className="text-xs text-center py-4" style={{ color: 'var(--text-tertiary)' }}>
+            Замечаний нет
+          </p>
+        ) : (
+          remarks.map((remark) => (
+            <RemarkCard
+              key={remark.id}
+              remark={remark}
+              onClick={() => onSelectRemark(remark)}
+            />
+          ))
+        )}
       </div>
 
       {/* Быстрые действия - внизу правой панели */}
@@ -298,16 +303,18 @@ function RemarkCard({ remark, onClick }: { remark: Remark; onClick: () => void }
           <span className="text-xs font-mono font-semibold" style={{ color: 'var(--text-primary)' }}>
             {remark.number}
           </span>
-          <span
-            className="text-xs px-1 py-0.5 rounded border"
-            style={{
-              backgroundColor: 'var(--bg-surface-2)',
-              borderColor: 'var(--border-default)',
-              color: 'var(--text-tertiary)',
-            }}
-          >
-            {getTypeLabel(remark.type)}
-          </span>
+          {remark.type && (
+            <span
+              className="text-xs px-1 py-0.5 rounded border"
+              style={{
+                backgroundColor: 'var(--bg-surface-2)',
+                borderColor: 'var(--border-default)',
+                color: 'var(--text-tertiary)',
+              }}
+            >
+              {getTypeLabel(remark.type)}
+            </span>
+          )}
           <span
             className="w-2 h-2 rounded-full shrink-0"
             style={{ backgroundColor: getPriorityColor(remark.priority) }}

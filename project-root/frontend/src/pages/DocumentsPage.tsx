@@ -1,5 +1,4 @@
-import { useTheme } from '@/providers/ThemeProvider';
-import { IRISRecommendations } from '@/components/IRISRecommendations';import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useTabState } from '@/shared/hooks/useTabState';
 import { PageHeader } from '@/shared/components/PageHeader';
 import { PageTabs } from '@/shared/components/PageTabs';
@@ -19,7 +18,9 @@ import { useAutoTimeTracker } from '@/features/time_tracking/hooks/useAutoTimeTr
 import apiClient from '@/shared/api/client';
 import { getLeaderboard } from '@/features/gamification/api/gamification';
 import { getTasks } from '@/features/tasks/api/tasks';
-import { getRemarks } from '@/features/remarks/api/remarks';
+import { getRemarks, createRemark } from '@/features/remarks/api/remarks';
+import { getDocuments, type DocumentItem } from '@/features/documents/api/documents';
+import { getProjects } from '@/features/projects/api/projects';
 import type { LeaderboardEntry } from '@/types';
 import type { Task } from '@/types';
 import type { RemarkListItem } from '@/types/remarks';
@@ -64,6 +65,7 @@ interface DocRemark {
 
 interface Document {
   id: string;
+  projectId: number;
   code: string;
   name: string;
   project: string;
@@ -106,32 +108,66 @@ const actionConfig: Record<RemarkAction, { label: string; color: string; bg: str
   delegate: { label: 'Поручение',    color: '#3B82F6', bg: 'rgba(59,130,246,0.15)', border: 'rgba(59,130,246,0.4)', icon: <Briefcase size={12} /> },
 };
 
-/* ── Mock data ── */
-const docsData: Document[] = [
-  { id: 'd1', code: 'КЖ-01-001', name: 'Сборочный чертёж корпуса', project: 'ЖК «Северный»', type: 'KJ', status: 'approved', revision: 'Rev.1', author: 'Иванов А.С.', reviewer: 'Петров В.К.', date: '09.05.2026', size: '2.4 MB', format: 'dwg',
-    remarks: [
-      { id: 'r1', text: 'В узле примыкания балки к колонне указана арматура Ø12, но по расчёту требуется Ø16. Необходимо пересмотреть узел.', author: 'Петров В.К.', date: '09.05.2026', status: 'open', assignee: 'Иванов А.С.', action: 'revise' },
-    ] },
-  { id: 'd2', code: 'АР-03-015', name: 'Планировочное решение этажа', project: 'ТЦ «Меридиан»', type: 'AR', status: 'confirmed', revision: 'Rev.0', author: 'Сидорова Е.М.', reviewer: 'Козлов Д.А.', date: '08.05.2026', size: '5.1 MB', format: 'pdf',
-    remarks: [
-      { id: 'r2', text: 'На плане отсутствует отметка уровня пола 2 этажа. Требуется добавить отметку ±0.000 и все привязки.', author: 'Козлов Д.А.', date: '08.05.2026', status: 'open', assignee: 'Сидорова Е.М.', action: 'revise' },
-    ] },
-  { id: 'd3', code: 'ОВиК-02-008', name: 'Схема вентиляции подвала', project: 'Склад А-12', type: 'OViK', status: 'review', revision: 'Rev.2', author: 'Новикова И.П.', reviewer: 'Иванов А.С.', date: '07.05.2026', size: '1.8 MB', format: 'pdf',
-    remarks: [
-      { id: 'r3', text: 'Требуется уточнить производительность вентилятора в подвале. Сейчас указано 1000 м³/ч, по расчёту нужно 1500 м³/ч.', author: 'Иванов А.С.', date: '07.05.2026', status: 'resolved', assignee: 'Новикова И.П.', action: 'approve' },
-    ] },
-  { id: 'd4', code: 'ЭОМ-05-003', name: 'Однолинейная схема ТЭЦ-5', project: 'ТЭЦ-5', type: 'EOM', status: 'draft', revision: 'Rev.0', author: 'Козлов Д.А.', reviewer: '', date: '06.05.2026', size: '3.2 MB', format: 'dwg',
-    remarks: [
-      { id: 'r4', text: 'В спецификации указан кабель ВВГнг 4×16, но по нагрузке требуется ВВГнг 4×25.', author: 'Сидорова Е.М.', date: '06.05.2026', status: 'open', assignee: 'Козлов Д.А.', action: 'revise' },
-    ] },
-  { id: 'd5', code: 'КР-01-002', name: 'Расчёт железобетонных конструкций', project: 'ТЭЦ-5', type: 'KR', status: 'approved', revision: 'Rev.A', author: 'Петров В.К.', reviewer: 'Сидорова Е.М.', date: '05.05.2026', size: '8.7 MB', format: 'docx', remarks: [] },
-  { id: 'd6', code: 'КЖ-02-004', name: 'Узел примыкания балки', project: 'ЖК «Северный»', type: 'KJ', status: 'review', revision: 'Rev.0', author: 'Иванов А.С.', reviewer: 'Петров В.К.', date: '04.05.2026', size: '1.1 MB', format: 'dwg',
-    remarks: [
-      { id: 'r5', text: 'Не хватает деталировки узла. Требуется добавить сечения А-А и Б-Б.', author: 'Петров В.К.', date: '04.05.2026', status: 'open', assignee: 'Иванов А.С.', action: 'revise' },
-    ] },
-  { id: 'd7', code: 'АР-04-001', name: 'Фасадный решение', project: 'Офис «Гамма»', type: 'AR', status: 'draft', revision: 'Rev.0', author: 'Сидорова Е.М.', reviewer: '', date: '03.05.2026', size: '4.5 MB', format: 'pdf', remarks: [] },
-  { id: 'd8', code: 'ОВиК-03-002', name: 'Тепловой пункт', project: 'ТЦ «Меридиан»', type: 'OViK', status: 'confirmed', revision: 'Rev.1', author: 'Новикова И.П.', reviewer: 'Козлов Д.А.', date: '02.05.2026', size: '2.9 MB', format: 'pdf', remarks: [] },
-];
+/* ── API data mapping ── */
+const DOC_TYPE_MAP: Record<string, DocType> = {
+  KJ: 'KJ', AR: 'AR', OVIK: 'OViK', EOM: 'EOM', KR: 'KR',
+  'КЖ': 'KJ', 'АР': 'AR', 'ОВИК': 'OViK', 'ЭОМ': 'EOM',
+};
+
+function mapDocType(value?: string): DocType {
+  return DOC_TYPE_MAP[(value || '').toUpperCase()] ?? 'other';
+}
+
+function mapDocStatus(value?: string): DocStatus {
+  const v = (value || '').toLowerCase();
+  if (v === 'draft' || v === 'approved' || v === 'confirmed' || v === 'archived') return v;
+  if (v === 'review' || v === 'in_review' || v === 'on_review' || v === 'in_progress') return 'review';
+  return 'draft';
+}
+
+function mapRemarkStatus(value: string): DocRemark['status'] {
+  if (value === 'resolved') return 'resolved';
+  if (value === 'closed' || value === 'rejected') return 'closed';
+  return 'open';
+}
+
+function mapApiRemark(r: RemarkListItem): DocRemark {
+  return {
+    id: r.id,
+    text: r.title,
+    author: r.author_name || '—',
+    date: r.created_at ? new Date(r.created_at).toLocaleDateString('ru-RU') : '—',
+    status: mapRemarkStatus(r.status),
+    assignee: r.assignee_name,
+  };
+}
+
+function mapApiDocument(d: DocumentItem, projectName: string): Document {
+  return {
+    id: String(d.id),
+    projectId: d.project_id,
+    code: d.number || d.code || '—',
+    name: d.name || d.title || '—',
+    project: projectName,
+    type: mapDocType(d.doc_type),
+    status: mapDocStatus(d.status),
+    revision: '—',
+    author: '—',
+    reviewer: '',
+    date: d.created_at ? new Date(d.created_at).toLocaleDateString('ru-RU') : '—',
+    size: '—',
+    format: '—',
+    remarks: [],
+  };
+}
+
+function extractItems<T>(data: unknown): T[] {
+  if (Array.isArray(data)) return data as T[];
+  if (data && typeof data === 'object' && Array.isArray((data as { items?: unknown }).items)) {
+    return (data as { items: T[] }).items;
+  }
+  return [];
+}
 
 /* ── Gamification data ── */
 interface EmployeeWorkload {
@@ -151,55 +187,6 @@ interface EmployeeWorkload {
   badges: string[];
   efficiency: number;
 }
-
-const employeeWorkloads: EmployeeWorkload[] = [
-  {
-    id: 'e1', name: 'Иванов А.С.', role: 'ГИП', initials: 'ИА', color: '#2563EB',
-    currentDoc: { code: 'КЖ-02-004', name: 'Узел примыкания балки', project: 'ЖК «Северный»', daysLeft: 2 },
-    queue: [
-      { code: 'АР-04-001', name: 'Фасадный решение', project: 'Офис «Гамма»' },
-    ],
-    busyDays: 5, approvedThisWeek: 7, streak: 7, level: 12, xp: 840, xpToNext: 1000,
-    badges: ['Главный по согласованиям', 'Марафонец'], efficiency: 92,
-  },
-  {
-    id: 'e2', name: 'Петров В.К.', role: 'Инженер КЖ', initials: 'ПВ', color: '#4F7A4C',
-    currentDoc: { code: 'КР-01-002', name: 'Расчёт железобетонных конструкций', project: 'ТЭЦ-5', daysLeft: 1 },
-    queue: [
-      { code: 'КЖ-01-001', name: 'Сборочный чертёж корпуса', project: 'ЖК «Северный»' },
-      { code: 'КЖ-03-005', name: 'Армирование плиты перекрытия', project: 'ТЦ «Меридиан»' },
-    ],
-    busyDays: 8, approvedThisWeek: 12, streak: 5, level: 10, xp: 720, xpToNext: 900,
-    badges: ['Мастер КЖ', 'Скоростной'], efficiency: 88,
-  },
-  {
-    id: 'e3', name: 'Сидорова Е.М.', role: 'Инженер ОВ', initials: 'СЕ', color: '#6B5B95',
-    currentDoc: { code: 'ОВиК-03-002', name: 'Тепловой пункт', project: 'ТЦ «Меридиан»', daysLeft: 3 },
-    queue: [
-      { code: 'ОВиК-04-006', name: 'Схема воздуховодов', project: 'Офис «Гамма»' },
-    ],
-    busyDays: 6, approvedThisWeek: 9, streak: 3, level: 9, xp: 650, xpToNext: 800,
-    badges: ['Архивариус', 'Перфекционист'], efficiency: 85,
-  },
-  {
-    id: 'e4', name: 'Козлов Д.А.', role: 'Инженер ЭОМ', initials: 'КД', color: '#D4AF37',
-    currentDoc: { code: 'ЭОМ-05-003', name: 'Однолинейная схема ТЭЦ-5', project: 'ТЭЦ-5', daysLeft: 4 },
-    queue: [],
-    busyDays: 4, approvedThisWeek: 5, streak: 2, level: 7, xp: 480, xpToNext: 600,
-    badges: ['Электрик'], efficiency: 78,
-  },
-  {
-    id: 'e5', name: 'Новикова И.П.', role: 'Тендерный спец.', initials: 'НИ', color: '#3B82F6',
-    currentDoc: null,
-    queue: [
-      { code: 'ТН-01-001', name: 'Техническое задание', project: 'Склад А-12' },
-    ],
-    busyDays: 2, approvedThisWeek: 4, streak: 2, level: 5, xp: 320, xpToNext: 500,
-    badges: ['Новичок', 'Усердный'], efficiency: 72,
-  },
-];
-
-const employees: Employee[] = employeeWorkloads.map(e => ({ id: e.id, name: e.name, role: e.role, initials: e.initials, color: e.color }));
 
 /* ── Helpers ── */
 function TypeBadge({ type }: { type: DocType }) {
@@ -225,38 +212,64 @@ function FileIcon({ type }: { type: DocType }) {
 function RegistryView() {
   const { autoStart } = useAutoTimeTracker();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedProject, setSelectedProject] = useState<string | null>('ЖК «Северный»');
+  const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
-  const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set(['ЖК «Северный»']));
+  const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
   const [newRemarkText, setNewRemarkText] = useState('');
   const [newRemarkAction, setNewRemarkAction] = useState<RemarkAction>('revise');
   const [delegateOpen, setDelegateOpen] = useState(false);
   const [selectedAssignee, setSelectedAssignee] = useState<string>('');
+  const [docs, setDocs] = useState<Document[]>([]);
+  const [docsLoading, setDocsLoading] = useState(true);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setDocsLoading(true);
+    Promise.all([
+      getDocuments().catch(() => [] as DocumentItem[]),
+      getProjects().catch(() => [] as { id: number; name: string }[]),
+      getLeaderboard().catch(() => [] as LeaderboardEntry[]),
+    ]).then(([apiDocs, projectsData, leaderboard]) => {
+      if (cancelled) return;
+      const projectNames = new Map(extractItems<{ id: number; name: string }>(projectsData).map(p => [p.id, p.name]));
+      setDocs(extractItems<DocumentItem>(apiDocs).map(d => mapApiDocument(d, projectNames.get(d.project_id) || `Проект #${d.project_id}`)));
+      setEmployees(extractItems<LeaderboardEntry>(leaderboard).map((l, i) => ({
+        id: String(l.user_id),
+        name: l.full_name,
+        role: l.level_title,
+        initials: getInitials(l.full_name),
+        color: PALETTE[i % PALETTE.length],
+      })));
+      setDocsLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   const projects = useMemo(() => {
     const map = new Map<string, Document[]>();
-    docsData.forEach(d => {
+    docs.forEach(d => {
       if (!map.has(d.project)) map.set(d.project, []);
       map.get(d.project)!.push(d);
     });
     return map;
-  }, []);
+  }, [docs]);
 
   const projectNames = Array.from(projects.keys());
 
   const filteredDocs = useMemo(() => {
-    if (!searchQuery.trim()) return docsData;
+    if (!searchQuery.trim()) return docs;
     const q = searchQuery.toLowerCase();
-    return docsData.filter(d =>
+    return docs.filter(d =>
       d.name.toLowerCase().includes(q) ||
       d.code.toLowerCase().includes(q) ||
       d.project.toLowerCase().includes(q)
     );
-  }, [searchQuery]);
+  }, [searchQuery, docs]);
 
   const selectedDoc = useMemo(() =>
-    docsData.find(d => d.id === selectedDocId) || null,
-  [selectedDocId]);
+    docs.find(d => d.id === selectedDocId) || null,
+  [selectedDocId, docs]);
 
   const docsForProject = useMemo(() => {
     if (!selectedProject) return filteredDocs;
@@ -276,22 +289,40 @@ function RegistryView() {
   const handleDocClick = async (doc: Document) => {
     setSelectedDocId(doc.id);
     setSelectedProject(doc.project);
-    const numericId = Number.parseInt(doc.id, 10) || Number(doc.id.replace(/\D/g, '')) || undefined;
+    const numericId = Number.parseInt(doc.id, 10) || undefined;
     await autoStart({ documentId: numericId, documentName: `${doc.code} — ${doc.name}` });
+    if (numericId) {
+      try {
+        const res = await getRemarks({ document_id: numericId, page: 1, page_size: 100 });
+        const remarks = res.items.map(mapApiRemark);
+        setDocs(prev => prev.map(d => (d.id === doc.id ? { ...d, remarks } : d)));
+      } catch {
+        setDocs(prev => prev.map(d => (d.id === doc.id ? { ...d, remarks: [] } : d)));
+      }
+    }
   };
 
-  const handleAddRemark = () => {
+  const handleAddRemark = async () => {
     if (!newRemarkText.trim() || !selectedDoc) return;
-    const remark: DocRemark = {
-      id: `new-${Date.now()}`,
-      text: newRemarkText.trim(),
-      author: 'Администратор',
-      date: new Date().toLocaleDateString('ru-RU'),
-      status: 'open',
-      action: newRemarkAction,
-      assignee: newRemarkAction === 'delegate' ? (selectedAssignee || undefined) : undefined,
-    };
-    selectedDoc.remarks.push(remark);
+    const numericId = Number.parseInt(selectedDoc.id, 10);
+    if (!numericId) return;
+    try {
+      await createRemark({
+        document_id: numericId,
+        project_id: selectedDoc.projectId,
+        source: 'manual',
+        priority: 'medium',
+        category: 'other',
+        title: newRemarkText.trim(),
+        description: newRemarkText.trim(),
+        assignee_id: newRemarkAction === 'delegate' && selectedAssignee ? Number(selectedAssignee) : undefined,
+      });
+      const res = await getRemarks({ document_id: numericId, page: 1, page_size: 100 });
+      const remarks = res.items.map(mapApiRemark);
+      setDocs(prev => prev.map(d => (d.id === selectedDoc.id ? { ...d, remarks } : d)));
+    } catch {
+      // ошибка создания замечания — список остаётся без изменений
+    }
     setNewRemarkText('');
     setSelectedAssignee('');
     setDelegateOpen(false);
@@ -408,7 +439,7 @@ function RegistryView() {
               <div className="p-3 space-y-1">
                 {docsForProject.length === 0 && (
                   <div className="text-center py-8 text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>
-                    Документы не найдены.
+                    {docsLoading ? 'Загрузка документов…' : 'Документы не найдены.'}
                   </div>
                 )}
                 {docsForProject.map(doc => (
@@ -613,16 +644,16 @@ function RegistryView() {
                       <button
                         key={emp.id}
                         onClick={() => {
-                          setSelectedAssignee(emp.name);
+                          setSelectedAssignee(emp.id);
                           setDelegateOpen(false);
                         }}
                         className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left transition-colors text-sm"
                         style={{
-                          background: selectedAssignee === emp.name ? 'var(--bg-surface-3)' : 'transparent',
-                          color: selectedAssignee === emp.name ? 'var(--text-primary)' : 'var(--text-secondary)',
+                          background: selectedAssignee === emp.id ? 'var(--bg-surface-3)' : 'transparent',
+                          color: selectedAssignee === emp.id ? 'var(--text-primary)' : 'var(--text-secondary)',
                         }}
-                        onMouseEnter={e => { if (selectedAssignee !== emp.name) e.currentTarget.style.background = 'var(--bg-surface-3)'; }}
-                        onMouseLeave={e => { if (selectedAssignee !== emp.name) e.currentTarget.style.background = 'transparent'; }}
+                        onMouseEnter={e => { if (selectedAssignee !== emp.id) e.currentTarget.style.background = 'var(--bg-surface-3)'; }}
+                        onMouseLeave={e => { if (selectedAssignee !== emp.id) e.currentTarget.style.background = 'transparent'; }}
                       >
                         <div className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold shrink-0" style={{ background: emp.color + '20', color: emp.color }}>
                           {emp.initials}
@@ -631,7 +662,7 @@ function RegistryView() {
                           <div className="truncate font-medium">{emp.name}</div>
                           <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{emp.role}</div>
                         </div>
-                        {selectedAssignee === emp.name && <CheckCircle size={10} style={{ color: '#4F7A4C' }} />}
+                        {selectedAssignee === emp.id && <CheckCircle size={10} style={{ color: '#4F7A4C' }} />}
                       </button>
                     ))}
                   </div>
@@ -672,8 +703,8 @@ function tooltipStyle() {
 
 function WorkflowView() {
   const [tab, setTab] = useState<'tasks' | 'remarks'>('tasks');
-  const [tasks, setTasks] = useState<Task[]>(mockTasks);
-  const [remarks, setRemarks] = useState<RemarkListItem[]>(mockRemarks);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [remarks, setRemarks] = useState<RemarkListItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [taskSearch, setTaskSearch] = useState('');
@@ -792,9 +823,7 @@ function WorkflowView() {
       }
     });
     if (Object.values(counts).every(v => v === 0)) {
-      counts['Май'] = 2;
-      counts['Июн'] = 3;
-      counts['Июл'] = 1;
+      return months.map(m => ({ month: m, count: 0 }));
     }
     return months.map(m => ({ month: m, count: counts[m] || 0 }));
   }, [tasks]);
@@ -1044,24 +1073,6 @@ function WorkflowView() {
   );
 }
 
-/* ── Mock fallback data for workflow ── */
-const mockTasks: Task[] = [
-  { id: 1, title: 'Согласовать КЖ-01-001 ЖК «Северный»', status: 'NEW', priority: 'HIGH', due_date: '2026-05-25', project_id: 1, assignee_id: 2, creator_id: 1, document_id: null, type: null, description: null, started_at: null, completed_at: null, planned_start: null, planned_finish: null, planned_hours: 0, actual_hours: 0, percent_complete: 0, engineer: null, is_critical: false, es: null, ef: null, ls: null, lf: null, slack: null },
-  { id: 2, title: 'Проверить АР-03-015 ТЦ «Меридиан»', status: 'IN_PROGRESS', priority: 'NORMAL', due_date: '2026-05-28', project_id: 2, assignee_id: 3, creator_id: 1, document_id: null, type: null, description: null, started_at: null, completed_at: null, planned_start: null, planned_finish: null, planned_hours: 0, actual_hours: 0, percent_complete: 0, engineer: null, is_critical: false, es: null, ef: null, ls: null, lf: null, slack: null },
-  { id: 3, title: 'Утвердить ОВиК-02-008 Склад А-12', status: 'DONE', priority: 'LOW', due_date: '2026-05-20', project_id: 3, assignee_id: 4, creator_id: 2, document_id: null, type: null, description: null, started_at: null, completed_at: null, planned_start: null, planned_finish: null, planned_hours: 0, actual_hours: 0, percent_complete: 100, engineer: null, is_critical: false, es: null, ef: null, ls: null, lf: null, slack: null },
-  { id: 4, title: 'Согласовать ЭОМ-05-003 ТЭЦ-5', status: 'NEW', priority: 'HIGH', due_date: '2026-05-30', project_id: 4, assignee_id: 2, creator_id: 3, document_id: null, type: null, description: null, started_at: null, completed_at: null, planned_start: null, planned_finish: null, planned_hours: 0, actual_hours: 0, percent_complete: 0, engineer: null, is_critical: false, es: null, ef: null, ls: null, lf: null, slack: null },
-  { id: 5, title: 'Проверить КР-01-002 ТЭЦ-5 (расчёт)', status: 'IN_PROGRESS', priority: 'NORMAL', due_date: '2026-06-05', project_id: 4, assignee_id: 5, creator_id: 1, document_id: null, type: null, description: null, started_at: null, completed_at: null, planned_start: null, planned_finish: null, planned_hours: 0, actual_hours: 0, percent_complete: 0, engineer: null, is_critical: false, es: null, ef: null, ls: null, lf: null, slack: null },
-  { id: 6, title: 'Утвердить АР-04-001 Офис «Гамма»', status: 'DONE', priority: 'LOW', due_date: '2026-05-18', project_id: 5, assignee_id: 3, creator_id: 2, document_id: null, type: null, description: null, started_at: null, completed_at: null, planned_start: null, planned_finish: null, planned_hours: 0, actual_hours: 0, percent_complete: 100, engineer: null, is_critical: false, es: null, ef: null, ls: null, lf: null, slack: null },
-];
-
-const mockRemarks: RemarkListItem[] = [
-  { id: 'r1', title: 'Несоответствие арматуры в КЖ-01-001', status: 'new', priority: 'high', category: 'design_error', author_id: 1, author_name: 'Иванов А.С.', created_at: '2026-05-22', updated_at: '2026-05-22', project_name: 'ЖК «Северный»', document_name: 'КЖ-01-001', assignee_name: 'Петров В.К.' },
-  { id: 'r2', title: 'Уточнение вентфасада ТЦ «Меридиан»', status: 'in_progress', priority: 'medium', category: 'discrepancy', author_id: 2, author_name: 'Сидорова Е.М.', created_at: '2026-05-21', updated_at: '2026-05-21', project_name: 'ТЦ «Меридиан»', document_name: 'АР-03-015', assignee_name: 'Козлов Д.А.' },
-  { id: 'r3', title: 'Замечания по гидроизоляции подвала', status: 'resolved', priority: 'high', category: 'norm_violation', author_id: 3, author_name: 'Новикова И.П.', created_at: '2026-05-20', updated_at: '2026-05-20', project_name: 'ЖК «Северный»', document_name: 'КР-01-002', assignee_name: 'Петров В.К.' },
-  { id: 'r4', title: 'Корректировка однолинейной схемы', status: 'new', priority: 'low', category: 'incompleteness', author_id: 4, author_name: 'Козлов Д.А.', created_at: '2026-05-23', updated_at: '2026-05-23', project_name: 'ТЭЦ-5', document_name: 'ЭОМ-05-003', assignee_name: 'Иванов А.С.' },
-  { id: 'r5', title: 'Узел балка-колонна: уточнить защитный слой', status: 'in_progress', priority: 'medium', category: 'design_error', author_id: 5, author_name: 'Петров В.К.', created_at: '2026-05-19', updated_at: '2026-05-19', project_name: 'ЖК «Южный парк»', document_name: 'КЖ-02-004', assignee_name: 'Сидорова Е.М.' },
-];
-
 /* ═══════════════════════════════════════════
    EMPLOYEES VIEW — Gamification + Workload
    ═══════════════════════════════════════════ */
@@ -1072,7 +1083,7 @@ function getInitials(fullName: string): string {
 }
 
 function mapWorkloadData(apiWorkload: any, leaderboard: LeaderboardEntry[]): EmployeeWorkload[] {
-  if (!apiWorkload?.team || !Array.isArray(apiWorkload.team)) return employeeWorkloads;
+  if (!apiWorkload?.team || !Array.isArray(apiWorkload.team)) return [];
   return apiWorkload.team.map((member: any, idx: number): EmployeeWorkload => {
     const lb = leaderboard.find(l => l.user_id === member.id);
     const weeklyHours = member.weekly_load?.reduce((s: number, w: any) => s + (w.hours || 0), 0) || 0;
@@ -1099,7 +1110,7 @@ function mapWorkloadData(apiWorkload: any, leaderboard: LeaderboardEntry[]): Emp
 }
 
 function EmployeesView() {
-  const [workloads, setWorkloads] = useState<EmployeeWorkload[]>(employeeWorkloads);
+  const [workloads, setWorkloads] = useState<EmployeeWorkload[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedEmpId, setSelectedEmpId] = useState<string | null>(null);
   const [delegateModalOpen, setDelegateModalOpen] = useState(false);
@@ -1179,7 +1190,7 @@ function EmployeesView() {
 
   const sortedByEfficiency = [...workloads].sort((a, b) => b.efficiency - a.efficiency);
   const totalDocs = workloads.reduce((sum, e) => sum + (e.currentDoc ? 1 : 0) + e.queue.length, 0);
-  const avgLoad = Math.round(workloads.reduce((sum, e) => sum + e.busyDays, 0) / workloads.length);
+  const avgLoad = workloads.length ? Math.round(workloads.reduce((sum, e) => sum + e.busyDays, 0) / workloads.length) : 0;
 
   return (
     <div className="space-y-4">
@@ -1188,8 +1199,8 @@ function EmployeesView() {
         {[
           { label: 'Всего в работе', value: String(totalDocs), sub: 'документов', color: TAB_COLOR, icon: <FileText size={14} /> },
           { label: 'Средняя загрузка', value: `${avgLoad} дн.`, sub: 'на сотрудника', color: '#D4AF37', icon: <Clock size={14} /> },
-          { label: 'Лучшая серия', value: `${Math.max(...workloads.map(e => e.streak))} дн.`, sub: 'без просрочек', color: '#FF6B6B', icon: <Flame size={14} /> },
-          { label: 'Ср. эффективность', value: `${Math.round(workloads.reduce((s, e) => s + e.efficiency, 0) / workloads.length)}%`, sub: 'по команде', color: '#6B5B95', icon: <TrendingUp size={14} /> },
+          { label: 'Лучшая серия', value: `${workloads.length ? Math.max(...workloads.map(e => e.streak)) : 0} дн.`, sub: 'без просрочек', color: '#FF6B6B', icon: <Flame size={14} /> },
+          { label: 'Ср. эффективность', value: `${workloads.length ? Math.round(workloads.reduce((s, e) => s + e.efficiency, 0) / workloads.length) : 0}%`, sub: 'по команде', color: '#6B5B95', icon: <TrendingUp size={14} /> },
         ].map((item, i) => (
           <div key={i} className="p-3 rounded-lg flex flex-col gap-1" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-default)' }}>
             <div className="flex items-center justify-between">
@@ -1533,7 +1544,6 @@ export default function DocumentsPage() {
       />
 
       <div className="mb-4">
-        <IRISRecommendations page="documents" isDark={useTheme().theme === 'dark' || useTheme().theme === 'midnight' || useTheme().theme === 'contrast'} />
       </div>
 
       <PageTabs tabs={DOC_TABS} active={activeTab} onChange={setActiveTab} />

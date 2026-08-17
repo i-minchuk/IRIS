@@ -3,7 +3,13 @@ import type {
   Supplier, PurchaseRequest, Contract, PurchaseOrder, Invoice,
   SupplierStatus, PurchaseRequestStatus, ContractStatus, OrderStatus, InvoiceStatus
 } from '@/types/srm';
-import { mockSuppliers, mockPurchaseRequests, mockContracts, mockOrders, mockInvoices } from '@/stores/mocks/srm';
+import {
+  getSuppliers,
+  getPurchaseRequests,
+  getContracts,
+  getOrders,
+  getInvoices,
+} from '@/features/srm/api/srmApi';
 
 interface SRMState {
   suppliers: Supplier[];
@@ -11,6 +17,15 @@ interface SRMState {
   contracts: Contract[];
   orders: PurchaseOrder[];
   invoices: Invoice[];
+  isLoading: boolean;
+  error: string | null;
+
+  // Fetch actions
+  fetchSuppliers: () => Promise<void>;
+  fetchPurchaseRequests: () => Promise<void>;
+  fetchContracts: () => Promise<void>;
+  fetchOrders: () => Promise<void>;
+  fetchInvoices: () => Promise<void>;
 
   // Supplier actions
   getSuppliersByStatus: (status: SupplierStatus) => Supplier[];
@@ -47,12 +62,69 @@ interface SRMState {
   };
 }
 
-export const useSRMStore = create<SRMState>((_set, get) => ({
-  suppliers: mockSuppliers,
-  purchaseRequests: mockPurchaseRequests,
-  contracts: mockContracts,
-  orders: mockOrders,
-  invoices: mockInvoices,
+export const useSRMStore = create<SRMState>((set, get) => ({
+  suppliers: [],
+  purchaseRequests: [],
+  contracts: [],
+  orders: [],
+  invoices: [],
+  isLoading: false,
+  error: null,
+
+  fetchSuppliers: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const suppliers = await getSuppliers();
+      set({ suppliers, isLoading: false });
+    } catch (err) {
+      console.error('Failed to load suppliers:', err);
+      set({ isLoading: false, error: 'Не удалось загрузить поставщиков' });
+    }
+  },
+
+  fetchPurchaseRequests: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const purchaseRequests = await getPurchaseRequests();
+      set({ purchaseRequests, isLoading: false });
+    } catch (err) {
+      console.error('Failed to load purchase requests:', err);
+      set({ isLoading: false, error: 'Не удалось загрузить заявки на закупку' });
+    }
+  },
+
+  fetchContracts: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const contracts = await getContracts();
+      set({ contracts, isLoading: false });
+    } catch (err) {
+      console.error('Failed to load contracts:', err);
+      set({ isLoading: false, error: 'Не удалось загрузить договоры' });
+    }
+  },
+
+  fetchOrders: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const orders = await getOrders();
+      set({ orders, isLoading: false });
+    } catch (err) {
+      console.error('Failed to load orders:', err);
+      set({ isLoading: false, error: 'Не удалось загрузить заказы' });
+    }
+  },
+
+  fetchInvoices: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const invoices = await getInvoices();
+      set({ invoices, isLoading: false });
+    } catch (err) {
+      console.error('Failed to load invoices:', err);
+      set({ isLoading: false, error: 'Не удалось загрузить счета' });
+    }
+  },
 
   getSuppliersByStatus: (status) => get().suppliers.filter(s => s.status === status),
   getSuppliersByCategory: (category) => get().suppliers.filter(s => s.category === category),

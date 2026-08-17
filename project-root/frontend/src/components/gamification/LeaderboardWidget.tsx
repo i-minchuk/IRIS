@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useGamificationStore } from '@/stores/gamificationStore';
 import {
   Trophy, Medal, Award, Star, Flame, Zap, Crown,
@@ -34,7 +35,11 @@ function getRankStyle(rank: number) {
 
 export function LeaderboardWidget() {
   const navigate = useNavigate();
-  const entries = useGamificationStore(s => s.getLeaderboard('global_xp'));
+  const fetchAll = useGamificationStore(s => s.fetchAll);
+  useEffect(() => {
+    void fetchAll();
+  }, [fetchAll]);
+  const entries = useGamificationStore(s => s.leaderboard);
   const badges = useGamificationStore(s => s.badges);
   const earnedBadges = badges.filter(b => b.earnedAt);
 
@@ -127,9 +132,6 @@ export function LeaderboardWidget() {
               <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>
                 <span className="flex items-center gap-0.5">
                   <Star size={10} style={{ color: '#D4AF37' }} /> {entry.xp.toLocaleString()}
-                </span>
-                <span className="flex items-center gap-0.5">
-                  <Flame size={10} style={{ color: '#EF4444' }} /> {entry.streak}
                 </span>
               </div>
             </div>

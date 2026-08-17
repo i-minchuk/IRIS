@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui';
 import { useSRMStore } from '@/stores/srmStore';
 import type { PurchaseRequestStatus, PurchaseRequest } from '@/types/srm';
@@ -26,7 +26,12 @@ const PRIORITY_COLORS = {
 
 export default function PurchaseRequestsPage() {
   const requests = useSRMStore(s => s.purchaseRequests);
+  const fetchPurchaseRequests = useSRMStore(s => s.fetchPurchaseRequests);
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetchPurchaseRequests();
+  }, [fetchPurchaseRequests]);
 
   const getRequestsForColumn = (status: PurchaseRequestStatus) =>
     requests.filter(r => r.status === status);

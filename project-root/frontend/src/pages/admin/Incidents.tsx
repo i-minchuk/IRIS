@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { useSupportStore } from '@/stores/supportStore';
 import { IncidentCard } from '@/components/admin/IncidentCard';
@@ -15,7 +15,12 @@ const SEVERITY_FILTERS: { severity: IncidentSeverity | 'all'; label: string }[] 
 
 export default function IncidentsPage() {
   const incidents = useSupportStore(s => s.incidents);
+  const fetchIncidents = useSupportStore(s => s.fetchIncidents);
   const [activeFilter, setActiveFilter] = useState<IncidentSeverity | 'all'>('all');
+
+  useEffect(() => {
+    fetchIncidents();
+  }, [fetchIncidents]);
 
   const filtered = activeFilter === 'all'
     ? incidents

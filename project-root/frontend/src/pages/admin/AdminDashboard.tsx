@@ -3,8 +3,6 @@ import { useTabState } from '@/shared/hooks/useTabState';
 import { PageTabs } from '@/shared/components/PageTabs';
 import { Card } from '@/components/ui';
 import { Badge } from '@/components/ui';
-import { useTheme } from '@/providers/ThemeProvider';
-import { IRISRecommendations } from '@/components/IRISRecommendations';
 import { useAuditStore } from '@/stores/auditStore';
 import { useSupportStore } from '@/stores/supportStore';
 import { useReleaseStore } from '@/stores/releaseStore';
@@ -33,10 +31,16 @@ function DashboardOverview() {
   const tickets = useSupportStore(s => s.tickets);
   const incidents = useSupportStore(s => s.incidents);
   const releases = useReleaseStore(s => s.releases);
+  const fetchTickets = useSupportStore(s => s.fetchTickets);
+  const fetchIncidents = useSupportStore(s => s.fetchIncidents);
+  const fetchReleases = useReleaseStore(s => s.fetchReleases);
 
   useEffect(() => {
     fetchAuditEntries();
-  }, [fetchAuditEntries]);
+    fetchTickets();
+    fetchIncidents();
+    fetchReleases();
+  }, [fetchAuditEntries, fetchTickets, fetchIncidents, fetchReleases]);
 
   const auditStats = useMemo(() => ({
     total: auditEntries.length,
@@ -192,8 +196,6 @@ function DashboardOverview() {
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useTabState<AdminTab>('iris_admin_tab', 'overview');
-  const { theme } = useTheme();
-  const isDark = theme === 'dark' || theme === 'midnight' || theme === 'contrast';
 
   return (
     <div className="w-full pt-2 pb-6 px-4 space-y-6">
@@ -206,7 +208,6 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      <IRISRecommendations page="admin" isDark={isDark} />
 
       <PageTabs tabs={TABS} active={activeTab} onChange={setActiveTab} color={TAB_COLOR} />
 

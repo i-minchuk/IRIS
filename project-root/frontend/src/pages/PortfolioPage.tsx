@@ -5,8 +5,6 @@ import {
 } from 'lucide-react';
 import { useTabState } from '@/shared/hooks/useTabState';
 import { PageHeader } from '@/shared/components/PageHeader';
-import { useTheme } from '@/providers/ThemeProvider';
-import { IRISRecommendations } from '@/components/IRISRecommendations';
 
 /* ─── Lazy tab contents ─── */
 import TendersPage from '@/pages/TendersPage';
@@ -46,8 +44,6 @@ export default function PortfolioPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useTabState<MainTab>('iris_portfolio_tab', 'tenders');
   const [srmTab, setSrmTab] = useTabState<SRMTab>('iris_portfolio_srm_tab', 'suppliers');
-  const { theme } = useTheme();
-  const isDark = theme === 'dark' || theme === 'midnight' || theme === 'contrast';
 
   // Sync with URL query params
   const tabParam = searchParams.get('tab') as MainTab | null;
@@ -99,7 +95,6 @@ export default function PortfolioPage() {
 
       {/* IRIS Recommendations */}
       <div className="mb-6">
-        <IRISRecommendations page="portfolio" isDark={isDark} />
       </div>
 
       {/* Main tabs */}

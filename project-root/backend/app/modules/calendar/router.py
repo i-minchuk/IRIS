@@ -22,17 +22,6 @@ from app.modules.tenders.models import Tender
 
 router = APIRouter(tags=["calendar"])
 
-# Моковые данные дней рождений (в будущем — из модели Employee/Profile)
-MOCK_BIRTHDAYS = [
-    {"id": "b1", "name": "Иванов П.С.", "date": "05-15", "role": "Ведущий инженер"},
-    {"id": "b2", "name": "Петрова А.М.", "date": "05-11", "role": "Инженер КЖ"},
-    {"id": "b3", "name": "Сидоров В.К.", "date": "06-01", "role": "Младший инженер"},
-    {"id": "b4", "name": "Новикова А.В.", "date": "12-25", "role": "Главный инженер"},
-    {"id": "b5", "name": "Кузнецов Д.И.", "date": "06-15", "role": "ГИП"},
-    {"id": "b6", "name": "Смирнова Е.В.", "date": "07-03", "role": "Нормоконтролёр"},
-    {"id": "b7", "name": "Волков А.Н.", "date": "08-20", "role": "Менеджер проектов"},
-]
-
 
 def _datetime_to_date(value: datetime | None) -> date | None:
     if value is None:
@@ -269,4 +258,5 @@ async def get_calendar_birthdays(
     current_user: User = Depends(get_current_active_user),
 ) -> list[BirthdayEvent]:
     """Get employee birthdays for calendar display."""
-    return [BirthdayEvent(**b) for b in MOCK_BIRTHDAYS]
+    # TODO: no birthdate field on User yet — returning empty list
+    return []

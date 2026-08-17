@@ -95,3 +95,14 @@ from app.models.archive import (  # noqa
 
 # 14. Audit — ссылается на User
 from app.models.audit import AuditLog as AuditLogModel  # noqa
+
+# 15. Releases / Support / SRM — без внешних ссылок (SRM ссылается на Project по строке)
+from app.modules.releases.models import Release  # noqa
+from app.modules.support.models import SupportTicket, Incident, KBArticle  # noqa
+from app.modules.srm.models import (  # noqa
+    Supplier,
+    PurchaseRequest,
+    Contract,
+    PurchaseOrder,
+    Invoice,
+)

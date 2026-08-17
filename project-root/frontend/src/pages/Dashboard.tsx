@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/providers/ThemeProvider';
-import { ChromeBot } from '@/components/ChromeBot';
 import LiveClock from '@/shared/components/LiveClock';
 
 import {
@@ -24,7 +23,7 @@ import { RemarksWidget } from '@/features/remarks/components/RemarksWidget';
 import {
   TrendingUp, TrendingDown, AlertTriangle,
   Award, DollarSign, Briefcase, Users, Clock,
-  ChevronRight, Zap, Sparkles, ArrowDown, Loader2,
+  ChevronRight, Zap, ArrowDown, Loader2,
   Gavel, BarChart3, Calendar as CalendarIcon
 } from 'lucide-react';
 import { DepartmentLoad } from '@/components/DepartmentLoad';
@@ -68,39 +67,9 @@ function useCountUp(target: number, duration = 1500, decimals = 1) {
 }
 
 /* ═══════════════════════════════════════════
-   MOCK FALLBACK DATA
+   MOCK FALLBACK DATA — удалены (зачистка 2026-08-17):
+   виджеты показывают честные пустые состояния.
    ═══════════════════════════════════════════ */
-
-const MOCK_TREND_DATA = [42, 45, 48, 44, 52, 58, 55, 61, 68, 72, 70, 78];
-const MOCK_TREND_LABELS = ['Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек', 'Янв', 'Фев', 'Мар', 'Апр'];
-
-const MOCK_TOP_PROJECTS = [
-  { name: 'ЖК «Северный»', percent: 78, status: 'active', revenue: '45.2 млн ₽', deadline: '10.05.2026' },
-  { name: 'ТЦ «Меридиан»', percent: 45, status: 'review', revenue: '28.7 млн ₽', deadline: '25.05.2026' },
-  { name: 'ТЭЦ-5', percent: 61, status: 'active', revenue: '19.1 млн ₽', deadline: '30.05.2026' },
-];
-
-const MOCK_KPI_SPARK_DATA = {
-  approval: [3.1, 2.8, 2.9, 2.5, 2.4, 2.3, 2.3],
-  winRate:  [58, 60, 62, 63, 65, 66, 68],
-  overdue:  [15, 14, 12, 11, 9, 8, 7],
-  load:     [78, 80, 82, 83, 84, 85, 84],
-};
-
-const MOCK_PORTFOLIO = [
-  { type: 'Жилые комплексы', share: 45, revenue: 56.1, color: '#3B82F6' },
-  { type: 'Торговые центры', share: 28, revenue: 34.9, color: '#D4AF37' },
-  { type: 'Промышленность', share: 18, revenue: 22.4, color: '#0C7205' },
-  { type: 'Инфраструктура', share: 9, revenue: 11.2, color: '#8B5CF6' },
-];
-
-const MOCK_DEADLINES = [
-  { day: 'Сегодня', date: '20.05', projects: ['КЖ-02-014'], color: '#DC2626', urgent: true },
-  { day: 'Завтра', date: '21.05', projects: ['АР-03-015'], color: '#D4AF37', urgent: false },
-  { day: 'Пн', date: '25.05', projects: ['ТЦ «Меридиан»'], color: '#3B82F6', urgent: false },
-  { day: 'Чт', date: '28.05', projects: ['ОВиК-02-008'], color: '#3B82F6', urgent: false },
-  { day: 'Пн', date: '02.06', projects: ['ТЭЦ-5'], color: '#0C7205', urgent: false },
-];
 
 /* ── Мини sparkline ── */
 function MiniSparkline({ data, color }: { data: number[]; color: string }) {
@@ -238,17 +207,8 @@ export default function Dashboard() {
 
   // Build data objects — no mock fallback
   const finance = useMemo(() => {
-    if (hasData && scorecard.length > 0) {
-      const totalBudget = scorecard.reduce((sum, p) => sum + (p.documents_total || 0), 0);
-      const approved = scorecard.reduce((sum, p) => sum + (p.documents_approved || 0), 0);
-      const margin = totalBudget > 0 ? Math.round((approved / totalBudget) * 1000) / 10 : 0;
-      return {
-        revenue: { current: Math.round(totalBudget * 1.2 * 10) / 10, plan: Math.round(totalBudget * 1.5 * 10) / 10, unit: 'млн ₽', trend: '+12%' },
-        profit: { current: Math.round(totalBudget * 0.15 * 10) / 10, plan: Math.round(totalBudget * 0.22 * 10) / 10, unit: 'млн ₽', trend: '+8%' },
-        receivables: { current: Math.round(totalBudget * 0.28 * 10) / 10, unit: 'млн ₽', trend: '-5%', risk: true },
-        avgMargin: { current: margin, unit: '%', trend: '+1.2пп' },
-      };
-    }
+    // TODO: нет источника финансовых данных — показываем нули вместо выдуманных значений
+    void scorecard;
     return { revenue: { current: 0, plan: 0, unit: 'млн ₽', trend: '—' }, profit: { current: 0, plan: 0, unit: 'млн ₽', trend: '—' }, receivables: { current: 0, unit: 'млн ₽', trend: '—', risk: false }, avgMargin: { current: 0, unit: '%', trend: '—' } };
   }, [hasData, scorecard]);
 
@@ -310,40 +270,40 @@ export default function Dashboard() {
           name: p.name,
           percent: Math.round(p.progress || 0),
           status: p.status || 'active',
-          revenue: `${(p.documents_total || 0) * 0.5} млн ₽`,
+          revenue: '—',
           deadline: p.deadline ? new Date(p.deadline).toLocaleDateString('ru-RU') : '—',
         }));
     }
-    return MOCK_TOP_PROJECTS;
+    return [];
   }, [hasData, scorecard]);
 
   const kpiSparkData = useMemo(() => {
     if (!hasData && sparklines?.charts) {
-      const approval = sparklines.charts.find((c) => c.id === 'schedule_dev')?.trend.slice(-7) || MOCK_KPI_SPARK_DATA.approval;
-      const winRate = sparklines.charts.find((c) => c.id === 'fpy')?.trend.slice(-7) || MOCK_KPI_SPARK_DATA.winRate;
-      const overdue = sparklines.charts.find((c) => c.id === 'shipments')?.trend.slice(-7) || MOCK_KPI_SPARK_DATA.overdue;
-      const load = sparklines.charts.find((c) => c.id === 'workload')?.trend.slice(-7) || MOCK_KPI_SPARK_DATA.load;
+      const approval = sparklines.charts.find((c) => c.id === 'schedule_dev')?.trend.slice(-7) || [0];
+      const winRate = sparklines.charts.find((c) => c.id === 'fpy')?.trend.slice(-7) || [0];
+      const overdue = sparklines.charts.find((c) => c.id === 'shipments')?.trend.slice(-7) || [0];
+      const load = sparklines.charts.find((c) => c.id === 'workload')?.trend.slice(-7) || [0];
       return { approval, winRate, overdue, load };
     }
-    return MOCK_KPI_SPARK_DATA;
+    return { approval: [0], winRate: [0], overdue: [0], load: [0] };
   }, [hasData, sparklines]);
 
   const kpiValues = useMemo(() => {
     if (!hasData && sparklines?.charts) {
-      const approval = sparklines.charts.find((c) => c.id === 'schedule_dev')?.current ?? 2.3;
-      const winRate = sparklines.charts.find((c) => c.id === 'fpy')?.current ?? 68;
+      const approval = sparklines.charts.find((c) => c.id === 'schedule_dev')?.current ?? 0;
+      const winRate = sparklines.charts.find((c) => c.id === 'fpy')?.current ?? 0;
       const overdue = 0;
-      const load = sparklines.charts.find((c) => c.id === 'workload')?.current ?? 84;
+      const load = sparklines.charts.find((c) => c.id === 'workload')?.current ?? 0;
       return [approval, winRate, overdue, load];
     }
-    return [2.3, 68, 7, 84];
+    return [0, 0, 0, 0];
   }, [hasData, sparklines]);
 
   const portfolio = useMemo(() => {
     if (portfolioDataRaw?.items && portfolioDataRaw.items.length > 0) {
       return portfolioDataRaw.items;
     }
-    return MOCK_PORTFOLIO;
+    return [];
   }, [portfolioDataRaw]);
 
   const deadlines = useMemo(() => {
@@ -368,7 +328,7 @@ export default function Dashboard() {
         };
       });
     }
-    return MOCK_DEADLINES;
+    return [];
   }, [hasData, scorecard]);
 
   // Keep deadlines variable to avoid breaking other code that may reference it
@@ -378,10 +338,7 @@ export default function Dashboard() {
     if (trendDataRaw?.points && trendDataRaw.points.length > 0) {
       return trendDataRaw.points;
     }
-    return MOCK_TREND_DATA.map((v, i) => ({
-      label: MOCK_TREND_LABELS[i],
-      value: v,
-    }));
+    return [];
   }, [trendDataRaw]);
 
   const portfolioBarData = useMemo(() => {
@@ -944,42 +901,6 @@ export default function Dashboard() {
                   </div>
                 </div>
               ))}
-            </div>
-          </div>
-
-          {/* Рекомендации IRIS */}
-          <div className="p-3 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
-            <div className="flex items-center gap-2 mb-2">
-              <ChromeBot size={48} variant={isDark ? 'dark' : 'light'} />
-              <div>
-                <h3 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>Рекомендации IRIS</h3>
-                <span className="text-sm" style={{ color: 'var(--text-muted)' }}>AI-ассистент</span>
-                <span
-                  className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded ml-2 align-middle"
-                  style={{ background: 'var(--iris-bg-hover, rgba(100,116,139,0.15))', color: 'var(--text-muted)' }}
-                  title="Демонстрационные рекомендации, не основаны на реальных данных"
-                >
-                  Демо
-                </span>
-              </div>
-            </div>
-            <div className="p-2 rounded-lg" style={{ background: isDark ? 'rgba(12,114,5,0.08)' : 'rgba(12,114,5,0.06)', border: '1px solid rgba(12,114,5,0.2)' }}>
-              <div className="flex items-start gap-2">
-                <Sparkles size={18} className="shrink-0 mt-0.5" style={{ color: '#0C7205' }} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm leading-relaxed" style={{ color: 'var(--text-primary)' }}>
-                    Перегруз тендерного отдела: <strong>85%</strong>. Переложить <strong>КЖ-02-014</strong> на проектный?
-                  </p>
-                  <div className="flex items-center gap-3 mt-3">
-                    <button onClick={() => navigate('/team')} className="text-xs px-3 py-1.5 rounded-md font-medium transition-colors hover:brightness-110" style={{ background: '#0C7205', color: '#fff' }}>
-                      Применить
-                    </button>
-                    <button onClick={() => navigate('/workflow')} className="text-xs px-3 py-1.5 rounded-md transition-colors" style={{ color: 'var(--text-secondary)', border: '1px solid var(--border-color)' }}>
-                      Подробнее
-                    </button>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
 

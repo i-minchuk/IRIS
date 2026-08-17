@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGamificationStore } from '@/stores/gamificationStore';
 import { useTheme } from '@/providers/ThemeProvider';
@@ -8,7 +8,6 @@ import {
   ChevronRight, FolderKanban, ChevronDown, AlertTriangle,
   BarChart3, Gem
 } from 'lucide-react';
-import { IRISRecommendations } from '@/components/IRISRecommendations';
 
 /* ═══════════════════════════════════════════
    TYPES
@@ -142,8 +141,12 @@ export default function TeamPage() {
   const [activeTab, setActiveTab] = useState<TabKey>('leaderboard');
 
   // Leaderboard data
-  const entries = useGamificationStore(s => s.getLeaderboard('global_xp'));
+  const entries = useGamificationStore(s => s.leaderboard);
   const badges = useGamificationStore(s => s.badges);
+  const fetchAll = useGamificationStore(s => s.fetchAll);
+  useEffect(() => {
+    void fetchAll();
+  }, [fetchAll]);
   const earnedBadges = badges.filter(b => b.earnedAt);
 
   // Workload state
@@ -156,7 +159,6 @@ export default function TeamPage() {
   return (
     <div className="space-y-5 px-3 md:px-6 py-4 md:pt-2 pb-6">
       {/* Header */}
-      <IRISRecommendations page="team" isDark={isDark} />
       <div>
         <h1 className="sr-only" style={{ color: 'var(--text-primary)' }}>Сотрудники</h1>
         <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Рейтинг, загрузка и достижения команды</p>
@@ -224,10 +226,6 @@ export default function TeamPage() {
                       {e.userName}
                     </div>
                     <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{e.xp.toLocaleString()} XP</div>
-                    <div className="flex items-center gap-1 mt-0.5">
-                      <Flame size={10} style={{ color: '#EF4444' }} />
-                      <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{e.streak}</span>
-                    </div>
                   </div>
                 );
               })}
@@ -262,12 +260,13 @@ export default function TeamPage() {
                       <div className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
                         {entry.userName} {entry.isMe && <span className="text-xs font-normal" style={{ color: '#3B82F6' }}>(Вы)</span>}
                       </div>
-                      <div className="text-xs" style={{ color: 'var(--text-muted)' }}>Уровень {entry.level}</div>
+                      {entry.level > 0 && (
+                        <div className="text-xs" style={{ color: 'var(--text-muted)' }}>Уровень {entry.level}</div>
+                      )}
                     </div>
                     <div className="flex items-center gap-3 text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>
                       <span className="flex items-center gap-1"><Star size={12} style={{ color: '#D4AF37' }} /> {entry.xp.toLocaleString()}</span>
                       <span className="flex items-center gap-1"><Award size={12} style={{ color: '#8B5CF6' }} /> {entry.badges}</span>
-                      <span className="flex items-center gap-1"><Flame size={12} style={{ color: '#EF4444' }} /> {entry.streak}</span>
                     </div>
                   </div>
                 );
@@ -405,7 +404,6 @@ export default function TeamPage() {
                   >
                     {BADGE_ICONS[badge.icon] || <Zap size={12} />}
                     <span>{badge.name}</span>
-                    <span className="text-xs opacity-60">+{badge.xpReward} XP</span>
                   </div>
                 );
               })}
@@ -441,10 +439,6 @@ export default function TeamPage() {
                         {isEarned && <Star size={10} style={{ color }} />}
                       </div>
                       <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{badge.description}</div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs px-1 py-0.5 rounded" style={{ background: `${color}15`, color }}>{badge.rarity}</span>
-                        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>+{badge.xpReward} XP · {badge.coinReward} 🪙</span>
-                      </div>
                     </div>
                   </div>
                 );

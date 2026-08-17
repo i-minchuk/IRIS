@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui';
 import { Input } from '@/components/ui';
 import { useSupportStore } from '@/stores/supportStore';
@@ -7,8 +7,13 @@ import { Search, Eye, ThumbsUp, FileText } from 'lucide-react';
 
 export default function KnowledgeBasePage() {
   const articles = useSupportStore(s => s.kbArticles);
+  const fetchKbArticles = useSupportStore(s => s.fetchKbArticles);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    fetchKbArticles();
+  }, [fetchKbArticles]);
 
   const filtered = articles.filter(a => {
     const matchesCategory = selectedCategory === null || a.category === selectedCategory;

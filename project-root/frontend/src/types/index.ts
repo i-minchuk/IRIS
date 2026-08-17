@@ -117,7 +117,8 @@ export interface GamificationProfile {
 export interface Badge {
   id: string;
   name: string;
-  desc: string;
+  desc?: string;
+  description?: string;
 }
 
 export interface DailyQuest {

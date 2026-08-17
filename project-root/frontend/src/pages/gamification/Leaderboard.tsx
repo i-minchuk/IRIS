@@ -1,11 +1,16 @@
 import { Card } from '@/components/ui';
 import { useGamificationStore } from '@/stores/gamificationStore';
-import { Trophy, Medal, Award, Flame, Star } from 'lucide-react';
+import { Trophy, Medal, Award, Star } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 export default function LeaderboardPage() {
-  const entries = useGamificationStore(s => s.getLeaderboard('global_xp'));
+  const entries = useGamificationStore(s => s.leaderboard);
+  const fetchLeaderboard = useGamificationStore(s => s.fetchLeaderboard);
   const [myAvatarUrl, setMyAvatarUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    void fetchLeaderboard();
+  }, [fetchLeaderboard]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -84,7 +89,9 @@ export default function LeaderboardPage() {
 
               <div className="flex-1">
                 <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{entry.userName}</div>
-                <div className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Уровень {entry.level}</div>
+                {entry.level > 0 && (
+                  <div className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Уровень {entry.level}</div>
+                )}
               </div>
 
               <div className="flex items-center gap-4 text-xs">
@@ -93,9 +100,6 @@ export default function LeaderboardPage() {
                 </span>
                 <span className="flex items-center gap-1" style={{ color: 'var(--text-secondary)' }}>
                   <Award size={12} /> {entry.badges}
-                </span>
-                <span className="flex items-center gap-1" style={{ color: 'var(--text-secondary)' }}>
-                  <Flame size={12} /> {entry.streak}
                 </span>
               </div>
             </div>

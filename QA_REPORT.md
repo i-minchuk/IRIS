@@ -162,3 +162,40 @@
 - **`check_architecture.py` — исправлено.** В `allowed_deps` добавлены `ai: {auth, documents}` и `integrations: {auth}`, у `calendar` допущены `documents` и `operations` (по фактическим импортам). Устаревшее ожидание в `test_analytics_module_dependencies` приведено к контракту из AGENTS.md (analytics может импортировать gamification). `check_architecture.py` → «All checks passed!», `test_architecture.py` — 7/7 зелёных.
 - **Эфемерный `ENCRYPTION_KEY` — исправлено.** `app/core/encryption.py`: при отсутствии `ENCRYPTION_KEY` ключ стабильно выводится из `SECRET_KEY` (SHA-256 → urlsafe base64), данные переживают рестарт. `.env.example` дополнен документацией по `ENCRYPTION_KEY`. Проверено: phone, записанный до рестарта, корректно читается после (раньше — 500 `InvalidToken`).
 - **Замечание по эксплуатации:** uvicorn `--reload` (watchfiles) на этой Windows-машине подхватывал правки нестабильно — при проверках backend перезапускался вручную.
+
+---
+
+## Зачистка моков и демо-данных (2026-08-17)
+
+По решению пользователя mock-страницы получили реальный backend, демо-режим сохранён для разработки, геймификация подключена к существующему API.
+
+### Новые backend-модули (с миграциями, зарегистрированы в `/api/v1`)
+
+- **releases** — таблица `releases`, CRUD `/releases` (5 эндпоинтов), `checklist_progress` вычисляется на backend.
+- **support** — таблицы `support_tickets`, `incidents`, `kb_articles`, CRUD `/support/tickets|incidents|kb/articles` (15 эндпоинтов), авто-`resolved_at`, инкремент `views` у статей КБ.
+- **srm** — таблицы `srm_suppliers`, `srm_purchase_requests`, `srm_contracts`, `srm_orders`, `srm_invoices`, CRUD `/srm/*` (25 эндпоинтов) с фильтрами.
+- CRUD проверен smoke-тестами (create → read → delete, 204).
+
+### Backend: убраны сфабрикованные данные
+
+- **analytics/router.py**: удалены `random.seed(42)`, детерминированные псевдослучайные «маржи», захардкоженные тренды выручки, мок-календарь отгрузок, фейковые алерты и FPY. Что считается из реальных таблиц — считается (загрузка персонала из `time_sessions`, дедлайны тендеров, просроченные документы, schedule_pct из плановых дат); где источника нет — нули/пустые структуры с `# TODO: no data source yet` в том же формате ответа.
+- **calendar/router.py**: MOCK_BIRTHDAYS удалены, `/calendar/birthdays` возвращает `[]` (нет поля даты рождения у User).
+
+### Frontend: моки заменены реальными API
+
+- **Сторы** `releaseStore`, `supportStore`, `srmStore` — переписаны на API (`features/admin/api/releasesApi.ts`, `supportApi.ts`, `features/srm/api/srmApi.ts`); `stores/mocks/` удалён целиком.
+- **Геймификация** — `gamificationStore` грузит реальные `/gamification/me|badges|leaderboard|daily-quests`; скрыты элементы без backend-данных (streak, редкость бейджей).
+- **«Рекомендации IRIS»** — блок удалён со всех страниц (компонент + 10 использований + inline-копии в Dashboard/ProjectsPage): показывал выдуманные инциденты от имени «AI-ассистента».
+- **Dashboard** — удалены MOCK_TREND/TOP_PROJECTS/KPI_SPARK/PORTFOLIO/DEADLINES и выдуманные финансовые мультипликаторы; виджеты показывают реальные данные или нули/empty-state.
+- **ReportsPage** — переписана на реальный `POST /reports/generate` (динамические колонки, CSV, печать).
+- **DocumentsPage** — захардкоженный реестр документов/замечаний/сотрудников заменён на реальные `getDocuments`/`getRemarks`/`getProjects`; создание замечания теперь реально сохраняет через API.
+- **DocumentDetail** — переведена на `getDocument(id)` (была полностью статичной).
+- **Прочее**: InspectorPanel → remarks API; LeaderboardWidget → `/gamification/leaderboard`; OperationBoard → empty-state (operations router отсутствует на backend); удалены `mockProfile.ts`, `tenderData.ts`, `LeaderboardDemoPage.tsx`, мок-фолбэк календаря, плейсхолдеры профиля («Главный инженер», «+7 (999)…»), захардкоженные опции фильтров задач.
+
+### Честные зануления (источника данных пока нет)
+
+FPY ОТК, отгрузки, выручка/прибыль/дебиторка, pipeline тоннаж, production SQCDP (кроме headcount), streak геймификации, монеты. Помечены TODO в коде; UI показывает 0/empty-state вместо выдуманных значений.
+
+### Валидация
+
+`tsc --noEmit` чист (попутно устранены 12 pre-existing TS6133), `check_architecture.py` — «All checks passed!», backend pytest — см. прогон, e2e QA-набор (41 тест) — после регенерации снапшотов.

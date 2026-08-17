@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui';
 import { useSRMStore } from '@/stores/srmStore';
 import type { ContractStatus } from '@/types/srm';
 import { FileText, Calendar, Building2, TrendingUp } from 'lucide-react';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 
 const STATUS_CONFIG: Record<ContractStatus, { label: string; variant: 'success' | 'warning' | 'error' | 'info' | 'neutral' }> = {
   draft: { label: 'Черновик', variant: 'neutral' },
@@ -18,6 +18,11 @@ const STATUS_CONFIG: Record<ContractStatus, { label: string; variant: 'success' 
 
 export default function ContractsPage() {
   const contracts = useSRMStore(s => s.contracts);
+  const fetchContracts = useSRMStore(s => s.fetchContracts);
+
+  useEffect(() => {
+    fetchContracts();
+  }, [fetchContracts]);
 
   // Use useMemo to avoid recalculating on every render
   const stats = useMemo(() => {

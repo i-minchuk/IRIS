@@ -24,6 +24,9 @@ from app.api.v1.endpoints import archive as archive_router
 from app.modules.notifications import router as notifications_router
 from app.modules.integrations.router import router as integrations_router
 from app.modules.monitoring.router import router as monitoring_router
+from app.modules.releases.router import router as releases_router
+from app.modules.support.router import router as support_router
+from app.modules.srm.router import router as srm_router
 
 api_router = APIRouter()
 
@@ -49,3 +52,6 @@ api_router.include_router(reports_router, prefix=f"{settings.API_V1_STR}/reports
 api_router.include_router(ai_chatbot_router, prefix=f"{settings.API_V1_STR}/ai", tags=["AI"])
 api_router.include_router(integrations_router, prefix=f"{settings.API_V1_STR}/integrations", tags=["Integrations"])
 api_router.include_router(monitoring_router, prefix="/monitoring", tags=["Monitoring"])
+api_router.include_router(releases_router, prefix=f"{settings.API_V1_STR}/releases", tags=["Releases"])
+api_router.include_router(support_router, prefix=f"{settings.API_V1_STR}/support", tags=["Support"])
+api_router.include_router(srm_router, prefix=f"{settings.API_V1_STR}/srm", tags=["SRM"])

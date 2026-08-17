@@ -119,9 +119,6 @@ export const TaskFiltersPanel: React.FC<TaskFiltersPanelProps> = ({ filters, onF
           }}
         >
           <option value="">Все проекты</option>
-          {/* Сюда подгрузить проекты из API */}
-          <option value="1">Проект 001</option>
-          <option value="2">Проект 002</option>
         </select>
 
         {/* Фильтр по исполнителю */}
@@ -136,9 +133,6 @@ export const TaskFiltersPanel: React.FC<TaskFiltersPanelProps> = ({ filters, onF
           }}
         >
           <option value="">Все исполнители</option>
-          {/* Сюда подгрузить пользователей из API */}
-          <option value="1">Иванов И.И.</option>
-          <option value="2">Петров П.П.</option>
         </select>
 
         {/* Только просроченные */}

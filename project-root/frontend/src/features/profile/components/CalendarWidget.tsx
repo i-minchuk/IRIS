@@ -1,7 +1,21 @@
 import { Calendar, Clock, AlertCircle, Cake } from "lucide-react";
-import type { CalendarEvent, Birthday } from "../data/mockProfile";
 import { t } from "../i18n/translations";
 import type { Language } from "../i18n/translations";
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  date: string;
+  type: "deadline" | "meeting";
+}
+
+export interface Birthday {
+  id: string;
+  name: string;
+  date: string; // MM-DD
+  role: string;
+  avatar?: string;
+}
 
 interface Props {
   events: CalendarEvent[];

@@ -4,15 +4,11 @@ import { motion } from 'framer-motion';
 import TimerWidget from '@/features/time_tracking/components/TimerWidget';
 import SessionList from '@/features/time_tracking/components/SessionList';
 import AnalyticsPanel from '@/features/time_tracking/components/AnalyticsPanel';
-import { useTheme } from '@/providers/ThemeProvider';
-import { IRISRecommendations } from '@/components/IRISRecommendations';
 
 type Tab = 'timer' | 'sessions' | 'analytics';
 
 export default function TimeTrackingPage() {
   const [activeTab, setActiveTab] = useState<Tab>('timer');
-  const { theme } = useTheme();
-  const isDark = theme === 'dark' || theme === 'midnight' || theme === 'contrast';
 
   const tabs = [
     { id: 'timer' as Tab, label: 'Таймер', icon: <Play size={18} /> },
@@ -23,7 +19,6 @@ export default function TimeTrackingPage() {
   return (
     <div className="w-full pt-2 pb-6 px-4 space-y-6">
       {/* Header */}
-      <IRISRecommendations page="time-tracking" isDark={isDark} />
       <div className="flex items-center gap-3">
         <div className="p-2.5 rounded-xl bg-[var(--iris-accent)]/10 text-[var(--iris-accent)]">
           <Clock size={24} />

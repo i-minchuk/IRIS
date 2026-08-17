@@ -121,19 +121,18 @@ class TestCalendarBirthdays:
     """Tests for calendar birthday endpoint."""
 
     def test_calendar_birthdays_returns_data(self, client_with_auth):
-        """Calendar birthdays API should return employee birthdays."""
+        """Calendar birthdays API returns a list (empty until User has a birthdate field)."""
         with client_with_auth as client:
             response = client.get("/api/v1/calendar/birthdays")
             assert response.status_code == 200
             data = response.json()
-            assert len(data) > 0
-            assert "id" in data[0]
-            assert "name" in data[0]
-            assert "date" in data[0]
-            assert "role" in data[0]
-            # date format is MM-DD
-            assert len(data[0]["date"]) == 5
-            assert data[0]["date"][2] == "-"
+            # Мок-данные удалены: пока у User нет даты рождения, список честно пуст
+            assert isinstance(data, list)
+            for item in data:
+                assert "id" in item
+                assert "name" in item
+                assert "date" in item
+                assert "role" in item
 
     def test_calendar_birthdays_requires_auth(self, client):
         """Calendar birthdays API should require authentication."""

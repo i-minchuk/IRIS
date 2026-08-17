@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Card } from '@/components/ui';
 import { Badge } from '@/components/ui';
 import { Button } from '@/components/ui';
@@ -5,7 +6,7 @@ import { useGamificationStore } from '@/stores/gamificationStore';
 import { getLevelInfo } from '@/lib/levelSystem';
 import { formatXP } from '@/lib/xpEngine';
 import {
-  Star, Flame, Coins, Trophy, Award, Zap, TrendingUp,
+  Star, Coins, Trophy, Award, Zap, TrendingUp,
   FileText, CheckCircle2, BookOpen, Users, Crown
 } from 'lucide-react';
 
@@ -27,7 +28,10 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
 };
 
 export default function GamificationProfilePage() {
-  const { xp, coins, streak, badges, quests, getCurrentLevel, getLevelProgress } = useGamificationStore();
+  const { xp, coins, badges, quests, getCurrentLevel, getLevelProgress, fetchAll } = useGamificationStore();
+  useEffect(() => {
+    void fetchAll();
+  }, [fetchAll]);
   const level = getCurrentLevel();
   const progress = getLevelProgress();
   const levelInfo = getLevelInfo(level);
@@ -65,7 +69,7 @@ export default function GamificationProfilePage() {
       </div>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <Card padding="sm" className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${levelInfo.tierColor}18` }}>
             <Star size={18} style={{ color: levelInfo.tierColor }} />
@@ -82,15 +86,6 @@ export default function GamificationProfilePage() {
           <div>
             <div className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{coins}</div>
             <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Монет</div>
-          </div>
-        </Card>
-        <Card padding="sm" className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'color-mix(in srgb, #EF4444 10%, var(--bg-surface))' }}>
-            <Flame size={18} style={{ color: '#EF4444' }} />
-          </div>
-          <div>
-            <div className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{streak}</div>
-            <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Streak 🔥</div>
           </div>
         </Card>
         <Card padding="sm" className="flex items-center gap-3">
@@ -181,8 +176,8 @@ export default function GamificationProfilePage() {
                   <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{badge.name}</div>
                   <div className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>{badge.description}</div>
                 </div>
-                <Badge variant={badge.rarity === 'legendary' ? 'leaders' : badge.rarity === 'epic' ? 'engineering' : 'info'}>
-                  {badge.rarity === 'legendary' ? 'Легендарный' : badge.rarity === 'epic' ? 'Эпический' : badge.rarity === 'rare' ? 'Редкий' : 'Обычный'}
+                <Badge variant="info">
+                  Получен
                 </Badge>
               </div>
             ))}
