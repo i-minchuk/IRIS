@@ -86,6 +86,11 @@ class Settings(BaseSettings):
 
     REDIS_URL: str = "redis://localhost:6379"
 
+    # Rate limits (slowapi-формат "N/minute"); в dev/test можно ослабить через .env
+    RATE_LIMIT_AUTH: str = "5/minute"
+    RATE_LIMIT_REFRESH: str = "10/minute"
+    RATE_LIMIT_STANDARD: str = "60/minute"
+
     DB_POOL_SIZE: int = 20
     DB_MAX_OVERFLOW: int = 30
     DB_POOL_TIMEOUT: int = 30

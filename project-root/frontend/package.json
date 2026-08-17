@@ -11,6 +11,8 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
+    "test:e2e:qa": "playwright test e2e/qa-ui-ux.spec.ts e2e/qa-visual.spec.ts --project=chromium",
+    "test:e2e:qa:update-snapshots": "playwright test e2e/qa-visual.spec.ts --project=chromium --update-snapshots",
     "test:e2e:report": "playwright show-report playwright-report"
   },
   "dependencies": {

@@ -76,15 +76,15 @@ limiter = get_limiter()
 
 def rate_limit_auth_routes():
     """Декоратор для rate limiting на auth роутах."""
-    return limiter.limit("5/minute")
+    return limiter.limit(settings.RATE_LIMIT_AUTH)
 
 
 def rate_limit_refresh_route():
     """Декоратор для rate limiting на refresh token endpoint."""
-    return limiter.limit("10/minute")
+    return limiter.limit(settings.RATE_LIMIT_REFRESH)
 
 
 def rate_limit_standard():
     """Декоратор для стандартного rate limiting на API endpoints."""
-    return limiter.limit("60/minute")
+    return limiter.limit(settings.RATE_LIMIT_STANDARD)
 

@@ -216,7 +216,7 @@ export default function Layout() {
         {/* ===== ТАБЫ + ГЛОБАЛЬНЫЙ ПОИСК ===== */}
         <div className="shrink-0 relative pt-3" style={{ borderColor: 'var(--header-border)' }}>
           <div className="w-full px-4 md:px-6 flex items-end justify-between gap-4 relative z-10">
-            <nav className="flex items-end gap-2 lg:gap-3" aria-label="Главная навигация">
+            <nav className="flex items-end gap-2 lg:gap-1 xl:gap-3 2xl:gap-2" aria-label="Главная навигация">
               {navItems.map((item) => {
                 const active = isActive(item.to);
                 const iconOnly = (item as any).iconOnly;
@@ -271,13 +271,13 @@ export default function Layout() {
                     {!iconOnly && (
                       <>
                         {/* Ноутбук: короткие названия */}
-                        <span className="hidden lg:inline-block xl:hidden whitespace-nowrap">{item.shortLabel || item.label}</span>
+                        <span className="hidden lg:inline-block 2xl:hidden whitespace-nowrap">{item.shortLabel || item.label}</span>
                         {/* Десктоп: полные названия */}
-                        <span className="hidden xl:inline-block whitespace-nowrap">{item.label}</span>
+                        <span className="hidden 2xl:inline-block whitespace-nowrap">{item.label}</span>
                       </>
                     )}
                     {iconOnly && (
-                      <span className="hidden xl:inline-block whitespace-nowrap">{item.label}</span>
+                      <span className="hidden 2xl:inline-block whitespace-nowrap">{item.label}</span>
                     )}
                   </Link>
                 );
@@ -285,7 +285,7 @@ export default function Layout() {
             </nav>
 
             {/* Глобальный поиск */}
-            <div className="relative shrink-0 w-full max-w-[180px] lg:max-w-[240px] xl:max-w-[300px] mb-1">
+            <div className="relative shrink-0 w-full max-w-[180px] lg:max-w-[150px] xl:max-w-[220px] 2xl:max-w-[240px] mb-1">
               <GlobalSearch />
             </div>
           </div>

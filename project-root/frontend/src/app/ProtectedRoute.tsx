@@ -45,6 +45,15 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps = {}) => {
 
       try {
         await checkAuth();
+        // Транзиентный сбой (429/сеть/5xx): токен есть, но user не загружен —
+        // даём ещё один шанс вместо безусловного редиректа на логин
+        if (mounted && localStorage.getItem('access_token')) {
+          const state = useAuthStore.getState();
+          if (!state.user) {
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+            if (mounted) await checkAuth();
+          }
+        }
       } catch {
         // checkAuth failed — will set isAuthenticated to false
       } finally {

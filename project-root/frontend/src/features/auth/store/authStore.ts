@@ -119,10 +119,17 @@ export const useAuthStore = create<AuthState>((set) => ({
         is_active: apiUser.is_active,
       };
       set({ user, token, isAuthenticated: true, isLoading: false, isDemoMode: false });
-    } catch {
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      set({ user: null, token: null, isAuthenticated: false, isLoading: false, isDemoMode: false });
+    } catch (err: any) {
+      const status = err?.response?.status;
+      if (status === 401 || status === 403) {
+        // Токен невалиден — завершаем сессию
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        set({ user: null, token: null, isAuthenticated: false, isLoading: false, isDemoMode: false });
+      } else {
+        // Транзиентная ошибка (429, сеть, 5xx) — не разлогиниваем пользователя
+        set({ isLoading: false });
+      }
     }
   },
 
