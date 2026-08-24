@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useTheme } from '@/providers/ThemeProvider';
+import { useTheme, applyThemeToDOM } from '@/providers/ThemeProvider';
+import type { Theme } from '@/providers/ThemeProvider';
 import { Eye, EyeOff, ArrowLeft, LogIn, User, Lock, Shield } from 'lucide-react';
 import { useZoomStore } from '@/features/zoom/store/zoomStore';
 import { useAuthStore } from '@/features/auth/store/authStore';
@@ -11,7 +12,21 @@ import { ChromeBot } from '@/components/ChromeBot';
 
 export default function LoginPage() {
   const { theme } = useTheme();
+  // На странице логина только две темы: светлая и тёмная.
+  // sepia/midnight/contrast здесь не применяются: пока страница смонтирована,
+  // на <html> выставляется light/dark, при уходе восстанавливается тема пользователя.
   const isDark = theme === 'dark' || theme === 'midnight' || theme === 'contrast';
+  useEffect(() => {
+    const saved = localStorage.getItem('iris-theme');
+    applyThemeToDOM(isDark ? 'dark' : 'light');
+    return () => {
+      const restore: Theme =
+        saved === 'dark' || saved === 'contrast' || saved === 'sepia' || saved === 'midnight'
+          ? saved
+          : 'light';
+      applyThemeToDOM(restore);
+    };
+  }, [isDark]);
   const { setHidden } = useZoomStore();
   useEffect(() => {
     setHidden(true);              // скрыть зум на странице логина

@@ -41,6 +41,17 @@ function isValidTheme(value: string): value is Theme {
   return THEME_ORDER.includes(value as Theme);
 }
 
+/** Применить тему к <html>: data-theme + классы theme-* и dark. */
+export function applyThemeToDOM(theme: Theme): void {
+  const root = document.documentElement;
+  root.setAttribute('data-theme', theme);
+  root.classList.remove('theme-light', 'theme-dark', 'theme-contrast', 'theme-sepia', 'theme-midnight', 'dark');
+  root.classList.add(`theme-${theme}`);
+  if (theme === 'dark' || theme === 'midnight' || theme === 'contrast') {
+    root.classList.add('dark');
+  }
+}
+
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<Theme>(() => {
     const saved = localStorage.getItem('iris-theme');
@@ -50,18 +61,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   });
 
   useEffect(() => {
-    const root = document.documentElement;
-    root.setAttribute('data-theme', theme);
-
-    // Remove all theme classes
-    root.classList.remove('theme-light', 'theme-dark', 'theme-contrast', 'theme-sepia', 'theme-midnight', 'dark');
-
-    // Add current theme class
-    root.classList.add(`theme-${theme}`);
-    if (theme === 'dark' || theme === 'midnight' || theme === 'contrast') {
-      root.classList.add('dark');
-    }
-
+    // На странице логина темой управляет сама LoginPage (только light/dark).
+    if (window.location.pathname === '/login') return;
+    applyThemeToDOM(theme);
     localStorage.setItem('iris-theme', theme);
   }, [theme]);
 
