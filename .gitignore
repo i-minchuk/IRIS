@@ -183,3 +183,4 @@ project-root/frontend/playwright-report/
 project-root/frontend/test-results/
 project-root/frontend/qa-output/
 project-root/frontend/qa-*.cjs
+backups/

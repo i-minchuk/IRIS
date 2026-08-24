@@ -12,12 +12,19 @@
 
 Идемпотентно: если пользователь demo@iris.local уже существует, сид пропускается.
 Используются только ORM-модели — работает и на SQLite, и на PostgreSQL.
+
+Защита от утечки в прод: seed_demo_data() перед любой записью проверяет,
+что приложение работает в MODE=demo с включённым флагом demo_data_seed
+и что целевая БД — демо-база (имя БД содержит «demo»: demo.db, iris_demo…).
+При любом несоответствии выбрасывается RuntimeError до первого INSERT.
 """
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 from sqlalchemy import select
 
+from app.core.config import settings
+from app.core.mode import get_mode, get_mode_config
 from app.core.security import get_password_hash
 from app.db.session import AsyncSessionLocal
 from app.models.archive import ArchiveConstruction, ArchiveEntry, ArchiveMaterial
@@ -43,6 +50,34 @@ def _days_ago(now: datetime, days: float, hour: int = 9) -> datetime:
     )
 
 
+def _assert_demo_environment() -> None:
+    """Гарантировать, что сид выполняется только в демо-окружении.
+
+    Тройная проверка до первого INSERT:
+    1. MODE=demo;
+    2. features.demo_data_seed включён в config.<mode>.yaml;
+    3. имя целевой БД содержит «demo» (demo.db, iris_demo, …) —
+       демо-данные физически не могут попасть в рабочую БД.
+    """
+    if get_mode() != "demo":
+        raise RuntimeError(
+            "seed_demo_data() запрещён вне MODE=demo — "
+            "демо-данные не должны попадать в рабочую БД."
+        )
+    if not get_mode_config().features.demo_data_seed:
+        raise RuntimeError(
+            "seed_demo_data() запрещён при выключенном features.demo_data_seed."
+        )
+    db_name = settings.DATABASE_URL.rsplit("/", 1)[-1].split("?")[0].lower()
+    if "demo" not in db_name:
+        raise RuntimeError(
+            f"Отказ: демо-сид нацелен на НЕ демо-БД ({db_name!r}). "
+            "В MODE=demo DATABASE_URL должен указывать на отдельную базу "
+            "с «demo» в имени (например, sqlite+aiosqlite:///./demo.db "
+            "или postgresql+asyncpg://…/iris_demo)."
+        )
+
+
 async def seed_demo_data() -> None:
     """Создать вымышленный набор данных, если демо-пользователя ещё нет.
 
@@ -50,6 +85,8 @@ async def seed_demo_data() -> None:
     через metadata.create_all — цепочка Alembic-миграций для чистой
     SQLite исторически сломана, в prod используется PostgreSQL + Alembic.
     """
+    _assert_demo_environment()
+
     from app.db.base import Base
     from app.db.session import primary_engine
     import app.models  # noqa: F401 — регистрация всех моделей

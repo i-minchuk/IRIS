@@ -110,7 +110,9 @@ async def lifespan(app: FastAPI):
 
     await ensure_schema()
     await redis_pubsub.connect()
-    if mode_config.features.demo_data_seed:
+    # Демо-сид строго только в demo-режиме: двойная проверка режима и флага,
+    # плюс проверка целевой БД внутри seed_demo_data().
+    if mode_config.mode == "demo" and mode_config.features.demo_data_seed:
         from app.db.demo_seed import seed_demo_data
 
         await seed_demo_data()

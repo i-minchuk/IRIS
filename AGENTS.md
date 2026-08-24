@@ -293,6 +293,19 @@ project-root/frontend/
   INFO+ с ротацией, метрики `/metrics`, кнопка «Сообщить о проблеме»
   (тикеты `/api/v1/support/tickets`).
 
+**Изоляция прода от демо-данных (жёсткая, проверяется до первого INSERT):**
+- В `main.py` сид вызывается только при `mode == "demo"` **и**
+  `features.demo_data_seed: true` одновременно.
+- `seed_demo_data()` дополнительно сама проверяет: `MODE=demo`,
+  флаг `demo_data_seed` включён, и имя целевой БД содержит «demo»
+  (`demo.db`, `iris_demo`, …). При любом несоответствии — `RuntimeError`,
+  запись в рабочую БД невозможна.
+- В demo-режиме `DATABASE_URL` обязан указывать на отдельную демо-БД
+  (`scripts/СТАРТ_ДЕМО.bat` использует `sqlite+aiosqlite:///./demo.db`).
+- Удаление демо-данных из любой БД: `python clear_demo_data.py`
+  (покрывает старые сиды и актуальный `demo_seed.py`, каскадно; перед
+  запуском на рабочей БД сделать бэкап `pg_dump`).
+
 Ключевые файлы:
 - `backend/config/config.demo.yaml`, `backend/config/config.prod.yaml` — параметры режимов.
 - `backend/app/core/mode.py` — загрузка/валидация конфига, зависимости `require_full_mode` / `require_integrations` для гейтинга эндпоинтов.

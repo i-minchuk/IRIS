@@ -48,6 +48,36 @@ const RARITY_COLORS: Record<string, string> = {
   legendary: '#D4AF37',
 };
 
+/* ─── Текущая сессия: определяем браузер и ОС из userAgent ─── */
+function getCurrentDevice(): string {
+  const ua = navigator.userAgent;
+  const browser = ua.includes('Edg')
+    ? 'Edge'
+    : ua.includes('OPR') || ua.includes('Opera')
+      ? 'Opera'
+      : ua.includes('YaBrowser')
+        ? 'Яндекс Браузер'
+        : ua.includes('Chrome')
+          ? 'Chrome'
+          : ua.includes('Firefox')
+            ? 'Firefox'
+            : ua.includes('Safari')
+              ? 'Safari'
+              : 'Браузер';
+  const os = ua.includes('Windows')
+    ? 'Windows'
+    : ua.includes('Mac OS')
+      ? 'macOS'
+      : ua.includes('Android')
+        ? 'Android'
+        : ua.includes('iPhone') || ua.includes('iPad')
+          ? 'iOS'
+          : ua.includes('Linux')
+            ? 'Linux'
+            : 'Неизвестная ОС';
+  return `${browser} / ${os}`;
+}
+
 /* ─── Component ─── */
 export default function ProfileSettingsPage() {
   const navigate = useNavigate();
@@ -493,27 +523,19 @@ export default function ProfileSettingsPage() {
                   <Globe size={18} style={{ color: 'var(--brand-iris)' }} /> Активные сессии
                 </h2>
                 <div className="space-y-2">
-                  {[
-                    { device: 'Chrome / Windows', ip: '192.168.1.45', location: 'Москва, Россия', current: true },
-                    { device: 'Safari / macOS', ip: '192.168.1.32', location: 'Москва, Россия', current: false },
-                  ].map((session, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 rounded-lg border" style={{ borderColor: 'var(--border-default)' }}>
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'var(--bg-surface-2)' }}>
-                          <Globe size={14} style={{ color: 'var(--text-secondary)' }} />
-                        </div>
-                        <div>
-                          <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                            {session.device} {session.current && <Badge variant="success" className="ml-2 text-xs">Текущая</Badge>}
-                          </div>
-                          <div className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>{session.ip} • {session.location}</div>
-                        </div>
+                  <div className="flex items-center justify-between p-3 rounded-lg border" style={{ borderColor: 'var(--border-default)' }}>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'var(--bg-surface-2)' }}>
+                        <Globe size={14} style={{ color: 'var(--text-secondary)' }} />
                       </div>
-                      {!session.current && (
-                        <Button variant="ghost" size="sm" className="text-xs" style={{ color: 'var(--error)' }}>Завершить</Button>
-                      )}
+                      <div>
+                        <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                          {getCurrentDevice()} <Badge variant="success" className="ml-2 text-xs">Текущая</Badge>
+                        </div>
+                        <div className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Это устройство</div>
+                      </div>
                     </div>
-                  ))}
+                  </div>
                 </div>
               </Card>
             </div>
