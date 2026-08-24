@@ -1,12 +1,16 @@
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
-  testDir: './e2e',
+  testDir: '.',
+  // e2e/ — исторические spec'ы, tests/ — новые автотесты
+  testMatch: ['e2e/**/*.spec.ts', 'tests/**/*.spec.ts'],
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: 1,
   reporter: 'html',
+  // На медленных машинах дефолтных 5с мало под нагрузкой полного прогона
+  expect: { timeout: 10_000 },
   use: {
     baseURL: 'http://localhost:5173',
     trace: 'on-first-retry',

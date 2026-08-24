@@ -1,0 +1,18 @@
+{
+  "name": "dokpotok-iris",
+  "version": "4.6.0",
+  "private": true,
+  "description": "ДокПоток IRIS — корневые прокси-скрипты. Код: project-root/backend (FastAPI), project-root/frontend (React+Vite).",
+  "scripts": {
+    "dev": "cd project-root/frontend && npm run dev",
+    "build": "cd project-root/frontend && npm run build",
+    "lint": "cd project-root/frontend && npm run lint",
+    "preview": "cd project-root/frontend && npm run preview",
+    "test:e2e": "cd project-root/frontend && npm run test:e2e",
+    "test:e2e:ui": "cd project-root/frontend && npm run test:e2e:ui",
+    "test:e2e:headed": "cd project-root/frontend && npm run test:e2e:headed",
+    "test:e2e:login": "cd project-root/frontend && npx playwright test tests/login.spec.ts",
+    "test:e2e:qa": "cd project-root/frontend && npm run test:e2e:qa",
+    "test:e2e:report": "cd project-root/frontend && npm run test:e2e:report"
+  }
+}
