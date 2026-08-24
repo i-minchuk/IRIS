@@ -1211,7 +1211,8 @@ async def get_department_load(
             Task,
             and_(
                 Task.assignee_id == User.id,
-                func.lower(Task.status).in_(_OPEN_TASK_STATUSES),
+                # TaskStatus — lowercase-строки; lower() над PG-ENUM не работает
+                Task.status.in_(_OPEN_TASK_STATUSES),
             ),
         )
         .where(User.is_active.is_(True))
