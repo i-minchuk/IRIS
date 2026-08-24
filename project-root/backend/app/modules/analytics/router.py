@@ -15,7 +15,13 @@ from app.modules.remarks.models import Remark
 from app.modules.time_tracking.models import TimeSession
 from app.modules.tenders.models import Tender
 from app.modules.gamification.models import GamificationEvent
-from app.modules.analytics.schemas import TeamTimeAnalytics
+from app.modules.analytics.schemas import (
+    DepartmentEmployee,
+    DepartmentLoadData,
+    DepartmentLoadItem,
+    TeamTimeAnalytics,
+)
+from app.modules.tasks.models import Task
 from app.core.cache import cache_response
 
 
@@ -60,7 +66,7 @@ async def get_dashboard(
 
     # --- KPIs ---
     active_projects_result = await db.execute(
-        select(func.count()).where(Project.status.in_(["draft", "in_progress"]))
+        select(func.count()).where(Project.status.in_(["draft", "in_progress", "active", "planning"]))
     )
     active_projects = active_projects_result.scalar() or 0
 
@@ -367,76 +373,56 @@ async def get_kpi_tiles(
     }
 
 
+# Человекочитаемые названия типов объектов и палитра для графиков портфеля
+_PROJECT_TYPE_LABELS = {
+    "KM": "Металлоконструкции (КМ)",
+    "KMD": "Деталировка (КМД)",
+    "PD": "Проектная документация",
+    "montazh": "Монтаж",
+}
+_PORTFOLIO_COLORS = ["#3B82F6", "#0C7205", "#D4AF37", "#8B5CF6", "#0EA5E9", "#DC2626"]
+
+
 @router.get("/portfolio", response_model=dict)
 @cache_response(expire_seconds=300)
 async def get_portfolio(
     db: AsyncSession = Depends(_get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    """Return project portfolio bubble-chart data (budget% vs schedule%)."""
+    """Структура портфеля по типам объектов: доля и выручка по тендерам."""
 
-    projects_result = await db.execute(
-        select(Project).where(~Project.status.in_(["archived"]))
+    result = await db.execute(
+        select(
+            Tender.project_type,
+            Tender.calculated_cost,
+            Tender.our_price,
+            Tender.nmc,
+        ).where(~Tender.status.in_(["cancelled", "archived"]))
     )
-    projects = projects_result.scalars().all()
+    rows = result.all()
 
-    now = datetime.now(timezone.utc)
-    bubbles = []
-    for p in projects:
-        # Schedule usage: elapsed share of the planned duration
-        # (created_at -> planned_finish). 0 when dates are missing.
-        schedule_pct = 0.0
-        if p.planned_finish and p.created_at:
-            planned_finish = p.planned_finish
-            created_at = p.created_at
-            if planned_finish.tzinfo is None:
-                planned_finish = planned_finish.replace(tzinfo=timezone.utc)
-            if created_at.tzinfo is None:
-                created_at = created_at.replace(tzinfo=timezone.utc)
-            planned = (planned_finish - created_at).total_seconds()
-            elapsed = (now - created_at).total_seconds()
-            if planned > 0:
-                schedule_pct = round(elapsed / planned * 100, 1)
+    revenue_by_type: dict[str, float] = {}
+    for project_type, calc_cost, our_price, nmc in rows:
+        value = our_price or calc_cost or nmc or 0.0
+        revenue_by_type[project_type] = revenue_by_type.get(project_type, 0.0) + value
 
-        # TODO: no data source yet — returning empty
-        budget_pct = 0.0
-        # TODO: no data source yet — returning empty
-        total_budget = 0.0
-
-        # Zone classification
-        if budget_pct > 100 and schedule_pct > 100:
-            zone = "crisis"
-            zone_label = "🔥 Кризис"
-        elif budget_pct > 100:
-            zone = "budget"
-            zone_label = "⚠️ Проблемы бюджета"
-        elif schedule_pct > 100:
-            zone = "recoverable"
-            zone_label = "📈 Восстановимые"
-        else:
-            zone = "stars"
-            zone_label = "⭐ Звёзды"
-
-        bubbles.append({
-            "id": p.id,
-            "name": p.name,
-            "code": p.code,
-            "budget_pct": budget_pct,
-            "schedule_pct": schedule_pct,
-            "total_budget_m": total_budget,
-            "zone": zone,
-            "zone_label": zone_label,
-            "status": p.status,
-        })
-
-    # Also return zone counts for legend
-    zone_counts = {"stars": 0, "budget": 0, "recoverable": 0, "crisis": 0}
-    for b in bubbles:
-        zone_counts[b["zone"]] = zone_counts.get(b["zone"], 0) + 1
+    total = sum(revenue_by_type.values())
+    items = []
+    for idx, (project_type, revenue) in enumerate(
+        sorted(revenue_by_type.items(), key=lambda kv: kv[1], reverse=True)
+    ):
+        items.append(
+            {
+                "type": _PROJECT_TYPE_LABELS.get(project_type, project_type),
+                "share": round(revenue / total * 100, 1) if total > 0 else 0,
+                "revenue": round(revenue / 1_000_000, 1),
+                "color": _PORTFOLIO_COLORS[idx % len(_PORTFOLIO_COLORS)],
+            }
+        )
 
     return {
-        "projects": bubbles,
-        "zones": zone_counts,
+        "items": items,
+        "period": "all",
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
 
@@ -448,19 +434,97 @@ async def get_trend(
     db: AsyncSession = Depends(_get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    """Return 12 data points for trend charts."""
-    # TODO: no data source yet (no financial tables) — returning empty
+    """Динамика выручки за 12 месяцев: сумма выигранных тендеров по месяцам."""
     months = [
         "Янв", "Фев", "Мар", "Апр", "Май", "Июн",
         "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек",
     ]
-    points = [
-        {"month": m, "revenue": 0.0, "profit": 0.0, "expenses": 0.0}
-        for m in months
-    ]
+
+    now = datetime.now(timezone.utc)
+    year, month = now.year, now.month - 11
+    if month <= 0:
+        year -= 1
+        month += 12
+    window_start = datetime(year, month, 1, tzinfo=timezone.utc)
+
+    result = await db.execute(
+        select(Tender.our_price, Tender.nmc, Tender.created_at).where(
+            and_(
+                Tender.status == "won",
+                Tender.created_at >= window_start,
+            )
+        )
+    )
+    revenue_by_month: dict[tuple[int, int], float] = {}
+    for our_price, nmc, created_at in result.all():
+        if created_at is None:
+            continue
+        key = (created_at.year, created_at.month)
+        revenue_by_month[key] = revenue_by_month.get(key, 0.0) + (our_price or nmc or 0.0)
+
+    points = []
+    for i in range(12):
+        y, m = window_start.year, window_start.month + i
+        if m > 12:
+            y += 1
+            m -= 12
+        points.append(
+            {
+                "label": months[m - 1],
+                "value": round(revenue_by_month.get((y, m), 0.0) / 1_000_000, 1),
+            }
+        )
+
     return {
         "points": points,
         "period": period,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+@router.get("/finance-summary", response_model=dict)
+@cache_response(expire_seconds=300)
+async def get_finance_summary(
+    db: AsyncSession = Depends(_get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Финансовый блок дашборда: план выручки/прибыли и средняя маржа по тендерам.
+
+    Источник — карточки тендеров (our_price, margin_pct, nmc). Дебиторской
+    задолженности источника данных нет — receivables возвращается null.
+    """
+    result = await db.execute(
+        select(Tender.status, Tender.our_price, Tender.nmc, Tender.margin_pct)
+    )
+    rows = result.all()
+
+    pipeline_statuses = {"draft", "review", "approved", "sent"}
+    revenue_plan = 0.0
+    profit_plan = 0.0
+    revenue_won = 0.0
+    margin_weighted_sum = 0.0
+    margin_weight = 0.0
+    for status, our_price, nmc, margin_pct in rows:
+        price = our_price or nmc or 0.0
+        if status in pipeline_statuses or status == "won":
+            revenue_plan += price
+            if margin_pct:
+                profit_plan += price * margin_pct / 100
+        if status == "won":
+            revenue_won += price
+        if margin_pct and price > 0 and status not in ("cancelled", "archived"):
+            margin_weighted_sum += margin_pct * price
+            margin_weight += price
+
+    avg_margin = round(margin_weighted_sum / margin_weight, 1) if margin_weight > 0 else 0.0
+
+    return {
+        "revenue_plan_m": round(revenue_plan / 1_000_000, 1),
+        "revenue_won_m": round(revenue_won / 1_000_000, 1),
+        "profit_plan_m": round(profit_plan / 1_000_000, 1),
+        "avg_margin_pct": avg_margin,
+        "receivables_m": None,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
     }
 
 
@@ -658,6 +722,7 @@ async def get_alerts(
             "icon": "overdue",
             "title": "Просроченные документы",
             "message": f"{overdue_count} документ(ов) не согласованы более 30 дней.",
+            "count": overdue_count,
             "action_label": "К документам",
             "action_path": "/documents",
         })
@@ -721,14 +786,19 @@ async def get_tender_pipeline(
     cancelled_count = cancelled_result.scalar() or 0
     win_rate = round(won_count / (won_count + lost_count) * 100, 0) if (won_count + lost_count) > 0 else 0
 
-    # Average preparation days for sent tenders
-    # Cross-DB: use extract(epoch from ...) for PostgreSQL, fallback for SQLite
-    from sqlalchemy import text
+    # Average preparation days for sent tenders — считаем в Python (кросс-БД)
     sent_result = await db.execute(
-        select(func.avg(func.extract('epoch', func.now() - Tender.created_at) / 86400))
-        .where(Tender.status == "sent")
+        select(Tender.created_at).where(Tender.status == "sent")
     )
-    avg_prep = round(sent_result.scalar() or 0, 0)
+    now = datetime.now(timezone.utc)
+    sent_days = []
+    for (created,) in sent_result.all():
+        if created is None:
+            continue
+        if created.tzinfo is None:
+            created = created.replace(tzinfo=timezone.utc)
+        sent_days.append((now - created).days)
+    avg_prep = round(sum(sent_days) / len(sent_days), 0) if sent_days else 0
 
     # Overdue: deadline passed and not finalized
     overdue_result = await db.execute(
@@ -1050,7 +1120,7 @@ async def get_team_time_tracking(
         users_result = await db.execute(
             select(User.id, User.full_name).where(User.id.in_(user_ids))
         )
-        users = {u.id: (u.full_name or "Unknown") for u in users_result.scalars().all()}
+        users = {uid: (full_name or "Unknown") for uid, full_name in users_result.all()}
 
     # Bonus points actually awarded for document approvals in the same period
     bonus_query = select(
@@ -1068,6 +1138,9 @@ async def get_team_time_tracking(
         total_active_time = int(r["total_active_time"] or 0)
         total_duration = int(r["total_duration"] or 0)
         avg_efficiency = float(r["avg_efficiency"] or 0)
+        # efficiency_score хранится как доля 0..1 — приводим к шкале 0..100
+        if avg_efficiency <= 1.5:
+            avg_efficiency *= 100
         total_revisions = int(r["total_revisions"] or 0)
         remarks_resolved = int(r["total_remarks_resolved"] or 0)
         remarks_created = int(r["total_remarks_created"] or 0)
@@ -1106,3 +1179,77 @@ async def get_team_time_tracking(
     # Preserve stable ordering by quality score desc for predictable charts
     output.sort(key=lambda x: x.quality_score, reverse=True)
     return output
+
+
+_ROLE_NAMES = {
+    "admin": "Администрирование",
+    "director": "Дирекция",
+    "deputy_director": "Дирекция",
+    "department_head": "Руководители отделов",
+    "gip": "ГИПы",
+    "manager": "Менеджмент",
+    "engineer": "Инженерный отдел",
+    "norm_controller": "Нормоконтроль",
+    "site_manager": "Производство работ",
+}
+
+_TASK_NORM_PER_EMPLOYEE = 10
+_OPEN_TASK_STATUSES = ("new", "in_progress", "on_hold", "review", "approval")
+
+
+@router.get("/department-load", response_model=DepartmentLoadData)
+async def get_department_load(
+    db: AsyncSession = Depends(_get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Return open-task workload grouped by user role (department)."""
+
+    open_count = func.count(Task.id)
+    result = await db.execute(
+        select(User.id, User.full_name, User.role, open_count)
+        .outerjoin(
+            Task,
+            and_(
+                Task.assignee_id == User.id,
+                func.lower(Task.status).in_(_OPEN_TASK_STATUSES),
+            ),
+        )
+        .where(User.is_active.is_(True))
+        .group_by(User.id, User.full_name, User.role)
+        .order_by(open_count.desc())
+    )
+    rows = result.all()
+
+    departments: dict[str, dict] = {}
+    for user_id, full_name, role, open_tasks in rows:
+        role_key = role or "other"
+        dept = departments.setdefault(
+            role_key,
+            {
+                "id": role_key,
+                "name": _ROLE_NAMES.get(role_key, role_key.capitalize()),
+                "current": 0,
+                "employees": [],
+            },
+        )
+        dept["current"] += open_tasks
+        dept["employees"].append(
+            DepartmentEmployee(
+                name=full_name or f"Пользователь #{user_id}",
+                role=role_key,
+                current=open_tasks,
+                max=_TASK_NORM_PER_EMPLOYEE,
+            )
+        )
+
+    items = [
+        DepartmentLoadItem(
+            id=dept["id"],
+            name=dept["name"],
+            current=dept["current"],
+            max=max(len(dept["employees"]) * _TASK_NORM_PER_EMPLOYEE, 1),
+            employees=dept["employees"],
+        )
+        for dept in departments.values()
+    ]
+    return DepartmentLoadData(departments=items)

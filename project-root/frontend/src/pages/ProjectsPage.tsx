@@ -5,36 +5,28 @@ import AddTenderModal from '@/features/tenders/components/AddTenderModal';
 import {
   FolderKanban, FileCheck, Clock, AlertTriangle,
   ArrowRight, Users, ChevronRight, ChevronDown,
-  Link as LinkIcon, Gavel, Search,
+  Gavel, Search,
   Calendar, TrendingUp, TrendingDown,
   CheckCircle2, XCircle, Clock3, Send,
-  FileText, HardHat, Layers, Bookmark, Eye, Download,
+  FileText, HardHat,
   Plus
 } from 'lucide-react';
 import { DepartmentLoad } from '@/components/DepartmentLoad';
 import { getTenders } from '@/features/tenders/api/tenders';
 import type { Tender } from '@/features/tenders/types/tender';
+import { getProjects, type Project } from '@/features/projects/api/projects';
+import { analyticsApi, type DocumentProjectSummary } from '@/features/analytics/api/analytics';
 
 /* ═══════════════════════════════════════════════════════════
    TYPES
    ═══════════════════════════════════════════════════════════ */
-interface ProjectDoc {
-  name: string;
-  status: string;
-  date: string;
-}
-
 interface ProjectItem {
   id: string;
   name: string;
   percent: number;
   status: 'active' | 'review' | 'approved' | 'overdue';
-  route: string;
-  docs: ProjectDoc[];
-  deadline: string;
-  daysLeft: number;
-  riskLevel: 'high' | 'medium' | 'low';
-  blockedBy?: string;
+  customer: string;
+  stats?: DocumentProjectSummary;
 }
 
 interface TenderItem {
@@ -48,83 +40,6 @@ interface TenderItem {
   daysLeft: number;
   winChance: number;
 }
-
-/* ═══════════════════════════════════════════════════════════
-   DATA
-   ═══════════════════════════════════════════════════════════ */
-const projectData: ProjectItem[] = [
-  {
-    id: 'gamma', name: 'Офис «Гамма»', percent: 23, status: 'overdue', route: '/projects?filter=overdue',
-    deadline: '18.05.2026', daysLeft: 2, riskLevel: 'high', blockedBy: 'ТЭЦ-5',
-    docs: [
-      { name: 'ЭОМ-05-003.dwg', status: 'Просрочен', date: '01.05.2026' },
-      { name: 'КЖ-02-014.dwg', status: 'На проверке', date: '10.05.2026' },
-    ]
-  },
-  {
-    id: 'meridian', name: 'ТЦ «Меридиан»', percent: 45, status: 'review', route: '/projects?filter=review',
-    deadline: '25.05.2026', daysLeft: 9, riskLevel: 'medium',
-    docs: [
-      { name: 'АР-03-015.pdf', status: 'Согласован', date: '08.05.2026' },
-      { name: 'ОВиК-01-005.docx', status: 'На согласовании', date: '12.05.2026' },
-    ]
-  },
-  {
-    id: 'severny', name: 'ЖК «Северный»', percent: 78, status: 'active', route: '/projects?filter=active',
-    deadline: '10.05.2026', daysLeft: 5, riskLevel: 'high',
-    docs: [
-      { name: 'КЖ-01-001.dwg', status: 'На проверке', date: '09.05.2026' },
-      { name: 'ЭМ-04-002.pdf', status: 'В работе', date: '11.05.2026' },
-    ]
-  },
-  {
-    id: 'tec5', name: 'ТЭЦ-5', percent: 61, status: 'active', route: '/projects?filter=active',
-    deadline: '30.05.2026', daysLeft: 25, riskLevel: 'low',
-    docs: [
-      { name: 'КР-01-002.pdf', status: 'На согласовании', date: '06.05.2026' },
-    ]
-  },
-  {
-    id: 'sklad', name: 'Склад А-12', percent: 92, status: 'approved', route: '/projects?filter=approved',
-    deadline: '05.05.2026', daysLeft: 0, riskLevel: 'low', blockedBy: 'Склад А-12',
-    docs: [
-      { name: 'ОВиК-02-008.docx', status: 'Утверждён', date: '07.05.2026' },
-    ]
-  },
-];
-
-interface TemplateDoc {
-  id: string;
-  name: string;
-  category: string;
-  format: string;
-  downloads: number;
-  isFavorite: boolean;
-}
-
-interface TypicalSolution {
-  id: string;
-  name: string;
-  type: string;
-  projectsUsed: string[];
-  preview: string;
-}
-
-const templates: TemplateDoc[] = [
-  { id: 't1', name: 'Типовой узел примыкания балки', category: 'КЖ', format: 'dwg', downloads: 45, isFavorite: true },
-  { id: 't2', name: 'Шаблон спецификации арматуры', category: 'КЖ', format: 'xlsx', downloads: 32, isFavorite: false },
-  { id: 't3', name: 'Типовая схема вентиляции подвала', category: 'ОВиК', format: 'dwg', downloads: 28, isFavorite: true },
-  { id: 't4', name: 'Шаблон однолинейной схемы', category: 'ЭОМ', format: 'dwg', downloads: 21, isFavorite: false },
-  { id: 't5', name: 'Типовой план эвакуации', category: 'АР', format: 'pdf', downloads: 67, isFavorite: true },
-  { id: 't6', name: 'Шаблон ведомости рабочей документации', category: 'Тендер', format: 'docx', downloads: 89, isFavorite: true },
-];
-
-const typicalSolutions: TypicalSolution[] = [
-  { id: 's1', name: 'Узел балка-колонна (монолит)', type: 'КЖ', projectsUsed: ['ЖК «Северный»', 'ЖК «Южный парк»'], preview: 'Схема арматурного каркаса узла' },
-  { id: 's2', name: 'Фундамент плита под ТЭЦ', type: 'КР', projectsUsed: ['ТЭЦ-5'], preview: 'Плита 2.5м с арматурой Ø32' },
-  { id: 's3', name: 'Вентилируемый фасад (керамогранит)', type: 'АР', projectsUsed: ['ТЦ «Меридиан»'], preview: 'Узел крепления подсистемы' },
-  { id: 's4', name: 'Беспролётные фермы 36м', type: 'КМ', projectsUsed: ['Склад А-12'], preview: 'Схема узла опирания фермы' },
-];
 
 /* ═══════════════════════════════════════════════════════════
    SUB-TABS (Архив-стиль)
@@ -422,30 +337,9 @@ function SolutionsView() {
           База типовых решений. Узлы, детали и конструкции, которые уже применялись на проектах.
         </p>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {typicalSolutions.map(s => (
-          <div key={s.id} className="p-5 space-y-3 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
-            <div className="flex items-center gap-2">
-              <Layers size={18} style={{ color: '#6B5B95' }} />
-              <div>
-                <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{s.name}</h3>
-                <span className="text-xs px-2 py-0.5 rounded border" style={{ color: '#6B5B95', borderColor: 'rgba(107,91,149,0.3)', background: 'rgba(107,91,149,0.08)' }}>{s.type}</span>
-              </div>
-            </div>
-            <p className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>{s.preview}</p>
-            <div className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>
-              <strong>Применено в:</strong> {s.projectsUsed.join(', ')}
-            </div>
-            <div className="flex gap-2">
-              <button className="flex-1 text-xs py-1.5 rounded-lg text-white text-center" style={{ background: 'linear-gradient(135deg, #6B5B95 0%, #5A4D80 100%)' }}>
-                <Eye size={12} className="inline mr-1" /> Просмотр
-              </button>
-              <button className="flex-1 text-xs py-1.5 rounded-lg border text-center transition-colors" style={{ color: '#6B7280', borderColor: 'rgba(107,114,128,0.3)' }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(107,114,128,0.1)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
-                <Download size={12} className="inline mr-1" /> DWG
-              </button>
-            </div>
-          </div>
-        ))}
+      <div className="p-8 rounded-xl text-center" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+        <HardHat size={32} className="mx-auto mb-2 opacity-40" style={{ color: 'var(--text-muted)' }} />
+        <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Типовых решений пока нет</p>
       </div>
     </div>
   );
@@ -455,48 +349,10 @@ function SolutionsView() {
    TEMPLATES VIEW
    ═══════════════════════════════════════════════════════════ */
 function TemplatesView() {
-  const [search, setSearch] = useState('');
-  const filtered = templates.filter(t =>
-    t.name.toLowerCase().includes(search.toLowerCase()) || t.category.toLowerCase().includes(search.toLowerCase())
-  );
-
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-default)' }}>
-          <Search size={16} style={{ color: 'var(--text-muted)' }} />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Поиск по шаблону..." className="bg-transparent outline-none text-sm w-48 md:w-72" style={{ color: 'var(--text-primary)' }} />
-        </div>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filtered.map(t => (
-          <div key={t.id} className="p-4 space-y-3 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-2">
-                <FileText size={18} style={{ color: '#6B7280' }} />
-                <div>
-                  <h3 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t.name}</h3>
-                  <p className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>{t.category} · {t.format.toUpperCase()}</p>
-                </div>
-              </div>
-              <button className="p-1 rounded transition-colors" style={{ color: t.isFavorite ? '#D4AF37' : 'var(--text-muted)' }}>
-                <Bookmark size={14} />
-              </button>
-            </div>
-            <div className="flex items-center justify-between text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>
-              <span className="flex items-center gap-1"><Download size={10} /> {t.downloads} скачиваний</span>
-            </div>
-            <div className="flex gap-2">
-              <button className="flex-1 text-xs py-1.5 rounded-lg text-white text-center" style={{ background: 'linear-gradient(135deg, #6B7280 0%, #4B5563 100%)' }}>
-                <Eye size={12} className="inline mr-1" /> Просмотр
-              </button>
-              <button className="flex-1 text-xs py-1.5 rounded-lg border text-center transition-colors" style={{ color: '#6B7280', borderColor: 'rgba(107,114,128,0.3)' }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(107,114,128,0.1)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
-                <Download size={12} className="inline mr-1" /> Скачать
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
+    <div className="p-8 rounded-xl text-center" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+      <FileText size={32} className="mx-auto mb-2 opacity-40" style={{ color: 'var(--text-muted)' }} />
+      <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Шаблонов пока нет</p>
     </div>
   );
 }
@@ -510,8 +366,42 @@ function ProjectsView() {
   const { theme } = useTheme();
   const isDark = theme === 'dark' || theme === 'midnight' || theme === 'contrast';
 
+  const [projects, setProjects] = useState<ProjectItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      getProjects().catch(() => [] as Project[]),
+      analyticsApi.getDocumentsByProject().then(r => r.data).catch(() => null),
+    ]).then(([projectsData, docsData]) => {
+      if (cancelled) return;
+      const statsMap = new Map<number, DocumentProjectSummary>();
+      docsData?.projects.forEach(p => statsMap.set(p.project_id, p));
+      setProjects(projectsData.map(p => {
+        const stats = statsMap.get(p.id);
+        const total = stats ? stats.draft + stats.in_review + stats.approved + stats.overdue : 0;
+        const percent = stats && total > 0 ? Math.round((stats.approved / total) * 100) : 0;
+        let status: ProjectItem['status'] = 'active';
+        if (stats && stats.overdue > 0) status = 'overdue';
+        else if (p.status === 'completed') status = 'approved';
+        else if (stats && stats.in_review > 0) status = 'review';
+        return {
+          id: String(p.id),
+          name: p.name,
+          percent,
+          status,
+          customer: p.customer_name || p.code || '—',
+          stats,
+        };
+      }));
+      setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
   const statusWeight = { overdue: 0, review: 1, active: 2, approved: 3 };
-  const sortedProjects = [...projectData].sort((a, b) => statusWeight[a.status] - statusWeight[b.status]);
+  const sortedProjects = [...projects].sort((a, b) => statusWeight[a.status] - statusWeight[b.status]);
 
   const getProjectColor = (status: string) => {
     if (status === 'overdue') return '#EF4444';
@@ -534,11 +424,19 @@ function ProjectsView() {
     return <FolderKanban size={14} />;
   };
 
-  const riskItems = [
-    { id: 'r1', level: 'high' as const, title: 'Офис «Гамма»', desc: 'Просрочка + нет согласования заказчика', action: 'Перейти в Workflow', color: '#DC2626' },
-    { id: 'r2', level: 'medium' as const, title: 'ТЭЦ-5', desc: 'Зависимость от подрядчика (блокирует Склад А-12)', action: 'Посмотреть замечания', color: '#D4AF37' },
-    { id: 'r3', level: 'medium' as const, title: 'Тендерный отдел', desc: 'Перегруз 85% (план 75%)', action: 'Перераспределить', color: '#D4AF37' },
-  ];
+  const attentionCount = projects.filter(p => p.status === 'overdue').length;
+  const inReviewCount = projects.reduce((sum, p) => sum + (p.stats?.in_review ?? 0), 0);
+
+  const riskItems = projects
+    .filter(p => (p.stats?.overdue ?? 0) > 0)
+    .map(p => ({
+      id: p.id,
+      level: 'high' as const,
+      title: p.name,
+      desc: `Просрочено документов: ${p.stats?.overdue ?? 0}`,
+      action: 'Перейти в Workflow',
+      color: '#DC2626',
+    }));
 
   const [showAllRisks, setShowAllRisks] = useState(false);
   const visibleRisks = showAllRisks ? riskItems : riskItems.slice(0, 3);
@@ -569,7 +467,7 @@ function ProjectsView() {
         <button onClick={() => alert('Массовое согласование — в разработке')}
           className="text-xs px-2 py-1 rounded-md transition-all hover:brightness-105 cursor-pointer"
           style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>
-          Утвердить 84 документа
+          Массовое согласование
         </button>
         <button onClick={() => navigate('/team')}
           className="text-xs px-2 py-1 rounded-md transition-all hover:brightness-105 cursor-pointer"
@@ -595,7 +493,7 @@ function ProjectsView() {
             <span className="text-base md:text-lg font-medium leading-relaxed mt-1 font-medium" style={{ color: 'var(--text-secondary)' }}>Требуют внимания</span>
             <span className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: 'rgba(220,38,38,0.12)', color: '#DC2626' }}><AlertTriangle size={12} /></span>
           </div>
-          <div className="text-xl font-bold" style={{ color: '#DC2626' }}>7</div>
+          <div className="text-xl font-bold" style={{ color: '#DC2626' }}>{attentionCount}</div>
           <div className="text-xs flex items-center gap-1 font-medium" style={{ color: '#DC2626' }}><ArrowRight size={10} className="transition-transform group-hover:translate-x-1" />Срочно в Workflow</div>
         </button>
         <button onClick={() => navigate('/workflow')} className="group p-3 rounded-lg text-left transition-all hover:scale-[1.02] flex flex-col gap-1 cursor-pointer" style={{ background: 'var(--card-bg)', border: '1px solid rgba(212,175,55,0.35)' }}>
@@ -603,16 +501,16 @@ function ProjectsView() {
             <span className="text-base md:text-lg font-medium leading-relaxed mt-1 font-medium" style={{ color: 'var(--text-secondary)' }}>На согласовании</span>
             <span className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: 'rgba(212,175,55,0.12)', color: '#D4AF37' }}><Clock size={12} /></span>
           </div>
-          <div className="text-xl font-bold" style={{ color: '#D4AF37' }}>84</div>
-          <div className="text-xs flex items-center gap-1" style={{ color: 'var(--text-muted)' }}><ArrowRight size={10} className="transition-transform group-hover:translate-x-1" />Среднее время: 2.3 дня</div>
+          <div className="text-xl font-bold" style={{ color: '#D4AF37' }}>{inReviewCount}</div>
+          <div className="text-xs flex items-center gap-1" style={{ color: 'var(--text-muted)' }}><ArrowRight size={10} className="transition-transform group-hover:translate-x-1" />документов в работе</div>
         </button>
-        <button onClick={() => navigate('/documents?dept=tender')} className="group p-3 rounded-lg text-left transition-all hover:scale-[1.02] flex flex-col gap-1 cursor-pointer" style={{ background: 'var(--card-bg)', border: '1px solid rgba(37,99,235,0.35)' }}>
+        <button onClick={() => navigate('/projects')} className="group p-3 rounded-lg text-left transition-all hover:scale-[1.02] flex flex-col gap-1 cursor-pointer" style={{ background: 'var(--card-bg)', border: '1px solid rgba(37,99,235,0.35)' }}>
           <div className="flex items-center justify-between">
-            <span className="text-base md:text-lg font-medium leading-relaxed mt-1 font-medium" style={{ color: 'var(--text-secondary)' }}>Перегруженный отдел</span>
+            <span className="text-base md:text-lg font-medium leading-relaxed mt-1 font-medium" style={{ color: 'var(--text-secondary)' }}>Всего проектов</span>
             <span className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: 'rgba(37,99,235,0.12)', color: '#2563EB' }}><Users size={12} /></span>
           </div>
-          <div className="text-xl font-bold" style={{ color: '#2563EB' }}>34/40</div>
-          <div className="text-xs flex items-center gap-1" style={{ color: 'var(--text-muted)' }}><ArrowRight size={10} className="transition-transform group-hover:translate-x-1" />Тендерный отдел — 85%</div>
+          <div className="text-xl font-bold" style={{ color: '#2563EB' }}>{projects.length}</div>
+          <div className="text-xs flex items-center gap-1" style={{ color: 'var(--text-muted)' }}><ArrowRight size={10} className="transition-transform group-hover:translate-x-1" />в портфеле</div>
         </button>
       </div>
 
@@ -637,6 +535,12 @@ function ProjectsView() {
               </div>
 
               <div className="flex flex-col gap-2">
+                {loading && (
+                  <div className="text-xs text-center py-6" style={{ color: 'var(--text-secondary)' }}>Загрузка проектов...</div>
+                )}
+                {!loading && filteredProjects.length === 0 && (
+                  <div className="text-xs text-center py-6" style={{ color: 'var(--text-secondary)' }}>Проектов не найдено</div>
+                )}
                 {filteredProjects.map((project) => {
                   const color = getProjectColor(project.status);
                   const isExpanded = expandedProject === project.id;
@@ -662,11 +566,11 @@ function ProjectsView() {
                         </div>
 
                         <div className="mt-1.5 flex items-center justify-between">
-                          <span className="text-xs" style={{ color: project.daysLeft <= 3 ? '#DC2626' : project.daysLeft <= 7 ? '#D4AF37' : 'var(--text-muted)' }}>
-                            Дедлайн: {project.deadline} ({project.daysLeft} дн.)
+                          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                            Заказчик: {project.customer}
                           </span>
-                          {project.blockedBy && (
-                            <span className="text-xs flex items-center gap-0.5 shrink-0 ml-1.5" style={{ color: '#FF6B6B' }}><LinkIcon size={9} /> Блокирует: {project.blockedBy}</span>
+                          {project.stats && project.stats.overdue > 0 && (
+                            <span className="text-xs flex items-center gap-0.5 shrink-0 ml-1.5" style={{ color: '#FF6B6B' }}><AlertTriangle size={9} /> Просрочено: {project.stats.overdue}</span>
                           )}
                         </div>
                       </button>
@@ -676,19 +580,25 @@ function ProjectsView() {
                           <div className="border-t pt-2 mt-0.5" style={{ borderColor: 'var(--border-color)' }}>
                             <div className="flex items-center justify-between mb-1.5">
                               <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Документы</span>
-                              <button onClick={(e) => { e.stopPropagation(); navigate(project.route); }} className="text-xs flex items-center gap-0.5 px-1.5 py-0.5 rounded transition-colors cursor-pointer" style={{ color: '#2563EB', background: 'rgba(37,99,235,0.1)' }}>Все <ArrowRight size={8} /></button>
+                              <button onClick={(e) => { e.stopPropagation(); navigate('/documents'); }} className="text-xs flex items-center gap-0.5 px-1.5 py-0.5 rounded transition-colors cursor-pointer" style={{ color: '#2563EB', background: 'rgba(37,99,235,0.1)' }}>Все <ArrowRight size={8} /></button>
                             </div>
-                            <div className="flex flex-col gap-1.5">
-                              {project.docs.map((doc, di) => (
-                                <div key={di} className="flex items-center justify-between">
-                                  <span className="text-sm truncate" style={{ color: 'var(--text-primary)' }}>{doc.name}</span>
-                                  <div className="flex items-center gap-1.5 shrink-0 ml-1.5">
-                                    <span className="text-xs px-1 py-0.5 rounded-full" style={{ background: doc.status === 'Просрочен' ? 'rgba(239,68,68,0.15)' : 'rgba(37,99,235,0.15)', color: doc.status === 'Просрочен' ? '#EF4444' : '#2563EB', border: `1px solid ${doc.status === 'Просрочен' ? 'rgba(239,68,68,0.3)' : 'rgba(37,99,235,0.3)'}` }}>{doc.status}</span>
-                                    <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{doc.date}</span>
+                            {project.stats ? (
+                              <div className="flex flex-col gap-1.5">
+                                {([
+                                  ['Черновики', project.stats.draft],
+                                  ['На проверке', project.stats.in_review],
+                                  ['Согласовано', project.stats.approved],
+                                  ['Просрочено', project.stats.overdue],
+                                ] as [string, number][]).map(([docLabel, count]) => (
+                                  <div key={docLabel} className="flex items-center justify-between">
+                                    <span className="text-sm truncate" style={{ color: 'var(--text-primary)' }}>{docLabel}</span>
+                                    <span className="text-xs px-1 py-0.5 rounded-full shrink-0 ml-1.5" style={{ background: docLabel === 'Просрочено' && count > 0 ? 'rgba(239,68,68,0.15)' : 'rgba(37,99,235,0.15)', color: docLabel === 'Просрочено' && count > 0 ? '#EF4444' : '#2563EB', border: `1px solid ${docLabel === 'Просрочено' && count > 0 ? 'rgba(239,68,68,0.3)' : 'rgba(37,99,235,0.3)'}` }}>{count}</span>
                                   </div>
-                                </div>
-                              ))}
-                            </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="text-xs" style={{ color: 'var(--text-muted)' }}>Нет данных по документам</div>
+                            )}
                           </div>
                         </div>
                       )}
@@ -719,11 +629,14 @@ function ProjectsView() {
             <div className="flex flex-col gap-2">
               {visibleRisks.map((risk) => (
                 <div key={risk.id} className="p-2 rounded-md" style={{ borderLeft: '4px solid', borderColor: risk.color, background: risk.color + '08' }}>
-                  <div className="text-xs font-semibold mb-0.5" style={{ color: risk.color }}>{risk.level === 'high' ? 'Высокий' : 'Средний'}: {risk.title}</div>
+                  <div className="text-xs font-semibold mb-0.5" style={{ color: risk.color }}>Высокий: {risk.title}</div>
                   <div className="text-xs mb-1.5" style={{ color: 'var(--text-primary)' }}>{risk.desc}</div>
                   <button onClick={() => navigate('/workflow')} className="text-xs px-1.5 py-0.5 rounded transition-colors cursor-pointer" style={{ color: risk.color, background: risk.color + '15' }}>{risk.action}</button>
                 </div>
               ))}
+              {!loading && riskItems.length === 0 && (
+                <div className="text-xs text-center py-3" style={{ color: 'var(--text-muted)' }}>Рисков не выявлено</div>
+              )}
             </div>
             {riskItems.length > 3 && (
               <button onClick={() => setShowAllRisks(!showAllRisks)} className="w-full text-center text-xs py-1 rounded-md cursor-pointer" style={{ color: 'var(--text-secondary)', background: 'var(--card-elevated)', border: '1px solid var(--border-color)' }}>

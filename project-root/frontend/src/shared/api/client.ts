@@ -74,11 +74,6 @@ apiClient.interceptors.response.use(
 
     // 401 auth handling — пробуем refresh token
     if (error.response?.status === 401) {
-      // Skip logout for demo mode
-      if (localStorage.getItem('demo_mode') === '1') {
-        return Promise.reject(error);
-      }
-
       const refreshToken = localStorage.getItem('refresh_token');
       if (refreshToken && !originalRequest._retry) {
         originalRequest._retry = true;

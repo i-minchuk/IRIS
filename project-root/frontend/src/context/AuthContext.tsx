@@ -61,11 +61,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
     const restore = async () => {
-      // Skip backend check in demo mode
-      if (isDemoMode || localStorage.getItem('demo_mode') === '1') {
-        if (mounted) setLoading(false);
-        return;
-      }
       try {
         const currentUser = await authApi.getCurrentUser();
         if (!mounted) return;
@@ -85,7 +80,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(
     async (usernameOrEmail: string, password: string) => {
-      const tokenResponse = await authApi.login({ username: usernameOrEmail, password });
+      // Бэкенд ищет либо по email, либо по username — выбираем поле по наличию '@'
+      const credentials = usernameOrEmail.includes('@')
+        ? { email: usernameOrEmail, password }
+        : { username: usernameOrEmail, password };
+      const tokenResponse = await authApi.login(credentials);
       // Сохраняем токен ДО вызова getCurrentUser, чтобы apiClient подставил Authorization header
       localStorage.setItem('access_token', tokenResponse.access_token);
       localStorage.setItem('refresh_token', tokenResponse.refresh_token);
@@ -96,7 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const loginDemo = useCallback(async () => {
-    useAuthStore.getState().enableDemo();
+    await useAuthStore.getState().enableDemo();
   }, []);
 
   const logout = useCallback(async () => {
@@ -109,8 +108,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [storeLogout]);
 
   const refreshUser = useCallback(async () => {
-    // Skip backend check in demo mode
-    if (localStorage.getItem('demo_mode') === '1') return;
     try {
       const currentUser = await authApi.getCurrentUser();
       const token = useAuthStore.getState().token || '';

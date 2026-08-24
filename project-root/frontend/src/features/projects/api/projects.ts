@@ -83,8 +83,9 @@ export const projectsApi = {
 
 // Legacy standalone exports (to be migrated)
 export const getProjects = async (): Promise<Project[]> => {
-  const { data } = await client.get('/projects');
-  return data;
+  const { data } = await client.get('/projects', { params: { page_size: 100 } });
+  // Backend возвращает пагинированный ответ { items, total, ... }
+  return Array.isArray(data) ? data : (data?.items ?? []);
 };
 
 export const getProject = async (id: number): Promise<Project & { stages: Stage[] }> => {

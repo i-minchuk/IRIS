@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTabState } from '@/shared/hooks/useTabState';
 import { PageTabs } from '@/shared/components/PageTabs';
 import { Card } from '@/components/ui';
@@ -9,6 +9,7 @@ import { useReleaseStore } from '@/stores/releaseStore';
 import { AuditLogTable } from '@/components/admin/AuditLogTable';
 import SessionList from '@/features/time_tracking/components/SessionList';
 import AnalyticsPanel from '@/features/time_tracking/components/AnalyticsPanel';
+import { adminApi, type AdminUser } from '@/features/auth/api/adminApi';
 import {
   Users, Shield, Ticket, AlertTriangle, LayoutDashboard, Timer,
 } from 'lucide-react';
@@ -34,13 +35,18 @@ function DashboardOverview() {
   const fetchTickets = useSupportStore(s => s.fetchTickets);
   const fetchIncidents = useSupportStore(s => s.fetchIncidents);
   const fetchReleases = useReleaseStore(s => s.fetchReleases);
+  const [users, setUsers] = useState<AdminUser[] | null>(null);
 
   useEffect(() => {
     fetchAuditEntries();
     fetchTickets();
     fetchIncidents();
     fetchReleases();
+    adminApi.getUsers().then(setUsers).catch(() => setUsers([]));
   }, [fetchAuditEntries, fetchTickets, fetchIncidents, fetchReleases]);
+
+  const usersCount = users === null ? '…' : String(users.length);
+  const rolesCount = users === null ? '…' : String(new Set(users.map(u => u.role)).size);
 
   const auditStats = useMemo(() => ({
     total: auditEntries.length,
@@ -101,8 +107,8 @@ function DashboardOverview() {
     <div className="space-y-6">
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={<Users size={18} />} label="Пользователей" value="42" color="#3B82F6" />
-        <StatCard icon={<Shield size={18} />} label="Ролей" value="8" color="#8B5CF6" />
+        <StatCard icon={<Users size={18} />} label="Пользователей" value={usersCount} color="#3B82F6" />
+        <StatCard icon={<Shield size={18} />} label="Ролей" value={rolesCount} color="#8B5CF6" />
         <StatCard icon={<Ticket size={18} />} label="Открытых тикетов" value={String(openTickets.length)} color="#F59E0B" />
         <StatCard icon={<AlertTriangle size={18} />} label="Инцидентов" value={String(openIncidents.length)} color="#EF4444" />
       </div>

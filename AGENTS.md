@@ -280,6 +280,29 @@ project-root/frontend/
 
 ---
 
+## Режимы работы (demo / prod)
+
+Система имеет два режима, переключаемых переменной окружения `MODE=demo|prod`
+(дефолт: `prod`). Код при переключении не меняется.
+
+- **demo** — презентация заказчику: при старте сидит вымышленный набор данных
+  (`app/db/demo_seed.py`, маркер — `demo@iris.local`), экспорты и внешние
+  интеграции (AI, 1С) возвращают 403, логи только в консоль, на фронте баннер
+  «Демо-режим» и кнопка входа «Демо-режим» на странице логина.
+- **prod** — рабочий режим: реальные данные, полный функционал, файловые логи
+  INFO+ с ротацией, метрики `/metrics`, кнопка «Сообщить о проблеме»
+  (тикеты `/api/v1/support/tickets`).
+
+Ключевые файлы:
+- `backend/config/config.demo.yaml`, `backend/config/config.prod.yaml` — параметры режимов.
+- `backend/app/core/mode.py` — загрузка/валидация конфига, зависимости `require_full_mode` / `require_integrations` для гейтинга эндпоинтов.
+- `GET /api/v1/meta` (без auth) → `{mode, version, features}` — фронтенд читает через `src/stores/appModeStore.ts`.
+- Smoke-проверка: `python scripts/smoke_modes.py --base-url <url> --mode demo|prod`.
+- Доки: `docs/DEMO_GUIDE.md`, `docs/PILOT_CHECKLIST.md`, `docs/DATA_LOADING.md`.
+- Windows-запуск демо: `scripts/СТАРТ_ДЕМО.bat`.
+
+---
+
 ## Команды сборки и запуска
 
 ### Backend
@@ -450,15 +473,9 @@ npm run test:e2e:headed
 
 ### Feature flags
 
-Фичи, требующие постепенного включения, оформляются через:
-```typescript
-// frontend/src/shared/config/featureFlags.ts
-export const featureFlags = {
-  darkTheme: true,
-  newProjectsUI: false,
-  analytics: false,
-};
-```
+Отдельного `featureFlags.ts` в кодовой базе нет. Переключение функций по
+режиму работы (demo/prod) делается через конфиги `backend/config/config.*.yaml`
+и читается фронтендом из `GET /api/v1/meta` (см. раздел «Режимы работы»).
 
 ---
 

@@ -1,0 +1,20 @@
+# Рабочий режим: первая тестовая группа.
+# Реальные данные, полный функционал, файловое логирование и метрики.
+mode: prod
+debug: false
+
+logging:
+  level: INFO
+  to_file: true         # logs/app_YYYYMM.log + error_YYYYMM.log (ротация 10 МБ)
+  dir: logs
+
+features:
+  demo_data_seed: false        # реальные данные, никакого автосида
+  exports: true
+  external_integrations: true
+  feedback_button: true        # «Сообщить о проблеме» → тикеты поддержки
+  demo_banner: false
+
+metrics:
+  enabled: true
+  endpoint: /metrics

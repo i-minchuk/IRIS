@@ -13,15 +13,9 @@ export interface User {
   is_active: boolean;
 }
 
-const DEMO_USER: User = {
-  id: 1,
-  email: 'demo@dokpotok.ru',
-  full_name: 'Демо Пользователь',
-  role: 'admin',
-  is_active: true,
-};
-
-const DEMO_TOKEN = 'demo-token-iris-2026';
+// Демо-вход выполняется реальным логином посеянного пользователя
+// (создаётся автоматически при MODE=demo на backend, см. app/db/demo_seed.py)
+export const DEMO_CREDENTIALS = { email: 'demo@iris.local', password: 'demo1234' };
 
 interface AuthState {
   user: User | null;
@@ -35,27 +29,16 @@ interface AuthState {
   setLoading: (loading: boolean) => void;
   setHasHydrated: (hydrated: boolean) => void;
   checkAuth: () => Promise<void>;
-  enableDemo: () => void;
+  enableDemo: () => Promise<void>;
   disableDemo: () => void;
 }
 
 function isDemoEnabled(): boolean {
   if (typeof window === 'undefined') return false;
-  return localStorage.getItem('demo_mode') === '1' || (window as any).__DEMO_MODE__ === true;
+  return localStorage.getItem('demo_mode') === '1';
 }
 
 function getInitialState(): Pick<AuthState, 'user' | 'token' | 'isAuthenticated' | 'isLoading' | 'hasHydrated' | 'isDemoMode'> {
-  const demo = isDemoEnabled();
-  if (demo) {
-    return {
-      user: DEMO_USER,
-      token: DEMO_TOKEN,
-      isAuthenticated: true,
-      isLoading: false,
-      hasHydrated: true,
-      isDemoMode: true,
-    };
-  }
   // Try to restore token from localStorage on init (hydration)
   const token = localStorage.getItem('access_token');
   if (token) {
@@ -65,7 +48,7 @@ function getInitialState(): Pick<AuthState, 'user' | 'token' | 'isAuthenticated'
       isAuthenticated: true, // optimistic: assume valid until checkAuth confirms
       isLoading: true, // show loading while validating
       hasHydrated: true,
-      isDemoMode: false,
+      isDemoMode: isDemoEnabled(),
     };
   }
   return {
@@ -83,7 +66,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   setAuth: (user, token) => {
     localStorage.setItem('access_token', token);
-    set({ user, token, isAuthenticated: true, isLoading: false, isDemoMode: false });
+    set({ user, token, isAuthenticated: true, isLoading: false });
   },
 
   logout: () => {
@@ -98,12 +81,6 @@ export const useAuthStore = create<AuthState>((set) => ({
   setHasHydrated: (hasHydrated) => set({ hasHydrated }),
 
   checkAuth: async () => {
-    // Demo mode: skip backend validation
-    if (isDemoEnabled()) {
-      set({ user: DEMO_USER, token: DEMO_TOKEN, isAuthenticated: true, isLoading: false, isDemoMode: true });
-      return;
-    }
-
     const token = localStorage.getItem('access_token');
     if (!token) {
       set({ isLoading: false });
@@ -118,13 +95,14 @@ export const useAuthStore = create<AuthState>((set) => ({
         role: apiUser.role as UserRole,
         is_active: apiUser.is_active,
       };
-      set({ user, token, isAuthenticated: true, isLoading: false, isDemoMode: false });
+      set({ user, token, isAuthenticated: true, isLoading: false, isDemoMode: isDemoEnabled() });
     } catch (err: any) {
       const status = err?.response?.status;
       if (status === 401 || status === 403) {
         // Токен невалиден — завершаем сессию
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
+        localStorage.removeItem('demo_mode');
         set({ user: null, token: null, isAuthenticated: false, isLoading: false, isDemoMode: false });
       } else {
         // Транзиентная ошибка (429, сеть, 5xx) — не разлогиниваем пользователя
@@ -133,15 +111,36 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  enableDemo: () => {
+  enableDemo: async () => {
+    // Реальный логин демо-пользователем (требует backend с MODE=demo)
+    const tokenResponse = await authApi.login({
+      email: DEMO_CREDENTIALS.email,
+      password: DEMO_CREDENTIALS.password,
+    });
+    localStorage.setItem('access_token', tokenResponse.access_token);
+    localStorage.setItem('refresh_token', tokenResponse.refresh_token);
     localStorage.setItem('demo_mode', '1');
-    localStorage.setItem('access_token', DEMO_TOKEN);
-    set({ user: DEMO_USER, token: DEMO_TOKEN, isAuthenticated: true, isLoading: false, isDemoMode: true });
+    const apiUser = await authApi.getCurrentUser();
+    const user: User = {
+      id: apiUser.id,
+      email: apiUser.email,
+      full_name: apiUser.full_name,
+      role: apiUser.role as UserRole,
+      is_active: apiUser.is_active,
+    };
+    set({
+      user,
+      token: tokenResponse.access_token,
+      isAuthenticated: true,
+      isLoading: false,
+      isDemoMode: true,
+    });
   },
 
   disableDemo: () => {
     localStorage.removeItem('demo_mode');
     localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
     set({ user: null, token: null, isAuthenticated: false, isLoading: false, isDemoMode: false });
   },
 }));

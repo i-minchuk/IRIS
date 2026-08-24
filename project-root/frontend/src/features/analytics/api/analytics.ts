@@ -78,6 +78,7 @@ export interface AlertItem {
   icon: string;
   title: string;
   message: string;
+  count?: number;
   action_label: string;
   action_path: string;
 }
@@ -201,6 +202,15 @@ export interface PortfolioChartData {
   updated_at: string;
 }
 
+export interface FinanceSummary {
+  revenue_plan_m: number;
+  revenue_won_m: number;
+  profit_plan_m: number;
+  avg_margin_pct: number;
+  receivables_m: number | null;
+  updated_at: string;
+}
+
 export interface ActionItem {
   id: string;
   text: string;
@@ -231,6 +241,25 @@ export interface TeamTimeAnalytics {
 
 export type TeamTimePeriod = AnalyticsPeriod | 'year' | 'all';
 
+export interface DepartmentEmployee {
+  name: string;
+  role: string;
+  current: number;
+  max: number;
+}
+
+export interface DepartmentLoadItem {
+  id: string;
+  name: string;
+  current: number;
+  max: number;
+  employees: DepartmentEmployee[];
+}
+
+export interface DepartmentLoadData {
+  departments: DepartmentLoadItem[];
+}
+
 export const analyticsApi = {
   getDashboard: () => client.get<DashboardData>('/analytics/dashboard'),
   getKpiTiles: () => client.get<KpiTilesResponse>('/analytics/kpi'),
@@ -244,7 +273,9 @@ export const analyticsApi = {
   getSparklines: () => client.get<SparklinesData>('/analytics/sparklines'),
   getTrend: (period?: AnalyticsPeriod) =>
     client.get<TrendData>('/analytics/trend', { params: period ? { period } : undefined }),
+  getFinanceSummary: () => client.get<FinanceSummary>('/analytics/finance-summary'),
   getActionItems: () => client.get<ActionItemsData>('/analytics/action-items'),
+  getDepartmentLoad: () => client.get<DepartmentLoadData>('/analytics/department-load'),
   getTeamTimeTracking: (period?: TeamTimePeriod) =>
     client.get<TeamTimeAnalytics[]>('/analytics/time-tracking/team', {
       params: period && period !== 'all' ? { period } : undefined,

@@ -27,7 +27,7 @@ pip install asyncpg || true
 alembic upgrade head
 
 # Seed data
-python -m app.db.seed_all || echo "⚠️ Seed failed, may need manual check"
+python -m app.db.seed || echo "⚠️ Seed failed, may need manual check"
 
 echo ""
 echo "✅ PostgreSQL environment ready!"

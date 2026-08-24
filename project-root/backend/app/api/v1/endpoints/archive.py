@@ -4,6 +4,7 @@ from typing import List, Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends, Query, HTTPException, BackgroundTasks
 from fastapi.responses import StreamingResponse
+from app.core.mode import require_full_mode
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
@@ -388,6 +389,7 @@ async def export_archive(
     background_tasks: BackgroundTasks = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
+    _: None = Depends(require_full_mode),
 ):
     """Экспорт архива"""
     if format == 'pdf':

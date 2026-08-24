@@ -215,7 +215,18 @@ export default function GlossaryPanel({ isDark = false }: GlossaryPanelProps) {
       </div>
 
       {/* Departments */}
-      {!hasResults ? (
+      {GLOSSARY_DATA.length === 0 ? (
+        <div
+          className="text-center py-12 text-sm rounded-xl"
+          style={{
+            color: 'var(--text-muted)',
+            background: 'var(--card-bg)',
+            border: '1px solid var(--border-default)',
+          }}
+        >
+          Глоссарий пока пуст — термины будут добавлены позже
+        </div>
+      ) : !hasResults ? (
         <div
           className="text-center py-12 text-sm"
           style={{ color: 'var(--text-muted)' }}

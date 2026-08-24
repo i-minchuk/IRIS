@@ -113,7 +113,9 @@ class WorkflowTemplate(Base):
     #     }
     #   }
     # ]
-    steps_schema: Mapped[dict] = mapped_column(JSONB, nullable=False, default=list)
+    steps_schema: Mapped[dict] = mapped_column(
+        JSONB().with_variant(JSON, "sqlite"), nullable=False, default=list
+    )
     
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     is_default: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)

@@ -26,7 +26,7 @@ cd backend
 alembic upgrade head
 
 REM Seed data
-python -m app.db.seed_all || echo Seed failed, may need manual check
+python -m app.db.seed || echo Seed failed, may need manual check
 cd ..
 
 echo.
@@ -73,7 +73,7 @@ alembic upgrade head
 
 REM Seed data
 echo.🌱 Seeding database...
-python -m app.db.seed_all || echo ⚠️ Seed failed, may need manual check
+python -m app.db.seed || echo ⚠️ Seed failed, may need manual check
 
 cd ..
 

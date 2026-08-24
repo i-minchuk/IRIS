@@ -4,6 +4,7 @@ import { useTheme } from '@/providers/ThemeProvider';
 import { Eye, EyeOff, ArrowLeft, LogIn, User, Lock, Shield } from 'lucide-react';
 import { useZoomStore } from '@/features/zoom/store/zoomStore';
 import { useAuthStore } from '@/features/auth/store/authStore';
+import { getMeta } from '@/shared/api/meta';
 import { useAuth } from '@/context/useAuth';
 import { ChromeBot } from '@/components/ChromeBot';
 
@@ -25,6 +26,28 @@ export default function LoginPage() {
 
   const { login: doLogin } = useAuth();
   const enableDemo = useAuthStore((state) => state.enableDemo);
+  const [demoAvailable, setDemoAvailable] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    getMeta()
+      .then(({ data }) => { if (!cancelled) setDemoAvailable(data.mode === 'demo'); })
+      .catch(() => { if (!cancelled) setDemoAvailable(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  const handleDemo = async () => {
+    setError('');
+    setIsLoading(true);
+    try {
+      await enableDemo();
+      navigate('/dashboard', { replace: true });
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Демо-вход недоступен. Проверьте, что сервер запущен в режиме demo.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -151,17 +174,20 @@ export default function LoginPage() {
             >
               <Shield size={16} /> Войти через SSO
             </a>
-            <button
-              onClick={() => { enableDemo(); navigate('/dashboard', { replace: true }); }}
-              className="w-full h-9 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition-all hover:brightness-110"
-              style={{
-                background: isDark ? 'rgba(12,114,5,0.2)' : 'rgba(12,114,5,0.1)',
-                color: '#0C7205',
-                border: `1px solid ${isDark ? 'rgba(12,114,5,0.4)' : 'rgba(12,114,5,0.3)'}`,
-              }}
-            >
-              🚀 Демо-режим (без сервера)
-            </button>
+            {demoAvailable && (
+              <button
+                onClick={handleDemo}
+                disabled={isLoading}
+                className="w-full h-9 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition-all hover:brightness-110 disabled:opacity-60"
+                style={{
+                  background: isDark ? 'rgba(12,114,5,0.2)' : 'rgba(12,114,5,0.1)',
+                  color: '#0C7205',
+                  border: `1px solid ${isDark ? 'rgba(12,114,5,0.4)' : 'rgba(12,114,5,0.3)'}`,
+                }}
+              >
+                🚀 Демо-режим
+              </button>
+            )}
           </div>
         </div>
       </div>

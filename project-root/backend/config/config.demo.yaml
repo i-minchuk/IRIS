@@ -1,0 +1,20 @@
+# Демо-режим: презентация заказчику.
+# Только вымышленные данные, чувствительные функции отключены.
+mode: demo
+debug: true
+
+logging:
+  level: DEBUG
+  to_file: false        # только консоль, без записи в файл
+  dir: logs
+
+features:
+  demo_data_seed: true         # автосид вымышленных данных при старте
+  exports: false               # /export эндпоинты (архив, замечания, 1С) — 403
+  external_integrations: false # OpenAI, 1С — 403
+  feedback_button: false       # кнопка «Сообщить о проблеме» скрыта
+  demo_banner: true            # баннер «Демо-режим» и подсказки на фронте
+
+metrics:
+  enabled: true
+  endpoint: /metrics

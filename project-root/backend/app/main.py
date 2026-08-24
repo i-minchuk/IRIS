@@ -18,6 +18,7 @@ from app.core.exceptions import register_exception_handlers
 from app.core.logging_config import setup_logging
 from app.core.middleware import PerformanceMiddleware
 from app.core.metrics import http_requests_total, http_request_duration, get_metrics
+from app.core.mode import get_mode_config
 from app.core.security_utils import is_secure_secret_key, limiter
 from app.db.session import get_db, AsyncSessionLocal, primary_engine as engine
 from slowapi.errors import RateLimitExceeded
@@ -94,11 +95,25 @@ def add_middlewares(app: FastAPI) -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Starting %s v%s", settings.PROJECT_NAME, settings.VERSION)
+    mode_config = get_mode_config()
+    logger.info(
+        "Starting %s v%s [MODE=%s]",
+        settings.PROJECT_NAME,
+        settings.VERSION,
+        mode_config.mode,
+    )
+    app.state.mode = mode_config.mode
     app.state.started = True
     # Import all models to ensure SQLAlchemy mappers are configured
     import app.models  # noqa: F401
+    from app.db.schema import ensure_schema
+
+    await ensure_schema()
     await redis_pubsub.connect()
+    if mode_config.features.demo_data_seed:
+        from app.db.demo_seed import seed_demo_data
+
+        await seed_demo_data()
     yield
     logger.info("Shutting down %s", settings.PROJECT_NAME)
 
@@ -165,6 +180,7 @@ async def root():
     return {
         "message": f"{settings.PROJECT_NAME} API is running",
         "version": settings.VERSION,
+        "mode": get_mode_config().mode,
         "docs": "/docs",
         "openapi": f"{settings.API_V1_STR}/openapi.json",
         "health": "/health",
@@ -199,6 +215,17 @@ async def health_check():
         "service": settings.PROJECT_NAME,
         "version": settings.VERSION,
         "database": db_check,
+    }
+
+
+@app.get(f"{settings.API_V1_STR}/meta")
+async def api_meta():
+    """Режим работы и включённые функции — для фронтенда (без auth)."""
+    mode_config = get_mode_config()
+    return {
+        "mode": mode_config.mode,
+        "version": settings.VERSION,
+        "features": mode_config.features.model_dump(),
     }
 
 

@@ -47,6 +47,18 @@ export const ProductionStrategyTab: React.FC = () => {
     return () => { document.body.style.overflow = ''; };
   }, [isFullscreen]);
 
+  if (BPMN_NODES.length === 0) {
+    return (
+      <div className="flex h-[calc(100vh-220px)] min-h-[540px] flex-col items-center justify-center gap-2 rounded-xl border border-[var(--iris-border-default)] bg-[var(--iris-bg-surface)] p-4 text-center">
+        <Activity size={32} className="opacity-50 text-[var(--iris-text-muted)]" />
+        <p className="text-sm text-[var(--iris-text-muted)]">Нет данных о производственном процессе</p>
+        <p className="text-xs text-[var(--iris-text-muted)]">
+          Схема процесса, KPI, проблемы и загрузка сотрудников появятся после подключения источника данных.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div
       className={`flex flex-col gap-3 transition-all ${

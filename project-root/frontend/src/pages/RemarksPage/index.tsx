@@ -3,6 +3,7 @@ import { MessageSquareWarning, Plus, Download, Filter } from 'lucide-react';
 import { toast } from 'sonner';
 import apiClient from '@/shared/api/client';
 import { useRemarksStore } from '@/stores/remarksStore';
+import { useIsDemo } from '@/stores/appModeStore';
 import { RemarkPriority, RemarkStatus } from '@/types/remarks';
 import { RemarksFilters } from './components/RemarksFilters';
 import { RemarksTable } from './components/RemarksTable';
@@ -30,8 +31,13 @@ export const RemarksPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRemarks, setSelectedRemarks] = useState<Set<string>>(new Set());
   const [exporting, setExporting] = useState(false);
+  const isDemo = useIsDemo();
 
   const handleExport = async () => {
+    if (isDemo) {
+      toast.info('Экспорт недоступен в демо-режиме');
+      return;
+    }
     setExporting(true);
     try {
       const response = await apiClient.get('/remarks/export', { responseType: 'blob' });
@@ -131,8 +137,9 @@ export const RemarksPage: React.FC = () => {
           </button>
           <button
             onClick={handleExport}
-            disabled={exporting}
-            className="flex items-center gap-1 px-3 py-1.5 bg-[#334155] rounded text-xs font-medium hover:bg-[#475569] transition-colors disabled:opacity-50"
+            disabled={exporting || isDemo}
+            title={isDemo ? 'Недоступно в демо-режиме' : undefined}
+            className="flex items-center gap-1 px-3 py-1.5 bg-[#334155] rounded text-xs font-medium hover:bg-[#475569] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Download className="w-3.5 h-3.5" />
             {exporting ? 'Выгрузка…' : 'Экспорт'}

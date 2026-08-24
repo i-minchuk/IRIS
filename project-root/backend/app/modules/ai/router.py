@@ -17,6 +17,7 @@ from app.ai.classification import classify_document
 from app.ai.autofill import suggest_document_fields
 from app.parser.indexer import DocumentIndexer
 from app.core.config import settings
+from app.core.mode import require_integrations
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -101,6 +102,7 @@ def _ai_disabled_response() -> Dict[str, Any]:
 async def semantic_search(
     request: SemanticSearchRequest,
     current_user: User = Depends(get_current_active_user),
+    _: None = Depends(require_integrations),
 ):
     """Семантический поиск по документам через Qdrant + embeddings."""
     if not settings.OPENAI_API_KEY:
@@ -147,6 +149,7 @@ async def analyze_document_endpoint(
     document_id: str,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
+    _: None = Depends(require_integrations),
 ):
     """AI-анализ документа на ошибки, структуру, ГОСТ."""
     if not settings.OPENAI_API_KEY:
@@ -198,6 +201,7 @@ async def analyze_document_endpoint(
 async def chat_endpoint(
     request: ChatRequest,
     current_user: User = Depends(get_current_active_user),
+    _: None = Depends(require_integrations),
 ):
     """RAG-чат с AI — ответы на основе документов из Qdrant."""
     if not settings.OPENAI_API_KEY:
@@ -240,6 +244,7 @@ async def extract_requirements_endpoint(
     document_id: str,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
+    _: None = Depends(require_integrations),
 ):
     """Извлечь технические требования из документа (ГОСТ, материалы, размеры)."""
     if not settings.OPENAI_API_KEY:
@@ -320,7 +325,10 @@ async def extract_requirements_endpoint(
 # ---------------------------------------------------------------------------
 
 @router.post("/inline-suggest")
-async def inline_suggest_endpoint(request: dict):
+async def inline_suggest_endpoint(
+    request: dict,
+    _: None = Depends(require_integrations),
+):
     """Inline suggestions — REST fallback for WebSocket."""
     if not settings.OPENAI_API_KEY:
         return {"suggestions": [], "request_id": "", "model": "disabled"}

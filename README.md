@@ -3,32 +3,39 @@
 ## Быстрый старт (SQLite)
 
 ```bash
-cd backend
+cd project-root/backend
 python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 
-cd frontend
+cd project-root/frontend
 npm run dev
 ```
+
+## Режимы работы (demo / prod)
+
+Режим выбирается переменной окружения `MODE` (дефолт: `prod`), код не меняется:
+
+```bash
+# Демо для заказчика: вымышленные данные, экспорты/интеграции отключены
+MODE=demo python -m uvicorn app.main:app --port 8000
+
+# Рабочий режим для тестовой группы: полный функционал, логи в файл, метрики
+MODE=prod python -m uvicorn app.main:app --port 8000
+```
+
+Windows: `scripts/СТАРТ.bat` (prod) и `scripts/СТАРТ_ДЕМО.bat` (demo).
+
+Документация: `project-root/docs/DEMO_GUIDE.md` (сценарий презентации),
+`project-root/docs/PILOT_CHECKLIST.md` (запуск тестовой группы),
+`project-root/docs/DATA_LOADING.md` (демо-данные и загрузка реальных).
+
+Проверка режима: `GET /api/v1/meta` → `{mode, version, features}`;
+smoke-скрипт `project-root/backend/scripts/smoke_modes.py`.
 
 ## Доступ
 
 - Frontend: http://localhost:5173
 - API Docs: http://localhost:8000/docs
-- Login: admin@iris.local / admin123
-
-## Работает
-
-✅ Auth (JWT, login/logout)
-✅ Projects (CRUD, 2 проекта)
-✅ Remarks (CRUD, 5 замечаний)
-✅ Tasks (список)
-✅ Archive (UI с мок-данными)
-
-## Известные проблемы
-
-⚠️ Documents: таблица имеет старую схему, не совпадает с моделью
-⚠️ Archive API: 500 на SQLite из-за UUID vs INTEGER несовместимости
-⚠️ time_sessions: таблица отсутствует, дашборд без трекера времени
+- Демо-вход (режим demo): demo@iris.local / demo1234
 
 ## Переход на PostgreSQL
 

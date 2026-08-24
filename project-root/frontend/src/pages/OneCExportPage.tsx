@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Download, FileText, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
 import { oneCApi, type OneCDocumentItem } from '@/features/integrations/api/onec';
+import { useIsDemo } from '@/stores/appModeStore';
 
 export default function OneCExportPage() {
+  const isDemo = useIsDemo();
   const [selectedDocs, setSelectedDocs] = useState<number[]>([]);
   const [exporting, setExporting] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -125,8 +127,9 @@ export default function OneCExportPage() {
         <div className="flex justify-end">
           <button
             onClick={handleExport}
-            disabled={selectedDocs.length === 0 || exporting || loading}
-            className="px-4 py-2 rounded-lg text-sm font-medium transition-opacity hover:opacity-80 disabled:opacity-50 inline-flex items-center gap-2"
+            disabled={selectedDocs.length === 0 || exporting || loading || isDemo}
+            title={isDemo ? 'Недоступно в демо-режиме' : undefined}
+            className="px-4 py-2 rounded-lg text-sm font-medium transition-opacity hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
             style={{ backgroundColor: 'var(--accent-engineering)', color: 'var(--text-inverse)' }}
           >
             {exporting && <Loader2 size={14} className="animate-spin" />}

@@ -13,31 +13,6 @@ interface ReferenceItem {
   category?: string;
 }
 
-const MATERIALS: ReferenceItem[] = [
-  { id: 'm1', name: 'Бетон В25', code: 'Б-25', unit: 'м³', category: 'Бетоны' },
-  { id: 'm2', name: 'Арматура А500С Ø12', code: 'А500С-12', unit: 'п.м.', category: 'Арматура' },
-  { id: 'm3', name: 'Арматура А500С Ø16', code: 'А500С-16', unit: 'п.м.', category: 'Арматура' },
-  { id: 'm4', name: 'Цемент М500', code: 'Ц-М500', unit: 'т', category: 'Вяжущие' },
-  { id: 'm5', name: 'Песок строительный', code: 'ПС', unit: 'м³', category: 'Заполнители' },
-  { id: 'm6', name: 'Щебень фракции 5-20', code: 'Щ-5/20', unit: 'м³', category: 'Заполнители' },
-];
-
-const CONSTRUCTIONS: ReferenceItem[] = [
-  { id: 'c1', name: 'Колонна железобетонная прямоугольная', code: 'КЖ-1', unit: 'шт', category: 'Колонны' },
-  { id: 'c2', name: 'Балка железобетонная', code: 'КЖ-2', unit: 'шт', category: 'Балки' },
-  { id: 'c3', name: 'Плита перекрытия пустотная', code: 'ПП-1', unit: 'шт', category: 'Плиты' },
-  { id: 'c4', name: 'Фундамент ленточный', code: 'ФЛ-1', unit: 'м³', category: 'Фундаменты' },
-  { id: 'c5', name: 'Свая забивная железобетонная', code: 'СЖ-1', unit: 'шт', category: 'Сваи' },
-];
-
-const STANDARDS: ReferenceItem[] = [
-  { id: 's1', name: 'СП 70.13330.2012 Несущие и ограждающие конструкции', code: 'СП 70.13330.2012', category: 'СП' },
-  { id: 's2', name: 'СНиП 52-01-2003 Бетонные и железобетонные конструкции', code: 'СНиП 52-01-2003', category: 'СНиП' },
-  { id: 's3', name: 'ГОСТ 27751-2014 Надёжность строительных конструкций', code: 'ГОСТ 27751-2014', category: 'ГОСТ' },
-  { id: 's4', name: 'СП 16.13330.2017 Стальные конструкции', code: 'СП 16.13330.2017', category: 'СП' },
-  { id: 's5', name: 'ГОСТ 23118-99 Строительные конструкции из стали', code: 'ГОСТ 23118-99', category: 'ГОСТ' },
-];
-
 type TabKey = 'materials' | 'constructions' | 'standards' | 'glossary';
 
 const TABS = [
@@ -51,19 +26,8 @@ export default function ReferencePage() {
   const [activeTab, setActiveTab] = useTabState<TabKey>('iris_reference_tab', 'materials');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const currentData = useMemo(
-    () => {
-      const tab = TABS.find((t) => t.key === activeTab);
-      if (!tab || activeTab === 'glossary') return [];
-      switch (activeTab) {
-        case 'materials': return MATERIALS;
-        case 'constructions': return CONSTRUCTIONS;
-        case 'standards': return STANDARDS;
-        default: return [];
-      }
-    },
-    [activeTab]
-  );
+  // Backend-источника для справочников материалов/конструкций/нормативов нет — показываем пустое состояние
+  const currentData = useMemo<ReferenceItem[]>(() => [], []);
 
   const filtered = useMemo(() => {
     if (!searchQuery.trim()) return currentData;
@@ -136,7 +100,7 @@ export default function ReferencePage() {
                   {filtered.length === 0 ? (
                     <tr>
                       <td colSpan={4} className="px-4 py-8 text-center text-sm" style={{ color: 'var(--text-muted)' }}>
-                        Ничего не найдено
+                        {searchQuery.trim() ? 'Ничего не найдено' : 'Справочник пуст'}
                       </td>
                     </tr>
                   ) : (

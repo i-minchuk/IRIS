@@ -108,16 +108,6 @@ export const RemarksStatistics: React.FC<RemarksStatisticsProps> = ({
       }
     });
 
-    // Mock fallback if no data
-    if (Object.values(created).every(v => v === 0)) {
-      created['Май'] = 3;
-      created['Июн'] = 5;
-      created['Июл'] = 2;
-      closed['Май'] = 1;
-      closed['Июн'] = 4;
-      closed['Июл'] = 2;
-    }
-
     return months.map(m => ({
       month: m,
       created: created[m] || 0,

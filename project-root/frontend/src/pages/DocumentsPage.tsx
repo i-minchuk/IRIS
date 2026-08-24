@@ -4,7 +4,7 @@ import { PageHeader } from '@/shared/components/PageHeader';
 import { PageTabs } from '@/shared/components/PageTabs';
 import {
   FileText, Search, Upload, CheckCircle2, Clock,
-  Eye, Download, Trophy, Flame, Award, Zap, Minus, Plus,
+  Eye, Download, Trophy, Flame, Award, Zap,
   FolderKanban, User, TrendingUp, BarChart3, Timer,
   ChevronRight, ChevronDown, MessageSquare, Send,
   CornerDownLeft, ArrowLeft, CheckCircle,
@@ -1149,22 +1149,6 @@ function EmployeesView() {
     return () => { cancelled = true; };
   }, []);
 
-  const handleLoad = (empId: string) => {
-    setWorkloads(prev => prev.map(e => {
-      if (e.id !== empId) return e;
-      const newDoc = { code: `ДОК-${Math.floor(Math.random() * 900) + 100}`, name: 'Новое задание', project: 'Внутренний' };
-      return { ...e, queue: [...e.queue, newDoc], busyDays: e.busyDays + 2, xp: e.xp + 15 };
-    }));
-  };
-
-  const handleUnload = (empId: string) => {
-    setWorkloads(prev => prev.map(e => {
-      if (e.id !== empId || e.queue.length === 0) return e;
-      const newQueue = e.queue.slice(0, -1);
-      return { ...e, queue: newQueue, busyDays: Math.max(0, e.busyDays - 2), xp: Math.max(0, e.xp - 5) };
-    }));
-  };
-
   const openDelegate = (fromId: string, task: { code: string; name: string; project: string }) => {
     setFromEmpId(fromId);
     setTaskToMove(task);
@@ -1370,25 +1354,6 @@ function EmployeesView() {
                           <Zap size={9} className="inline mr-0.5" /> {badge}
                         </span>
                       ))}
-                    </div>
-
-                    {/* Manager controls */}
-                    <div className="flex gap-2 pt-1">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleLoad(emp.id); }}
-                        className="flex-1 text-sm py-1.5 rounded-md text-white flex items-center justify-center gap-1 transition-opacity hover:opacity-90"
-                        style={{ background: TAB_COLOR }}
-                      >
-                        <Plus size={12} /> Загрузить
-                      </button>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleUnload(emp.id); }}
-                        disabled={emp.queue.length === 0}
-                        className="flex-1 text-sm py-1.5 rounded-md border flex items-center justify-center gap-1 transition-colors"
-                        style={{ color: emp.queue.length ? 'var(--text-secondary)' : 'var(--text-muted)', borderColor: 'var(--border-default)', background: emp.queue.length ? 'var(--bg-surface-2)' : 'transparent', opacity: emp.queue.length ? 1 : 0.5 }}
-                      >
-                        <Minus size={12} /> Разгрузить
-                      </button>
                     </div>
                   </div>
                 )}

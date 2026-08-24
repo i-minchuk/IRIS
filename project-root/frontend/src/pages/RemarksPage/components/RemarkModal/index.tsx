@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { X } from 'lucide-react';
 import { RemarkCreateInput, RemarkPriority, RemarkCategory, RemarkSource, RemarkTag } from '@/types/remarks';
+import { getProjects } from '@/features/projects/api/projects';
 
 interface RemarkModalProps {
   isOpen: boolean;
@@ -17,6 +18,7 @@ export const RemarkModal: React.FC<RemarkModalProps> = ({
   tags,
 }) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [projects, setProjects] = useState<Array<{ id: number; name: string }>>([]);
   const [formData, setFormData] = useState<RemarkCreateInput>({
     source: 'manual',
     priority: 'medium',
@@ -25,6 +27,13 @@ export const RemarkModal: React.FC<RemarkModalProps> = ({
     description: '',
     tag_ids: [],
   });
+
+  useEffect(() => {
+    if (!isOpen) return;
+    getProjects()
+      .then((data) => setProjects(data.map((p) => ({ id: p.id, name: p.name || p.code }))))
+      .catch(() => setProjects([]));
+  }, [isOpen]);
 
   const priorityOptions: { value: RemarkPriority; label: string }[] = [
     { value: 'critical', label: '🔴 Критический' },
@@ -110,8 +119,9 @@ export const RemarkModal: React.FC<RemarkModalProps> = ({
               required
             >
               <option value="">Выберите проект</option>
-              <option value="1">Проект №1</option>
-              <option value="2">Проект №2</option>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
             </select>
           </div>
 

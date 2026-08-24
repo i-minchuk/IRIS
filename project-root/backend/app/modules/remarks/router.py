@@ -1,6 +1,7 @@
 """Remark API endpoints."""
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Response
+from app.core.mode import require_full_mode
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 import csv
@@ -159,7 +160,8 @@ async def export_remarks(
     project_id: Optional[int] = Query(None),
     document_id: Optional[int] = Query(None),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
+    _: None = Depends(require_full_mode),
 ):
     """Export remarks to CSV."""
     service = get_service(db)

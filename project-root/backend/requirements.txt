@@ -19,6 +19,7 @@ bcrypt==4.2.1
 # Utils
 python-dotenv==1.0.1
 email-validator==2.1.1
+pyyaml>=6.0
 slowapi==0.1.9
 redis==5.0.1
 celery[redis]>=5.3.0

@@ -1,47 +1,16 @@
-import { useState, useMemo, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { useGamificationStore } from '@/stores/gamificationStore';
 import { useTheme } from '@/providers/ThemeProvider';
+import { analyticsApi, type TeamTimeAnalytics } from '@/features/analytics/api/analytics';
 import {
   Trophy, Medal, Award, Star, Flame, Zap, Crown,
   Target, BookOpen, Handshake, FileCheck, Users, Sparkles,
-  ChevronRight, FolderKanban, ChevronDown, AlertTriangle,
   BarChart3, Gem
 } from 'lucide-react';
 
 /* ═══════════════════════════════════════════
-   TYPES
-   ═══════════════════════════════════════════ */
-interface Employee {
-  name: string;
-  role: string;
-  current: number;
-  max: number;
-  avatar?: string;
-}
-
-interface Department {
-  id: string;
-  name: string;
-  current: number;
-  max: number;
-  plan: number;
-  route: string;
-  iconColor: string;
-  employees: Employee[];
-}
-
-/* ═══════════════════════════════════════════
    CONSTANTS
    ═══════════════════════════════════════════ */
-const DEPT_COLORS = {
-  tender:   '#2563EB',
-  project:  '#6B5B95',
-  approval: '#D4AF37',
-  archive:  '#0C7205',
-  overdue:  '#DC2626',
-};
-
 const RARITY_COLORS = {
   common: '#6B7280',
   rare: '#3B82F6',
@@ -61,55 +30,12 @@ const BADGE_ICONS: Record<string, React.ReactNode> = {
   star: <Star size={12} />,
 };
 
-const DEPARTMENTS: Department[] = [
-  {
-    id: 'tender', name: 'Тендерный отдел', current: 34, max: 40, plan: 30, route: '/documents?dept=tender', iconColor: DEPT_COLORS.tender,
-    employees: [
-      { name: 'А. Смирнов', role: 'Ведущий инженер', current: 12, max: 10 },
-      { name: 'Е. Козлова', role: 'Инженер КД', current: 9, max: 8 },
-      { name: 'Д. Петров', role: 'Младший инженер', current: 8, max: 12 },
-      { name: 'М. Волков', role: 'Архивариус', current: 5, max: 10 },
-    ]
-  },
-  {
-    id: 'project', name: 'Проектный отдел', current: 28, max: 35, plan: 28, route: '/documents?dept=project', iconColor: DEPT_COLORS.project,
-    employees: [
-      { name: 'И. Соколов', role: 'ГИП', current: 8, max: 6 },
-      { name: 'Н. Лебедева', role: 'Инженер ПТО', current: 11, max: 10 },
-      { name: 'В. Морозов', role: 'Конструктор', current: 9, max: 12 },
-    ]
-  },
-  {
-    id: 'approval', name: 'ОК / Согласование', current: 19, max: 25, plan: 20, route: '/workflow?dept=approval', iconColor: DEPT_COLORS.approval,
-    employees: [
-      { name: 'О. Новиков', role: 'Начальник ОК', current: 7, max: 5 },
-      { name: 'Т. Фёдорова', role: 'Специалист ОК', current: 8, max: 10 },
-      { name: 'С. Павлов', role: 'Юрист', current: 4, max: 10 },
-    ]
-  },
-  {
-    id: 'archive', name: 'Архив', current: 5, max: 20, plan: 10, route: '/archive', iconColor: DEPT_COLORS.archive,
-    employees: [
-      { name: 'Л. Гусева', role: 'Архивист', current: 3, max: 10 },
-      { name: 'К. Борисов', role: 'Младший архивист', current: 2, max: 10 },
-    ]
-  },
-];
-
 /* ═══════════════════════════════════════════
    HELPERS
    ═══════════════════════════════════════════ */
-function getLoadLabel(current: number, max: number) {
-  const pct = current / max;
-  if (pct > 0.85) return 'Перегруз';
-  if (pct > 0.6) return 'Норма';
-  return 'Свободен';
-}
-
-function getStatusColor(current: number, max: number) {
-  const pct = current / max;
-  if (pct > 0.85) return '#DC2626';
-  if (pct > 0.6) return '#D4AF37';
+function getEfficiencyColor(efficiency: number) {
+  if (efficiency > 85) return '#DC2626';
+  if (efficiency > 60) return '#D4AF37';
   return '#0C7205';
 }
 
@@ -135,7 +61,6 @@ const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
    COMPONENT
    ═══════════════════════════════════════════ */
 export default function TeamPage() {
-  const navigate = useNavigate();
   const { theme } = useTheme();
   const isDark = theme === 'dark' || theme === 'midnight' || theme === 'contrast';
   const [activeTab, setActiveTab] = useState<TabKey>('leaderboard');
@@ -149,9 +74,18 @@ export default function TeamPage() {
   }, [fetchAll]);
   const earnedBadges = badges.filter(b => b.earnedAt);
 
-  // Workload state
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-  const sortedDepts = useMemo(() => [...DEPARTMENTS].sort((a, b) => (b.current / b.max) - (a.current / a.max)), []);
+  // Workload data (учёт времени команды)
+  const [team, setTeam] = useState<TeamTimeAnalytics[]>([]);
+  const [teamLoading, setTeamLoading] = useState(true);
+  useEffect(() => {
+    let cancelled = false;
+    analyticsApi.getTeamTimeTracking()
+      .then(res => { if (!cancelled) setTeam(res.data); })
+      .catch(() => { if (!cancelled) setTeam([]); })
+      .finally(() => { if (!cancelled) setTeamLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+  const sortedTeam = [...team].sort((a, b) => b.avg_efficiency - a.avg_efficiency);
 
   const top3 = entries.slice(0, 3);
   const rest = entries.slice(3);
@@ -280,100 +214,53 @@ export default function TeamPage() {
       {activeTab === 'workload' && (
         <div className="p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Загрузка по отделам</h3>
-            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Сортировка: по загрузке ↓</span>
+            <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Учёт времени команды</h3>
+            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Сортировка: по эффективности ↓</span>
           </div>
-          <div className="flex flex-col gap-2">
-            {sortedDepts.map((dept) => {
-              const pct = Math.round((dept.current / dept.max) * 100);
-              const isExpanded = expandedId === dept.id;
-              const loadLabel = getLoadLabel(dept.current, dept.max);
-              const statusColor = getStatusColor(dept.current, dept.max);
+          {teamLoading ? (
+            <div className="text-sm text-center py-8" style={{ color: 'var(--text-secondary)' }}>Загрузка...</div>
+          ) : sortedTeam.length === 0 ? (
+            <div className="text-sm text-center py-8" style={{ color: 'var(--text-secondary)' }}>Нет данных об активности сотрудников</div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {sortedTeam.map((member) => {
+                const eff = Math.round(member.avg_efficiency);
+                const statusColor = getEfficiencyColor(eff);
 
-              return (
-                <div
-                  key={dept.id}
-                  className="rounded-lg overflow-hidden transition-all"
-                  style={{
-                    background: 'var(--bg-surface)',
-                    border: `1px solid ${isExpanded ? statusColor + '40' : 'var(--border-default)'}`,
-                  }}
-                >
-                  <button
-                    onClick={() => setExpandedId(isExpanded ? null : dept.id)}
-                    className="w-full text-left p-3 transition-colors"
-                    style={{ cursor: 'pointer', background: 'none', border: 'none' }}
+                return (
+                  <div
+                    key={member.user_id}
+                    className="rounded-lg p-3"
+                    style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)' }}
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2 min-w-0">
-                        <span style={{ color: dept.iconColor }}><FolderKanban size={14} /></span>
-                        <span className="text-xs font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{dept.name}</span>
-                        <span
-                          className="text-xs px-1.5 py-0.5 rounded-full font-medium shrink-0"
-                          style={{ background: statusColor + '20', color: statusColor, border: `1px solid ${statusColor}40` }}
+                        <div
+                          className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+                          style={{ background: statusColor + '20', color: statusColor }}
                         >
-                          {loadLabel}
-                        </span>
+                          {member.full_name.charAt(0)}
+                        </div>
+                        <span className="text-xs font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{member.full_name}</span>
                       </div>
-                      <div className="flex items-center gap-1 shrink-0 ml-2">
-                        <span className="text-xs font-bold" style={{ color: statusColor }}>{pct}%</span>
-                        {isExpanded ? <ChevronDown size={12} style={{ color: 'var(--text-muted)' }} /> : <ChevronRight size={12} style={{ color: 'var(--text-muted)' }} />}
-                      </div>
+                      <span className="text-xs font-bold shrink-0 ml-2" style={{ color: statusColor }}>{eff}%</span>
                     </div>
                     <div className="h-2 w-full rounded-full overflow-hidden" style={{ background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }}>
-                      <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(pct, 100)}%`, background: statusColor, opacity: 0.8 }} />
+                      <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(eff, 100)}%`, background: statusColor, opacity: 0.8 }} />
                     </div>
                     <div className="mt-1 flex items-center justify-between">
                       <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                        Сотрудников: {dept.employees.length} | Задач: {dept.current}/{dept.max}
+                        Сессий: {member.total_sessions} | Активное время: {member.total_active_hours.toFixed(1)} ч
                       </span>
-                      {dept.current > dept.max && (
-                        <span className="text-xs flex items-center gap-0.5 shrink-0" style={{ color: '#DC2626' }}>
-                          <AlertTriangle size={9} /> Перегруз
-                        </span>
-                      )}
+                      <span className="text-xs shrink-0" style={{ color: 'var(--text-muted)' }}>
+                        Качество: {Math.round(member.quality_score)} | Скорость: {Math.round(member.speed_score)}
+                      </span>
                     </div>
-                  </button>
-
-                  {isExpanded && (
-                    <div className="px-3 pb-3 pt-0">
-                      <div className="border-t pt-2 mt-0.5" style={{ borderColor: 'var(--border-default)' }}>
-                        <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Сотрудники</span>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); navigate(dept.route); }}
-                            className="text-xs flex items-center gap-0.5 px-1.5 py-0.5 rounded transition-colors"
-                            style={{ color: DEPT_COLORS.tender, background: 'rgba(37,99,235,0.1)' }}
-                          >
-                            Перейти <ChevronRight size={8} />
-                          </button>
-                        </div>
-                        <div className="flex flex-col gap-1">
-                          {dept.employees.map((emp, ei) => {
-                            const empColor = getStatusColor(emp.current, emp.max);
-                            return (
-                              <div key={ei} className="flex items-center justify-between py-0.5">
-                                <span className="text-xs truncate" style={{ color: 'var(--text-primary)' }}>{emp.name}</span>
-                                <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                                  <span
-                                    className="text-xs px-1.5 py-0.5 rounded-full"
-                                    style={{ background: empColor + '20', color: empColor, border: `1px solid ${empColor}40` }}
-                                  >
-                                    {emp.current}{emp.max > 0 ? `/${emp.max}` : ''}
-                                  </span>
-                                  <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{emp.role}</span>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 

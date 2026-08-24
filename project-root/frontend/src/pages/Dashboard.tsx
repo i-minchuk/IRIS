@@ -15,6 +15,7 @@ import {
   type AnalyticsPeriod,
   type TeamTimeAnalytics,
   type TeamTimePeriod,
+  type FinanceSummary,
 } from '@/features/analytics/api/analytics';
 import { CalendarWidget } from '@/features/analytics/components/CalendarWidget';
 import { LeaderboardWidget } from '@/features/leaderboard/components/LeaderboardWidget';
@@ -125,6 +126,7 @@ export default function Dashboard() {
   const [actionItemsRaw, setActionItemsRaw] = useState<ActionItem[]>([]);
   const [teamTimeData, setTeamTimeData] = useState<TeamTimeAnalytics[]>([]);
   const [teamTimeLoading, setTeamTimeLoading] = useState(true);
+  const [financeSummary, setFinanceSummary] = useState<FinanceSummary | null>(null);
 
   // Derived flags — no mock fallback, show empty states instead
   const hasData = scorecard.length > 0 || alerts.length > 0 || tenderPipeline !== null || teamTimeData.length > 0;
@@ -161,7 +163,8 @@ export default function Dashboard() {
       analyticsApi.getPortfolio(period),
       analyticsApi.getActionItems(),
       analyticsApi.getTeamTimeTracking(period as TeamTimePeriod),
-    ]).then(([dashboardRes, alertsRes, tenderRes, sparkRes, trendRes, portfolioRes, actionItemsRes, teamTimeRes]) => {
+      analyticsApi.getFinanceSummary(),
+    ]).then(([dashboardRes, alertsRes, tenderRes, sparkRes, trendRes, portfolioRes, actionItemsRes, teamTimeRes, financeRes]) => {
       if (cancelled) return;
 
       if (dashboardRes.status === 'fulfilled') {
@@ -188,6 +191,9 @@ export default function Dashboard() {
       if (teamTimeRes.status === 'fulfilled') {
         setTeamTimeData(teamTimeRes.value.data ?? []);
       }
+      if (financeRes.status === 'fulfilled') {
+        setFinanceSummary(financeRes.value.data ?? null);
+      }
 
       const allFailed = [dashboardRes, alertsRes, tenderRes, sparkRes].every((r) => r.status === 'rejected');
       if (allFailed) {
@@ -207,10 +213,28 @@ export default function Dashboard() {
 
   // Build data objects — no mock fallback
   const finance = useMemo(() => {
-    // TODO: нет источника финансовых данных — показываем нули вместо выдуманных значений
-    void scorecard;
-    return { revenue: { current: 0, plan: 0, unit: 'млн ₽', trend: '—' }, profit: { current: 0, plan: 0, unit: 'млн ₽', trend: '—' }, receivables: { current: 0, unit: 'млн ₽', trend: '—', risk: false }, avgMargin: { current: 0, unit: '%', trend: '—' } };
-  }, [hasData, scorecard]);
+    return {
+      revenue: {
+        current: financeSummary?.revenue_won_m ?? 0,
+        plan: financeSummary?.revenue_plan_m ?? 0,
+        unit: 'млн ₽',
+        trend: '—',
+      },
+      profit: {
+        current: financeSummary?.profit_plan_m ?? 0,
+        plan: financeSummary?.profit_plan_m ?? 0,
+        unit: 'млн ₽',
+        trend: '—',
+      },
+      receivables: {
+        current: financeSummary?.receivables_m ?? null,
+        unit: 'млн ₽',
+        trend: '—',
+        risk: false,
+      },
+      avgMargin: { current: financeSummary?.avg_margin_pct ?? 0, unit: '%', trend: '—' },
+    };
+  }, [financeSummary]);
 
   const tenderFunnel = useMemo(() => {
     if (hasData && tenderPipeline?.stages) {
@@ -261,7 +285,7 @@ export default function Dashboard() {
   }, [hasData, alerts]);
 
   const topProjects = useMemo(() => {
-    if (!hasData && scorecard.length > 0) {
+    if (hasData && scorecard.length > 0) {
       return scorecard
         .slice()
         .sort((a, b) => (b.progress || 0) - (a.progress || 0))
@@ -278,7 +302,7 @@ export default function Dashboard() {
   }, [hasData, scorecard]);
 
   const kpiSparkData = useMemo(() => {
-    if (!hasData && sparklines?.charts) {
+    if (hasData && sparklines?.charts) {
       const approval = sparklines.charts.find((c) => c.id === 'schedule_dev')?.trend.slice(-7) || [0];
       const winRate = sparklines.charts.find((c) => c.id === 'fpy')?.trend.slice(-7) || [0];
       const overdue = sparklines.charts.find((c) => c.id === 'shipments')?.trend.slice(-7) || [0];
@@ -289,15 +313,25 @@ export default function Dashboard() {
   }, [hasData, sparklines]);
 
   const kpiValues = useMemo(() => {
-    if (!hasData && sparklines?.charts) {
+    if (hasData && sparklines?.charts) {
       const approval = sparklines.charts.find((c) => c.id === 'schedule_dev')?.current ?? 0;
       const winRate = sparklines.charts.find((c) => c.id === 'fpy')?.current ?? 0;
-      const overdue = 0;
+      const overdue = alerts.find((a) => a.id === 'overdue_docs')?.count ?? 0;
       const load = sparklines.charts.find((c) => c.id === 'workload')?.current ?? 0;
       return [approval, winRate, overdue, load];
     }
     return [0, 0, 0, 0];
-  }, [hasData, sparklines]);
+  }, [hasData, sparklines, alerts]);
+
+  // Trend label from the real sparkline series (delta of last vs first point)
+  const sparkTrend = (data: number[], unit: string, lowerIsBetter: boolean): { trend: string; good: boolean } => {
+    if (!data || data.length < 2) return { trend: '—', good: true };
+    const delta = Math.round((data[data.length - 1] - data[0]) * 10) / 10;
+    return {
+      trend: `${delta > 0 ? '+' : ''}${delta}${unit}`,
+      good: lowerIsBetter ? delta <= 0 : delta >= 0,
+    };
+  };
 
   const portfolio = useMemo(() => {
     if (portfolioDataRaw?.items && portfolioDataRaw.items.length > 0) {
@@ -307,7 +341,7 @@ export default function Dashboard() {
   }, [portfolioDataRaw]);
 
   const deadlines = useMemo(() => {
-    if (!hasData && scorecard.length > 0) {
+    if (hasData && scorecard.length > 0) {
       const withDeadline = scorecard
         .filter((p) => p.deadline)
         .sort((a, b) => new Date(a.deadline!).getTime() - new Date(b.deadline!).getTime())
@@ -365,11 +399,6 @@ export default function Dashboard() {
     { key: 'quarter' as const, label: 'Квартал' },
   ];
 
-  const revVal = useCountUp(finance.revenue.current, 1500, 1);
-  const profVal = useCountUp(finance.profit.current, 1500, 1);
-  const dzVal = useCountUp(finance.receivables.current, 1500, 1);
-  const margVal = useCountUp(finance.avgMargin.current, 1500, 1);
-
   const kpiVals = [
     useCountUp(kpiValues[0], 1200, 1),
     useCountUp(kpiValues[1], 1200, 0),
@@ -393,7 +422,7 @@ export default function Dashboard() {
       {/* Error banner */}
       {error && (
         <div className="mb-4 p-3 rounded-lg text-xs" style={{ background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.3)', color: '#DC2626' }}>
-          Не удалось загрузить данные с сервера. Отображаются демонстрационные значения.
+          Не удалось загрузить данные с сервера. Часть виджетов может быть пустой.
         </div>
       )}
 
@@ -465,9 +494,14 @@ export default function Dashboard() {
                 </div>
               </div>
               <div className="text-xl md:text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                {revVal}<span className="text-base md:text-lg font-medium leading-relaxed mt-1 md:text-sm font-normal" style={{ color: 'var(--text-secondary)' }}> / {finance.revenue.plan} {finance.revenue.unit}</span>
+                {financeSummary ? (
+                  <>
+                    {finance.revenue.current}
+                    <span className="text-base md:text-lg font-normal" style={{ color: 'var(--text-muted)' }}> / {finance.revenue.plan} {finance.revenue.unit}</span>
+                  </>
+                ) : '—'}
               </div>
-              <div className="flex items-center gap-1 mt-1 text-xs md:text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: '#0C7205' }}><TrendingUp size={12} /> {finance.revenue.trend}</div>
+              <div className="flex items-center gap-1 mt-1 text-xs md:text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-muted)' }}>{financeSummary ? 'факт / план' : 'Нет данных'}</div>
             </div>
 
             <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
@@ -478,9 +512,14 @@ export default function Dashboard() {
                 </div>
               </div>
               <div className="text-xl md:text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                {profVal}<span className="text-base md:text-lg font-medium leading-relaxed mt-1 md:text-sm font-normal" style={{ color: 'var(--text-secondary)' }}> / {finance.profit.plan} {finance.profit.unit}</span>
+                {financeSummary ? (
+                  <>
+                    {finance.profit.current}
+                    <span className="text-base md:text-lg font-normal" style={{ color: 'var(--text-muted)' }}> {finance.profit.unit}</span>
+                  </>
+                ) : '—'}
               </div>
-              <div className="flex items-center gap-1 mt-1 text-xs md:text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: '#0C7205' }}><TrendingUp size={12} /> {finance.profit.trend}</div>
+              <div className="flex items-center gap-1 mt-1 text-xs md:text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-muted)' }}>{financeSummary ? 'по марже тендеров' : 'Нет данных'}</div>
             </div>
 
             <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: finance.receivables.risk ? '1px solid rgba(220,38,38,0.4)' : '1px solid var(--border-color)' }}>
@@ -491,9 +530,9 @@ export default function Dashboard() {
                 </div>
               </div>
               <div className="text-xl md:text-2xl font-bold" style={{ color: finance.receivables.risk ? '#DC2626' : 'var(--text-primary)' }}>
-                {dzVal} <span className="text-base md:text-lg font-medium leading-relaxed mt-1 md:text-sm font-normal" style={{ color: 'var(--text-secondary)' }}>{finance.receivables.unit}</span>
+                —
               </div>
-              <div className="flex items-center gap-1 mt-1 text-xs md:text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: '#0C7205' }}><TrendingDown size={12} /> {finance.receivables.trend}</div>
+              <div className="flex items-center gap-1 mt-1 text-xs md:text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-muted)' }}>Нет данных</div>
             </div>
 
             <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
@@ -504,9 +543,14 @@ export default function Dashboard() {
                 </div>
               </div>
               <div className="text-xl md:text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                {margVal}<span className="text-base md:text-lg font-medium leading-relaxed mt-1 md:text-sm font-normal" style={{ color: 'var(--text-secondary)' }}>{finance.avgMargin.unit}</span>
+                {financeSummary ? (
+                  <>
+                    {finance.avgMargin.current}
+                    <span className="text-base md:text-lg font-normal" style={{ color: 'var(--text-muted)' }}>{finance.avgMargin.unit}</span>
+                  </>
+                ) : '—'}
               </div>
-              <div className="flex items-center gap-1 mt-1 text-xs md:text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: '#0C7205' }}><TrendingUp size={12} /> {finance.avgMargin.trend}</div>
+              <div className="flex items-center gap-1 mt-1 text-xs md:text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-muted)' }}>{financeSummary ? 'средневзвешенная' : 'Нет данных'}</div>
             </div>
           </div>
 
@@ -546,10 +590,10 @@ export default function Dashboard() {
           {/* KPI + sparklines */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {[
-              { label: 'Ср. срок согласования', valueRaw: kpiValues[0], suffix: ' дня', trend: '-0.5 дн', good: true, icon: <Clock size={14} />, color: '#0C7205', spark: kpiSparkData.approval, decimals: 1 },
-              { label: '% победы в тендерах', valueRaw: kpiValues[1], suffix: '%', trend: '+4%', good: true, icon: <Award size={14} />, color: '#3B82F6', spark: kpiSparkData.winRate, decimals: 0 },
-              { label: 'Просроченные документы', valueRaw: kpiValues[2], suffix: '', trend: '-3', good: true, icon: <AlertTriangle size={14} />, color: '#DC2626', spark: kpiSparkData.overdue, decimals: 0 },
-              { label: 'Средняя загрузка', valueRaw: kpiValues[3], suffix: '%', trend: '+2%', good: false, icon: <Users size={14} />, color: '#D4AF37', spark: kpiSparkData.load, decimals: 0 },
+              { label: 'Ср. срок согласования', valueRaw: kpiValues[0], suffix: ' дня', ...sparkTrend(kpiSparkData.approval, ' дн', true), icon: <Clock size={14} />, color: '#0C7205', spark: kpiSparkData.approval, decimals: 1 },
+              { label: '% победы в тендерах', valueRaw: kpiValues[1], suffix: '%', ...sparkTrend(kpiSparkData.winRate, '%', false), icon: <Award size={14} />, color: '#3B82F6', spark: kpiSparkData.winRate, decimals: 0 },
+              { label: 'Просроченные документы', valueRaw: kpiValues[2], suffix: '', ...sparkTrend(kpiSparkData.overdue, '', true), icon: <AlertTriangle size={14} />, color: '#DC2626', spark: kpiSparkData.overdue, decimals: 0 },
+              { label: 'Средняя загрузка', valueRaw: kpiValues[3], suffix: '%', ...sparkTrend(kpiSparkData.load, '%', false), icon: <Users size={14} />, color: '#D4AF37', spark: kpiSparkData.load, decimals: 0 },
             ].map((kpi, idx) => (
               <div key={idx} className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
                 <div className="flex items-center justify-between mb-2">
@@ -765,7 +809,7 @@ export default function Dashboard() {
                 <p className="text-base md:text-xl font-medium" style={{ color: 'var(--text-secondary)' }}>
                   Динамика выручки (12 мес)
                 </p>
-                <span className="text-xs md:text-sm font-medium" style={{ color: '#0C7205' }}>+18% YoY</span>
+                <span className="text-xs md:text-sm font-medium" style={{ color: 'var(--text-muted)' }}>—</span>
               </div>
               {chartsLoading && (
                 <div className="flex items-center justify-center gap-2 py-8">

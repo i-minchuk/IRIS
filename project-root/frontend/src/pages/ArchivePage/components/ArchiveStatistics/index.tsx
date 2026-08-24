@@ -89,12 +89,6 @@ export const ArchiveStatistics: React.FC<Props> = ({ statistics, entries = [], t
         counts[year] = (counts[year] || 0) + 1;
       }
     });
-    // fallback mock
-    if (Object.keys(counts).length === 0) {
-      counts['2024'] = 12;
-      counts['2025'] = 28;
-      counts['2026'] = 15;
-    }
     return Object.entries(counts).map(([name, value]) => ({ name: `${name} г.`, value }));
   }, [entries, timeline]);
 
@@ -113,16 +107,6 @@ export const ArchiveStatistics: React.FC<Props> = ({ statistics, entries = [], t
         counts[m] = (counts[m] || 0) + 1;
       }
     });
-
-    // fallback mock
-    if (Object.values(counts).every((v) => v === 0)) {
-      counts['Янв'] = 2;
-      counts['Фев'] = 4;
-      counts['Мар'] = 3;
-      counts['Апр'] = 5;
-      counts['Май'] = 7;
-      counts['Июн'] = 4;
-    }
 
     return months.map((m) => ({ month: m, count: counts[m] || 0 }));
   }, [entries, timeline]);
@@ -175,6 +159,11 @@ export const ArchiveStatistics: React.FC<Props> = ({ statistics, entries = [], t
         <div className="rounded-lg p-4" style={{ background: 'var(--iris-bg-surface)', border: '1px solid var(--iris-border-default)' }}>
           <h3 className="text-sm font-bold mb-4" style={{ color: 'var(--iris-text-primary)' }}>Распределение по годам</h3>
           <div className="h-48">
+            {yearPieData.length === 0 ? (
+              <div className="h-full flex items-center justify-center text-xs" style={{ color: 'var(--iris-text-secondary)' }}>
+                Нет данных
+              </div>
+            ) : (
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -196,6 +185,7 @@ export const ArchiveStatistics: React.FC<Props> = ({ statistics, entries = [], t
                 <Tooltip contentStyle={tooltipStyle()} formatter={(value, _name, props: any) => [`${value}`, props?.payload?.name ?? '']} />
               </PieChart>
             </ResponsiveContainer>
+            )}
           </div>
         </div>
 

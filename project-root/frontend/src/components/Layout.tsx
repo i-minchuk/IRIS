@@ -8,8 +8,9 @@ import {
   User, LogOut, ChevronDown,
   BarChart3, FileText, Archive,
   Shield, Briefcase, Factory,
-  BookOpen, Settings,
+  BookOpen, Settings, MessageSquareWarning,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { useTheme } from '@/providers/ThemeProvider';
 import { useLanguageContext } from "@/features/profile/i18n/LanguageContext";
@@ -17,6 +18,8 @@ import { t } from "@/features/profile/i18n/translations";
 import { useZoomStore } from "@/features/zoom/store/zoomStore";
 import { useAuth } from '@/context/useAuth';
 import { useAuthStore } from '@/features/auth/store/authStore';
+import { useAppModeStore } from '@/stores/appModeStore';
+import client from '@/shared/api/client';
 import Breadcrumbs from '@/components/Breadcrumbs';
 import NotificationBell from '@/features/notifications/components/NotificationBell';
 import GlobalSearch from '@/components/GlobalSearch';
@@ -57,6 +60,38 @@ export default function Layout() {
   const isDark = theme === 'dark' || theme === 'midnight' || theme === 'contrast';
   const { user } = useAuth();
   const navItems = getNavItems(user?.role);
+
+  /* ── Режим работы (demo/prod) ── */
+  const meta = useAppModeStore((s) => s.meta);
+  const fetchMeta = useAppModeStore((s) => s.fetchMeta);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackText, setFeedbackText] = useState('');
+  const [feedbackSending, setFeedbackSending] = useState(false);
+
+  useEffect(() => {
+    fetchMeta();
+  }, [fetchMeta]);
+
+  const submitFeedback = async () => {
+    if (!feedbackText.trim()) return;
+    setFeedbackSending(true);
+    try {
+      await client.post('/support/tickets', {
+        title: feedbackText.trim().slice(0, 80),
+        description: feedbackText.trim(),
+        requester: user?.email || 'unknown',
+        priority: 'medium',
+        category: 'feedback',
+      });
+      toast.success('Спасибо! Обращение отправлено.');
+      setFeedbackText('');
+      setShowFeedback(false);
+    } catch {
+      toast.error('Не удалось отправить обращение');
+    } finally {
+      setFeedbackSending(false);
+    }
+  };
 
   const scale = useZoomStore((state) => state.scale);
 
@@ -128,6 +163,22 @@ export default function Layout() {
 
             {/* Right panel */}
             <div className="flex shrink-0 items-center gap-2">
+              {/* Feedback (prod-режим) */}
+              {meta?.features.feedback_button && (
+                <button
+                  type="button"
+                  onClick={() => setShowFeedback(true)}
+                  className="flex items-center gap-1.5 rounded-lg px-2 py-2 text-xs font-medium transition-all"
+                  style={{ color: 'var(--text-secondary)' }}
+                  title="Сообщить о проблеме"
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                >
+                  <MessageSquareWarning size={16} />
+                  <span className="hidden xl:inline">Сообщить о проблеме</span>
+                </button>
+              )}
+
               {/* Notifications */}
               <NotificationBell />
 
@@ -298,9 +349,67 @@ export default function Layout() {
       </div>
 
       {/* ===== КОНТЕНТ ===== */}
+      {meta?.features.demo_banner && (
+        <div
+          className="shrink-0 px-4 py-1.5 text-center text-xs font-medium"
+          style={{ background: 'rgba(245, 158, 11, 0.12)', color: '#B45309', borderBottom: '1px solid rgba(245, 158, 11, 0.3)' }}
+        >
+          Демо-режим: все данные вымышленные, экспорт и внешние интеграции отключены
+        </div>
+      )}
       <main className="flex-auto overflow-y-auto overflow-x-hidden min-h-0">
         <Outlet />
       </main>
+
+      {/* ===== МОДАЛКА ФИДБЕКА (prod-режим) ===== */}
+      {showFeedback && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.4)' }}
+          onClick={() => setShowFeedback(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-xl border p-4"
+            style={{ background: 'var(--iris-bg-surface)', borderColor: 'var(--iris-border-subtle)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-sm font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
+              Сообщить о проблеме
+            </h3>
+            <textarea
+              value={feedbackText}
+              onChange={(e) => setFeedbackText(e.target.value)}
+              placeholder="Опишите проблему или предложение…"
+              rows={4}
+              className="w-full rounded-lg border px-3 py-2 text-sm outline-none resize-y"
+              style={{
+                background: 'var(--iris-bg-app)',
+                borderColor: 'var(--iris-border-subtle)',
+                color: 'var(--text-primary)',
+              }}
+            />
+            <div className="flex justify-end gap-2 mt-3">
+              <button
+                type="button"
+                onClick={() => setShowFeedback(false)}
+                className="px-3 py-1.5 rounded-lg text-sm"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                onClick={submitFeedback}
+                disabled={feedbackSending || !feedbackText.trim()}
+                className="px-3 py-1.5 rounded-lg text-sm font-medium disabled:opacity-50"
+                style={{ background: '#3B82F6', color: '#fff' }}
+              >
+                {feedbackSending ? 'Отправка…' : 'Отправить'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

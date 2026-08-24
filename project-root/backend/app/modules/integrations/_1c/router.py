@@ -7,6 +7,7 @@ from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
+from app.core.mode import require_integrations
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -111,6 +112,7 @@ async def export_documents_to_1c(
     request: OneCDocumentExport,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
+    _: None = Depends(require_integrations),
 ):
     """Export documents to 1C EnterpriseData format."""
     # Get document
@@ -159,6 +161,7 @@ async def export_batch_documents(
     document_ids: List[int],
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
+    _: None = Depends(require_integrations),
 ):
     """Batch export multiple documents to 1C."""
     items = []
