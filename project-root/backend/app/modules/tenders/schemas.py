@@ -16,6 +16,8 @@ class TenderBase(BaseModel):
     volume_unit: Optional[str] = Field(None, max_length=20)
     complexity: Literal["low", "medium", "high"] = "medium"
     standards: Optional[list] = Field(default_factory=list)
+    scope_items: Optional[list] = Field(default_factory=list)
+    standard_files: Optional[list] = Field(default_factory=list)
     start_date: Optional[datetime] = None
     deadline: Optional[datetime] = None
     duration_months: Optional[int] = Field(None, ge=1, le=60)
@@ -58,6 +60,8 @@ class TenderUpdate(BaseModel):
     volume_unit: Optional[str] = Field(None, max_length=20)
     complexity: Optional[Literal["low", "medium", "high"]] = None
     standards: Optional[list] = None
+    scope_items: Optional[list] = None
+    standard_files: Optional[list] = None
     start_date: Optional[datetime] = None
     deadline: Optional[datetime] = None
     duration_months: Optional[int] = Field(None, ge=1, le=60)
@@ -143,6 +147,8 @@ class TenderDetail(BaseModel):
     volume: Optional[float] = None
     complexity: str
     standards: Optional[list] = None
+    scope_items: Optional[list] = None
+    standard_files: Optional[list] = None
     start_date: Optional[str] = None
     deadline: Optional[str] = None
     duration_months: Optional[int] = None

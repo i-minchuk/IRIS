@@ -119,7 +119,7 @@ export default function TenderOverviewTab({ tender, tasks, workflows }: TenderOv
         <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Параметры тендера</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
           <InfoRow label="Тип объекта" value={tender.project_type} />
-          <InfoRow label="Объём" value={tender.volume ? `${tender.volume} ${tender.volume_unit}` : '—'} />
+          <InfoRow label="Состав работ" value={tender.scope_items?.length ? tender.scope_items.join(', ') : (tender.volume ? `${tender.volume} ${tender.volume_unit}` : '—')} />
           <InfoRow label="Сложность" value={tender.complexity === 'low' ? 'Низкая' : tender.complexity === 'medium' ? 'Средняя' : 'Высокая'} />
           <InfoRow label="Площадка" value={tender.platform || '—'} />
           <InfoRow label="Регион" value={tender.region || '—'} />

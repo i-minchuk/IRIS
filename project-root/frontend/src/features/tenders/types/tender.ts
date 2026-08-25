@@ -1,3 +1,9 @@
+export interface TenderStandardFile {
+  standard: string;
+  file_name: string;
+  stored_name: string;
+}
+
 export interface Tender {
   id: number;
   name: string;
@@ -7,6 +13,8 @@ export interface Tender {
   volume_unit?: string;
   complexity: string;
   standards: string[];
+  scope_items?: string[];
+  standard_files?: TenderStandardFile[];
   start_date?: string;
   deadline?: string;
   duration_months?: number;

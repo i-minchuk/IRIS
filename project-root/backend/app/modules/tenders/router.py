@@ -1,11 +1,15 @@
 """Tenders API router."""
+import os
+import uuid
 from typing import Optional
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
+from app.core.config import settings
 from app.db.session import get_db
 from app.modules.auth.deps import get_current_active_user
 from app.modules.auth.models import User
@@ -99,6 +103,57 @@ async def list_tenders(
     )
 
 
+# ── Вложения применяемых стандартов ──────────────────────────────
+# Роуты объявлены ДО /{tender_id}, чтобы «standard-attachments» не
+# попадало в int-параметр.
+
+_ALLOWED_STANDARD_EXT = {".pdf", ".doc", ".docx", ".xls", ".xlsx", ".djvu"}
+
+
+def _standard_attachments_dir() -> str:
+    path = os.path.join(settings.IRIS_STORAGE_ROOT, "tender_standards")
+    os.makedirs(path, exist_ok=True)
+    return path
+
+
+@router.post("/standard-attachments")
+async def upload_standard_attachment(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Загрузить файл стандарта до создания тендера.
+
+    Возвращает {file_name, stored_name}; stored_name передаётся при создании
+    тендера в standard_files: [{standard, file_name, stored_name}].
+    """
+    ext = os.path.splitext(file.filename or "")[1].lower()
+    if ext not in _ALLOWED_STANDARD_EXT:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Недопустимый тип файла {ext!r}. Разрешены: {sorted(_ALLOWED_STANDARD_EXT)}",
+        )
+    stored_name = f"{uuid.uuid4().hex}{ext}"
+    file_path = os.path.join(_standard_attachments_dir(), stored_name)
+    content = await file.read()
+    with open(file_path, "wb") as f:
+        f.write(content)
+    return {"file_name": file.filename, "stored_name": stored_name}
+
+
+@router.get("/standard-attachments/{stored_name}")
+async def download_standard_attachment(
+    stored_name: str,
+    current_user: User = Depends(get_current_active_user),
+):
+    """Скачать ранее загруженный файл стандарта."""
+    if not stored_name or "/" in stored_name or "\\" in stored_name or ".." in stored_name:
+        raise HTTPException(status_code=400, detail="Некорректное имя файла")
+    file_path = os.path.join(_standard_attachments_dir(), stored_name)
+    if not os.path.isfile(file_path):
+        raise HTTPException(status_code=404, detail="Файл не найден")
+    return FileResponse(file_path, filename=stored_name)
+
+
 @router.get("/portfolio-summary", response_model=PortfolioSummary)
 async def portfolio_summary(
     db: AsyncSession = Depends(get_db),
@@ -167,6 +222,8 @@ async def create_tender(
         volume_unit=data.volume_unit,
         complexity=data.complexity,
         standards=data.standards or [],
+        scope_items=data.scope_items or [],
+        standard_files=data.standard_files or [],
         start_date=data.start_date,
         deadline=data.deadline,
         duration_months=data.duration_months,
@@ -280,6 +337,8 @@ async def get_tender(
         volume=tender.volume,
         complexity=tender.complexity,
         standards=tender.standards,
+        scope_items=tender.scope_items,
+        standard_files=tender.standard_files,
         start_date=_iso_or_none(tender.start_date),
         deadline=_iso_or_none(tender.deadline),
         duration_months=tender.duration_months,
@@ -341,8 +400,9 @@ async def calculate_tender_endpoint(
 
     calc = calculate_tender(
         project_type=tender.project_type or "KM",
-        volume=tender.volume or 0,
-        volume_unit=tender.volume_unit or "ton",
+        # Проектирование: объёма в м² может не быть — считаем по составу работ
+        volume=tender.volume or max(len(tender.scope_items or []), 1),
+        volume_unit=tender.volume_unit or "unit",
         complexity=tender.complexity or "medium",
         standards=tender.standards or [],
         duration_months=tender.duration_months,

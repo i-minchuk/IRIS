@@ -1,13 +1,14 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { toast } from 'sonner';
-import { Calculator, Users, AlertTriangle, CheckCircle2, Clock, TrendingUp, TrendingDown, FileText, Copy, Check } from 'lucide-react';
+import { Calculator, Users, AlertTriangle, CheckCircle2, Clock, TrendingUp, TrendingDown, FileText, Copy, Check, Plus, X, Paperclip, Sparkles } from 'lucide-react';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import { resourcesApi } from '@/features/resources/api/resources';
 import type { WorkloadData } from '@/features/resources/api/resources';
-import { createTender } from '@/features/tenders/api/tenders';
+import { createTender, uploadStandardAttachment } from '@/features/tenders/api/tenders';
+import type { TenderStandardFile } from '@/features/tenders/types/tender';
 
 interface AddTenderModalProps {
   isOpen: boolean;
@@ -19,10 +20,10 @@ interface FormData {
   name: string;
   customer_name: string;
   project_type: string;
-  volume: string;
-  volume_unit: string;
+  scope_items: string[];
   complexity: string;
   standards: string[];
+  standard_files: TenderStandardFile[];
   deadline: string;
   nmc: string;
   our_price: string;
@@ -59,6 +60,17 @@ const COMPLEXITY_OPTIONS = [
 
 const STANDARDS_LIST = ['СП 70', 'ГОСТ 27751', 'СНиП 2.01', 'СП 16', 'СП 22', 'СП 43', 'СП 52', 'ГОСТ 19804'];
 
+/** Состав работ: мы проектировщики, а не строители. */
+const SCOPE_OPTIONS = [
+  'Перечень шкафов НКУ',
+  'Поставка оборудования',
+  'Проектная документация (ПД)',
+  'Рабочая документация (РД)',
+  'Электроснабжение и электроосвещение (ЭОМ)',
+  'Автоматизация и КИПиА',
+  'Авторский надзор',
+];
+
 const BASE_HOURS: Record<string, Record<string, number>> = {
   ЖК: { low: 35, medium: 70, high: 120 },
   ТЭЦ: { low: 45, medium: 90, high: 150 },
@@ -75,10 +87,10 @@ function getDefaultForm(): FormData {
     name: '',
     customer_name: '',
     project_type: '',
-    volume: '',
-    volume_unit: 'тыс. м²',
+    scope_items: [],
     complexity: 'medium',
     standards: [],
+    standard_files: [],
     deadline: '',
     nmc: '',
     our_price: '',
@@ -89,6 +101,15 @@ function getDefaultForm(): FormData {
   };
 }
 
+/** Автогенерация наименования из заполненных полей (можно править вручную). */
+function generateTenderName(customer: string, projectType: string): string {
+  const typeLabel = PROJECT_TYPES.find((t) => t.value === projectType)?.label || projectType;
+  const parts = ['Проектирование'];
+  if (typeLabel) parts.push(typeLabel);
+  if (customer.trim()) parts.push(customer.trim());
+  return parts.length > 1 ? parts.join(' — ') : '';
+}
+
 export default function AddTenderModal({ isOpen, onClose, onCreated }: AddTenderModalProps) {
   const [form, setForm] = useState<FormData>(getDefaultForm);
   const [calculation, setCalculation] = useState<CalculationResult | null>(null);
@@ -97,12 +118,27 @@ export default function AddTenderModal({ isOpen, onClose, onCreated }: AddTender
   const [saving, setSaving] = useState(false);
   const [showCalc, setShowCalc] = useState(false);
   const [proposalCopied, setProposalCopied] = useState(false);
+  // Наименование: автогенерация, пока пользователь не ввёл своё
+  const nameEditedRef = useRef(false);
+  // Состав работ: добавление пункта (из списка или свой вариант)
+  const [scopeSelect, setScopeSelect] = useState('');
+  const [scopeCustom, setScopeCustom] = useState('');
+  // Стандарты: ручной ввод + необязательный файл вложения
+  const [customStandard, setCustomStandard] = useState('');
+  const [standardFile, setStandardFile] = useState<File | null>(null);
+  const [uploadingStandard, setUploadingStandard] = useState(false);
+  const standardFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen) {
       setForm(getDefaultForm());
       setCalculation(null);
       setShowCalc(false);
+      nameEditedRef.current = false;
+      setScopeSelect('');
+      setScopeCustom('');
+      setCustomStandard('');
+      setStandardFile(null);
       setLoadingWorkload(true);
       resourcesApi
         .getWorkload()
@@ -114,10 +150,52 @@ export default function AddTenderModal({ isOpen, onClose, onCreated }: AddTender
 
   const handleChange = useCallback(
     (field: keyof FormData, value: string) => {
-      setForm((prev) => ({ ...prev, [field]: value }));
+      setForm((prev) => {
+        const next = { ...prev, [field]: value };
+        // Автогенерация наименования, пока поле не редактировали вручную
+        if (
+          (field === 'customer_name' || field === 'project_type') &&
+          !nameEditedRef.current
+        ) {
+          next.name = generateTenderName(next.customer_name, next.project_type);
+        }
+        return next;
+      });
     },
     []
   );
+
+  const handleNameChange = useCallback((value: string) => {
+    nameEditedRef.current = true;
+    setForm((prev) => ({ ...prev, name: value }));
+  }, []);
+
+  const regenerateName = useCallback(() => {
+    nameEditedRef.current = false;
+    setForm((prev) => ({
+      ...prev,
+      name: generateTenderName(prev.customer_name, prev.project_type),
+    }));
+  }, []);
+
+  const addScopeItem = useCallback(() => {
+    const item = (scopeSelect === '__custom__' ? scopeCustom : scopeSelect).trim();
+    if (!item) return;
+    setForm((prev) =>
+      prev.scope_items.includes(item)
+        ? prev
+        : { ...prev, scope_items: [...prev.scope_items, item] }
+    );
+    setScopeSelect('');
+    setScopeCustom('');
+  }, [scopeSelect, scopeCustom]);
+
+  const removeScopeItem = useCallback((item: string) => {
+    setForm((prev) => ({
+      ...prev,
+      scope_items: prev.scope_items.filter((s) => s !== item),
+    }));
+  }, []);
 
   const toggleStandard = useCallback((std: string) => {
     setForm((prev) => ({
@@ -125,16 +203,53 @@ export default function AddTenderModal({ isOpen, onClose, onCreated }: AddTender
       standards: prev.standards.includes(std)
         ? prev.standards.filter((s) => s !== std)
         : [...prev.standards, std],
+      // при снятии стандарта убираем и его вложение
+      standard_files: prev.standards.includes(std)
+        ? prev.standard_files.filter((f) => f.standard !== std)
+        : prev.standard_files,
     }));
   }, []);
 
+  /** Ручной стандарт + необязательный файл (загружается сразу). */
+  const addCustomStandard = useCallback(async () => {
+    const std = customStandard.trim();
+    if (!std || uploadingStandard) return;
+    let attachment: TenderStandardFile | null = null;
+    if (standardFile) {
+      setUploadingStandard(true);
+      try {
+        const uploaded = await uploadStandardAttachment(standardFile);
+        attachment = {
+          standard: std,
+          file_name: uploaded.file_name,
+          stored_name: uploaded.stored_name,
+        };
+      } catch (err: any) {
+        const detail = err?.response?.data?.detail;
+        toast.error(detail || 'Не удалось загрузить файл стандарта');
+        setUploadingStandard(false);
+        return;
+      }
+      setUploadingStandard(false);
+    }
+    setForm((prev) => ({
+      ...prev,
+      standards: prev.standards.includes(std) ? prev.standards : [...prev.standards, std],
+      standard_files: attachment ? [...prev.standard_files, attachment] : prev.standard_files,
+    }));
+    setCustomStandard('');
+    setStandardFile(null);
+    if (standardFileInputRef.current) standardFileInputRef.current.value = '';
+  }, [customStandard, standardFile, uploadingStandard]);
+
   const calculate = useCallback(() => {
-    const volume = Number(form.volume) || 0;
+    // Проектирование: трудоёмкость от числа пунктов состава работ
+    const scopeCount = Math.max(form.scope_items.length, 1);
     const type = form.project_type || 'ЖК';
     const complexity = form.complexity || 'medium';
     const base = BASE_HOURS[type]?.[complexity] ?? BASE_HOURS['ЖК'][complexity];
     const standardsMult = 1 + form.standards.length * 0.03;
-    const totalHours = Math.round(volume * base * standardsMult);
+    const totalHours = Math.round(scopeCount * base * standardsMult);
 
     let teamSize = complexity === 'low' ? 2 : complexity === 'medium' ? 4 : 6;
     if (form.deadline) {
@@ -183,7 +298,7 @@ export default function AddTenderModal({ isOpen, onClose, onCreated }: AddTender
     });
     setShowCalc(true);
     setProposalCopied(false);
-  }, [form.volume, form.project_type, form.complexity, form.standards, form.deadline, form.margin_pct, workload]);
+  }, [form.scope_items, form.project_type, form.complexity, form.standards, form.deadline, form.margin_pct, workload]);
 
   const handleSave = useCallback(async () => {
     setSaving(true);
@@ -192,10 +307,10 @@ export default function AddTenderModal({ isOpen, onClose, onCreated }: AddTender
         name: form.name,
         customer_name: form.customer_name,
         project_type: form.project_type,
-        volume: Number(form.volume) || 0,
-        volume_unit: form.volume_unit,
+        scope_items: form.scope_items,
         complexity: form.complexity,
         standards: form.standards,
+        standard_files: form.standard_files,
         deadline: form.deadline || undefined,
         nmc: Number(form.nmc) || undefined,
         our_price: Number(form.our_price) || undefined,
@@ -224,7 +339,7 @@ export default function AddTenderModal({ isOpen, onClose, onCreated }: AddTender
   }, [form, onClose, onCreated]);
 
   const isValid = useMemo(
-    () => form.name.trim() && form.customer_name.trim() && form.project_type && form.volume,
+    () => form.name.trim() && form.customer_name.trim() && form.project_type,
     [form]
   );
 
@@ -238,13 +353,20 @@ export default function AddTenderModal({ isOpen, onClose, onCreated }: AddTender
       <div className="space-y-5">
         {/* Основные данные */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input label="Название тендера" value={form.name} onChange={(e) => handleChange('name', e.target.value)} placeholder="Например, ЖК «Северный»" />
+          <div>
+            <Input label="Наименование тендера" value={form.name} onChange={(e) => handleNameChange(e.target.value)} placeholder="Например, Проектирование ЖК «Северный»" />
+            <button
+              type="button"
+              onClick={regenerateName}
+              className="mt-1 inline-flex items-center gap-1 text-xs transition-colors hover:underline"
+              style={{ color: 'var(--text-tertiary)' }}
+              title="Сгенерировать наименование из типа объекта и заказчика"
+            >
+              <Sparkles size={11} /> Сгенерировать из типа и заказчика
+            </button>
+          </div>
           <Input label="Заказчик" value={form.customer_name} onChange={(e) => handleChange('customer_name', e.target.value)} placeholder="ООО «Заказчик»" />
           <Select label="Тип объекта" value={form.project_type} onChange={(e) => handleChange('project_type', e.target.value)} options={PROJECT_TYPES} placeholder="Выберите тип" />
-          <div className="flex gap-2">
-            <Input label="Объём работ" type="number" value={form.volume} onChange={(e) => handleChange('volume', e.target.value)} placeholder="100" className="flex-1" />
-            <Select label="Ед. изм." value={form.volume_unit} onChange={(e) => handleChange('volume_unit', e.target.value)} options={[{ value: 'тыс. м²', label: 'тыс. м²' }, { value: 'м²', label: 'м²' }, { value: 'га', label: 'га' }, { value: 'км', label: 'км' }]} className="w-28" />
-          </div>
           <Select label="Сложность" value={form.complexity} onChange={(e) => handleChange('complexity', e.target.value)} options={COMPLEXITY_OPTIONS} />
           <Input label="Дедлайн подачи" type="date" value={form.deadline} onChange={(e) => handleChange('deadline', e.target.value)} />
           <Input label="НМЦ, ₽" type="number" value={form.nmc} onChange={(e) => handleChange('nmc', e.target.value)} placeholder="420000000" />
@@ -252,16 +374,73 @@ export default function AddTenderModal({ isOpen, onClose, onCreated }: AddTender
           <Input label="Наша цена, ₽" type="number" value={form.our_price} onChange={(e) => handleChange('our_price', e.target.value)} placeholder="500000000" />
           <Input label="Маржа, %" type="number" value={form.margin_pct} onChange={(e) => handleChange('margin_pct', e.target.value)} placeholder="20" />
           <Input label="Площадка" value={form.platform} onChange={(e) => handleChange('platform', e.target.value)} placeholder="zakupki.gov.ru" />
-          <Input label="Регион" value={form.region} onChange={(e) => handleChange('region', e.target.value)} placeholder="Москва" className="md:col-span-2" />
+          <Input label="Регион" value={form.region} onChange={(e) => handleChange('region', e.target.value)} placeholder="Москва" />
+        </div>
+
+        {/* Состав работ (проектирование) */}
+        <div>
+          <label className="mb-1.5 block text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Состав работ</label>
+          {form.scope_items.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-2">
+              {form.scope_items.map((item) => (
+                <span
+                  key={item}
+                  className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md border"
+                  style={{
+                    background: 'rgba(37,99,235,0.12)',
+                    borderColor: 'rgba(37,99,235,0.4)',
+                    color: '#2563EB',
+                  }}
+                >
+                  {item}
+                  <button type="button" onClick={() => removeScopeItem(item)} className="hover:opacity-70" title="Убрать">
+                    <X size={11} />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+          <div className="flex gap-2">
+            <Select
+              value={scopeSelect}
+              onChange={(e) => setScopeSelect(e.target.value)}
+              options={[
+                ...SCOPE_OPTIONS.map((s) => ({ value: s, label: s })),
+                { value: '__custom__', label: 'Свой вариант…' },
+              ]}
+              placeholder="Выберите из списка"
+              className="flex-1"
+            />
+            {scopeSelect === '__custom__' && (
+              <Input
+                value={scopeCustom}
+                onChange={(e) => setScopeCustom(e.target.value)}
+                placeholder="Введите вручную"
+                className="flex-1"
+              />
+            )}
+            <Button
+              variant="secondary"
+              size="sm"
+              leftIcon={<Plus size={14} />}
+              onClick={addScopeItem}
+              disabled={!scopeSelect || (scopeSelect === '__custom__' && !scopeCustom.trim())}
+            >
+              Добавить
+            </Button>
+          </div>
         </div>
 
         {/* Стандарты */}
         <div>
-          <label className="mb-1.5 block text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Применяемые стандарты</label>
+          <label className="mb-1.5 block text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+            Применяемые стандарты <span className="font-normal" style={{ color: 'var(--text-tertiary)' }}>(необязательно)</span>
+          </label>
           <div className="flex flex-wrap gap-2">
             {STANDARDS_LIST.map((std) => (
               <button
                 key={std}
+                type="button"
                 onClick={() => toggleStandard(std)}
                 className="text-xs px-2.5 py-1 rounded-md border transition-colors"
                 style={{
@@ -274,6 +453,74 @@ export default function AddTenderModal({ isOpen, onClose, onCreated }: AddTender
               </button>
             ))}
           </div>
+
+          {/* Свой стандарт + файл */}
+          <div className="flex flex-wrap items-center gap-2 mt-2">
+            <Input
+              value={customStandard}
+              onChange={(e) => setCustomStandard(e.target.value)}
+              placeholder="Свой стандарт, например ГОСТ Р 58833"
+              className="flex-1 min-w-56"
+            />
+            <input
+              ref={standardFileInputRef}
+              type="file"
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.djvu"
+              className="hidden"
+              onChange={(e) => setStandardFile(e.target.files?.[0] ?? null)}
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              leftIcon={<Paperclip size={13} />}
+              onClick={() => standardFileInputRef.current?.click()}
+              title="Вложить файл стандарта (необязательно)"
+            >
+              {standardFile ? standardFile.name : 'Вложить файл'}
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              leftIcon={<Plus size={14} />}
+              onClick={addCustomStandard}
+              disabled={!customStandard.trim() || uploadingStandard}
+              isLoading={uploadingStandard}
+            >
+              Добавить
+            </Button>
+          </div>
+
+          {/* Выбранные вручную стандарты (не из пресета) */}
+          {form.standards.some((s) => !STANDARDS_LIST.includes(s)) && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {form.standards
+                .filter((s) => !STANDARDS_LIST.includes(s))
+                .map((std) => {
+                  const file = form.standard_files.find((f) => f.standard === std);
+                  return (
+                    <span
+                      key={std}
+                      className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md border"
+                      style={{
+                        background: 'rgba(37,99,235,0.12)',
+                        borderColor: 'rgba(37,99,235,0.4)',
+                        color: '#2563EB',
+                      }}
+                    >
+                      {std}
+                      {file && (
+                        <span className="inline-flex items-center gap-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                          <Paperclip size={10} /> {file.file_name}
+                        </span>
+                      )}
+                      <button type="button" onClick={() => toggleStandard(std)} className="hover:opacity-70" title="Убрать">
+                        <X size={11} />
+                      </button>
+                    </span>
+                  );
+                })}
+            </div>
+          )}
         </div>
 
         {/* Кнопка расчёта */}
@@ -281,7 +528,7 @@ export default function AddTenderModal({ isOpen, onClose, onCreated }: AddTender
           <Button variant="secondary" size="sm" leftIcon={<Calculator size={14} />} onClick={calculate} disabled={!isValid}>
             Рассчитать трудоёмкость
           </Button>
-          {!isValid && <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Заполните название, заказчика, тип и объём</span>}
+          {!isValid && <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Заполните наименование, заказчика и тип объекта</span>}
         </div>
 
         {/* Результаты расчёта */}
@@ -416,10 +663,10 @@ function CommercialProposalSection({
 Тип объекта: ${form.project_type || '—'}
 Регион: ${form.region || '—'}
 
-1. ОПИСАНИЕ ОБЪЕКТА И ОБЪЁМА РАБОТ
+1. ОПИСАНИЕ ОБЪЕКТА И СОСТАВА РАБОТ
 Объект: ${form.name || '—'}
 Тип: ${form.project_type || '—'}
-Объём: ${form.volume || '—'} ${form.volume_unit}
+Состав работ: ${form.scope_items.length > 0 ? form.scope_items.join(', ') : '—'}
 Сложность: ${complexityLabel[form.complexity] || '—'}
 Применяемые стандарты: ${form.standards.length > 0 ? form.standards.join(', ') : '—'}
 

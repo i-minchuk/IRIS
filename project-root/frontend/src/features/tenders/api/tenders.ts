@@ -16,6 +16,18 @@ export const createTender = async (body: Partial<Tender>): Promise<Tender> => {
   return data;
 };
 
+/** Загрузка файла стандарта до создания тендера. */
+export const uploadStandardAttachment = async (
+  file: File,
+): Promise<{ file_name: string; stored_name: string }> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const { data } = await client.post('/tenders/standard-attachments', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return data;
+};
+
 export const updateTenderStage = async (
   id: number,
   updates: { stage?: TenderStage; status?: string; our_price?: number; margin_pct?: number; probability?: number }

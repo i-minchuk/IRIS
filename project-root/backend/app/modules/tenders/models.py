@@ -19,6 +19,10 @@ class Tender(Base):
     volume_unit: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     complexity: Mapped[str] = mapped_column(String(20), default="medium")  # low, medium, high
     standards: Mapped[Optional[list]] = mapped_column(JSON, default=list)
+    # Состав работ (проектирование): «Перечень шкафов НКУ», «Поставка оборудования», …
+    scope_items: Mapped[Optional[list]] = mapped_column(JSON, default=list)
+    # Вложения применяемых стандартов: [{standard, file_name, stored_name}]
+    standard_files: Mapped[Optional[list]] = mapped_column(JSON, default=list)
     start_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     deadline: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     duration_months: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)

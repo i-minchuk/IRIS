@@ -8,6 +8,8 @@ export interface TenderDetail {
     volume_unit?: string;
     complexity: string;
     standards?: string[] | null;
+    scope_items?: string[] | null;
+    standard_files?: { standard: string; file_name: string; stored_name: string }[] | null;
     stage: string;
     status: string;
     nmc?: number | null;
