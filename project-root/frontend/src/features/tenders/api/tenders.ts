@@ -3,7 +3,9 @@ import type { Tender, TenderStage, TenderSummary, TenderTask } from '../types/te
 
 export const getTenders = async (filters?: { status?: string; stage?: string }): Promise<Tender[]> => {
   const { data } = await client.get('/tenders', { params: filters });
-  return data;
+  // Backend возвращает пагинированный ответ {items, total, page, ...}
+  if (Array.isArray(data)) return data;
+  return data.items ?? [];
 };
 
 export const getTender = async (id: number): Promise<Tender> => {
