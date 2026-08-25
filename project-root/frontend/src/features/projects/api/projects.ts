@@ -11,6 +11,15 @@ export interface Project {
   contract_number?: string;
   stage?: string;
   risk_level?: 'low' | 'medium' | 'high';
+  /** Данные исходного тендера (для проектов, созданных из тендера) */
+  variables?: {
+    tender_id?: number;
+    kp_number?: string;
+    project_type?: string;
+    scope_items?: string[];
+    standards?: string[];
+    [key: string]: unknown;
+  };
   created_at?: string;
 }
 

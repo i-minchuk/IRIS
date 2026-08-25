@@ -48,6 +48,7 @@ async def list_projects(
             "contract_number": p.contract_number,
             "stage": p.stage,
             "status": p.status,
+            "variables": p.variables or {},
             "created_at": p.created_at.isoformat() if p.created_at else None,
         }
         for p in projects

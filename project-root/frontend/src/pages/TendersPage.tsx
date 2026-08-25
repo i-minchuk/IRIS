@@ -112,6 +112,7 @@ export default function TendersPage() {
   const [pendingArchive, setPendingArchive] = useState<TenderItem | null>(null);
   const [editingTender, setEditingTender] = useState<Tender | null>(null);
   const [loadingEditId, setLoadingEditId] = useState<string | null>(null);
+  const [workingId, setWorkingId] = useState<string | null>(null);
 
   const fetchTenders = useCallback(async () => {
     setLoading(true);
@@ -175,6 +176,20 @@ export default function TendersPage() {
       setArchivingId(null);
     }
   }, [archivingId, fetchTenders]);
+
+  /** «В работу» — тендер выигран: создаётся проект, счётчик «Выиграно» +1. */
+  const takeToWork = useCallback(async (t: TenderItem) => {
+    if (workingId === t.id) return;
+    setWorkingId(t.id);
+    try {
+      await updateTenderStage(Number(t.id), { stage: 'won', status: 'won', probability: 100 });
+      await fetchTenders();
+    } catch {
+      alert('Не удалось перевести тендер в работу.');
+    } finally {
+      setWorkingId(null);
+    }
+  }, [workingId, fetchTenders]);
 
   const filtered = tenders.filter(t => {
     if (filter !== 'all' && t.status !== filter) return false;
@@ -302,12 +317,17 @@ export default function TendersPage() {
                     {filtered.map((t) => {
                       const meta = statusMeta[t.status];
                       const isArchived = t.status === 'lost';
+                      const isWon = t.status === 'won';
                       const baseBg = isArchived
                         ? (isDark ? 'rgba(148,163,184,0.10)' : 'rgba(100,116,139,0.08)')
-                        : (selectedTender?.id === t.id ? (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)') : 'transparent');
+                        : isWon
+                          ? (isDark ? 'rgba(34,197,94,0.12)' : 'rgba(12,114,5,0.08)')
+                          : (selectedTender?.id === t.id ? (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)') : 'transparent');
                       const hoverBg = isArchived
                         ? (isDark ? 'rgba(148,163,184,0.16)' : 'rgba(100,116,139,0.13)')
-                        : (isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)');
+                        : isWon
+                          ? (isDark ? 'rgba(34,197,94,0.18)' : 'rgba(12,114,5,0.13)')
+                          : (isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)');
                       return (
                         <tr
                           key={t.id}
@@ -318,7 +338,7 @@ export default function TendersPage() {
                             opacity: isArchived ? 0.75 : 1,
                           }}
                           onClick={() => openTenderCard(t)}
-                          onMouseEnter={(e) => { if (isArchived || selectedTender?.id !== t.id) e.currentTarget.style.background = hoverBg; }}
+                          onMouseEnter={(e) => { if (isArchived || isWon || selectedTender?.id !== t.id) e.currentTarget.style.background = hoverBg; }}
                           onMouseLeave={(e) => { e.currentTarget.style.background = baseBg; }}
                         >
                           <td className="px-3 py-2.5 text-sm font-mono font-medium" style={{ color: 'var(--text-secondary)' }}>{t.number}</td>
@@ -355,6 +375,19 @@ export default function TendersPage() {
                               >
                                 {loadingEditId === t.id ? 'Загрузка…' : 'Редактировать'}
                               </button>
+                              {t.status !== 'lost' && t.status !== 'won' && (
+                                <button
+                                  className="inline-block text-xs px-2 py-1 rounded transition-colors cursor-pointer disabled:opacity-50"
+                                  style={{ color: '#ffffff', background: '#0C7205' }}
+                                  disabled={workingId === t.id}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    takeToWork(t);
+                                  }}
+                                >
+                                  {workingId === t.id ? 'Создание…' : 'В работу'}
+                                </button>
+                              )}
                               {t.status !== 'lost' && (
                                 <button
                                   className="inline-block text-xs px-2 py-1 rounded transition-colors cursor-pointer disabled:opacity-50"

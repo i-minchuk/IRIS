@@ -348,14 +348,21 @@ async def update_tender_stage(
     # Auto-create project when tender is won and no project linked yet
     project_created = None
     if new_stage == "won" and tender.project_id is None:
-        today = datetime.utcnow()
         project = Project(
             name=tender.name,
             code=f"PRJ-{tender.id:04d}",
             customer_name=tender.customer_name,
+            contract_number=tender.kp_number,
             status="active",
             stage=tender.project_type,
             planned_finish=tender.deadline,
+            variables={
+                "tender_id": tender.id,
+                "kp_number": tender.kp_number,
+                "project_type": tender.project_type,
+                "scope_items": tender.scope_items or [],
+                "standards": tender.standards or [],
+            },
             created_by_id=current_user.id,
         )
         db.add(project)

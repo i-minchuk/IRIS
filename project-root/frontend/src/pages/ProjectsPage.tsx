@@ -26,6 +26,11 @@ interface ProjectItem {
   percent: number;
   status: 'active' | 'review' | 'approved' | 'overdue';
   customer: string;
+  /** Данные исходного тендера (если проект создан из тендера) */
+  kpNumber?: string;
+  objectType?: string;
+  scopeItems?: string[];
+  standards?: string[];
   stats?: DocumentProjectSummary;
 }
 
@@ -392,6 +397,10 @@ export function ProjectsView() {
           percent,
           status,
           customer: p.customer_name || p.code || '—',
+          kpNumber: p.contract_number || p.variables?.kp_number,
+          objectType: p.variables?.project_type || p.stage,
+          scopeItems: p.variables?.scope_items,
+          standards: p.variables?.standards,
           stats,
         };
       }));
@@ -577,6 +586,43 @@ export function ProjectsView() {
 
                       {isExpanded && (
                         <div className="px-2.5 pb-2.5 pt-0">
+                          {(project.kpNumber || project.objectType || (project.scopeItems?.length ?? 0) > 0 || (project.standards?.length ?? 0) > 0) && (
+                            <div className="border-t pt-2 mt-0.5 flex flex-col gap-1" style={{ borderColor: 'var(--border-color)' }}>
+                              <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Данные тендера</span>
+                              {project.kpNumber && (
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs" style={{ color: 'var(--text-muted)' }}>№ КП</span>
+                                  <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>{project.kpNumber}</span>
+                                </div>
+                              )}
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Наименование</span>
+                                <span className="text-xs font-medium truncate ml-2" style={{ color: 'var(--text-primary)' }}>{project.name}</span>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Заказчик</span>
+                                <span className="text-xs font-medium truncate ml-2" style={{ color: 'var(--text-primary)' }}>{project.customer}</span>
+                              </div>
+                              {project.objectType && (
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Тип объекта</span>
+                                  <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>{project.objectType}</span>
+                                </div>
+                              )}
+                              {(project.scopeItems?.length ?? 0) > 0 && (
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Состав работ</span>
+                                  <span className="text-xs" style={{ color: 'var(--text-primary)' }}>{project.scopeItems!.join(', ')}</span>
+                                </div>
+                              )}
+                              {(project.standards?.length ?? 0) > 0 && (
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Применяемые стандарты</span>
+                                  <span className="text-xs" style={{ color: 'var(--text-primary)' }}>{project.standards!.join(', ')}</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
                           <div className="border-t pt-2 mt-0.5" style={{ borderColor: 'var(--border-color)' }}>
                             <div className="flex items-center justify-between mb-1.5">
                               <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Документы</span>
