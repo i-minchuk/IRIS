@@ -203,23 +203,6 @@ export default function TendersPage() {
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <button
-              onClick={() => {
-                if (selectedTender) {
-                  alert(`📞 Ответ для ${selectedTender.customer}:\n\n«По тендеру ${selectedTender.number} «${selectedTender.name}» текущий статус — ${statusMeta[selectedTender.status].label}, бюджет ${selectedTender.budget}, срок ${selectedTender.deadline}. Шанс победы ${selectedTender.winChance}%.»`);
-                } else {
-                  alert('📞 Выберите тендер в таблице, чтобы ответить заказчику.');
-                }
-              }}
-              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md transition-all cursor-pointer"
-              style={{
-                background: 'var(--iris-accent-cyan, #0088AA)',
-                color: '#ffffff',
-                boxShadow: '0 0 12px var(--iris-glow-cyan, rgba(0,136,170,0.35))',
-              }}
-            >
-              📞 Ответить заказчику
-            </button>
-            <button
               onClick={() => setShowAddModal(true)}
               className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md transition-colors cursor-pointer"
               style={{ background: '#2563EB', color: '#ffffff' }}
