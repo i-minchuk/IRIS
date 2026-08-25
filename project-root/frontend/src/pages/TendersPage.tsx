@@ -268,7 +268,7 @@ export default function TendersPage() {
         {/* Table */}
         <div className="rounded-xl overflow-hidden" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
           <div className="overflow-x-auto">
-            <table className="w-full text-left" style={{ fontFamily: "'Times New Roman', Times, serif", fontSize: '12px' }}>
+            <table className="w-full text-left">
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
                   {['№ тендера','Название','Заказчик','Статус','Срок','Бюджет','Шанс','Действия'].map((h) => (

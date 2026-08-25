@@ -22,7 +22,7 @@ class Tender(Base):
     volume_unit: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     complexity: Mapped[str] = mapped_column(String(20), default="medium")  # low, medium, high
     standards: Mapped[Optional[list]] = mapped_column(JSON, default=list)
-    # Состав работ (проектирование): «Перечень шкафов НКУ», «Поставка оборудования», …
+    # Состав работ (проектирование): «Поставка шкафов НКУ», «Поставка оборудования», …
     scope_items: Mapped[Optional[list]] = mapped_column(JSON, default=list)
     # Вложения применяемых стандартов: [{standard, file_name, stored_name}]
     standard_files: Mapped[Optional[list]] = mapped_column(JSON, default=list)
