@@ -8,6 +8,7 @@ import {
 import { getTenders, updateTenderStage } from '@/features/tenders/api/tenders';
 import type { Tender } from '@/features/tenders/types/tender';
 import AddTenderModal from '@/features/tenders/components/AddTenderModal';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 
 /* ═══════════════════════════════════════════════════════════
    TYPES
@@ -108,6 +109,7 @@ export default function TendersPage() {
   const [selectedTender, setSelectedTender] = useState<TenderItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [archivingId, setArchivingId] = useState<string | null>(null);
+  const [pendingArchive, setPendingArchive] = useState<TenderItem | null>(null);
 
   const fetchTenders = useCallback(async () => {
     setLoading(true);
@@ -132,11 +134,11 @@ export default function TendersPage() {
 
   const archiveTender = useCallback(async (t: TenderItem) => {
     if (archivingId === t.id) return;
-    if (!window.confirm(`Архивировать тендер ${t.number} «${t.name}»? Сделка будет переведена в «Проиграно».`)) return;
     setArchivingId(t.id);
     try {
       await updateTenderStage(Number(t.id), { stage: 'lost', status: 'lost', probability: 0 });
       await fetchTenders();
+      setPendingArchive(null);
     } catch {
       alert('Не удалось архивировать тендер.');
     } finally {
@@ -246,6 +248,17 @@ export default function TendersPage() {
 
         <AddTenderModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} onCreated={fetchTenders} />
 
+        <ConfirmDialog
+          isOpen={pendingArchive !== null}
+          title="Подтвердите действие"
+          message={pendingArchive ? `Архивировать тендер ${pendingArchive.number} «${pendingArchive.name}»?\nСделка будет переведена в «Проиграно».` : ''}
+          confirmLabel="Архивировать"
+          danger
+          loading={archivingId !== null}
+          onConfirm={() => pendingArchive && archiveTender(pendingArchive)}
+          onCancel={() => setPendingArchive(null)}
+        />
+
         <FilterBar options={filterOptions} active={filter} onChange={setFilter} count={filtered.length} />
 
         {/* Table */}
@@ -326,7 +339,7 @@ export default function TendersPage() {
                                   disabled={archivingId === t.id}
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    archiveTender(t);
+                                    setPendingArchive(t);
                                   }}
                                 >
                                   {archivingId === t.id ? 'Архивация…' : 'Архивировать'}
