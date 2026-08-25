@@ -563,7 +563,7 @@ export default function Dashboard() {
                 </div>
                 <h2 className="text-lg md:text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Тендерная воронка</h2>
               </div>
-              <button onClick={() => navigate('/projects')} className="text-base md:text-lg font-medium leading-relaxed mt-1 flex items-center gap-1 transition-colors" style={{ color: 'var(--text-secondary)' }}>Все тендеры <ChevronRight size={12} /></button>
+              <button onClick={() => navigate('/portfolio?tab=tenders')} className="text-base md:text-lg font-medium leading-relaxed mt-1 flex items-center gap-1 transition-colors" style={{ color: 'var(--text-secondary)' }}>Все тендеры <ChevronRight size={12} /></button>
             </div>
             <div className="flex items-end justify-between gap-1 overflow-x-auto pb-1">
               {tenderFunnel.map((step, i) => (

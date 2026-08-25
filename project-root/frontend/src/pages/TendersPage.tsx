@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-// import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/providers/ThemeProvider';
 import {
   Search, Calendar, TrendingUp, TrendingDown,
   CheckCircle2, XCircle, Clock3, Send, Plus, Filter,
 } from 'lucide-react';
-import { getTenders } from '@/features/tenders/api/tenders';
+import { getTenders, updateTenderStage } from '@/features/tenders/api/tenders';
 import type { Tender } from '@/features/tenders/types/tender';
 import AddTenderModal from '@/features/tenders/components/AddTenderModal';
 
@@ -48,7 +48,7 @@ function mapTenderToItem(t: Tender): TenderItem {
   const budget = t.nmc ? `₽ ${(t.nmc / 1e6).toFixed(1)} млн` : '—';
   return {
     id: String(t.id),
-    number: `Т-${t.id.toString().padStart(4, '0')}`,
+    number: t.kp_number || `Т-${t.id.toString().padStart(4, '0')}`,
     name: t.name,
     customer: t.customer_name,
     status: statusMap[stage] || 'preparation',
@@ -98,7 +98,7 @@ function FilterBar({ options, active, onChange, count }: {
    MAIN PAGE
    ═══════════════════════════════════════════════════════════ */
 export default function TendersPage() {
-  // const navigate = useNavigate();
+  const navigate = useNavigate();
   const { theme } = useTheme();
   const isDark = theme === 'dark' || theme === 'midnight' || theme === 'contrast';
   const [filter, setFilter] = useState<string>('all');
@@ -107,6 +107,7 @@ export default function TendersPage() {
   const [tenders, setTenders] = useState<TenderItem[]>([]);
   const [selectedTender, setSelectedTender] = useState<TenderItem | null>(null);
   const [loading, setLoading] = useState(true);
+  const [archivingId, setArchivingId] = useState<string | null>(null);
 
   const fetchTenders = useCallback(async () => {
     setLoading(true);
@@ -123,6 +124,38 @@ export default function TendersPage() {
   useEffect(() => {
     fetchTenders();
   }, [fetchTenders]);
+
+  const openTenderCard = useCallback((t: TenderItem) => {
+    setSelectedTender(t);
+    navigate(`/portfolio?tender=${t.id}`);
+  }, [navigate]);
+
+  const archiveTender = useCallback(async (t: TenderItem) => {
+    if (archivingId === t.id) return;
+    if (!window.confirm(`Архивировать тендер ${t.number} «${t.name}»? Сделка будет переведена в «Проиграно».`)) return;
+    setArchivingId(t.id);
+    try {
+      await updateTenderStage(Number(t.id), { stage: 'lost', status: 'lost', probability: 0 });
+      await fetchTenders();
+    } catch {
+      alert('Не удалось архивировать тендер.');
+    } finally {
+      setArchivingId(null);
+    }
+  }, [archivingId, fetchTenders]);
+
+  const restoreTender = useCallback(async (t: TenderItem) => {
+    if (archivingId === t.id) return;
+    setArchivingId(t.id);
+    try {
+      await updateTenderStage(Number(t.id), { stage: 'new', status: 'draft', probability: 50 });
+      await fetchTenders();
+    } catch {
+      alert('Не удалось извлечь тендер из архива.');
+    } finally {
+      setArchivingId(null);
+    }
+  }, [archivingId, fetchTenders]);
 
   const filtered = tenders.filter(t => {
     if (filter !== 'all' && t.status !== filter) return false;
@@ -235,7 +268,7 @@ export default function TendersPage() {
         {/* Table */}
         <div className="rounded-xl overflow-hidden" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
+            <table className="w-full text-left" style={{ fontFamily: "'Times New Roman', Times, serif", fontSize: '12px' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
                   {['№ тендера','Название','Заказчик','Статус','Срок','Бюджет','Шанс','Действия'].map((h) => (
@@ -250,17 +283,25 @@ export default function TendersPage() {
                   <>
                     {filtered.map((t) => {
                       const meta = statusMeta[t.status];
+                      const isArchived = t.status === 'lost';
+                      const baseBg = isArchived
+                        ? (isDark ? 'rgba(148,163,184,0.10)' : 'rgba(100,116,139,0.08)')
+                        : (selectedTender?.id === t.id ? (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)') : 'transparent');
+                      const hoverBg = isArchived
+                        ? (isDark ? 'rgba(148,163,184,0.16)' : 'rgba(100,116,139,0.13)')
+                        : (isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)');
                       return (
                         <tr
                           key={t.id}
                           className="transition-colors cursor-pointer"
                           style={{
                             borderBottom: '1px solid var(--border-color)',
-                            background: selectedTender?.id === t.id ? (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)') : 'transparent',
+                            background: baseBg,
+                            opacity: isArchived ? 0.75 : 1,
                           }}
-                          onClick={() => setSelectedTender(t)}
-                          onMouseEnter={(e) => { if (selectedTender?.id !== t.id) e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.background = selectedTender?.id === t.id ? (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)') : 'transparent'; }}
+                          onClick={() => openTenderCard(t)}
+                          onMouseEnter={(e) => { if (isArchived || selectedTender?.id !== t.id) e.currentTarget.style.background = hoverBg; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = baseBg; }}
                         >
                           <td className="px-3 py-2.5 text-sm font-mono font-medium" style={{ color: 'var(--text-secondary)' }}>{t.number}</td>
                           <td className="px-3 py-2.5 text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t.name}</td>
@@ -284,16 +325,44 @@ export default function TendersPage() {
                             </div>
                           </td>
                           <td className="px-3 py-2.5">
-                            <a
-                              href={`/portfolio?tender=${t.id}`}
-                              className="inline-block text-xs px-2 py-1 rounded transition-colors"
-                              style={{ color: '#2563EB', background: 'rgba(37,99,235,0.1)', textDecoration: 'none' }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                              }}
-                            >
-                              Открыть
-                            </a>
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                className="inline-block text-xs px-2 py-1 rounded transition-colors cursor-pointer"
+                                style={{ color: '#2563EB', background: 'rgba(37,99,235,0.1)' }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openTenderCard(t);
+                                }}
+                              >
+                                Редактировать
+                              </button>
+                              {t.status !== 'lost' && (
+                                <button
+                                  className="inline-block text-xs px-2 py-1 rounded transition-colors cursor-pointer disabled:opacity-50"
+                                  style={{ color: '#DC2626', background: 'rgba(220,38,38,0.1)' }}
+                                  disabled={archivingId === t.id}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    archiveTender(t);
+                                  }}
+                                >
+                                  {archivingId === t.id ? 'Архивация…' : 'Архивировать'}
+                                </button>
+                              )}
+                              {t.status === 'lost' && (
+                                <button
+                                  className="inline-block text-xs px-2 py-1 rounded transition-colors cursor-pointer disabled:opacity-50"
+                                  style={{ color: '#0C7205', background: 'rgba(12,114,5,0.1)' }}
+                                  disabled={archivingId === t.id}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    restoreTender(t);
+                                  }}
+                                >
+                                  {archivingId === t.id ? 'Извлечение…' : 'Извлечь из архива'}
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       );

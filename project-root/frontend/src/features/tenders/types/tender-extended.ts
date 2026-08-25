@@ -1,6 +1,7 @@
 export interface TenderDetail {
   tender: {
     id: number;
+    kp_number?: string | null;
     name: string;
     customer_name: string;
     project_type: string;

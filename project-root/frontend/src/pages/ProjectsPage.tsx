@@ -137,7 +137,7 @@ function mapTenderToItem(t: Tender): TenderItem {
   const budget = t.nmc ? `₽ ${(t.nmc / 1e6).toFixed(0)} млн` : '—';
   return {
     id: String(t.id),
-    number: `Т-${t.id.toString().padStart(4, '0')}`,
+    number: t.kp_number || `Т-${t.id.toString().padStart(4, '0')}`,
     name: t.name,
     customer: t.customer_name,
     status: statusMap[stage] || 'preparation',
@@ -328,7 +328,7 @@ function TendersView() {
 /* ═══════════════════════════════════════════════════════════
    SOLUTIONS VIEW
    ═══════════════════════════════════════════════════════════ */
-function SolutionsView() {
+export function SolutionsView() {
   return (
     <div className="space-y-6">
       <div className="p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
@@ -348,7 +348,7 @@ function SolutionsView() {
 /* ═══════════════════════════════════════════════════════════
    TEMPLATES VIEW
    ═══════════════════════════════════════════════════════════ */
-function TemplatesView() {
+export function TemplatesView() {
   return (
     <div className="p-8 rounded-xl text-center" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
       <FileText size={32} className="mx-auto mb-2 opacity-40" style={{ color: 'var(--text-muted)' }} />
@@ -360,7 +360,7 @@ function TemplatesView() {
 /* ═══════════════════════════════════════════════════════════
    PROJECTS VIEW
    ═══════════════════════════════════════════════════════════ */
-function ProjectsView() {
+export function ProjectsView() {
   const navigate = useNavigate();
   const [expandedProject, setExpandedProject] = useState<string | null>(null);
   const { theme } = useTheme();

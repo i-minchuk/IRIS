@@ -141,7 +141,7 @@ export function TenderRegistry({ tenders, selectedStage }: Props) {
                   onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--iris-bg-hover)'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                 >
-                  <td className="py-2.5 px-2 font-mono" style={{ color: 'var(--text-secondary)' }}>#{t.id}</td>
+                  <td className="py-2.5 px-2 font-mono" style={{ color: 'var(--text-secondary)' }}>{t.kp_number || `#${t.id}`}</td>
                   <td className="py-2.5 px-2">
                     <div className="font-medium" style={{ color: 'var(--text-primary)' }}>{t.name}</div>
                     <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{t.customer_name}</div>

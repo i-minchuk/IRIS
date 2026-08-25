@@ -43,6 +43,12 @@ export const getTenderSummary = async (): Promise<TenderSummary> => {
   return data;
 };
 
+/** Номер КП, который будет присвоен следующему тендеру (для превью в форме). */
+export const getNextKpNumber = async (): Promise<string> => {
+  const { data } = await client.get('/tenders/next-kp-number');
+  return data.kp_number;
+};
+
 export const calculateTender = async (tenderId: number): Promise<{
   tender_id: number;
   name: string;

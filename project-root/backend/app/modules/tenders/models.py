@@ -12,6 +12,9 @@ class Tender(Base):
     __tablename__ = "tenders"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    # Номер КП = номер тендера: последовательный в течение года,
+    # с 1 января счёт начинается заново (формат «КП-<N>-<ГОД>»)
+    kp_number: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
     name: Mapped[str] = mapped_column(String(255))
     customer_name: Mapped[str] = mapped_column(String(255))
     project_type: Mapped[str] = mapped_column(String(100))  # KM, PD, montazh, etc.

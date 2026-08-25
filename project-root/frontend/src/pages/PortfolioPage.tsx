@@ -1,7 +1,7 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useEffect } from 'react';
 import {
-  ArrowLeft, Gavel, ShoppingCart,
+  ArrowLeft, Gavel, ShoppingCart, FolderKanban, HardHat, FileText,
 } from 'lucide-react';
 import { useTabState } from '@/shared/hooks/useTabState';
 import { PageHeader } from '@/shared/components/PageHeader';
@@ -14,6 +14,7 @@ import ContractsPage from '@/pages/srm/Contracts';
 import OrdersPage from '@/pages/srm/Orders';
 import InvoicesPage from '@/pages/srm/Invoices';
 import TenderDetailPage from '@/features/tenders/pages/TenderDetailPage';
+import { ProjectsView, SolutionsView, TemplatesView } from '@/pages/ProjectsPage';
 
 /* ─── SRM Sub-tabs ─── */
 const SRM_TABS = [
@@ -32,11 +33,14 @@ const PORTFOLIO_ACCENT_GLOW = 'rgba(124, 58, 237, 0.13)';
 const PORTFOLIO_ICON_GLOW = 'rgba(124, 58, 237, 0.55)';
 
 const MAIN_TABS = [
-  { id: 'tenders' as const, label: 'Тендеры', icon: <Gavel size={16} /> },
-  { id: 'srm' as const, label: 'SRM / Закупки', icon: <ShoppingCart size={16} /> },
+  { id: 'tenders' as const, label: 'Тендеры', shortLabel: 'Тендеры', icon: <Gavel size={16} /> },
+  { id: 'projects' as const, label: 'Проекты', shortLabel: 'Проекты', icon: <FolderKanban size={16} /> },
+  { id: 'solutions' as const, label: 'Типовые решения', shortLabel: 'Типовые', icon: <HardHat size={16} /> },
+  { id: 'templates' as const, label: 'Шаблоны', shortLabel: 'Шаблоны', icon: <FileText size={16} /> },
+  { id: 'srm' as const, label: 'SRM / Закупки', shortLabel: 'SRM', icon: <ShoppingCart size={16} /> },
 ];
 
-type MainTab = 'tenders' | 'srm';
+type MainTab = 'tenders' | 'projects' | 'solutions' | 'templates' | 'srm';
 type SRMTab = 'suppliers' | 'purchase-requests' | 'contracts' | 'orders' | 'invoices';
 
 export default function PortfolioPage() {
@@ -106,7 +110,8 @@ export default function PortfolioPage() {
               key={tab.id}
               type="button"
               onClick={() => handleTabChange(tab.id)}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-t-lg transition-all"
+              title={tab.label}
+              className="flex items-center gap-2 px-2 lg:px-3 xl:px-4 py-2 text-sm font-medium rounded-t-lg transition-all"
               style={{
                 color: isActive ? PORTFOLIO_ACCENT : 'var(--text-secondary)',
                 backgroundColor: isActive ? PORTFOLIO_ACCENT_SOFT : 'transparent',
@@ -122,7 +127,9 @@ export default function PortfolioPage() {
               <span style={{ color: isActive ? PORTFOLIO_ACCENT : 'var(--text-muted)', filter: isActive ? `drop-shadow(0 0 4px ${PORTFOLIO_ICON_GLOW})` : 'none' }}>
                 {tab.icon}
               </span>
-              {tab.label}
+              {/* <1024px: только иконка; 1024–1535px: короткая подпись; ≥1536px: полная */}
+              <span className="hidden lg:inline-block 2xl:hidden">{tab.shortLabel}</span>
+              <span className="hidden 2xl:inline-block">{tab.label}</span>
             </button>
           );
         })}
@@ -130,6 +137,9 @@ export default function PortfolioPage() {
 
       {/* Content */}
       {activeTab === 'tenders' && <TendersPage />}
+      {activeTab === 'projects' && <ProjectsView />}
+      {activeTab === 'solutions' && <SolutionsView />}
+      {activeTab === 'templates' && <TemplatesView />}
 
       {activeTab === 'srm' && (
         <div className="space-y-4">

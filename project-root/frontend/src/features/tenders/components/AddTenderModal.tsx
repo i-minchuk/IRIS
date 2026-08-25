@@ -7,7 +7,7 @@ import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import { resourcesApi } from '@/features/resources/api/resources';
 import type { WorkloadData } from '@/features/resources/api/resources';
-import { createTender, uploadStandardAttachment } from '@/features/tenders/api/tenders';
+import { createTender, uploadStandardAttachment, getNextKpNumber } from '@/features/tenders/api/tenders';
 import type { TenderStandardFile } from '@/features/tenders/types/tender';
 
 interface AddTenderModalProps {
@@ -128,6 +128,8 @@ export default function AddTenderModal({ isOpen, onClose, onCreated }: AddTender
   const [standardFile, setStandardFile] = useState<File | null>(null);
   const [uploadingStandard, setUploadingStandard] = useState(false);
   const standardFileInputRef = useRef<HTMLInputElement>(null);
+  // Номер КП, который будет присвоен тендеру (превью в тексте предложения)
+  const [kpNumber, setKpNumber] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -145,6 +147,9 @@ export default function AddTenderModal({ isOpen, onClose, onCreated }: AddTender
         .then((res) => setWorkload(res.data))
         .catch(() => setWorkload(null))
         .finally(() => setLoadingWorkload(false));
+      getNextKpNumber()
+        .then(setKpNumber)
+        .catch(() => setKpNumber(null));
     }
   }, [isOpen]);
 
@@ -593,7 +598,7 @@ export default function AddTenderModal({ isOpen, onClose, onCreated }: AddTender
             </div>
 
             {/* Коммерческое предложение */}
-            <CommercialProposalSection form={form} calculation={calculation} copied={proposalCopied} onCopy={setProposalCopied} />
+            <CommercialProposalSection form={form} calculation={calculation} kpNumber={kpNumber} copied={proposalCopied} onCopy={setProposalCopied} />
           </div>
         )}
       </div>
@@ -633,11 +638,13 @@ function MetricCard({ label, value, icon, color }: { label: string; value: strin
 function CommercialProposalSection({
   form,
   calculation,
+  kpNumber,
   copied,
   onCopy,
 }: {
   form: FormData;
   calculation: CalculationResult;
+  kpNumber: string | null;
   copied: boolean;
   onCopy: (v: boolean) => void;
 }) {
@@ -648,6 +655,8 @@ function CommercialProposalSection({
   };
 
   const today = new Date().toLocaleDateString('ru-RU');
+  // Номер КП = номер тендера: последовательный в течение года, с 1 января — заново
+  const kpLabel = kpNumber || `КП-…-${new Date().getFullYear()} (присвоится при создании)`;
 
   const proposalText = useMemo(() => {
     const nmcFormatted = form.nmc ? `${(Number(form.nmc) / 1e6).toFixed(1)} млн` : '—';
@@ -655,7 +664,7 @@ function CommercialProposalSection({
     const costFormatted = `${(calculation.cost / 1e6).toFixed(1)} млн`;
 
     return `КОММЕРЧЕСКОЕ ПРЕДЛОЖЕНИЕ
-№ КП-${today.replace(/\./g, '')}
+№ ${kpLabel}
 Дата: ${today}
 
 ЗАКАЗЧИК: ${form.customer_name || '—'}
@@ -702,7 +711,7 @@ function CommercialProposalSection({
 Тел.: +7 (495) 000-00-00
 E-mail: tender@dokpotok.ru
 `;
-  }, [form, calculation, today]);
+  }, [form, calculation, today, kpLabel]);
 
   const handleCopy = useCallback(async () => {
     try {
@@ -734,8 +743,15 @@ E-mail: tender@dokpotok.ru
         </button>
       </div>
       <div
-        className="rounded-md p-3 text-sm leading-relaxed whitespace-pre-wrap font-mono max-h-64 overflow-y-auto"
-        style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)', color: 'var(--text-secondary)' }}
+        className="rounded-md p-3 leading-relaxed whitespace-pre-wrap max-h-64 overflow-y-auto"
+        style={{
+          background: 'var(--bg-surface)',
+          border: '1px solid var(--border-default)',
+          color: 'var(--text-secondary)',
+          // Оформление КП: Times New Roman 14 (таблицы внутри — 12)
+          fontFamily: "'Times New Roman', Times, serif",
+          fontSize: '14px',
+        }}
       >
         {proposalText}
       </div>

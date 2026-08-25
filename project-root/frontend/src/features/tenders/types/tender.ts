@@ -6,6 +6,8 @@ export interface TenderStandardFile {
 
 export interface Tender {
   id: number;
+  /** Номер КП = номер тендера, последовательный в течение года (КП-N-ГОД) */
+  kp_number?: string;
   name: string;
   customer_name: string;
   project_type: string;

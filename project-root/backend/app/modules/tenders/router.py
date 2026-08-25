@@ -7,7 +7,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, extract
 
 from app.core.config import settings
 from app.db.session import get_db
@@ -42,6 +42,19 @@ def _iso_or_none(dt: Optional[datetime]) -> Optional[str]:
     return dt.isoformat() if dt else None
 
 
+async def _next_kp_number(db: AsyncSession) -> str:
+    """Следующий номер КП: последовательный в течение календарного года.
+
+    С 1 января нового года счёт начинается заново. Формат «КП-<N>-<ГОД>».
+    """
+    year = datetime.now().year
+    result = await db.execute(
+        select(func.count(Tender.id)).where(extract("year", Tender.created_at) == year)
+    )
+    seq = (result.scalar() or 0) + 1
+    return f"КП-{seq}-{year}"
+
+
 @router.get("", response_model=PaginatedTenderList)
 async def list_tenders(
     status: Optional[str] = None,
@@ -73,6 +86,7 @@ async def list_tenders(
     items = [
         TenderListItem(
             id=t.id,
+            kp_number=t.kp_number,
             name=t.name,
             customer_name=t.customer_name,
             project_type=t.project_type,
@@ -101,6 +115,15 @@ async def list_tenders(
         page_size=pagination.page_size,
         pages=pages,
     )
+
+
+@router.get("/next-kp-number")
+async def next_kp_number(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Номер КП, который будет присвоен следующему тендеру (для превью)."""
+    return {"kp_number": await _next_kp_number(db)}
 
 
 # ── Вложения применяемых стандартов ──────────────────────────────
@@ -215,6 +238,7 @@ async def create_tender(
     current_user: User = Depends(get_current_active_user),
 ):
     tender = Tender(
+        kp_number=await _next_kp_number(db),
         name=data.name,
         customer_name=data.customer_name,
         project_type=data.project_type,
@@ -250,6 +274,7 @@ async def create_tender(
     await invalidate_cache("cache:*dashboard*")
     return TenderCreateResponse(
         id=tender.id,
+        kp_number=tender.kp_number,
         name=tender.name,
         status=tender.status,
         stage=tender.stage,
@@ -331,6 +356,7 @@ async def get_tender(
         raise HTTPException(status_code=404, detail="Tender not found")
     return TenderDetail(
         id=tender.id,
+        kp_number=tender.kp_number,
         name=tender.name,
         customer_name=tender.customer_name,
         project_type=tender.project_type,

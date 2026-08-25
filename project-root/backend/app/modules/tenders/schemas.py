@@ -118,6 +118,7 @@ class TenderListItem(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    kp_number: Optional[str] = None
     name: str
     customer_name: str
     project_type: str
@@ -141,6 +142,7 @@ class TenderDetail(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    kp_number: Optional[str] = None
     name: str
     customer_name: str
     project_type: str
@@ -175,6 +177,7 @@ class TenderCreateResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    kp_number: Optional[str] = None
     name: str
     status: str
     stage: str
