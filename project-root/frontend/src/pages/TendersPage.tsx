@@ -5,7 +5,7 @@ import {
   Search, Calendar, TrendingUp, TrendingDown,
   CheckCircle2, XCircle, Clock3, Send, Plus, Filter,
 } from 'lucide-react';
-import { getTenders, updateTenderStage } from '@/features/tenders/api/tenders';
+import { getTenders, getTender, updateTenderStage } from '@/features/tenders/api/tenders';
 import type { Tender } from '@/features/tenders/types/tender';
 import AddTenderModal from '@/features/tenders/components/AddTenderModal';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
@@ -110,6 +110,8 @@ export default function TendersPage() {
   const [loading, setLoading] = useState(true);
   const [archivingId, setArchivingId] = useState<string | null>(null);
   const [pendingArchive, setPendingArchive] = useState<TenderItem | null>(null);
+  const [editingTender, setEditingTender] = useState<Tender | null>(null);
+  const [loadingEditId, setLoadingEditId] = useState<string | null>(null);
 
   const fetchTenders = useCallback(async () => {
     setLoading(true);
@@ -131,6 +133,21 @@ export default function TendersPage() {
     setSelectedTender(t);
     navigate(`/portfolio?tender=${t.id}`);
   }, [navigate]);
+
+  /** «Редактировать» — открыть форму тендера (та же, что «Добавить тендер») с данными. */
+  const openEditForm = useCallback(async (t: TenderItem) => {
+    if (loadingEditId === t.id) return;
+    setLoadingEditId(t.id);
+    try {
+      const detail = await getTender(Number(t.id));
+      setEditingTender(detail);
+      setShowAddModal(true);
+    } catch {
+      alert('Не удалось загрузить данные тендера.');
+    } finally {
+      setLoadingEditId(null);
+    }
+  }, [loadingEditId]);
 
   const archiveTender = useCallback(async (t: TenderItem) => {
     if (archivingId === t.id) return;
@@ -205,7 +222,7 @@ export default function TendersPage() {
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <button
-              onClick={() => setShowAddModal(true)}
+              onClick={() => { setEditingTender(null); setShowAddModal(true); }}
               className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md transition-colors cursor-pointer"
               style={{ background: '#2563EB', color: '#ffffff' }}
               onMouseEnter={(e) => { e.currentTarget.style.background = '#1d4ed8'; }}
@@ -246,7 +263,12 @@ export default function TendersPage() {
           </div>
         </div>
 
-        <AddTenderModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} onCreated={fetchTenders} />
+        <AddTenderModal
+          isOpen={showAddModal}
+          onClose={() => { setShowAddModal(false); setEditingTender(null); }}
+          onCreated={() => { setEditingTender(null); fetchTenders(); }}
+          editTender={editingTender}
+        />
 
         <ConfirmDialog
           isOpen={pendingArchive !== null}
@@ -327,10 +349,11 @@ export default function TendersPage() {
                                 style={{ color: '#2563EB', background: 'rgba(37,99,235,0.1)' }}
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  openTenderCard(t);
+                                  openEditForm(t);
                                 }}
+                                disabled={loadingEditId === t.id}
                               >
-                                Редактировать
+                                {loadingEditId === t.id ? 'Загрузка…' : 'Редактировать'}
                               </button>
                               {t.status !== 'lost' && (
                                 <button

@@ -18,6 +18,11 @@ export const createTender = async (body: Partial<Tender>): Promise<Tender> => {
   return data;
 };
 
+export const updateTender = async (id: number, body: Partial<Tender>): Promise<Tender> => {
+  const { data } = await client.patch(`/tenders/${id}`, body);
+  return data;
+};
+
 /** Загрузка файла стандарта до создания тендера. */
 export const uploadStandardAttachment = async (
   file: File,

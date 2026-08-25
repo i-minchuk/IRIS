@@ -23,6 +23,7 @@ from app.modules.tenders.schemas import (
     TenderListItem,
     TenderStageResponse,
     TenderStageUpdate,
+    TenderUpdate,
     TenderCalculateResponse,
     TenderProjectCreateResponse,
     PortfolioSummary,
@@ -53,6 +54,40 @@ async def _next_kp_number(db: AsyncSession) -> str:
     )
     seq = (result.scalar() or 0) + 1
     return f"КП-{seq}-{year}"
+
+
+def _tender_detail(tender: Tender) -> TenderDetail:
+    return TenderDetail(
+        id=tender.id,
+        kp_number=tender.kp_number,
+        name=tender.name,
+        customer_name=tender.customer_name,
+        project_type=tender.project_type,
+        volume=tender.volume,
+        complexity=tender.complexity,
+        standards=tender.standards,
+        scope_items=tender.scope_items,
+        standard_files=tender.standard_files,
+        start_date=_iso_or_none(tender.start_date),
+        deadline=_iso_or_none(tender.deadline),
+        duration_months=tender.duration_months,
+        nmc=tender.nmc,
+        our_price=tender.our_price,
+        margin_pct=tender.margin_pct,
+        probability=tender.probability,
+        platform=tender.platform,
+        region=tender.region,
+        responsible_id=tender.responsible_id,
+        auction_end_time=_iso_or_none(tender.auction_end_time),
+        stage=tender.stage,
+        loss_reason=tender.loss_reason,
+        calculated_hours=tender.calculated_hours,
+        calculated_cost=tender.calculated_cost,
+        team_size=tender.team_size,
+        team_composition=tender.team_composition,
+        status=tender.status,
+        created_at=_iso_or_none(tender.created_at),
+    )
 
 
 @router.get("", response_model=PaginatedTenderList)
@@ -354,37 +389,28 @@ async def get_tender(
     tender = result.scalar_one_or_none()
     if not tender:
         raise HTTPException(status_code=404, detail="Tender not found")
-    return TenderDetail(
-        id=tender.id,
-        kp_number=tender.kp_number,
-        name=tender.name,
-        customer_name=tender.customer_name,
-        project_type=tender.project_type,
-        volume=tender.volume,
-        complexity=tender.complexity,
-        standards=tender.standards,
-        scope_items=tender.scope_items,
-        standard_files=tender.standard_files,
-        start_date=_iso_or_none(tender.start_date),
-        deadline=_iso_or_none(tender.deadline),
-        duration_months=tender.duration_months,
-        nmc=tender.nmc,
-        our_price=tender.our_price,
-        margin_pct=tender.margin_pct,
-        probability=tender.probability,
-        platform=tender.platform,
-        region=tender.region,
-        responsible_id=tender.responsible_id,
-        auction_end_time=_iso_or_none(tender.auction_end_time),
-        stage=tender.stage,
-        loss_reason=tender.loss_reason,
-        calculated_hours=tender.calculated_hours,
-        calculated_cost=tender.calculated_cost,
-        team_size=tender.team_size,
-        team_composition=tender.team_composition,
-        status=tender.status,
-        created_at=_iso_or_none(tender.created_at),
-    )
+    return _tender_detail(tender)
+
+
+@router.patch("/{tender_id}", response_model=TenderDetail)
+async def update_tender(
+    tender_id: int,
+    data: TenderUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Полное обновление полей тендера (редактирование из формы)."""
+    result = await db.execute(select(Tender).where(Tender.id == tender_id))
+    tender = result.scalar_one_or_none()
+    if not tender:
+        raise HTTPException(status_code=404, detail="Tender not found")
+    for field, value in data.model_dump(exclude_unset=True).items():
+        setattr(tender, field, value)
+    await db.commit()
+    await db.refresh(tender)
+    await invalidate_cache("cache:*trend*")
+    await invalidate_cache("cache:*dashboard*")
+    return _tender_detail(tender)
 
 
 @router.post("/{tender_id}/generate-preview", response_model=TenderDocumentPreviewResponse)

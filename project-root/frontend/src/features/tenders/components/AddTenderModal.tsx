@@ -7,13 +7,15 @@ import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import { resourcesApi } from '@/features/resources/api/resources';
 import type { WorkloadData } from '@/features/resources/api/resources';
-import { createTender, uploadStandardAttachment, getNextKpNumber } from '@/features/tenders/api/tenders';
-import type { TenderStandardFile } from '@/features/tenders/types/tender';
+import { createTender, updateTender, uploadStandardAttachment, getNextKpNumber } from '@/features/tenders/api/tenders';
+import type { Tender, TenderStandardFile } from '@/features/tenders/types/tender';
 
 interface AddTenderModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCreated?: () => void;
+  /** Тендер для редактирования; если задан — форма работает в режиме редактирования */
+  editTender?: Tender | null;
 }
 
 interface FormData {
@@ -101,6 +103,26 @@ function getDefaultForm(): FormData {
   };
 }
 
+/** Форма, предзаполненная данными существующего тендера (режим редактирования). */
+function formFromTender(t: Tender): FormData {
+  return {
+    name: t.name || '',
+    customer_name: t.customer_name || '',
+    project_type: t.project_type || '',
+    scope_items: t.scope_items ?? [],
+    complexity: t.complexity || 'medium',
+    standards: t.standards ?? [],
+    standard_files: t.standard_files ?? [],
+    deadline: t.deadline ? t.deadline.slice(0, 10) : '',
+    nmc: t.nmc != null ? String(t.nmc) : '',
+    our_price: t.our_price != null ? String(t.our_price) : '',
+    margin_pct: t.margin_pct != null ? String(t.margin_pct) : '20',
+    probability: t.probability != null ? String(t.probability) : '50',
+    platform: t.platform || '',
+    region: t.region || '',
+  };
+}
+
 /** Автогенерация наименования из заполненных полей (можно править вручную). */
 function generateTenderName(customer: string, projectType: string): string {
   const typeLabel = PROJECT_TYPES.find((t) => t.value === projectType)?.label || projectType;
@@ -110,7 +132,7 @@ function generateTenderName(customer: string, projectType: string): string {
   return parts.length > 1 ? parts.join(' — ') : '';
 }
 
-export default function AddTenderModal({ isOpen, onClose, onCreated }: AddTenderModalProps) {
+export default function AddTenderModal({ isOpen, onClose, onCreated, editTender }: AddTenderModalProps) {
   const [form, setForm] = useState<FormData>(getDefaultForm);
   const [calculation, setCalculation] = useState<CalculationResult | null>(null);
   const [workload, setWorkload] = useState<WorkloadData | null>(null);
@@ -133,10 +155,19 @@ export default function AddTenderModal({ isOpen, onClose, onCreated }: AddTender
 
   useEffect(() => {
     if (isOpen) {
-      setForm(getDefaultForm());
+      if (editTender) {
+        setForm(formFromTender(editTender));
+        nameEditedRef.current = true;
+        setKpNumber(editTender.kp_number ?? null);
+      } else {
+        setForm(getDefaultForm());
+        nameEditedRef.current = false;
+        getNextKpNumber()
+          .then(setKpNumber)
+          .catch(() => setKpNumber(null));
+      }
       setCalculation(null);
       setShowCalc(false);
-      nameEditedRef.current = false;
       setScopeSelect('');
       setScopeCustom('');
       setCustomStandard('');
@@ -147,11 +178,8 @@ export default function AddTenderModal({ isOpen, onClose, onCreated }: AddTender
         .then((res) => setWorkload(res.data))
         .catch(() => setWorkload(null))
         .finally(() => setLoadingWorkload(false));
-      getNextKpNumber()
-        .then(setKpNumber)
-        .catch(() => setKpNumber(null));
     }
-  }, [isOpen]);
+  }, [isOpen, editTender]);
 
   const handleChange = useCallback(
     (field: keyof FormData, value: string) => {
@@ -308,7 +336,7 @@ export default function AddTenderModal({ isOpen, onClose, onCreated }: AddTender
   const handleSave = useCallback(async () => {
     setSaving(true);
     try {
-      await createTender({
+      const payload = {
         name: form.name,
         customer_name: form.customer_name,
         project_type: form.project_type,
@@ -323,15 +351,18 @@ export default function AddTenderModal({ isOpen, onClose, onCreated }: AddTender
         probability: Number(form.probability) || undefined,
         platform: form.platform,
         region: form.region,
-        status: 'preparation',
-        stage: 'new',
         team_composition: {},
-      });
+      };
+      if (editTender) {
+        await updateTender(editTender.id, payload);
+      } else {
+        await createTender({ ...payload, status: 'preparation', stage: 'new' });
+      }
       onCreated?.();
       onClose();
     } catch (err: any) {
       const status = err?.response?.status;
-      let message = 'Не удалось создать тендер';
+      let message = editTender ? 'Не удалось сохранить тендер' : 'Не удалось создать тендер';
       if (status === 400) message = 'Ошибка в данных';
       else if (status === 403) message = 'Доступ запрещён';
       else if (status === 404) message = 'Не найдено';
@@ -341,7 +372,7 @@ export default function AddTenderModal({ isOpen, onClose, onCreated }: AddTender
     } finally {
       setSaving(false);
     }
-  }, [form, onClose, onCreated]);
+  }, [form, editTender, onClose, onCreated]);
 
   const isValid = useMemo(
     () => form.name.trim() && form.customer_name.trim() && form.project_type,
@@ -354,7 +385,7 @@ export default function AddTenderModal({ isOpen, onClose, onCreated }: AddTender
   }, [workload]);
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Новый тендер" size="xl" className="text-black">
+    <Modal isOpen={isOpen} onClose={onClose} title={editTender ? `Редактирование тендера ${editTender.kp_number || ''}` : 'Новый тендер'} size="xl" className="text-black">
       <div className="space-y-5">
         {/* Основные данные */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -616,7 +647,7 @@ export default function AddTenderModal({ isOpen, onClose, onCreated }: AddTender
           isLoading={saving}
           style={(!isValid || saving) ? undefined : { background: '#2563EB', borderColor: '#2563EB', color: '#fff' }}
         >
-          Создать тендер
+          {editTender ? 'Сохранить изменения' : 'Создать тендер'}
         </Button>
       </div>
     </Modal>
