@@ -8,6 +8,7 @@ import Select from '@/components/ui/Select';
 import { resourcesApi } from '@/features/resources/api/resources';
 import type { WorkloadData } from '@/features/resources/api/resources';
 import { createTender, updateTender, uploadStandardAttachment, getNextKpNumber } from '@/features/tenders/api/tenders';
+import { renderProposalTemplate } from '@/features/tenders/utils/proposalTemplate';
 import type { Tender, TenderStandardFile } from '@/features/tenders/types/tender';
 
 interface AddTenderModalProps {
@@ -183,17 +184,7 @@ export default function AddTenderModal({ isOpen, onClose, onCreated, editTender 
 
   const handleChange = useCallback(
     (field: keyof FormData, value: string) => {
-      setForm((prev) => {
-        const next = { ...prev, [field]: value };
-        // Автогенерация наименования, пока поле не редактировали вручную
-        if (
-          (field === 'customer_name' || field === 'project_type') &&
-          !nameEditedRef.current
-        ) {
-          next.name = generateTenderName(next.customer_name, next.project_type);
-        }
-        return next;
-      });
+      setForm((prev) => ({ ...prev, [field]: value }));
     },
     []
   );
@@ -203,8 +194,9 @@ export default function AddTenderModal({ isOpen, onClose, onCreated, editTender 
     setForm((prev) => ({ ...prev, name: value }));
   }, []);
 
+  /** Генерация наименования из типа объекта и заказчика — только по кнопке. */
   const regenerateName = useCallback(() => {
-    nameEditedRef.current = false;
+    nameEditedRef.current = true;
     setForm((prev) => ({
       ...prev,
       name: generateTenderName(prev.customer_name, prev.project_type),
@@ -214,20 +206,37 @@ export default function AddTenderModal({ isOpen, onClose, onCreated, editTender 
   const addScopeItem = useCallback(() => {
     const item = (scopeSelect === '__custom__' ? scopeCustom : scopeSelect).trim();
     if (!item) return;
-    setForm((prev) =>
-      prev.scope_items.includes(item)
-        ? prev
-        : { ...prev, scope_items: [...prev.scope_items, item] }
-    );
+    setForm((prev) => {
+      if (prev.scope_items.includes(item)) return prev;
+      const items = [...prev.scope_items, item];
+      // Наименование автоподставляется из состава работ, пока не правили вручную
+      return nameEditedRef.current
+        ? { ...prev, scope_items: items }
+        : { ...prev, scope_items: items, name: items.join(', ') };
+    });
     setScopeSelect('');
     setScopeCustom('');
   }, [scopeSelect, scopeCustom]);
 
+  /** Выбор пункта в выпадающем списке сразу подставляет наименование (если не правили вручную). */
+  const handleScopeSelectChange = useCallback((value: string) => {
+    setScopeSelect(value);
+    if (!value || value === '__custom__' || nameEditedRef.current) return;
+    setForm((prev) => {
+      const items = prev.scope_items.includes(value)
+        ? prev.scope_items
+        : [...prev.scope_items, value];
+      return { ...prev, name: items.join(', ') };
+    });
+  }, []);
+
   const removeScopeItem = useCallback((item: string) => {
-    setForm((prev) => ({
-      ...prev,
-      scope_items: prev.scope_items.filter((s) => s !== item),
-    }));
+    setForm((prev) => {
+      const items = prev.scope_items.filter((s) => s !== item);
+      return nameEditedRef.current
+        ? { ...prev, scope_items: items }
+        : { ...prev, scope_items: items, name: items.join(', ') };
+    });
   }, []);
 
   const toggleStandard = useCallback((std: string) => {
@@ -439,7 +448,7 @@ export default function AddTenderModal({ isOpen, onClose, onCreated, editTender 
           <div className="flex gap-2">
             <Select
               value={scopeSelect}
-              onChange={(e) => setScopeSelect(e.target.value)}
+              onChange={(e) => handleScopeSelectChange(e.target.value)}
               options={[
                 ...SCOPE_OPTIONS.map((s) => ({ value: s, label: s })),
                 { value: '__custom__', label: 'Свой вариант…' },
@@ -694,54 +703,25 @@ function CommercialProposalSection({
     const priceFormatted = form.our_price ? `${(Number(form.our_price) / 1e6).toFixed(1)} млн` : '—';
     const costFormatted = `${(calculation.cost / 1e6).toFixed(1)} млн`;
 
-    return `КОММЕРЧЕСКОЕ ПРЕДЛОЖЕНИЕ
-№ ${kpLabel}
-Дата: ${today}
-
-ЗАКАЗЧИК: ${form.customer_name || '—'}
-ОБЪЕКТ: ${form.name || '—'}
-Тип объекта: ${form.project_type || '—'}
-Регион: ${form.region || '—'}
-
-1. ОПИСАНИЕ ОБЪЕКТА И СОСТАВА РАБОТ
-Объект: ${form.name || '—'}
-Тип: ${form.project_type || '—'}
-Состав работ: ${form.scope_items.length > 0 ? form.scope_items.join(', ') : '—'}
-Сложность: ${complexityLabel[form.complexity] || '—'}
-Применяемые стандарты: ${form.standards.length > 0 ? form.standards.join(', ') : '—'}
-
-2. СОСТАВ И ОБЪЁМ РАБОТ
-Разработка рабочей документации, включая:
-• Архитектурные решения (АР)
-• Конструкции железобетонные (КЖ)
-• Конструкции металлические (КМ)
-• Отопление, вентиляция и кондиционирование (ОВиК)
-• Электроснабжение и электроосвещение (ЭОМ)
-• Водоснабжение и канализация (ВК)
-• Технологические решения (при необходимости)
-
-3. СРОКИ ВЫПОЛНЕНИЯ
-Общая длительность: ${calculation.durationMonths} мес.
-Трудоёмкость: ${calculation.totalHours.toLocaleString('ru-RU')} чел-ч
-Команда: ${calculation.teamSize} чел.
-
-4. СТОИМОСТЬ РАБОТ
-Себестоимость: ${costFormatted} ₽
-Наша цена: ${priceFormatted} ₽
-Маржа: ${form.margin_pct || '—'}%
-НМЦ заказчика: ${nmcFormatted} ₽
-
-5. УСЛОВИЯ
-• Срок действия предложения: 30 дней
-• Форма оплаты: по договорённости
-• Гарантия качества: соответствие ГОСТ и СП
-• Платформа тендера: ${form.platform || '—'}
-
----
-ООО «ДокПоток IRIS»
-Тел.: +7 (495) 000-00-00
-E-mail: tender@dokpotok.ru
-`;
+    return renderProposalTemplate({
+      НОМЕР_КП: kpLabel,
+      ДАТА: today,
+      ЗАКАЗЧИК: form.customer_name || '—',
+      ОБЪЕКТ: form.name || '—',
+      ТИП_ОБЪЕКТА: form.project_type || '—',
+      РЕГИОН: form.region || '—',
+      СОСТАВ_РАБОТ: form.scope_items.length > 0 ? form.scope_items.join(', ') : '—',
+      СЛОЖНОСТЬ: complexityLabel[form.complexity] || '—',
+      СТАНДАРТЫ: form.standards.length > 0 ? form.standards.join(', ') : '—',
+      ДЛИТЕЛЬНОСТЬ_МЕС: String(calculation.durationMonths),
+      ТРУДОЁМКОСТЬ_ЧЕЛ_Ч: calculation.totalHours.toLocaleString('ru-RU'),
+      КОМАНДА_ЧЕЛ: String(calculation.teamSize),
+      СЕБЕСТОИМОСТЬ: costFormatted,
+      ЦЕНА: priceFormatted,
+      МАРЖА: form.margin_pct || '—',
+      НМЦ: nmcFormatted,
+      ПЛОЩАДКА: form.platform || '—',
+    });
   }, [form, calculation, today, kpLabel]);
 
   const handleCopy = useCallback(async () => {

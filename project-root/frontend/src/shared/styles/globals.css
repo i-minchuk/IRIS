@@ -219,6 +219,12 @@ select:-webkit-autofill:active {
     --border-default: var(--iris-border-default);
     --accent-engineering: var(--iris-accent-cyan);
 
+    /* Status bridges (Badge variants) */
+    --success: #15803D;
+    --warning: var(--iris-accent-amber);
+    --error: var(--iris-accent-coral);
+    --accent-docs: var(--iris-accent-blue);
+
     /* Fonts */
     --font-heading: 'Montserrat', 'Segoe UI', sans-serif;
     --font-body: 'Inter', 'Segoe UI', system-ui, sans-serif;
@@ -311,6 +317,12 @@ select:-webkit-autofill:active {
     --bg-surface: var(--iris-bg-surface);
     --bg-surface-2: #252B3D;
     --border-default: var(--iris-border-default);
+
+    /* Status bridges (Badge variants) */
+    --success: #34D399;
+    --warning: var(--iris-accent-amber);
+    --error: var(--iris-accent-coral);
+    --accent-docs: var(--iris-accent-blue);
   }
 
   /* ── HIGH CONTRAST THEME ── */
@@ -390,6 +402,12 @@ select:-webkit-autofill:active {
     --bg-surface-2: #111111;
     --border-default: var(--iris-border-default);
     --accent-engineering: var(--iris-accent-cyan);
+
+    /* Status bridges (Badge variants) */
+    --success: #00FF88;
+    --warning: var(--iris-accent-amber);
+    --error: var(--iris-accent-coral);
+    --accent-docs: var(--iris-accent-blue);
   }
 
   /* ── SEPIA THEME ── */
@@ -548,6 +566,12 @@ select:-webkit-autofill:active {
     --bg-surface-2: #0F1623;
     --border-default: var(--iris-border-default);
     --accent-engineering: var(--iris-accent-cyan);
+
+    /* Status bridges (Badge variants) */
+    --success: #34D399;
+    --warning: var(--iris-accent-amber);
+    --error: var(--iris-accent-coral);
+    --accent-docs: var(--iris-accent-blue);
   }
 
   html {

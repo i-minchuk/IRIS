@@ -117,7 +117,7 @@ export default function TenderProcurementTab({ tenderId }: { tenderId: number })
         <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
           График поставок будет доступен после создания заказов на закупку.
           <br />
-          Используйте раздел <strong style={{ color: 'var(--text-primary)' }}>SRM / Закупки</strong> для управления поставками.
+          Используйте раздел <strong style={{ color: 'var(--text-primary)' }}>Закупка/МТО</strong> для управления поставками.
         </div>
       </Card>
     </div>

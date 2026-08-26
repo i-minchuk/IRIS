@@ -7,8 +7,8 @@ from pydantic import BaseModel, Field, ConfigDict
 SupplierStatus = Literal[
     "draft", "verification", "approved", "active", "suspended", "blacklisted", "archived"
 ]
-SupplierType = Literal["manufacturer", "distributor", "contractor", "service_provider"]
-SupplierCategory = Literal["materials", "equipment", "services", "subcontractors"]
+SupplierType = Literal["manufacturer", "distributor", "contractor", "service_provider", "customer"]
+SupplierCategory = Literal["materials", "equipment", "services", "subcontractors", "supply"]
 PurchaseRequestStatus = Literal[
     "draft", "submitted", "manager_review", "director_review", "approved", "rejected",
     "rfq_sent", "quotation_received", "comparison", "po_issued", "completed",
@@ -79,6 +79,21 @@ class SupplierResponse(SupplierBase):
     updated_at: datetime
 
 
+# ---------- Customer ----------
+# Заказчики — отдельное хранилище, поля совпадают с поставщиками.
+
+class CustomerCreate(SupplierBase):
+    """Schema for creating a customer."""
+
+
+class CustomerUpdate(SupplierUpdate):
+    """Schema for updating customer fields (all optional)."""
+
+
+class CustomerResponse(SupplierResponse):
+    """Customer response schema."""
+
+
 # ---------- PurchaseRequest ----------
 
 class PurchaseRequestBase(BaseModel):
@@ -140,6 +155,8 @@ class ContractBase(BaseModel):
     end_date: Optional[datetime] = None
     project_id: int
     project_name: str = Field(..., max_length=255)
+    attachment_name: Optional[str] = Field(None, max_length=255)
+    attachment_stored: Optional[str] = Field(None, max_length=255)
 
 
 class ContractCreate(ContractBase):
@@ -161,6 +178,8 @@ class ContractUpdate(BaseModel):
     end_date: Optional[datetime] = None
     project_id: Optional[int] = None
     project_name: Optional[str] = Field(None, max_length=255)
+    attachment_name: Optional[str] = Field(None, max_length=255)
+    attachment_stored: Optional[str] = Field(None, max_length=255)
 
 
 class ContractResponse(ContractBase):

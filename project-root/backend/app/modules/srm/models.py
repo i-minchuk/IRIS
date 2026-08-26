@@ -16,8 +16,35 @@ class Supplier(Base):
     inn: Mapped[str] = mapped_column(String(20))
     kpp: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     ogrn: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
-    type: Mapped[str] = mapped_column(String(50))  # manufacturer, distributor, contractor, service_provider
-    category: Mapped[str] = mapped_column(String(50))  # materials, equipment, services, subcontractors
+    type: Mapped[str] = mapped_column(String(50))  # manufacturer, distributor, contractor, service_provider, customer
+    category: Mapped[str] = mapped_column(String(50))  # materials, equipment, services, subcontractors, supply
+    status: Mapped[str] = mapped_column(String(50), default="draft")  # draft, verification, approved, active, suspended, blacklisted, archived
+    rating: Mapped[float] = mapped_column(default=0.0)
+    contact_name: Mapped[str] = mapped_column(String(255))
+    contact_email: Mapped[str] = mapped_column(String(255))
+    contact_phone: Mapped[str] = mapped_column(String(50))
+    address: Mapped[str] = mapped_column(String(500))
+    website: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    verified_by_legal: Mapped[bool] = mapped_column(Boolean, default=False)
+    verified_by_accountant: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+
+class Customer(Base):
+    """Заказчик (контрагент по договорам). Отдельное хранилище от поставщиков."""
+    __tablename__ = "srm_customers"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(255))
+    inn: Mapped[str] = mapped_column(String(20))
+    kpp: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    ogrn: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    type: Mapped[str] = mapped_column(String(50))  # manufacturer, distributor, contractor, service_provider, customer
+    category: Mapped[str] = mapped_column(String(50))  # materials, equipment, services, subcontractors, supply
     status: Mapped[str] = mapped_column(String(50), default="draft")  # draft, verification, approved, active, suspended, blacklisted, archived
     rating: Mapped[float] = mapped_column(default=0.0)
     contact_name: Mapped[str] = mapped_column(String(255))
@@ -61,7 +88,7 @@ class Contract(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     number: Mapped[str] = mapped_column(String(100))
     title: Mapped[str] = mapped_column(String(255))
-    supplier_id: Mapped[int] = mapped_column(ForeignKey("srm_suppliers.id"))
+    supplier_id: Mapped[int] = mapped_column(ForeignKey("srm_customers.id"))  # заказчик
     supplier_name: Mapped[str] = mapped_column(String(255))
     status: Mapped[str] = mapped_column(String(50), default="draft")  # draft, legal_review, negotiation, approved, signed, active, completed, terminated
     amount: Mapped[float] = mapped_column(Numeric(15, 2))
@@ -70,6 +97,9 @@ class Contract(Base):
     end_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     project_id: Mapped[int] = mapped_column(ForeignKey("projects.id"))
     project_name: Mapped[str] = mapped_column(String(255))
+    # Прикреплённый файл договора (скан/PDF)
+    attachment_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    attachment_stored: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(

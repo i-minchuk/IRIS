@@ -1,8 +1,8 @@
 // SRM / Procurement types
 
 export type SupplierStatus = 'draft' | 'verification' | 'approved' | 'active' | 'suspended' | 'blacklisted' | 'archived';
-export type SupplierType = 'manufacturer' | 'distributor' | 'contractor' | 'service_provider';
-export type SupplierCategory = 'materials' | 'equipment' | 'services' | 'subcontractors';
+export type SupplierType = 'manufacturer' | 'distributor' | 'contractor' | 'service_provider' | 'customer';
+export type SupplierCategory = 'materials' | 'equipment' | 'services' | 'subcontractors' | 'supply';
 
 export interface Supplier {
   id: number;
@@ -24,6 +24,9 @@ export interface Supplier {
   created_at: string;
   updated_at: string;
 }
+
+/** Заказчик — отдельное хранилище (srm_customers), поля совпадают с поставщиком. */
+export type Customer = Supplier;
 
 export type PurchaseRequestStatus = 'draft' | 'submitted' | 'manager_review' | 'director_review' | 'approved' | 'rejected' | 'rfq_sent' | 'quotation_received' | 'comparison' | 'po_issued' | 'completed';
 
@@ -57,6 +60,8 @@ export interface Contract {
   end_date: string;
   project_id: number;
   project_name: string;
+  attachment_name?: string;
+  attachment_stored?: string;
 }
 
 export type OrderStatus = 'draft' | 'submitted' | 'confirmed' | 'in_production' | 'shipped' | 'in_transit' | 'customs' | 'delivered' | 'inspection' | 'accepted' | 'rejected' | 'completed';

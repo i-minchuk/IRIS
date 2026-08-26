@@ -1,10 +1,11 @@
 import { create } from 'zustand';
 import type {
-  Supplier, PurchaseRequest, Contract, PurchaseOrder, Invoice,
+  Supplier, Customer, PurchaseRequest, Contract, PurchaseOrder, Invoice,
   SupplierStatus, PurchaseRequestStatus, ContractStatus, OrderStatus, InvoiceStatus
 } from '@/types/srm';
 import {
   getSuppliers,
+  getCustomers,
   getPurchaseRequests,
   getContracts,
   getOrders,
@@ -13,6 +14,7 @@ import {
 
 interface SRMState {
   suppliers: Supplier[];
+  customers: Customer[];
   purchaseRequests: PurchaseRequest[];
   contracts: Contract[];
   orders: PurchaseOrder[];
@@ -22,6 +24,7 @@ interface SRMState {
 
   // Fetch actions
   fetchSuppliers: () => Promise<void>;
+  fetchCustomers: () => Promise<void>;
   fetchPurchaseRequests: () => Promise<void>;
   fetchContracts: () => Promise<void>;
   fetchOrders: () => Promise<void>;
@@ -64,6 +67,7 @@ interface SRMState {
 
 export const useSRMStore = create<SRMState>((set, get) => ({
   suppliers: [],
+  customers: [],
   purchaseRequests: [],
   contracts: [],
   orders: [],
@@ -79,6 +83,17 @@ export const useSRMStore = create<SRMState>((set, get) => ({
     } catch (err) {
       console.error('Failed to load suppliers:', err);
       set({ isLoading: false, error: 'Не удалось загрузить поставщиков' });
+    }
+  },
+
+  fetchCustomers: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const customers = await getCustomers();
+      set({ customers, isLoading: false });
+    } catch (err) {
+      console.error('Failed to load customers:', err);
+      set({ isLoading: false, error: 'Не удалось загрузить заказчиков' });
     }
   },
 

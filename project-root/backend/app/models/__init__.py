@@ -101,6 +101,7 @@ from app.modules.releases.models import Release  # noqa
 from app.modules.support.models import SupportTicket, Incident, KBArticle  # noqa
 from app.modules.srm.models import (  # noqa
     Supplier,
+    Customer,
     PurchaseRequest,
     Contract,
     PurchaseOrder,

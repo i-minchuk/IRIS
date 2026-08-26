@@ -1,5 +1,5 @@
 import apiClient from '@/shared/api/client';
-import type { Supplier, PurchaseRequest, Contract, PurchaseOrder, Invoice } from '@/types/srm';
+import type { Supplier, Customer, PurchaseRequest, Contract, PurchaseOrder, Invoice } from '@/types/srm';
 
 /** Ответы backend /srm/* совпадают с типами из @/types/srm,
  * но date-поля могут прийти null — нормализуем в ''. */
@@ -78,6 +78,35 @@ export async function deleteSupplier(id: number): Promise<void> {
   await apiClient.delete(`/srm/suppliers/${id}`);
 }
 
+// ---------- Customers (заказчики — отдельное хранилище) ----------
+
+export type CustomerCreatePayload = SupplierCreatePayload;
+export type CustomerUpdatePayload = SupplierUpdatePayload;
+
+export async function getCustomers(): Promise<Customer[]> {
+  const { data } = await apiClient.get<Customer[]>('/srm/customers');
+  return data;
+}
+
+export async function getCustomer(id: number): Promise<Customer> {
+  const { data } = await apiClient.get<Customer>(`/srm/customers/${id}`);
+  return data;
+}
+
+export async function createCustomer(payload: CustomerCreatePayload): Promise<Customer> {
+  const { data } = await apiClient.post<Customer>('/srm/customers', payload);
+  return data;
+}
+
+export async function updateCustomer(id: number, payload: CustomerUpdatePayload): Promise<Customer> {
+  const { data } = await apiClient.patch<Customer>(`/srm/customers/${id}`, payload);
+  return data;
+}
+
+export async function deleteCustomer(id: number): Promise<void> {
+  await apiClient.delete(`/srm/customers/${id}`);
+}
+
 // ---------- Purchase Requests ----------
 
 export async function getPurchaseRequests(): Promise<PurchaseRequest[]> {
@@ -128,6 +157,27 @@ export async function updateContract(id: number, payload: ContractUpdatePayload)
 
 export async function deleteContract(id: number): Promise<void> {
   await apiClient.delete(`/srm/contracts/${id}`);
+}
+
+/** Загрузка файла договора до создания договора. */
+export async function uploadContractAttachment(file: File): Promise<{ file_name: string; stored_name: string }> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const { data } = await apiClient.post('/srm/contracts/attachments', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return data;
+}
+
+/** Скачивание прикреплённого файла договора (с JWT, через blob). */
+export async function downloadContractAttachment(storedName: string, fileName: string): Promise<void> {
+  const { data } = await apiClient.get(`/srm/contracts/attachments/${storedName}`, { responseType: 'blob' });
+  const url = URL.createObjectURL(data);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 // ---------- Orders ----------

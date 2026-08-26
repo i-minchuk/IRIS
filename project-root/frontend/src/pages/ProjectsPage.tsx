@@ -9,13 +9,15 @@ import {
   Calendar, TrendingUp, TrendingDown,
   CheckCircle2, XCircle, Clock3, Send,
   FileText, HardHat,
-  Plus
+  Plus,
+  Copy, Check, Eye, EyeOff
 } from 'lucide-react';
 import { DepartmentLoad } from '@/components/DepartmentLoad';
 import { getTenders } from '@/features/tenders/api/tenders';
 import type { Tender } from '@/features/tenders/types/tender';
 import { getProjects, type Project } from '@/features/projects/api/projects';
 import { analyticsApi, type DocumentProjectSummary } from '@/features/analytics/api/analytics';
+import { PROPOSAL_TEMPLATE } from '@/features/tenders/utils/proposalTemplate';
 
 /* ═══════════════════════════════════════════════════════════
    TYPES
@@ -354,10 +356,97 @@ export function SolutionsView() {
    TEMPLATES VIEW
    ═══════════════════════════════════════════════════════════ */
 export function TemplatesView() {
+  const [previewId, setPreviewId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const templates = [
+    {
+      id: 'commercial-proposal',
+      name: 'Коммерческое предложение',
+      tag: 'Тендеры',
+      description:
+        'Шаблон КП для тендеров: номер и дата, заказчик, состав работ, сроки, стоимость, условия. ' +
+        'Плейсхолдеры {…} автоматически заполняются из карточки тендера («Добавить тендер» → расчёт трудоёмкости).',
+      content: PROPOSAL_TEMPLATE,
+    },
+  ];
+
+  const handleCopy = async (id: string, content: string) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch {
+      // буфер обмена недоступен — игнорируем
+    }
+  };
+
   return (
-    <div className="p-8 rounded-xl text-center" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
-      <FileText size={32} className="mx-auto mb-2 opacity-40" style={{ color: 'var(--text-muted)' }} />
-      <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Шаблонов пока нет</p>
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      {templates.map((tpl) => (
+        <div
+          key={tpl.id}
+          className="rounded-xl p-4 flex flex-col"
+          style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}
+        >
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <div className="flex items-center gap-2">
+              <FileText size={18} style={{ color: '#2563EB' }} />
+              <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{tpl.name}</h3>
+            </div>
+            <span
+              className="text-xs px-2 py-0.5 rounded-md"
+              style={{ background: 'rgba(124,58,237,0.12)', color: '#7C3AED' }}
+            >
+              {tpl.tag}
+            </span>
+          </div>
+          <p className="text-xs mb-3 flex-1" style={{ color: 'var(--text-secondary)' }}>{tpl.description}</p>
+
+          {previewId === tpl.id && (
+            <div
+              className="rounded-md p-3 mb-3 text-xs leading-relaxed whitespace-pre-wrap max-h-64 overflow-y-auto"
+              style={{
+                background: 'var(--bg-surface-2)',
+                border: '1px solid var(--border-default)',
+                color: 'var(--text-secondary)',
+                fontFamily: 'monospace',
+              }}
+            >
+              {tpl.content}
+            </div>
+          )}
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPreviewId(previewId === tpl.id ? null : tpl.id)}
+              className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-md border transition-colors"
+              style={{
+                background: 'var(--bg-surface)',
+                borderColor: 'var(--border-default)',
+                color: 'var(--text-secondary)',
+              }}
+            >
+              {previewId === tpl.id ? <EyeOff size={12} /> : <Eye size={12} />}
+              {previewId === tpl.id ? 'Скрыть' : 'Предпросмотр'}
+            </button>
+            <button
+              type="button"
+              onClick={() => handleCopy(tpl.id, tpl.content)}
+              className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-md border transition-colors"
+              style={{
+                background: copiedId === tpl.id ? 'rgba(12,114,5,0.12)' : 'var(--bg-surface)',
+                borderColor: copiedId === tpl.id ? 'rgba(12,114,5,0.4)' : 'var(--border-default)',
+                color: copiedId === tpl.id ? '#0C7205' : 'var(--text-secondary)',
+              }}
+            >
+              {copiedId === tpl.id ? <Check size={12} /> : <Copy size={12} />}
+              {copiedId === tpl.id ? 'Скопировано' : 'Копировать шаблон'}
+            </button>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

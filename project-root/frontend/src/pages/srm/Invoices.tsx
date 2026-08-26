@@ -1,9 +1,12 @@
 import { Card } from '@/components/ui';
 import { Badge } from '@/components/ui';
 import { useSRMStore } from '@/stores/srmStore';
+import SrmFormModal, { type SrmField } from '@/features/srm/components/SrmFormModal';
+import { createInvoice, type InvoiceCreatePayload } from '@/features/srm/api/srmApi';
 import type { InvoiceStatus } from '@/types/srm';
-import { FileText, Calendar, AlertCircle, TrendingUp } from 'lucide-react';
-import { useEffect, useMemo } from 'react';
+import { FileText, Calendar, AlertCircle, TrendingUp, Plus } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 
 const STATUS_CONFIG: Record<InvoiceStatus, { label: string; variant: 'success' | 'warning' | 'error' | 'info' | 'neutral' }> = {
   received: { label: 'Получен', variant: 'neutral' },
@@ -17,10 +20,65 @@ const STATUS_CONFIG: Record<InvoiceStatus, { label: string; variant: 'success' |
 export default function InvoicesPage() {
   const invoices = useSRMStore(s => s.invoices);
   const fetchInvoices = useSRMStore(s => s.fetchInvoices);
+  const contracts = useSRMStore(s => s.contracts);
+  const fetchContracts = useSRMStore(s => s.fetchContracts);
+  const orders = useSRMStore(s => s.orders);
+  const fetchOrders = useSRMStore(s => s.fetchOrders);
+  const [isCreateOpen, setCreateOpen] = useState(false);
 
   useEffect(() => {
     fetchInvoices();
-  }, [fetchInvoices]);
+    fetchContracts();
+    fetchOrders();
+  }, [fetchInvoices, fetchContracts, fetchOrders]);
+
+  const invoiceFields: SrmField[] = [
+    { key: 'number', label: 'Номер счёта', required: true, placeholder: 'СЧ-2026-001' },
+    {
+      key: 'contract_id', label: 'Договор', type: 'select', required: true,
+      options: contracts.map(c => ({ value: String(c.id), label: `${c.number} — ${c.title}` })),
+    },
+    {
+      key: 'order_id', label: 'Заказ (необязательно)', type: 'select',
+      options: orders.map(o => ({ value: String(o.id), label: o.number })),
+    },
+    { key: 'amount', label: 'Сумма', type: 'number', required: true, placeholder: '0' },
+    {
+      key: 'currency', label: 'Валюта', type: 'select', required: true, defaultValue: 'RUB',
+      options: [
+        { value: 'RUB', label: 'RUB' },
+        { value: 'USD', label: 'USD' },
+        { value: 'EUR', label: 'EUR' },
+        { value: 'CNY', label: 'CNY' },
+      ],
+    },
+    { key: 'issue_date', label: 'Дата выставления', type: 'date' },
+    { key: 'due_date', label: 'Оплатить до', type: 'date' },
+  ];
+
+  const handleFieldChange = (key: string, value: string, setValue: (k: string, v: string) => void) => {
+    if (key === 'contract_id') {
+      const contract = contracts.find(c => c.id === Number(value));
+      setValue('supplier_name', contract?.supplier_name ?? '');
+    }
+  };
+
+  const handleCreate = async (values: Record<string, string>) => {
+    const payload = {
+      number: values.number.trim(),
+      supplier_name: values.supplier_name ?? '',
+      contract_id: Number(values.contract_id),
+      status: 'received',
+      amount: parseFloat(values.amount) || 0,
+      currency: values.currency || 'RUB',
+      ...(values.order_id ? { order_id: Number(values.order_id) } : {}),
+      ...(values.issue_date ? { issue_date: values.issue_date } : {}),
+      ...(values.due_date ? { due_date: values.due_date } : {}),
+    } as InvoiceCreatePayload;
+    await createInvoice(payload);
+    await fetchInvoices();
+    toast.success('Счёт создан');
+  };
 
   // Use useMemo to avoid recalculating on every render and prevent infinite loops
   const stats = useMemo(() => {
@@ -41,6 +99,15 @@ export default function InvoicesPage() {
           <h1 className="sr-only" style={{ color: 'var(--text-primary)' }}>Счета и платежи</h1>
           <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Управление счетами к оплате</p>
         </div>
+        <button
+          onClick={() => setCreateOpen(true)}
+          className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md transition-colors cursor-pointer"
+          style={{ background: '#2563EB', color: '#ffffff' }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = '#1d4ed8'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = '#2563EB'; }}
+        >
+          <Plus size={13} /> Создать счёт
+        </button>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -137,6 +204,16 @@ export default function InvoicesPage() {
           </Card>
         ))}
       </div>
+
+      <SrmFormModal
+        isOpen={isCreateOpen}
+        onClose={() => setCreateOpen(false)}
+        title="Новый счёт"
+        submitLabel="Создать счёт"
+        fields={invoiceFields}
+        onFieldChange={handleFieldChange}
+        onSubmit={handleCreate}
+      />
     </div>
   );
 }

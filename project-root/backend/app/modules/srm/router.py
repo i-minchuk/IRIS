@@ -1,15 +1,20 @@
 """SRM (procurement) API router: suppliers, purchase requests, contracts, orders, invoices."""
+import os
+import uuid
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Response, UploadFile, File, status
+from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
+from app.core.config import settings
 from app.db.session import get_db
 from app.modules.auth.deps import get_current_active_user
 from app.modules.auth.models import User
 from app.modules.srm.models import (
     Supplier,
+    Customer,
     PurchaseRequest,
     Contract,
     PurchaseOrder,
@@ -19,6 +24,9 @@ from app.modules.srm.schemas import (
     SupplierCreate,
     SupplierUpdate,
     SupplierResponse,
+    CustomerCreate,
+    CustomerUpdate,
+    CustomerResponse,
     PurchaseRequestCreate,
     PurchaseRequestUpdate,
     PurchaseRequestResponse,
@@ -115,6 +123,69 @@ async def delete_supplier(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
+# ---------- Customers ----------
+
+@router.get("/customers", response_model=list[CustomerResponse])
+async def list_customers(
+    status: Optional[str] = None,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    query = select(Customer)
+    if status:
+        query = query.where(Customer.status == status)
+    result = await db.execute(query.order_by(Customer.name))
+    return result.scalars().all()
+
+
+@router.get("/customers/{customer_id}", response_model=CustomerResponse)
+async def get_customer(
+    customer_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    return await _get_or_404(db, Customer, customer_id, "Customer not found")
+
+
+@router.post("/customers", response_model=CustomerResponse, status_code=status.HTTP_201_CREATED)
+async def create_customer(
+    data: CustomerCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    customer = Customer(**data.model_dump())
+    db.add(customer)
+    await db.commit()
+    await db.refresh(customer)
+    return customer
+
+
+@router.patch("/customers/{customer_id}", response_model=CustomerResponse)
+async def update_customer(
+    customer_id: int,
+    data: CustomerUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    customer = await _get_or_404(db, Customer, customer_id, "Customer not found")
+    _apply_update(customer, data)
+    await db.commit()
+    await db.refresh(customer)
+    return customer
+
+
+@router.delete("/customers/{customer_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_customer(
+    customer_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    customer = await _get_or_404(db, Customer, customer_id, "Customer not found")
+    await db.delete(customer)
+    await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 # ---------- Purchase requests ----------
 
 @router.get("/purchase-requests", response_model=list[PurchaseRequestResponse])
@@ -190,6 +261,53 @@ async def delete_purchase_request(
 
 
 # ---------- Contracts ----------
+
+_ALLOWED_CONTRACT_ATTACHMENT_EXT = {".pdf", ".doc", ".docx", ".xls", ".xlsx", ".jpg", ".jpeg", ".png", ".zip"}
+
+
+def _contract_attachments_dir() -> str:
+    path = os.path.join(settings.IRIS_STORAGE_ROOT, "contract_attachments")
+    os.makedirs(path, exist_ok=True)
+    return path
+
+
+@router.post("/contracts/attachments", status_code=status.HTTP_201_CREATED)
+async def upload_contract_attachment(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Загрузить файл договора до создания договора.
+
+    Возвращает {file_name, stored_name}; пара передаётся при создании договора
+    в полях attachment_name / attachment_stored.
+    """
+    ext = os.path.splitext(file.filename or "")[1].lower()
+    if ext not in _ALLOWED_CONTRACT_ATTACHMENT_EXT:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Недопустимый тип файла {ext!r}. Разрешены: {sorted(_ALLOWED_CONTRACT_ATTACHMENT_EXT)}",
+        )
+    stored_name = f"{uuid.uuid4().hex}{ext}"
+    file_path = os.path.join(_contract_attachments_dir(), stored_name)
+    content = await file.read()
+    with open(file_path, "wb") as f:
+        f.write(content)
+    return {"file_name": file.filename, "stored_name": stored_name}
+
+
+@router.get("/contracts/attachments/{stored_name}")
+async def download_contract_attachment(
+    stored_name: str,
+    current_user: User = Depends(get_current_active_user),
+):
+    """Скачать прикреплённый файл договора."""
+    if not stored_name or "/" in stored_name or "\\" in stored_name or ".." in stored_name:
+        raise HTTPException(status_code=400, detail="Некорректное имя файла")
+    file_path = os.path.join(_contract_attachments_dir(), stored_name)
+    if not os.path.isfile(file_path):
+        raise HTTPException(status_code=404, detail="Файл не найден")
+    return FileResponse(file_path, filename=stored_name)
+
 
 @router.get("/contracts", response_model=list[ContractResponse])
 async def list_contracts(

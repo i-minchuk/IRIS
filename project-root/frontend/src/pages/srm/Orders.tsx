@@ -1,9 +1,12 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { Card } from '@/components/ui';
 import { Badge } from '@/components/ui';
 import { useSRMStore } from '@/stores/srmStore';
+import SrmFormModal, { type SrmField } from '@/features/srm/components/SrmFormModal';
+import { createOrder, type PurchaseOrderCreatePayload } from '@/features/srm/api/srmApi';
 import type { OrderStatus } from '@/types/srm';
-import { Package, Truck, Calendar, Building2 } from 'lucide-react';
+import { Package, Truck, Calendar, Building2, Plus } from 'lucide-react';
 
 const STATUS_CONFIG: Record<OrderStatus, { label: string; variant: 'success' | 'warning' | 'error' | 'info' | 'neutral'; step: number }> = {
   draft: { label: 'Черновик', variant: 'neutral', step: 1 },
@@ -25,16 +28,78 @@ const TOTAL_STEPS = 11;
 export default function OrdersPage() {
   const orders = useSRMStore(s => s.orders);
   const fetchOrders = useSRMStore(s => s.fetchOrders);
+  const contracts = useSRMStore(s => s.contracts);
+  const fetchContracts = useSRMStore(s => s.fetchContracts);
+  const [isCreateOpen, setCreateOpen] = useState(false);
 
   useEffect(() => {
     fetchOrders();
-  }, [fetchOrders]);
+    fetchContracts();
+  }, [fetchOrders, fetchContracts]);
+
+  const orderFields: SrmField[] = [
+    { key: 'number', label: 'Номер заказа', required: true, placeholder: 'ЗК-2026-001' },
+    {
+      key: 'contract_id', label: 'Договор', type: 'select', required: true,
+      options: contracts.map(c => ({ value: String(c.id), label: `${c.number} — ${c.title}` })),
+    },
+    { key: 'amount', label: 'Сумма', type: 'number', required: true, placeholder: '0' },
+    {
+      key: 'currency', label: 'Валюта', type: 'select', required: true, defaultValue: 'RUB',
+      options: [
+        { value: 'RUB', label: 'RUB' },
+        { value: 'USD', label: 'USD' },
+        { value: 'EUR', label: 'EUR' },
+        { value: 'CNY', label: 'CNY' },
+      ],
+    },
+    { key: 'order_date', label: 'Дата заказа', type: 'date' },
+    { key: 'delivery_date', label: 'Дата поставки', type: 'date' },
+  ];
+
+  const handleFieldChange = (key: string, value: string, setValue: (k: string, v: string) => void) => {
+    if (key === 'contract_id') {
+      const contract = contracts.find(c => c.id === Number(value));
+      setValue('supplier_name', contract?.supplier_name ?? '');
+      setValue('project_id', contract ? String(contract.project_id) : '');
+      setValue('project_name', contract?.project_name ?? '');
+    }
+  };
+
+  const handleCreate = async (values: Record<string, string>) => {
+    const payload = {
+      number: values.number.trim(),
+      contract_id: Number(values.contract_id),
+      supplier_name: values.supplier_name ?? '',
+      status: 'draft',
+      amount: parseFloat(values.amount) || 0,
+      currency: values.currency || 'RUB',
+      project_id: Number(values.project_id),
+      project_name: values.project_name ?? '',
+      ...(values.order_date ? { order_date: values.order_date } : {}),
+      ...(values.delivery_date ? { delivery_date: values.delivery_date } : {}),
+    } as PurchaseOrderCreatePayload;
+    await createOrder(payload);
+    await fetchOrders();
+    toast.success('Заказ создан');
+  };
 
   return (
     <div className="space-y-6 px-3 md:px-6 py-4 md:pt-2 pb-6">
-      <div>
-        <h1 className="sr-only" style={{ color: 'var(--text-primary)' }}>Заказы</h1>
-        <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Трекинг заказов и поставок</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="sr-only" style={{ color: 'var(--text-primary)' }}>Заказы</h1>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Трекинг заказов и поставок</p>
+        </div>
+        <button
+          onClick={() => setCreateOpen(true)}
+          className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md transition-colors cursor-pointer"
+          style={{ background: '#2563EB', color: '#ffffff' }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = '#1d4ed8'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = '#2563EB'; }}
+        >
+          <Plus size={13} /> Создать заказ
+        </button>
       </div>
 
       <div className="space-y-4">
@@ -88,6 +153,16 @@ export default function OrdersPage() {
           );
         })}
       </div>
+
+      <SrmFormModal
+        isOpen={isCreateOpen}
+        onClose={() => setCreateOpen(false)}
+        title="Новый заказ"
+        submitLabel="Создать заказ"
+        fields={orderFields}
+        onFieldChange={handleFieldChange}
+        onSubmit={handleCreate}
+      />
     </div>
   );
 }
