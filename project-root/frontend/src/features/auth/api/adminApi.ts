@@ -66,6 +66,11 @@ export const adminApi = {
     }
   },
 
+  listEmployeeProfiles: async (): Promise<EmployeeProfile[]> => {
+    const { data } = await client.get('/employees');
+    return data;
+  },
+
   updateEmployeeProfile: async (userId: number, payload: Partial<EmployeeProfile>): Promise<EmployeeProfile> => {
     const { data } = await client.put(`/employees/${userId}`, payload);
     return data;

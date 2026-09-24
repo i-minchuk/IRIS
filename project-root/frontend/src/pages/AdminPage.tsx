@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   Loader2, Shield, UserCheck, UserX, Mail, Calendar,
-  UserPlus, X, KeyRound, Edit3, Save
+  UserPlus, X, KeyRound, Edit3, Save, IdCard, FileWarning, Phone, Copy
 } from 'lucide-react';
 import {
   adminApi,
@@ -88,6 +88,7 @@ function generatePassword(): string {
 /* ─── Main Component ─── */
 export const AdminPage: React.FC = () => {
   const [users, setUsers] = useState<AdminUser[]>([]);
+  const [profiles, setProfiles] = useState<Map<number, EmployeeProfile>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -104,18 +105,42 @@ export const AdminPage: React.FC = () => {
   const [employeeUser, setEmployeeUser] = useState<AdminUser | null>(null);
   const [employeeLoading, setEmployeeLoading] = useState(false);
 
+  /* Employee card view (read-only, по клику на пользователя) */
+  const [viewUser, setViewUser] = useState<AdminUser | null>(null);
+  const [viewProfile, setViewProfile] = useState<EmployeeProfile | null>(null);
+  const [viewLoading, setViewLoading] = useState(false);
+
 
   const fetchUsers = async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await adminApi.getUsers();
+      const [data, profileList] = await Promise.all([
+        adminApi.getUsers(),
+        adminApi.listEmployeeProfiles().catch(() => [] as EmployeeProfile[]),
+      ]);
       setUsers(data);
+      setProfiles(new Map(profileList.map((p) => [p.user_id, p])));
     } catch (err: any) {
       setError(err.response?.data?.detail || err.message || 'Ошибка загрузки пользователей');
     } finally {
       setLoading(false);
     }
+  };
+
+  // Карточка считается заполненной, если в ней указан хотя бы один реквизит
+  const isCardFilled = (userId: number): boolean => {
+    const p = profiles.get(userId);
+    if (!p) return false;
+    return Boolean(
+      p.position ||
+        p.department ||
+        p.phone ||
+        p.hire_date ||
+        (p.skills && p.skills.length > 0) ||
+        (p.certifications && p.certifications.length > 0) ||
+        p.notes
+    );
   };
 
   useEffect(() => {
@@ -180,7 +205,8 @@ export const AdminPage: React.FC = () => {
         certifications: employeeForm.certifications ? employeeForm.certifications.split(',').map((s) => s.trim()).filter(Boolean) : undefined,
         notes: employeeForm.notes || undefined,
       };
-      await adminApi.updateEmployeeProfile(userId, payload);
+      const saved = await adminApi.updateEmployeeProfile(userId, payload);
+      setProfiles((prev) => new Map(prev).set(userId, saved));
       toast.success('Карточка сотрудника сохранена');
       setShowRegister(false);
       setShowEmployeeCard(false);
@@ -219,6 +245,29 @@ export const AdminPage: React.FC = () => {
       setEmployeeForm(initialEmployeeForm);
     } finally {
       setEmployeeLoading(false);
+    }
+  };
+
+  const openViewCard = async (user: AdminUser) => {
+    setViewUser(user);
+    setViewProfile(null);
+    setViewLoading(true);
+    try {
+      const profile = await adminApi.getEmployeeProfile(user.id);
+      setViewProfile(profile);
+    } catch {
+      setViewProfile(null);
+    } finally {
+      setViewLoading(false);
+    }
+  };
+
+  const copyText = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success('Скопировано в буфер обмена');
+    } catch {
+      toast.error('Не удалось скопировать');
     }
   };
 
@@ -310,6 +359,7 @@ export const AdminPage: React.FC = () => {
                 <th className="px-4 py-3 text-left font-semibold" style={{ color: 'var(--text-primary)' }}>Email</th>
                 <th className="px-4 py-3 text-left font-semibold" style={{ color: 'var(--text-primary)' }}>Роль</th>
                 <th className="px-4 py-3 text-left font-semibold" style={{ color: 'var(--text-primary)' }}>Статус</th>
+                <th className="px-4 py-3 text-left font-semibold" style={{ color: 'var(--text-primary)' }}>Карточка</th>
                 <th className="px-4 py-3 text-left font-semibold" style={{ color: 'var(--text-primary)' }}>Создан</th>
                 <th className="px-4 py-3 text-right font-semibold" style={{ color: 'var(--text-primary)' }}>Действия</th>
               </tr>
@@ -318,7 +368,11 @@ export const AdminPage: React.FC = () => {
               {users.map((user) => (
                 <tr key={user.id} className="border-b last:border-b-0 transition-colors hover:opacity-90" style={{ borderColor: 'var(--border-default)' }}>
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => openViewCard(user)}
+                      className="flex items-center gap-2 text-left transition-opacity hover:opacity-75"
+                      title="Посмотреть карточку сотрудника"
+                    >
                       <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold" style={{ backgroundColor: user.is_superuser ? 'var(--iris-accent-purple)' : 'var(--iris-accent-cyan)', color: '#fff' }}>
                         {(user.full_name || user.username || user.email).charAt(0).toUpperCase()}
                       </div>
@@ -330,7 +384,7 @@ export const AdminPage: React.FC = () => {
                           <span className="text-xs px-1.5 py-0.5 rounded font-medium" style={{ backgroundColor: 'var(--iris-accent-purple)', color: '#fff' }}>Superuser</span>
                         )}
                       </div>
-                    </div>
+                    </button>
                   </td>
                   <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>
                     <div className="flex items-center gap-1.5">
@@ -355,6 +409,21 @@ export const AdminPage: React.FC = () => {
                     >
                       {user.is_active ? <UserCheck size={12} /> : <UserX size={12} />}
                       {user.is_active ? 'Активен' : 'Неактивен'}
+                    </button>
+                  </td>
+                  <td className="px-4 py-3">
+                    <button
+                      onClick={() => openEmployeeCard(user)}
+                      disabled={saving}
+                      className="flex items-center gap-1 text-xs px-2 py-1 rounded-full font-medium transition-colors"
+                      style={{
+                        backgroundColor: isCardFilled(user.id) ? 'rgba(12,114,5,0.12)' : 'rgba(100,116,139,0.12)',
+                        color: isCardFilled(user.id) ? '#0C7205' : '#64748B',
+                      }}
+                      title={isCardFilled(user.id) ? 'Карточка заполнена — открыть' : 'Карточка не заполнена — заполнить'}
+                    >
+                      {isCardFilled(user.id) ? <IdCard size={12} /> : <FileWarning size={12} />}
+                      {isCardFilled(user.id) ? 'Заполнена' : 'Не заполнена'}
                     </button>
                   </td>
                   <td className="px-4 py-3" style={{ color: 'var(--text-muted)' }}>
@@ -674,6 +743,174 @@ export const AdminPage: React.FC = () => {
                       Сохранить карточку
                     </button>
                   </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ─── Employee Card View (read-only, по клику на пользователя) ─── */}
+      {viewUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="w-full max-w-md rounded-xl border overflow-hidden max-h-[90vh] overflow-y-auto" style={{ backgroundColor: 'var(--iris-bg-surface)', borderColor: 'var(--iris-border-subtle)' }}>
+            <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: 'var(--iris-border-subtle)' }}>
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold" style={{ backgroundColor: viewUser.is_superuser ? 'var(--iris-accent-purple)' : 'var(--iris-accent-cyan)', color: '#fff' }}>
+                  {(viewUser.full_name || viewUser.username || viewUser.email).charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <h2 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>
+                    {viewUser.full_name || viewUser.username || viewUser.email}
+                  </h2>
+                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                    {roleLabels[viewUser.role] || viewUser.role}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setViewUser(null)}
+                className="p-1 rounded-lg transition-colors"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {viewLoading ? (
+              <div className="flex items-center justify-center gap-2 py-12" style={{ color: 'var(--text-secondary)' }}>
+                <Loader2 size={18} className="animate-spin" />
+                <span>Загрузка карточки...</span>
+              </div>
+            ) : (
+              <div className="p-6 space-y-4">
+                {/* Контакты */}
+                <div className="rounded-lg border p-3 space-y-2" style={{ borderColor: 'var(--iris-border-subtle)', backgroundColor: 'var(--iris-bg-app)' }}>
+                  <div className="flex items-center justify-between gap-2">
+                    <a href={`mailto:${viewUser.email}`} className="flex items-center gap-2 text-sm min-w-0" style={{ color: '#3B82F6' }}>
+                      <Mail size={14} className="flex-shrink-0" />
+                      <span className="truncate">{viewUser.email}</span>
+                    </a>
+                    <button
+                      onClick={() => copyText(viewUser.email)}
+                      className="p-1 rounded transition-colors flex-shrink-0"
+                      style={{ color: 'var(--text-secondary)' }}
+                      title="Скопировать email"
+                    >
+                      <Copy size={12} />
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    {viewProfile?.phone ? (
+                      <a href={`tel:${viewProfile.phone.replace(/[^+\d]/g, '')}`} className="flex items-center gap-2 text-sm" style={{ color: '#3B82F6' }}>
+                        <Phone size={14} />
+                        {viewProfile.phone}
+                      </a>
+                    ) : (
+                      <span className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
+                        <Phone size={14} />
+                        Телефон не указан
+                      </span>
+                    )}
+                    {viewProfile?.phone && (
+                      <button
+                        onClick={() => copyText(viewProfile.phone!)}
+                        className="p-1 rounded transition-colors flex-shrink-0"
+                        style={{ color: 'var(--text-secondary)' }}
+                        title="Скопировать телефон"
+                      >
+                        <Copy size={12} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Реквизиты карточки */}
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                  <div>
+                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>Должность</div>
+                    <div style={{ color: 'var(--text-primary)' }}>{viewProfile?.position || '—'}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>Отдел</div>
+                    <div style={{ color: 'var(--text-primary)' }}>{viewProfile?.department || '—'}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>Дата приёма</div>
+                    <div style={{ color: 'var(--text-primary)' }}>
+                      {viewProfile?.hire_date ? new Date(viewProfile.hire_date).toLocaleDateString('ru-RU') : '—'}
+                    </div>
+                  </div>
+                </div>
+
+                {viewProfile?.skills && viewProfile.skills.length > 0 && (
+                  <div>
+                    <div className="text-xs mb-1.5" style={{ color: 'var(--text-muted)' }}>Навыки</div>
+                    <div className="flex flex-wrap gap-1">
+                      {viewProfile.skills.map((s, i) => (
+                        <span key={i} className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: 'var(--iris-bg-hover)', color: 'var(--text-secondary)' }}>
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {viewProfile?.certifications && viewProfile.certifications.length > 0 && (
+                  <div>
+                    <div className="text-xs mb-1.5" style={{ color: 'var(--text-muted)' }}>Сертификаты</div>
+                    <div className="flex flex-wrap gap-1">
+                      {viewProfile.certifications.map((c, i) => (
+                        <span key={i} className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: 'var(--iris-bg-hover)', color: 'var(--text-secondary)' }}>
+                          {c}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {viewProfile?.notes && (
+                  <div>
+                    <div className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Примечания</div>
+                    <p className="text-sm whitespace-pre-wrap" style={{ color: 'var(--text-secondary)' }}>{viewProfile.notes}</p>
+                  </div>
+                )}
+
+                {!viewProfile && (
+                  <p className="text-sm text-center py-2" style={{ color: 'var(--text-muted)' }}>
+                    Карточка сотрудника не заполнена
+                  </p>
+                )}
+
+                <div className="flex justify-between gap-2 pt-2">
+                  <button
+                    onClick={() =>
+                      copyText(
+                        [
+                          viewUser.full_name || viewUser.username || viewUser.email,
+                          viewProfile?.phone ? `тел. ${viewProfile.phone}` : null,
+                          `email: ${viewUser.email}`,
+                        ].filter(Boolean).join(', ')
+                      )
+                    }
+                    className="px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5"
+                    style={{ color: 'var(--text-secondary)', border: '1px solid var(--iris-border-subtle)' }}
+                  >
+                    <Copy size={14} />
+                    Скопировать контакты
+                  </button>
+                  <button
+                    onClick={() => {
+                      const user = viewUser;
+                      setViewUser(null);
+                      void openEmployeeCard(user);
+                    }}
+                    className="px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5"
+                    style={{ background: '#3B82F6', color: '#fff' }}
+                  >
+                    <Edit3 size={14} />
+                    Редактировать
+                  </button>
                 </div>
               </div>
             )}

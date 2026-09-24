@@ -100,6 +100,7 @@ class PurchaseRequestBase(BaseModel):
     """Shared purchase request fields."""
     model_config = ConfigDict(from_attributes=True)
 
+    number: str = Field("", max_length=100)
     title: str = Field(..., min_length=1, max_length=255)
     description: str = ""
     project_id: int
@@ -120,6 +121,7 @@ class PurchaseRequestUpdate(BaseModel):
     """Schema for updating purchase request fields (all optional)."""
     model_config = ConfigDict(from_attributes=True)
 
+    number: Optional[str] = Field(None, max_length=100)
     title: Optional[str] = Field(None, min_length=1, max_length=255)
     description: Optional[str] = None
     project_id: Optional[int] = None

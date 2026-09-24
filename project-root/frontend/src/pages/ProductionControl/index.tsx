@@ -1,11 +1,12 @@
 import { useTabState } from '@/shared/hooks/useTabState';
 import { PageTabs } from '@/shared/components/PageTabs';
-import React, { useState, useEffect } from 'react';
-import { ProductionProject, MTOItem } from './types/production';
+import React, { useState } from 'react';
+import { ProductionProject } from './types/production';
 import { useProjects } from './hooks/useProjects';
 import { useOperations } from './hooks/useOperations';
 import { useWorkloads } from './hooks/useWorkloads';
 import { useDocuments } from './hooks/useDocuments';
+import { useMtoItems } from './hooks/useMtoItems';
 import { ProductionProjectsList } from './components/ProductionProjectsList';
 import { OperationBoard } from './components/OperationBoard';
 import { WorkloadHeatmap } from './components/WorkloadHeatmap';
@@ -29,7 +30,7 @@ const TABS = [
   { key: 'workload' as TabId, label: 'Загрузка', icon: <Zap size={16} />, color: TAB_COLOR },
   { key: 'documents' as TabId, label: 'Документы', icon: <FileText size={16} />, color: TAB_COLOR },
   { key: 'mto' as TabId, label: 'МТО', icon: <ShoppingCart size={16} />, color: TAB_COLOR },
-  { key: 'strategy' as TabId, label: 'Стратегия', icon: <TrendingUp size={16} />, color: TAB_COLOR },
+  { key: 'strategy' as TabId, label: 'Состояние производства', icon: <TrendingUp size={16} />, color: TAB_COLOR },
 ];
 
 export const ProductionControlPage: React.FC = () => {
@@ -37,29 +38,10 @@ export const ProductionControlPage: React.FC = () => {
   const { operations } = useOperations();
   const { workCenters } = useWorkloads();
   const { documents, addComment } = useDocuments(projects.map(p => p.id));
-  const [mtoItems, setMtoItems] = useState<MTOItem[]>([]);
+  const { mtoItems } = useMtoItems();
   const [activeTab, setActiveTab] = useTabState<TabId>('iris_production_tab', 'pipeline');
   const [selectedProject, setSelectedProject] = useState<ProductionProject | null>(null);
   const searchQuery = useGlobalSearchStore((state) => state.query);
-
-  // Load MTO data from documents API (documents with type 'spec' serve as MTO specs)
-  useEffect(() => {
-    if (documents.length > 0) {
-      // Transform spec documents into MTO items
-      const specs = documents.filter((d) => d.type === 'spec');
-      const items: MTOItem[] = specs.map((spec) => ({
-        id: `mto-${spec.id}`,
-        projectId: spec.projectId,
-        specificationId: spec.id,
-        itemName: spec.name,
-        quantity: 1,
-        status: spec.status === 'approved' ? 'spec_submitted' : spec.status === 'overdue' ? 'in_procurement' : 'spec_draft',
-        submittedToMTO: spec.actualReady,
-        plannedDelivery: spec.plannedReady,
-      }));
-      setMtoItems(items);
-    }
-  }, [documents]);
 
   const filteredProjects = projects.filter(p =>
     p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||

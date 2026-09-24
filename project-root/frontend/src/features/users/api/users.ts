@@ -1,6 +1,22 @@
 import client from '@/shared/api/client';
 import type { User } from '@/types';
 
+export interface EmployeeContact {
+  user_id: number;
+  full_name: string;
+  email: string;
+  role: string;
+  position?: string | null;
+  department?: string | null;
+  phone?: string | null;
+}
+
+/** Справочник контактов — доступен всем авторизованным пользователям. */
+export const getEmployeeDirectory = async (): Promise<EmployeeContact[]> => {
+  const { data } = await client.get('/employees/directory');
+  return data;
+};
+
 export const getUsers = async (): Promise<User[]> => {
   const { data } = await client.get('/auth/users');
   return data;

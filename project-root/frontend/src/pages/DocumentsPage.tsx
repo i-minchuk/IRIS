@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useTabState } from '@/shared/hooks/useTabState';
 import { PageHeader } from '@/shared/components/PageHeader';
 import { PageTabs } from '@/shared/components/PageTabs';
@@ -222,17 +222,77 @@ function RegistryView() {
   const [docs, setDocs] = useState<Document[]>([]);
   const [docsLoading, setDocsLoading] = useState(true);
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [allProjects, setAllProjects] = useState<{ id: number; name: string; status?: string }[]>([]);
+
+  // ── Ресайз колонок реестра (проекты / документы / замечания) ──
+  const DEFAULT_LEFT_W = 220;
+  const DEFAULT_RIGHT_W = 300;
+  const LEFT_MIN = 160, LEFT_MAX = 480;
+  const RIGHT_MIN = 240, RIGHT_MAX = 640;
+  const [leftW, setLeftW] = useState(() => {
+    const v = Number(localStorage.getItem('iris.registry.left_w'));
+    return v >= LEFT_MIN && v <= LEFT_MAX ? v : DEFAULT_LEFT_W;
+  });
+  const [rightW, setRightW] = useState(() => {
+    const v = Number(localStorage.getItem('iris.registry.right_w'));
+    return v >= RIGHT_MIN && v <= RIGHT_MAX ? v : DEFAULT_RIGHT_W;
+  });
+  const [isLg, setIsLg] = useState(() => window.matchMedia('(min-width: 1024px)').matches);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const widthsRef = useRef({ left: leftW, right: rightW });
+  widthsRef.current = { left: leftW, right: rightW };
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const fn = () => setIsLg(mq.matches);
+    mq.addEventListener('change', fn);
+    return () => mq.removeEventListener('change', fn);
+  }, []);
+
+  const startResize = (side: 'left' | 'right') => (e: React.MouseEvent) => {
+    e.preventDefault();
+    const grid = gridRef.current;
+    if (!grid) return;
+    const rect = grid.getBoundingClientRect();
+    const onMove = (ev: MouseEvent) => {
+      if (side === 'left') {
+        setLeftW(Math.min(LEFT_MAX, Math.max(LEFT_MIN, Math.round(ev.clientX - rect.left))));
+      } else {
+        setRightW(Math.min(RIGHT_MAX, Math.max(RIGHT_MIN, Math.round(rect.right - ev.clientX))));
+      }
+    };
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      localStorage.setItem('iris.registry.left_w', String(widthsRef.current.left));
+      localStorage.setItem('iris.registry.right_w', String(widthsRef.current.right));
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  };
+
+  const resetWidths = (side: 'left' | 'right') => () => {
+    if (side === 'left') {
+      setLeftW(DEFAULT_LEFT_W);
+      localStorage.removeItem('iris.registry.left_w');
+    } else {
+      setRightW(DEFAULT_RIGHT_W);
+      localStorage.removeItem('iris.registry.right_w');
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
     setDocsLoading(true);
     Promise.all([
       getDocuments().catch(() => [] as DocumentItem[]),
-      getProjects().catch(() => [] as { id: number; name: string }[]),
+      getProjects().catch(() => [] as { id: number; name: string; status?: string }[]),
       getLeaderboard().catch(() => [] as LeaderboardEntry[]),
     ]).then(([apiDocs, projectsData, leaderboard]) => {
       if (cancelled) return;
-      const projectNames = new Map(extractItems<{ id: number; name: string }>(projectsData).map(p => [p.id, p.name]));
+      const projectsList = extractItems<{ id: number; name: string; status?: string }>(projectsData);
+      const projectNames = new Map(projectsList.map(p => [p.id, p.name]));
+      setAllProjects(projectsList);
       setDocs(extractItems<DocumentItem>(apiDocs).map(d => mapApiDocument(d, projectNames.get(d.project_id) || `Проект #${d.project_id}`)));
       setEmployees(extractItems<LeaderboardEntry>(leaderboard).map((l, i) => ({
         id: String(l.user_id),
@@ -248,12 +308,16 @@ function RegistryView() {
 
   const projects = useMemo(() => {
     const map = new Map<string, Document[]>();
+    // Все проекты «в работе» (active) показываем в колонке, даже без документов
+    allProjects
+      .filter(p => !p.status || p.status === 'active')
+      .forEach(p => { if (!map.has(p.name)) map.set(p.name, []); });
     docs.forEach(d => {
       if (!map.has(d.project)) map.set(d.project, []);
       map.get(d.project)!.push(d);
     });
     return map;
-  }, [docs]);
+  }, [docs, allProjects]);
 
   const projectNames = Array.from(projects.keys());
 
@@ -350,11 +414,21 @@ function RegistryView() {
         </button>
       </div>
 
-      {/* Three-panel grid — responsive */}
-      <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr_300px] gap-0 rounded-xl overflow-hidden" style={{ border: '1px solid var(--border-default)', background: 'var(--card-bg)', minHeight: 'calc(100vh - 240px)' }}>
+      {/* Three-panel grid — responsive, ресайз колонок перетаскиванием разделителей */}
+      <div
+        ref={gridRef}
+        className="grid grid-cols-1 lg:grid-flow-col gap-0 rounded-xl overflow-hidden"
+        style={{
+          border: '1px solid var(--border-default)',
+          background: 'var(--card-bg)',
+          ...(isLg
+            ? { gridTemplateColumns: `${leftW}px 5px minmax(0, 1fr) 5px ${rightW}px`, height: 'calc(100vh - 310px)' }
+            : { minHeight: 'calc(100vh - 310px)' }),
+        }}
+      >
 
         {/* ═══ LEFT: PROJECTS ═══ */}
-        <div className="flex flex-col" style={{ borderRight: '1px solid var(--border-default)', background: 'var(--bg-surface-2)' }}>
+        <div className="flex flex-col min-w-0" style={{ background: 'var(--bg-surface-2)' }}>
           <div className="px-3 py-2 text-xs font-bold uppercase tracking-wider flex items-center justify-between" style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border-default)' }}>
             <span>Проекты</span>
             <span className="text-xs font-normal">{projectNames.length}</span>
@@ -417,8 +491,17 @@ function RegistryView() {
           </div>
         </div>
 
+        {/* Разделитель проекты/документы */}
+        <div
+          onMouseDown={startResize('left')}
+          onDoubleClick={resetWidths('left')}
+          className="hidden lg:block shrink-0 cursor-col-resize"
+          style={{ background: 'var(--border-default)' }}
+          title="Потяните, чтобы изменить ширину. Двойной клик — сброс"
+        />
+
         {/* ═══ CENTER: DOCUMENT VIEWER ═══ */}
-        <div className="flex flex-col" style={{ borderRight: '1px solid var(--border-default)' }}>
+        <div className="flex flex-col min-w-0">
           {/* Center header */}
           <div className="px-3 py-2 text-xs font-bold uppercase tracking-wider flex items-center justify-between" style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border-default)' }}>
             <span>{selectedDoc ? 'Просмотр документа' : 'Документы проекта'}</span>
@@ -514,8 +597,17 @@ function RegistryView() {
           </div>
         </div>
 
+        {/* Разделитель документы/замечания */}
+        <div
+          onMouseDown={startResize('right')}
+          onDoubleClick={resetWidths('right')}
+          className="hidden lg:block shrink-0 cursor-col-resize"
+          style={{ background: 'var(--border-default)' }}
+          title="Потяните, чтобы изменить ширину. Двойной клик — сброс"
+        />
+
         {/* ═══ RIGHT: REMARKS ═══ */}
-        <div className="flex flex-col" style={{ background: 'var(--bg-surface-2)' }}>
+        <div className="flex flex-col min-w-0" style={{ background: 'var(--bg-surface-2)' }}>
           <div className="px-3 py-2 text-xs font-bold uppercase tracking-wider flex items-center justify-between" style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border-default)' }}>
             <span className="flex items-center gap-1.5">
               <MessageSquare size={10} />

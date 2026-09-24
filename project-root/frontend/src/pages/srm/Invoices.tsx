@@ -2,9 +2,9 @@ import { Card } from '@/components/ui';
 import { Badge } from '@/components/ui';
 import { useSRMStore } from '@/stores/srmStore';
 import SrmFormModal, { type SrmField } from '@/features/srm/components/SrmFormModal';
-import { createInvoice, type InvoiceCreatePayload } from '@/features/srm/api/srmApi';
-import type { InvoiceStatus } from '@/types/srm';
-import { FileText, Calendar, AlertCircle, TrendingUp, Plus } from 'lucide-react';
+import { createInvoice, updateInvoice, type InvoiceCreatePayload } from '@/features/srm/api/srmApi';
+import type { Invoice, InvoiceStatus } from '@/types/srm';
+import { FileText, Calendar, AlertCircle, TrendingUp, Plus, Send } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -17,6 +17,38 @@ const STATUS_CONFIG: Record<InvoiceStatus, { label: string; variant: 'success' |
   cancelled: { label: 'Отменён', variant: 'error' },
 };
 
+/** Цветовая маркировка карточки по статусу счёта. */
+const STATUS_BORDER: Record<InvoiceStatus, string> = {
+  received: 'var(--text-tertiary)',
+  verified: 'var(--brand-iris)',
+  approved: 'var(--warning)',
+  paid: 'var(--success)',
+  overdue: 'var(--error)',
+  cancelled: '#9CA3AF',
+};
+
+/** ISO-дата из API → ДД.ММ.ГГГГ */
+function formatDate(iso?: string): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? iso : d.toLocaleDateString('ru-RU');
+}
+
+/** Маршрут движения счёта: какой статус следующий и как называется действие. */
+const NEXT_ACTION: Partial<Record<InvoiceStatus, { next: InvoiceStatus; label: string }>> = {
+  received: { next: 'verified', label: 'Проверить' },
+  verified: { next: 'approved', label: 'Утвердить' },
+  approved: { next: 'paid', label: 'Оплатить' },
+};
+
+type SortMode = 'issue_desc' | 'issue_asc' | 'due_asc';
+
+const SORT_OPTIONS: { value: SortMode; label: string }[] = [
+  { value: 'issue_desc', label: 'Сначала новые' },
+  { value: 'issue_asc', label: 'Сначала старые' },
+  { value: 'due_asc', label: 'По сроку оплаты' },
+];
+
 export default function InvoicesPage() {
   const invoices = useSRMStore(s => s.invoices);
   const fetchInvoices = useSRMStore(s => s.fetchInvoices);
@@ -24,13 +56,17 @@ export default function InvoicesPage() {
   const fetchContracts = useSRMStore(s => s.fetchContracts);
   const orders = useSRMStore(s => s.orders);
   const fetchOrders = useSRMStore(s => s.fetchOrders);
+  const purchaseRequests = useSRMStore(s => s.purchaseRequests);
+  const fetchPurchaseRequests = useSRMStore(s => s.fetchPurchaseRequests);
   const [isCreateOpen, setCreateOpen] = useState(false);
+  const [sortMode, setSortMode] = useState<SortMode>('issue_desc');
 
   useEffect(() => {
     fetchInvoices();
     fetchContracts();
     fetchOrders();
-  }, [fetchInvoices, fetchContracts, fetchOrders]);
+    fetchPurchaseRequests();
+  }, [fetchInvoices, fetchContracts, fetchOrders, fetchPurchaseRequests]);
 
   const invoiceFields: SrmField[] = [
     { key: 'number', label: 'Номер счёта', required: true, placeholder: 'СЧ-2026-001' },
@@ -41,6 +77,10 @@ export default function InvoicesPage() {
     {
       key: 'order_id', label: 'Заказ (необязательно)', type: 'select',
       options: orders.map(o => ({ value: String(o.id), label: o.number })),
+    },
+    {
+      key: 'purchase_request_id', label: 'Заявка на закупку (необязательно)', type: 'select',
+      options: purchaseRequests.map(r => ({ value: String(r.id), label: `${r.number || `#${r.id}`} — ${r.title}` })),
     },
     { key: 'amount', label: 'Сумма', type: 'number', required: true, placeholder: '0' },
     {
@@ -60,6 +100,30 @@ export default function InvoicesPage() {
     if (key === 'contract_id') {
       const contract = contracts.find(c => c.id === Number(value));
       setValue('supplier_name', contract?.supplier_name ?? '');
+    }
+    // Выбор заявки подставляет сумму и валюту счёта
+    if (key === 'purchase_request_id') {
+      const request = purchaseRequests.find(r => r.id === Number(value));
+      if (request) {
+        setValue('amount', String(request.amount));
+        setValue('currency', request.currency);
+      }
+    }
+  };
+
+  // Перевод счёта на следующий шаг маршрута (Получен → Проверен → Утверждён → Оплачен)
+  const handleAdvance = async (invoice: Invoice) => {
+    const action = NEXT_ACTION[invoice.status];
+    if (!action) return;
+    try {
+      await updateInvoice(invoice.id, {
+        status: action.next,
+        ...(action.next === 'paid' ? { paid_date: new Date().toISOString() } : {}),
+      });
+      await fetchInvoices();
+      toast.success(`Счёт ${invoice.number}: ${STATUS_CONFIG[action.next].label}`);
+    } catch {
+      toast.error('Не удалось изменить статус счёта');
     }
   };
 
@@ -91,6 +155,20 @@ export default function InvoicesPage() {
     const overdue = invoices.filter(i => i.status === 'overdue');
     return { totalInvoices, totalPayable, overdueInvoices, approvedCount, overdue };
   }, [invoices]);
+
+  // Сортировка списка счетов по датам
+  const sortedInvoices = useMemo(() => {
+    const ts = (s?: string) => {
+      if (!s) return 0;
+      const t = new Date(s).getTime();
+      return isNaN(t) ? 0 : t;
+    };
+    const arr = [...invoices];
+    if (sortMode === 'issue_desc') arr.sort((a, b) => ts(b.issue_date) - ts(a.issue_date));
+    else if (sortMode === 'issue_asc') arr.sort((a, b) => ts(a.issue_date) - ts(b.issue_date));
+    else arr.sort((a, b) => ts(a.due_date) - ts(b.due_date));
+    return arr;
+  }, [invoices, sortMode]);
 
   return (
     <div className="space-y-6 px-3 md:px-6 py-4 md:pt-2 pb-6">
@@ -174,21 +252,56 @@ export default function InvoicesPage() {
         </Card>
       )}
 
+      <div className="flex items-center justify-end gap-2">
+        <label className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Сортировка:</label>
+        <select
+          value={sortMode}
+          onChange={(e) => setSortMode(e.target.value as SortMode)}
+          className="text-xs px-2 py-1.5 rounded-md border cursor-pointer"
+          style={{
+            backgroundColor: 'var(--bg-surface-2)',
+            borderColor: 'var(--border-default)',
+            color: 'var(--text-secondary)',
+          }}
+        >
+          {SORT_OPTIONS.map(o => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+      </div>
+
       <div className="space-y-3">
-        {invoices.map(invoice => (
-          <Card key={invoice.id} padding="md" className="hover:opacity-90 transition-opacity cursor-pointer">
+        {sortedInvoices.map(invoice => (
+          <Card
+            key={invoice.id}
+            padding="md"
+            className="hover:opacity-90 transition-opacity cursor-pointer"
+            style={{
+              borderLeftWidth: '4px',
+              borderLeftColor: STATUS_BORDER[invoice.status],
+            }}
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <FileText size={16} style={{ color: 'var(--brand-iris)' }} />
+                <FileText size={16} style={{ color: STATUS_BORDER[invoice.status] }} />
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{invoice.number}</span>
                     <Badge variant={STATUS_CONFIG[invoice.status].variant}>
                       {STATUS_CONFIG[invoice.status].label}
                     </Badge>
+                    {NEXT_ACTION[invoice.status] && (
+                      <button
+                        onClick={() => handleAdvance(invoice)}
+                        className="flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-opacity hover:opacity-80 cursor-pointer"
+                        style={{ color: 'var(--brand-iris)', backgroundColor: 'var(--bg-surface-2)' }}
+                      >
+                        <Send size={11} /> {NEXT_ACTION[invoice.status]!.label}
+                      </button>
+                    )}
                   </div>
                   <div className="text-base md:text-lg font-medium leading-relaxed mt-1 mt-0.5" style={{ color: 'var(--text-secondary)' }}>
-                    {invoice.supplier_name} • Выставлен: {invoice.issue_date} • Оплата до: {invoice.due_date}
+                    {invoice.supplier_name} • Выставлен: {formatDate(invoice.issue_date)} • Оплата до: {formatDate(invoice.due_date)}
                   </div>
                 </div>
               </div>
@@ -197,7 +310,7 @@ export default function InvoicesPage() {
                   {invoice.amount.toLocaleString('ru-RU')} {invoice.currency}
                 </div>
                 {invoice.paid_date && (
-                  <div className="text-xs" style={{ color: 'var(--success)' }}>Оплачен: {invoice.paid_date}</div>
+                  <div className="text-xs" style={{ color: 'var(--success)' }}>Оплачен: {formatDate(invoice.paid_date)}</div>
                 )}
               </div>
             </div>

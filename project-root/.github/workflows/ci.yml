@@ -204,9 +204,9 @@ jobs:
           BACKEND_PID=$!
           sleep 5
 
-          # Run E2E tests against running backend
+          # Run E2E tests against running backend (desktop + mobile)
           cd ../frontend
-          npx playwright test --project=chromium
+          npx playwright test --project=chromium --project="Mobile Chrome" --project="Mobile Safari"
 
           # Cleanup
           kill $BACKEND_PID || true

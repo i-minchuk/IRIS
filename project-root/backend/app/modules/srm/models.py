@@ -65,6 +65,7 @@ class PurchaseRequest(Base):
     __tablename__ = "srm_purchase_requests"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    number: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     title: Mapped[str] = mapped_column(String(255))
     description: Mapped[str] = mapped_column(Text)
     project_id: Mapped[int] = mapped_column(ForeignKey("projects.id"))

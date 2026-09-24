@@ -13,6 +13,7 @@ import PurchaseRequestsPage from '@/pages/srm/PurchaseRequests';
 import ContractsPage from '@/pages/srm/Contracts';
 import OrdersPage from '@/pages/srm/Orders';
 import InvoicesPage from '@/pages/srm/Invoices';
+import ProcessFlowPage from '@/pages/srm/ProcessFlow';
 import TenderDetailPage from '@/features/tenders/pages/TenderDetailPage';
 import { ProjectsView, SolutionsView, TemplatesView } from '@/pages/ProjectsPage';
 
@@ -26,10 +27,11 @@ const TENDER_TABS = [
 
 /* ─── SRM Sub-tabs ─── */
 const SRM_TABS = [
-  { id: 'suppliers' as const, label: 'Поставщики' },
-  { id: 'invoices' as const, label: 'Счета' },
   { id: 'purchase-requests' as const, label: 'Заявки на закупку' },
+  { id: 'invoices' as const, label: 'Счета' },
   { id: 'orders' as const, label: 'Заказы' },
+  { id: 'suppliers' as const, label: 'Поставщики' },
+  { id: 'process' as const, label: 'Процесс МТО' },
 ];
 
 /* ─── Main tabs ─── */
@@ -48,7 +50,7 @@ const MAIN_TABS = [
 
 type MainTab = 'tenders' | 'contracts' | 'projects' | 'srm';
 type TenderTab = 'tenders' | 'customers' | 'solutions' | 'templates';
-type SRMTab = 'suppliers' | 'purchase-requests' | 'orders' | 'invoices';
+type SRMTab = 'suppliers' | 'purchase-requests' | 'orders' | 'invoices' | 'process';
 
 /** Строка подвкладок — единый стиль для «Тендеров» и «Закупки». */
 function SubTabs<T extends string>({ tabs, active, onChange }: {
@@ -86,11 +88,11 @@ export default function PortfolioPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useTabState<MainTab>('iris_portfolio_tab', 'tenders');
   const [tenderTab, setTenderTab] = useTabState<TenderTab>('iris_portfolio_tender_tab', 'tenders');
-  const [srmTab, setSrmTab] = useTabState<SRMTab>('iris_portfolio_srm_tab', 'suppliers');
+  const [srmTab, setSrmTab] = useTabState<SRMTab>('iris_portfolio_srm_tab', 'purchase-requests');
   // Защита от устаревших значений в localStorage (solutions/templates как главные вкладки, srm_tab='contracts')
   const currentTab: MainTab = MAIN_TABS.some(t => t.id === activeTab) ? activeTab : 'tenders';
   const activeTenderTab: TenderTab = TENDER_TABS.some(t => t.id === tenderTab) ? tenderTab : 'tenders';
-  const activeSrmTab: SRMTab = SRM_TABS.some(t => t.id === srmTab) ? srmTab : 'suppliers';
+  const activeSrmTab: SRMTab = SRM_TABS.some(t => t.id === srmTab) ? srmTab : 'purchase-requests';
 
   // Sync with URL query params
   const tabParam = searchParams.get('tab');
@@ -206,6 +208,7 @@ export default function PortfolioPage() {
           {activeSrmTab === 'purchase-requests' && <PurchaseRequestsPage />}
           {activeSrmTab === 'orders' && <OrdersPage />}
           {activeSrmTab === 'invoices' && <InvoicesPage />}
+          {activeSrmTab === 'process' && <ProcessFlowPage />}
         </div>
       )}
     </div>

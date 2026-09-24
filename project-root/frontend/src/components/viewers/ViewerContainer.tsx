@@ -19,6 +19,10 @@ interface ViewerContainerProps {
   fileName?: string;
   /** Принудительный демо-режим */
   mock?: boolean;
+  /** Скрыть кнопку скачивания во встроенном тулбаре viewer */
+  hideDownload?: boolean;
+  /** Скрыть имя файла и бейдж типа во встроенном тулбаре viewer */
+  hideFileName?: boolean;
 }
 
 // Loading fallback
@@ -48,6 +52,8 @@ export const ViewerContainer: React.FC<ViewerContainerProps> = ({
   fileName: fileNameProp,
   fileUrl: fileUrlProp,
   mock: mockProp,
+  hideDownload = false,
+  hideFileName = false,
 }) => {
   const fileName = file?.name || fileNameProp || 'Документ';
   const fileUrl = fileUrlProp;
@@ -57,7 +63,7 @@ export const ViewerContainer: React.FC<ViewerContainerProps> = ({
   return (
     <Suspense fallback={<ViewerLoader />}>
       {type === 'pdf' && (
-        <PDFViewer file={file} fileUrl={fileUrl} fileName={fileName} mock={mock} />
+        <PDFViewer file={file} fileUrl={fileUrl} fileName={fileName} mock={mock} hideDownload={hideDownload} hideFileName={hideFileName} />
       )}
       {type === 'image' && (
         <ImageViewer file={file} fileUrl={fileUrl} fileName={fileName} mock={mock} />
@@ -66,7 +72,7 @@ export const ViewerContainer: React.FC<ViewerContainerProps> = ({
         <ExcelViewer file={file} fileUrl={fileUrl} fileName={fileName} mock={mock} />
       )}
       {type === 'word' && (
-        <WordViewer file={file} fileUrl={fileUrl} fileName={fileName} mock={mock} />
+        <WordViewer file={file} fileUrl={fileUrl} fileName={fileName} mock={mock} hideDownload={hideDownload} hideFileName={hideFileName} />
       )}
       {type === 'dwg' && (
         <DWGViewer file={file} fileUrl={fileUrl} fileName={fileName} mock={mock} />

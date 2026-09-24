@@ -8,6 +8,7 @@ import { VariablePanel } from '@/features/variables/components/VariablePanel';
 import { variablesApi } from '@/features/variables/api/variables';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import { useCollaborationStore } from '@/features/collaboration/store/collaborationStore';
+import { useDocumentTimeTracking } from '@/features/time_tracking/hooks/useDocumentTimeTracking';
 import { lockDocument, unlockDocument } from '@/features/collaboration/api/lock';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -32,6 +33,7 @@ const statusColors: Record<string, string> = {
 export const DocumentsPage: React.FC = () => {
   const { user } = useAuthStore();
   const collab = useCollaborationStore();
+  const timeTracking = useDocumentTimeTracking();
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<number | undefined>(undefined);
@@ -151,6 +153,17 @@ export const DocumentsPage: React.FC = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [collab.lockedDocuments, selectedDoc?.id, user?.id]);
+
+  // Автоматический учёт времени: сессия стартует при входе в редактор
+  // с правом редактирования и завершается при выходе из него
+  useEffect(() => {
+    if (activeTab === 'editor' && selectedDoc && !editorReadOnly) {
+      void timeTracking.start(selectedDoc.id, selectedDoc.project_id);
+    } else {
+      void timeTracking.stop();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, selectedDoc?.id, editorReadOnly]);
 
   const handleSelectDoc = async (doc: ProjectTreeDoc) => {
     // Unlock previous document if locked
@@ -281,6 +294,7 @@ export const DocumentsPage: React.FC = () => {
                         readOnly={editorReadOnly}
                         onChange={async (html) => {
                           if (editorReadOnly) return;
+                          timeTracking.trackEdit();
                           setSaveStatus('unsaved');
                           setEditorContent(html);
                           // debounced save

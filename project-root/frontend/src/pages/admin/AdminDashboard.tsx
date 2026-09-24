@@ -10,17 +10,19 @@ import { AuditLogTable } from '@/components/admin/AuditLogTable';
 import SessionList from '@/features/time_tracking/components/SessionList';
 import AnalyticsPanel from '@/features/time_tracking/components/AnalyticsPanel';
 import { adminApi, type AdminUser } from '@/features/auth/api/adminApi';
+import RegistrationTab from './Registration';
 import {
-  Users, Shield, Ticket, AlertTriangle, LayoutDashboard, Timer,
+  Users, Shield, Ticket, AlertTriangle, LayoutDashboard, Timer, UserPlus,
 } from 'lucide-react';
 
-type AdminTab = 'overview' | 'time';
+type AdminTab = 'overview' | 'time' | 'registration';
 
 const TAB_COLOR = '#FF6B6B';
 
 const TABS = [
   { key: 'overview' as AdminTab, label: 'Обзор', icon: <LayoutDashboard size={16} />, color: TAB_COLOR },
   { key: 'time' as AdminTab, label: 'Учёт времени', icon: <Timer size={16} />, color: TAB_COLOR },
+  { key: 'registration' as AdminTab, label: 'Регистрация', icon: <UserPlus size={16} />, color: TAB_COLOR },
 ];
 
 /* ═══════════════════════════════════════════════════════════
@@ -224,6 +226,7 @@ export default function AdminDashboard() {
           <SessionList />
         </div>
       )}
+      {activeTab === 'registration' && <RegistrationTab />}
     </div>
   );
 }

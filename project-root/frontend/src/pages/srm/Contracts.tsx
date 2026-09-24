@@ -1,13 +1,115 @@
-import { Card } from '@/components/ui';
+import { Card, Modal } from '@/components/ui';
 import { Badge } from '@/components/ui';
 import { useSRMStore } from '@/stores/srmStore';
 import SrmFormModal, { type SrmField } from '@/features/srm/components/SrmFormModal';
-import { createContract, updateContract, uploadContractAttachment, downloadContractAttachment, type ContractCreatePayload, type ContractUpdatePayload } from '@/features/srm/api/srmApi';
+import { createContract, updateContract, uploadContractAttachment, downloadContractAttachment, fetchContractAttachmentBlob, type ContractCreatePayload, type ContractUpdatePayload } from '@/features/srm/api/srmApi';
 import { getProjects, type Project } from '@/features/projects/api/projects';
 import type { Contract, ContractStatus } from '@/types/srm';
-import { FileText, Calendar, Building2, TrendingUp, Plus, Send, Paperclip, Pencil } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { FileText, Calendar, Building2, TrendingUp, Plus, Send, Paperclip, Pencil, Eye, Download, X, Loader2, Undo2 } from 'lucide-react';
+import React, { useEffect, useMemo, useState, useRef, lazy, Suspense } from 'react';
 import { toast } from 'sonner';
+
+/** Просмотрщик документов (PDF/Word) — тяжёлый, грузим лениво */
+const ViewerContainer = lazy(() =>
+  import('@/components/viewers/ViewerContainer').then((m) => ({ default: m.ViewerContainer }))
+);
+
+/** Модальное окно с превью файла договора прямо из строки реестра */
+const AttachmentPreviewModal: React.FC<{
+  storedName: string;
+  fileName: string;
+  onClose: () => void;
+}> = ({ storedName, fileName, onClose }) => {
+  const [url, setUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    let objectUrl: string | null = null;
+    fetchContractAttachmentBlob(storedName)
+      .then((blob) => {
+        if (cancelled) return;
+        objectUrl = URL.createObjectURL(blob);
+        setUrl(objectUrl);
+      })
+      .catch(() => {
+        if (!cancelled) setError('Не удалось загрузить файл договора');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [storedName]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)' }}
+      onClick={onClose}
+    >
+      <div
+        className="flex flex-col w-full max-w-5xl h-[85vh] rounded-xl overflow-hidden"
+        style={{ backgroundColor: 'var(--iris-bg-app)', border: '1px solid var(--iris-border-default)' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div
+          className="flex items-center justify-between gap-3 px-4 py-2.5"
+          style={{ borderBottom: '1px solid var(--iris-border-subtle)', backgroundColor: 'var(--iris-bg-surface)' }}
+        >
+          <span className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }} title={fileName}>
+            {fileName}
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => downloadContractAttachment(storedName, fileName)}
+              className="flex items-center gap-1 text-xs px-2 py-1 rounded-md cursor-pointer"
+              style={{ color: 'var(--brand-iris)', backgroundColor: 'var(--bg-surface-2)' }}
+              title="Скачать файл"
+            >
+              <Download size={13} /> Скачать
+            </button>
+            <button
+              onClick={onClose}
+              className="p-1 rounded-md cursor-pointer transition-opacity hover:opacity-70"
+              style={{ color: 'var(--text-secondary)' }}
+              title="Закрыть"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {loading && (
+            <div className="flex-1 flex items-center justify-center gap-2" style={{ color: 'var(--text-secondary)' }}>
+              <Loader2 size={18} className="animate-spin" />
+              <span className="text-sm">Загрузка файла…</span>
+            </div>
+          )}
+          {!loading && error && (
+            <div className="flex-1 flex items-center justify-center text-sm" style={{ color: 'var(--error)' }}>
+              {error}
+            </div>
+          )}
+          {!loading && !error && url && (
+            <Suspense
+              fallback={
+                <div className="flex-1 flex items-center justify-center" style={{ color: 'var(--text-secondary)' }}>
+                  <Loader2 size={18} className="animate-spin" />
+                </div>
+              }
+            >
+              <ViewerContainer fileUrl={url} fileName={fileName} hideDownload hideFileName />
+            </Suspense>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const STATUS_CONFIG: Record<ContractStatus, { label: string; variant: 'success' | 'warning' | 'error' | 'info' | 'neutral' }> = {
   draft: { label: 'Черновик', variant: 'neutral' },
@@ -30,6 +132,12 @@ const NEXT_ACTION: Partial<Record<ContractStatus, { next: ContractStatus; label:
   active: { next: 'completed', label: 'Завершить' },
 };
 
+/** Возврат на предыдущий статус для финальных/ошибочных состояний. */
+const REVERT_TARGET: Partial<Record<ContractStatus, ContractStatus>> = {
+  completed: 'active',
+  terminated: 'active',
+};
+
 /** ISO-дата из API → ДД.ММ.ГГГГ */
 function formatDate(iso: string): string {
   if (!iso) return '—';
@@ -45,6 +153,10 @@ export default function ContractsPage() {
   const [isCreateOpen, setCreateOpen] = useState(false);
   const [editingContract, setEditingContract] = useState<Contract | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [preview, setPreview] = useState<{ stored: string; name: string } | null>(null);
+  const [attachingId, setAttachingId] = useState<number | null>(null);
+  const [statusConfirm, setStatusConfirm] = useState<{ contract: Contract; target: ContractStatus } | null>(null);
+  const attachInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchContracts();
@@ -172,16 +284,35 @@ export default function ContractsPage() {
       })
     : contractFields;
 
-  // Перевод договора на следующий шаг маршрута (Черновик → Юр. проверка → … → Завершён)
-  const handleAdvance = async (contract: Contract) => {
-    const action = NEXT_ACTION[contract.status];
-    if (!action) return;
+  // Смена статуса только после подтверждения в окне
+  const handleStatusConfirm = async () => {
+    if (!statusConfirm) return;
+    const { contract, target } = statusConfirm;
+    setStatusConfirm(null);
     try {
-      await updateContract(contract.id, { status: action.next });
+      await updateContract(contract.id, { status: target });
       await fetchContracts();
-      toast.success(`Договор ${contract.number}: ${STATUS_CONFIG[action.next].label}`);
+      toast.success(`Договор ${contract.number}: ${STATUS_CONFIG[target].label}`);
     } catch {
       toast.error('Не удалось изменить статус договора');
+    }
+  };
+
+  // Прикрепление файла договора прямо из строки (без открытия формы редактирования)
+  const handleAttachFile = async (file: File) => {
+    if (attachingId == null) return;
+    const contractId = attachingId;
+    setAttachingId(null);
+    try {
+      const uploaded = await uploadContractAttachment(file);
+      await updateContract(contractId, {
+        attachment_name: uploaded.file_name,
+        attachment_stored: uploaded.stored_name,
+      });
+      await fetchContracts();
+      toast.success('Файл договора прикреплён');
+    } catch {
+      toast.error('Не удалось прикрепить файл (разрешены PDF и Word)');
     }
   };
 
@@ -269,15 +400,28 @@ export default function ContractsPage() {
                   <Badge variant={STATUS_CONFIG[contract.status].variant}>
                     {STATUS_CONFIG[contract.status].label}
                   </Badge>
-                  {NEXT_ACTION[contract.status] && (
+                  {NEXT_ACTION[contract.status] ? (
                     <button
-                      onClick={() => handleAdvance(contract)}
+                      onClick={() =>
+                        setStatusConfirm({ contract, target: NEXT_ACTION[contract.status]!.next })
+                      }
                       className="flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-opacity hover:opacity-80 cursor-pointer"
                       style={{ color: 'var(--brand-iris)', backgroundColor: 'var(--bg-surface-2)' }}
                     >
                       <Send size={11} /> {NEXT_ACTION[contract.status]!.label}
                     </button>
-                  )}
+                  ) : REVERT_TARGET[contract.status] ? (
+                    <button
+                      onClick={() =>
+                        setStatusConfirm({ contract, target: REVERT_TARGET[contract.status]! })
+                      }
+                      className="flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-opacity hover:opacity-80 cursor-pointer"
+                      style={{ color: 'var(--warning)', backgroundColor: 'var(--bg-surface-2)' }}
+                      title="Вернуть договор на предыдущий статус"
+                    >
+                      <Undo2 size={11} /> Вернуть статус
+                    </button>
+                  ) : null}
                 </div>
                 <h3 className="font-medium mb-1" style={{ color: 'var(--text-primary)' }}>{contract.title}</h3>
                 <div className="flex items-center gap-4 text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>
@@ -288,17 +432,43 @@ export default function ContractsPage() {
                     <Calendar size={12} /> {formatDate(contract.start_date)} — {formatDate(contract.end_date)}
                   </span>
                   <span>Проект: {contract.project_name}</span>
-                  {contract.attachment_name && contract.attachment_stored && (
+                  {contract.attachment_name && contract.attachment_stored ? (
+                    <span className="flex items-center gap-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setPreview({ stored: contract.attachment_stored!, name: contract.attachment_name! });
+                        }}
+                        className="flex items-center gap-1 text-xs transition-opacity hover:opacity-80 cursor-pointer"
+                        style={{ color: 'var(--brand-iris)' }}
+                        title="Посмотреть договор"
+                      >
+                        <Eye size={12} /> {contract.attachment_name}
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          downloadContractAttachment(contract.attachment_stored!, contract.attachment_name!);
+                        }}
+                        className="flex items-center transition-opacity hover:opacity-80 cursor-pointer"
+                        style={{ color: 'var(--text-secondary)' }}
+                        title="Скачать файл договора"
+                      >
+                        <Download size={12} />
+                      </button>
+                    </span>
+                  ) : (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        downloadContractAttachment(contract.attachment_stored!, contract.attachment_name!);
+                        setAttachingId(contract.id);
+                        attachInputRef.current?.click();
                       }}
                       className="flex items-center gap-1 text-xs transition-opacity hover:opacity-80 cursor-pointer"
-                      style={{ color: 'var(--brand-iris)' }}
-                      title="Скачать файл договора"
+                      style={{ color: 'var(--text-secondary)' }}
+                      title="Прикрепить файл договора (PDF или Word)"
                     >
-                      <Paperclip size={12} /> {contract.attachment_name}
+                      <Paperclip size={12} /> Прикрепить файл
                     </button>
                   )}
                 </div>
@@ -340,6 +510,67 @@ export default function ContractsPage() {
         onFieldChange={handleFieldChange}
         onSubmit={handleEdit}
       />
+
+      {/* Подтверждение смены статуса */}
+      <Modal
+        isOpen={statusConfirm !== null}
+        onClose={() => setStatusConfirm(null)}
+        title="Смена статуса договора"
+        size="sm"
+        footer={
+          <>
+            <button
+              onClick={() => setStatusConfirm(null)}
+              className="text-sm px-4 py-2 rounded-md cursor-pointer transition-opacity hover:opacity-80"
+              style={{ color: 'var(--text-secondary)', backgroundColor: 'var(--bg-surface-2)' }}
+            >
+              Отмена
+            </button>
+            <button
+              onClick={handleStatusConfirm}
+              className="text-sm px-4 py-2 rounded-md cursor-pointer transition-opacity hover:opacity-80"
+              style={{ background: '#2563EB', color: '#ffffff' }}
+            >
+              Подтвердить
+            </button>
+          </>
+        }
+      >
+        {statusConfirm && (
+          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+            Перевести договор{' '}
+            <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
+              {statusConfirm.contract.number}
+            </span>{' '}
+            «{statusConfirm.contract.title}» в статус{' '}
+            <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
+              «{STATUS_CONFIG[statusConfirm.target].label}»
+            </span>
+            ?
+          </p>
+        )}
+      </Modal>
+
+      {/* Скрытый input для прикрепления файла прямо из строки договора */}
+      <input
+        ref={attachInputRef}
+        type="file"
+        accept=".pdf,.doc,.docx"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          e.target.value = '';
+          if (file) handleAttachFile(file);
+        }}
+      />
+
+      {preview && (
+        <AttachmentPreviewModal
+          storedName={preview.stored}
+          fileName={preview.name}
+          onClose={() => setPreview(null)}
+        />
+      )}
     </div>
   );
 }

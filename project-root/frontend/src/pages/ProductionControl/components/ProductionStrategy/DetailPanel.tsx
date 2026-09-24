@@ -1,17 +1,27 @@
 import React from 'react';
 import { X, FileText, Users, Clock, AlertTriangle, GitMerge } from 'lucide-react';
 import { Card, Badge, Button } from '@/components/ui';
-import type { BpmnNode, Employee } from './types';
-import { DEPARTMENT_BY_KEY } from './data';
+import type { BpmnNode, Department, Employee } from './types';
 
 interface DetailPanelProps {
   node: BpmnNode;
   employees: Employee[];
+  departments: Department[];
   onClose: () => void;
 }
 
-export const DetailPanel: React.FC<DetailPanelProps> = ({ node, employees, onClose }) => {
-  const dept = DEPARTMENT_BY_KEY[node.dept];
+export const DetailPanel: React.FC<DetailPanelProps> = ({ node, employees, departments, onClose }) => {
+  const dept = departments.find((d) => d.key === node.dept) || {
+    key: '_unknown',
+    label: '—',
+    shortLabel: '—',
+    color: '#64748b',
+    bg: '#f8fafc',
+    border: '#e2e8f0',
+    employees: [],
+    laneY: 0,
+    laneH: 130,
+  };
   const nodeEmployees = employees.filter((e) => node.employees.includes(e.id));
 
   return (
@@ -71,10 +81,10 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({ node, employees, onClo
               <div key={idx} className="flex items-center justify-between rounded-md border border-[var(--iris-border-default)] px-3 py-2">
                 <span className="text-xs text-[var(--iris-text-secondary)]">{k.label}</span>
                 <Badge
-                  variant={k.status === 'crit' ? 'error' : k.status === 'warn' ? 'warning' : 'neutral'}
-                  className="text-xs"
+                  variant={!k.value ? 'neutral' : k.status === 'crit' ? 'error' : k.status === 'warn' ? 'warning' : 'neutral'}
+                  className="min-w-[2.5rem] text-center text-xs"
                 >
-                  {k.value}
+                  {k.value || '\u00A0'}
                 </Badge>
               </div>
             ))}
@@ -109,8 +119,11 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({ node, employees, onClo
                   <div className="text-xs font-medium text-[var(--iris-text-primary)]">{emp.name}</div>
                   <div className="text-xs text-[var(--iris-text-muted)]">{emp.role}</div>
                 </div>
-                <Badge variant={emp.kpiLoad >= 90 ? 'error' : emp.kpiLoad >= 80 ? 'warning' : 'neutral'} className="text-xs">
-                  {emp.kpiLoad}%
+                <Badge
+                  variant={!emp.kpiLoad ? 'neutral' : emp.kpiLoad >= 90 ? 'error' : emp.kpiLoad >= 80 ? 'warning' : 'neutral'}
+                  className="min-w-[2.5rem] text-center text-xs"
+                >
+                  {emp.kpiLoad ? `${emp.kpiLoad}%` : '\u00A0'}
                 </Badge>
               </div>
             ))}

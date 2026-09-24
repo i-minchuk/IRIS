@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import type { BpmnEdge, BpmnNode, IssueType } from './types';
-import { DEPARTMENTS, DEPARTMENT_BY_KEY, OE, GS, BD, BPMN_NODES, BPMN_EDGES } from './data';
+import type { BpmnEdge, BpmnNode, Department, IssueType } from './types';
+import { OE, GS, BD } from './data';
 import { AlertTriangle, GitMerge } from 'lucide-react';
 
 interface BpmnDiagramProps {
-  nodes?: BpmnNode[];
-  edges?: BpmnEdge[];
+  nodes: BpmnNode[];
+  edges: BpmnEdge[];
+  departments: Department[];
   selectedId: string | null;
   onSelect: (id: string | null) => void;
   highlightBottlenecks?: boolean;
@@ -19,8 +20,9 @@ const TOTAL_W = GS + OE;
 const TOTAL_H = BD;
 
 export const BpmnDiagram: React.FC<BpmnDiagramProps> = ({
-  nodes = BPMN_NODES,
-  edges = BPMN_EDGES,
+  nodes,
+  edges,
+  departments,
   selectedId,
   onSelect,
   highlightBottlenecks = true,
@@ -35,6 +37,19 @@ export const BpmnDiagram: React.FC<BpmnDiagramProps> = ({
   const [dragging, setDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [tooltip, setTooltip] = useState<{ x: number; y: number; node: BpmnNode } | null>(null);
+
+  // Тёмная тема: ThemeProvider ставит класс .dark на <html> (dark/midnight/contrast)
+  const [isDark, setIsDark] = useState(
+    () => typeof document !== 'undefined' && document.documentElement.classList.contains('dark')
+  );
+  useEffect(() => {
+    const root = document.documentElement;
+    const observer = new MutationObserver(() => {
+      setIsDark(root.classList.contains('dark'));
+    });
+    observer.observe(root, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
 
   const fit = (size = container) => {
     const scale = Math.min(
@@ -80,15 +95,15 @@ export const BpmnDiagram: React.FC<BpmnDiagramProps> = ({
   };
 
   const issueFill = (issue: IssueType) => {
-    if (issue === 'bottleneck') return '#fff7ed';
-    if (issue === 'duplicate') return '#fdf4ff';
-    return '#ffffff';
+    if (issue === 'bottleneck') return isDark ? '#3a2410' : '#fff7ed';
+    if (issue === 'duplicate') return isDark ? '#2c1e3e' : '#fdf4ff';
+    return isDark ? '#1e2438' : '#ffffff';
   };
 
   const issueStroke = (issue: IssueType) => {
-    if (issue === 'bottleneck') return '#f97316';
-    if (issue === 'duplicate') return '#a855f7';
-    return '#334155';
+    if (issue === 'bottleneck') return isDark ? '#fb923c' : '#f97316';
+    if (issue === 'duplicate') return isDark ? '#c084fc' : '#a855f7';
+    return isDark ? '#8b95ac' : '#334155';
   };
 
   const issueIcon = (issue: IssueType) => {
@@ -99,9 +114,27 @@ export const BpmnDiagram: React.FC<BpmnDiagramProps> = ({
 
   const deptIndex = useMemo(() => {
     const map = new Map<string, number>();
-    DEPARTMENTS.forEach((d, i) => map.set(d.key, i));
+    departments.forEach((d, i) => map.set(d.key, i));
     return map;
-  }, []);
+  }, [departments]);
+
+  const deptByKey = useMemo(() => {
+    const map: Record<string, Department> = {};
+    departments.forEach((d) => { map[d.key] = d; });
+    return map;
+  }, [departments]);
+
+  const FALLBACK_DEPT: Department = {
+    key: '_unknown',
+    label: '—',
+    shortLabel: '—',
+    color: '#64748b',
+    bg: '#f8fafc',
+    border: '#e2e8f0',
+    employees: [],
+    laneY: 0,
+    laneH: 130,
+  };
 
   const getConnectionPoints = (from: BpmnNode, to: BpmnNode): { x1: number; y1: number; x2: number; y2: number } => {
     const cx1 = from.x + from.w / 2;
@@ -139,8 +172,8 @@ export const BpmnDiagram: React.FC<BpmnDiagramProps> = ({
     if (fromIdx !== toIdx) {
       const top = Math.min(fromIdx, toIdx);
       const bottom = Math.max(fromIdx, toIdx);
-      const upperLane = DEPARTMENTS[top];
-      const lowerLane = DEPARTMENTS[bottom];
+      const upperLane = departments[top];
+      const lowerLane = departments[bottom];
       const midY = (upperLane.laneY + upperLane.laneH + lowerLane.laneY) / 2;
       return `M ${x1} ${y1} V ${midY} H ${x2} V ${y2}`;
     }
@@ -213,26 +246,36 @@ export const BpmnDiagram: React.FC<BpmnDiagramProps> = ({
       >
         <defs>
           <marker id="arrow-seq" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
-            <path d="M0,0 L0,6 L9,3 z" fill="#64748b" />
+            <path d="M0,0 L0,6 L9,3 z" fill={isDark ? '#94a3b8' : '#64748b'} />
           </marker>
           <marker id="arrow-cond" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
-            <path d="M0,0 L0,6 L9,3 z" fill="#0ea5e9" />
+            <path d="M0,0 L0,6 L9,3 z" fill={isDark ? '#38bdf8' : '#0ea5e9'} />
           </marker>
           <marker id="arrow-msg" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
-            <path d="M0,0 L0,6 L9,3 z" fill="#10b981" />
+            <path d="M0,0 L0,6 L9,3 z" fill={isDark ? '#34d399' : '#10b981'} />
           </marker>
           <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#e2e8f0" strokeWidth="0.5" />
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke={isDark ? '#3a4158' : '#e2e8f0'} strokeWidth="0.5" />
           </pattern>
         </defs>
         <g transform={`translate(${transform.x}, ${transform.y}) scale(${transform.scale})`}>
           {/* Grid */}
-          <rect x={0} y={0} width={TOTAL_W} height={BD} fill="url(#grid)" opacity={0.4} />
+          <rect x={0} y={0} width={TOTAL_W} height={BD} fill="url(#grid)" opacity={isDark ? 0.25 : 0.4} />
 
           {/* Lanes */}
-          {DEPARTMENTS.map((d) => (
+          {departments.map((d) => (
             <g key={d.key}>
-              <rect x={0} y={d.laneY} width={OE} height={d.laneH} fill={d.bg} stroke={d.border} strokeWidth={1} />
+              <rect
+                x={0}
+                y={d.laneY}
+                width={OE}
+                height={d.laneH}
+                fill={isDark ? d.color : d.bg}
+                fillOpacity={isDark ? 0.14 : 1}
+                stroke={isDark ? d.color : d.border}
+                strokeOpacity={isDark ? 0.4 : 1}
+                strokeWidth={1}
+              />
               {(() => {
                 const words = d.shortLabel.split(' ');
                 const gap = 8;
@@ -264,7 +307,17 @@ export const BpmnDiagram: React.FC<BpmnDiagramProps> = ({
                   </text>
                 );
               })()}
-              <rect x={OE} y={d.laneY} width={GS} height={d.laneH} fill="#ffffff" fillOpacity={0.6} stroke={d.border} strokeDasharray="4 4" />
+              <rect
+                x={OE}
+                y={d.laneY}
+                width={GS}
+                height={d.laneH}
+                fill="#ffffff"
+                fillOpacity={isDark ? 0.04 : 0.6}
+                stroke={isDark ? d.color : d.border}
+                strokeOpacity={isDark ? 0.3 : 1}
+                strokeDasharray="4 4"
+              />
             </g>
           ))}
 
@@ -274,13 +327,18 @@ export const BpmnDiagram: React.FC<BpmnDiagramProps> = ({
             const to = nodeById.get(edge.to);
             if (!from || !to) return null;
             const path = buildPath(from, to);
-            const color = edge.type === 'conditional' ? '#0ea5e9' : edge.type === 'message' ? '#10b981' : '#64748b';
+            const color =
+              edge.type === 'conditional'
+                ? isDark ? '#38bdf8' : '#0ea5e9'
+                : edge.type === 'message'
+                  ? isDark ? '#34d399' : '#10b981'
+                  : isDark ? '#94a3b8' : '#64748b';
             const marker = edge.type === 'conditional' ? 'url(#arrow-cond)' : edge.type === 'message' ? 'url(#arrow-msg)' : 'url(#arrow-seq)';
             return (
               <g key={edge.id}>
                 <path d={path} fill="none" stroke={color} strokeWidth={2} markerEnd={marker} />
                 {edge.label && (
-                  <text fontSize={10} fill="#475569">
+                  <text fontSize={10} fill={isDark ? '#aab4c8' : '#475569'}>
                     <textPath href={`#${edge.id}-path`} startOffset="50%" textAnchor="middle">
                       {edge.label}
                     </textPath>
@@ -293,7 +351,7 @@ export const BpmnDiagram: React.FC<BpmnDiagramProps> = ({
 
           {/* Nodes */}
           {nodes.map((node) => {
-            const dept = DEPARTMENT_BY_KEY[node.dept];
+            const dept = deptByKey[node.dept] || FALLBACK_DEPT;
             const visible = issueVisible(node.issue);
             const fill = issueFill(node.issue);
             const stroke = issueStroke(node.issue);
@@ -318,7 +376,7 @@ export const BpmnDiagram: React.FC<BpmnDiagramProps> = ({
                 >
                   <circle cx={node.w / 2} cy={node.h / 2} r={node.w / 2} fill={fill} stroke={stroke} strokeWidth={2} />
                   {node.id === 'end' && <circle cx={node.w / 2} cy={node.h / 2} r={node.w / 2 - 4} fill="none" stroke={stroke} strokeWidth={2} />}
-                  <text x={node.w / 2} y={node.h + 16} textAnchor="middle" fontSize={10} fill="#334155">
+                  <text x={node.w / 2} y={node.h + 16} textAnchor="middle" fontSize={10} fill={isDark ? '#c7cddd' : '#334155'}>
                     {node.label}
                   </text>
                 </g>
@@ -348,7 +406,7 @@ export const BpmnDiagram: React.FC<BpmnDiagramProps> = ({
                     stroke={stroke}
                     strokeWidth={2}
                   />
-                  <text x={s / 2} y={s + 16} textAnchor="middle" fontSize={9} fill="#334155">
+                  <text x={s / 2} y={s + 16} textAnchor="middle" fontSize={9} fill={isDark ? '#c7cddd' : '#334155'}>
                     {node.label}
                   </text>
                 </g>

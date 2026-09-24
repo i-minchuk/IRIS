@@ -27,6 +27,8 @@ from app.modules.monitoring.router import router as monitoring_router
 from app.modules.releases.router import router as releases_router
 from app.modules.support.router import router as support_router
 from app.modules.srm.router import router as srm_router
+from app.modules.production.router import router as production_router
+from app.modules.employees.router import router as employees_router
 
 api_router = APIRouter()
 
@@ -55,3 +57,5 @@ api_router.include_router(monitoring_router, prefix="/monitoring", tags=["Monito
 api_router.include_router(releases_router, prefix=f"{settings.API_V1_STR}/releases", tags=["Releases"])
 api_router.include_router(support_router, prefix=f"{settings.API_V1_STR}/support", tags=["Support"])
 api_router.include_router(srm_router, prefix=f"{settings.API_V1_STR}/srm", tags=["SRM"])
+api_router.include_router(production_router, prefix=f"{settings.API_V1_STR}/production", tags=["Production"])
+api_router.include_router(employees_router, prefix=f"{settings.API_V1_STR}/employees", tags=["Employees"])

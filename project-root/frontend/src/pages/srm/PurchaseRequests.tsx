@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { Card } from '@/components/ui';
 import { useSRMStore } from '@/stores/srmStore';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import SrmFormModal, { type SrmField } from '@/features/srm/components/SrmFormModal';
-import { createPurchaseRequest, updatePurchaseRequest, type PurchaseRequestCreatePayload } from '@/features/srm/api/srmApi';
+import { createPurchaseRequest, updatePurchaseRequest, createOrder, type PurchaseRequestCreatePayload, type PurchaseOrderCreatePayload } from '@/features/srm/api/srmApi';
 import { getProjects, type Project } from '@/features/projects/api/projects';
 import type { PurchaseRequestStatus, PurchaseRequest } from '@/types/srm';
 import { Calendar, User, ArrowRight, Plus } from 'lucide-react';
@@ -32,15 +32,43 @@ const PRIORITY_COLORS = {
 export default function PurchaseRequestsPage() {
   const requests = useSRMStore(s => s.purchaseRequests);
   const fetchPurchaseRequests = useSRMStore(s => s.fetchPurchaseRequests);
+  const orders = useSRMStore(s => s.orders);
+  const fetchOrders = useSRMStore(s => s.fetchOrders);
+  const contracts = useSRMStore(s => s.contracts);
+  const fetchContracts = useSRMStore(s => s.fetchContracts);
   const user = useAuthStore(s => s.user);
   const [isCreateOpen, setCreateOpen] = useState(false);
+  const [orderRequest, setOrderRequest] = useState<PurchaseRequest | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
 
   useEffect(() => {
     getProjects().then(setProjects).catch(() => setProjects([]));
-  }, []);
+    fetchOrders();
+    fetchContracts();
+  }, [fetchOrders, fetchContracts]);
+
+  // Автоматическая нумерация заказов в пределах текущего года: ЗК-ГГГГ-NNN
+  const nextOrderNumber = useMemo(() => {
+    const year = new Date().getFullYear();
+    const maxSeq = orders.reduce((max, o) => {
+      const m = o.number.match(/^ЗК-(\d{4})-(\d+)$/);
+      return m && Number(m[1]) === year ? Math.max(max, Number(m[2])) : max;
+    }, 0);
+    return `ЗК-${year}-${String(maxSeq + 1).padStart(3, '0')}`;
+  }, [orders]);
+
+  // Автоматическая нумерация заявок в пределах текущего года: ЗП-ГГГГ-NNN
+  const nextRequestNumber = useMemo(() => {
+    const year = new Date().getFullYear();
+    const maxSeq = requests.reduce((max, r) => {
+      const m = (r.number ?? '').match(/^ЗП-(\d{4})-(\d+)$/);
+      return m && Number(m[1]) === year ? Math.max(max, Number(m[2])) : max;
+    }, 0);
+    return `ЗП-${year}-${String(maxSeq + 1).padStart(3, '0')}`;
+  }, [requests]);
 
   const requestFields: SrmField[] = [
+    { key: 'number', label: 'Номер заявки', required: true, defaultValue: nextRequestNumber, readOnly: true },
     { key: 'title', label: 'Название заявки', required: true, fullWidth: true },
     { key: 'description', label: 'Описание', type: 'textarea', fullWidth: true },
     {
@@ -79,6 +107,7 @@ export default function PurchaseRequestsPage() {
 
   const handleCreate = async (values: Record<string, string>) => {
     const payload = {
+      number: values.number.trim(),
       title: values.title.trim(),
       description: values.description?.trim() ?? '',
       project_id: Number(values.project_id),
@@ -111,9 +140,62 @@ export default function PurchaseRequestsPage() {
       await updatePurchaseRequest(request.id, { status: next.status });
       await fetchPurchaseRequests();
       toast.success(`Заявка #${request.id} перенесена: ${next.label}`);
+      // При переходе в колонку «Заказ» — автоматически формируем заказ по заявке
+      if (next.status === 'po_issued') {
+        setOrderRequest(request);
+      }
     } catch {
       toast.error('Не удалось изменить статус заявки');
     }
+  };
+
+  // Форма заказа, предзаполненная данными заявки
+  const orderFields: SrmField[] = orderRequest ? [
+    { key: 'number', label: 'Номер заказа', required: true, defaultValue: nextOrderNumber, readOnly: true },
+    {
+      key: 'contract_id', label: 'Договор', type: 'select', required: true,
+      options: contracts.map(c => ({ value: String(c.id), label: `${c.number} — ${c.title}` })),
+    },
+    { key: 'amount', label: 'Сумма', type: 'number', required: true, defaultValue: String(orderRequest.amount) },
+    {
+      key: 'currency', label: 'Валюта', type: 'select', required: true, defaultValue: orderRequest.currency || 'RUB',
+      options: [
+        { value: 'RUB', label: 'RUB' },
+        { value: 'USD', label: 'USD' },
+        { value: 'EUR', label: 'EUR' },
+        { value: 'CNY', label: 'CNY' },
+      ],
+    },
+    { key: 'order_date', label: 'Дата заказа', type: 'date', defaultValue: new Date().toISOString().slice(0, 10) },
+    { key: 'delivery_date', label: 'Дата поставки', type: 'date', defaultValue: orderRequest.deadline ? orderRequest.deadline.slice(0, 10) : '' },
+  ] : [];
+
+  const handleOrderFieldChange = (key: string, value: string, setValue: (k: string, v: string) => void) => {
+    if (key === 'contract_id') {
+      const contract = contracts.find(c => c.id === Number(value));
+      setValue('supplier_name', contract?.supplier_name ?? '');
+      setValue('project_id', contract ? String(contract.project_id) : '');
+      setValue('project_name', contract?.project_name ?? '');
+    }
+  };
+
+  const handleOrderCreate = async (values: Record<string, string>) => {
+    if (!orderRequest) return;
+    const payload = {
+      number: values.number.trim(),
+      contract_id: Number(values.contract_id),
+      supplier_name: values.supplier_name ?? '',
+      status: 'draft',
+      amount: parseFloat(values.amount) || 0,
+      currency: values.currency || 'RUB',
+      project_id: values.project_id ? Number(values.project_id) : orderRequest.project_id,
+      project_name: values.project_name || orderRequest.project_name,
+      ...(values.order_date ? { order_date: values.order_date } : {}),
+      ...(values.delivery_date ? { delivery_date: values.delivery_date } : {}),
+    } as PurchaseOrderCreatePayload;
+    await createOrder(payload);
+    await fetchOrders();
+    toast.success(`Заказ ${payload.number} сформирован по заявке #${orderRequest.id}`);
   };
 
   const getNextColumn = (request: PurchaseRequest) => {
@@ -170,7 +252,7 @@ export default function PurchaseRequestsPage() {
                       <span className="text-xs font-medium" style={{ color: PRIORITY_COLORS[request.priority] }}>
                         {request.priority === 'critical' ? 'Критический' : request.priority === 'high' ? 'Высокий' : request.priority === 'medium' ? 'Средний' : 'Низкий'}
                       </span>
-                      <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>#{request.id}</span>
+                      <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{request.number || `#${request.id}`}</span>
                     </div>
 
                     <h4 className="text-sm font-medium mb-1" style={{ color: 'var(--text-primary)' }}>
@@ -222,6 +304,16 @@ export default function PurchaseRequestsPage() {
         fields={requestFields}
         onFieldChange={handleFieldChange}
         onSubmit={handleCreate}
+      />
+
+      <SrmFormModal
+        isOpen={orderRequest !== null}
+        onClose={() => setOrderRequest(null)}
+        title={`Заказ по заявке #${orderRequest?.id ?? ''}`}
+        submitLabel="Сформировать заказ"
+        fields={orderFields}
+        onFieldChange={handleOrderFieldChange}
+        onSubmit={handleOrderCreate}
       />
     </div>
   );

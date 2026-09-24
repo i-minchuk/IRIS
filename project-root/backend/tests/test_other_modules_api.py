@@ -246,7 +246,7 @@ class TestVariables:
             var.id = 1
             var.key = "thickness"
             var.value = "10mm"
-            var.scope = "project"  # <-- added
+            var.scope = "project"
             mock_db = _make_mock_db(doc=var)
 
             async def override_get_db():
@@ -457,6 +457,12 @@ class TestResources:
                 response = client.get("/api/v1/resources/workload")
                 assert response.status_code == 200
                 data = response.json()
-                assert "weeks" in data or "team" in data
+                assert "weeks" in data
+                assert isinstance(data["weeks"], list)
+                assert "team" in data
+                assert isinstance(data["team"], list)
+                assert "active_projects" in data
+                assert "total_team_size" in data
+                assert isinstance(data["total_team_size"], int)
             finally:
                 app.dependency_overrides.pop(get_db, None)

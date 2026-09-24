@@ -180,6 +180,12 @@ export async function downloadContractAttachment(storedName: string, fileName: s
   URL.revokeObjectURL(url);
 }
 
+/** Получить файл договора как Blob для встроенного превью (с JWT). */
+export async function fetchContractAttachmentBlob(storedName: string): Promise<Blob> {
+  const { data } = await apiClient.get(`/srm/contracts/attachments/${storedName}`, { responseType: 'blob' });
+  return data;
+}
+
 // ---------- Orders ----------
 
 export async function getOrders(): Promise<PurchaseOrder[]> {

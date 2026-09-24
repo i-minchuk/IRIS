@@ -262,7 +262,8 @@ async def delete_purchase_request(
 
 # ---------- Contracts ----------
 
-_ALLOWED_CONTRACT_ATTACHMENT_EXT = {".pdf", ".doc", ".docx", ".xls", ".xlsx", ".jpg", ".jpeg", ".png", ".zip"}
+# Договоры: только просматриваемые форматы — PDF и Word (редактируемый формат)
+_ALLOWED_CONTRACT_ATTACHMENT_EXT = {".pdf", ".doc", ".docx"}
 
 
 def _contract_attachments_dir() -> str:

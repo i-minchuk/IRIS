@@ -75,6 +75,7 @@ class TestAuthRegister:
                 data = response.json()
                 assert data["email"] == "new@example.com"
                 assert data["full_name"] == "New User"
+                assert "hashed_password" not in data, "hashed_password must not be exposed in response"
                 mock_get.assert_awaited_once_with(email="new@example.com")
                 mock_create.assert_awaited_once()
 

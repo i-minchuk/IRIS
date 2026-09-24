@@ -1,4 +1,4 @@
-export type DepartmentKey = 'sales' | 'design' | 'supply' | 'assembly' | 'shipping';
+export type DepartmentKey = string;
 export type NodeType = 'event' | 'gateway' | 'task';
 export type IssueType = 'ok' | 'bottleneck' | 'duplicate';
 export type EdgeType = 'sequence' | 'conditional' | 'message';
@@ -54,6 +54,7 @@ export interface Employee {
   role: string;
   dept: DepartmentKey;
   kpiLoad: number;
+  userId?: number | null;
   tasks: string[];
 }
 

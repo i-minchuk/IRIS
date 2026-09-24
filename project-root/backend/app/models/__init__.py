@@ -107,3 +107,11 @@ from app.modules.srm.models import (  # noqa
     PurchaseOrder,
     Invoice,
 )
+from app.modules.production.models import (  # noqa
+    ProdDepartment,
+    ProdEmployee,
+    ProdProcessNode,
+    ProdProcessEdge,
+    ProdProblem,
+)
+from app.modules.employees.models import EmployeeProfile  # noqa

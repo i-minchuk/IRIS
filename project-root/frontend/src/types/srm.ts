@@ -32,6 +32,7 @@ export type PurchaseRequestStatus = 'draft' | 'submitted' | 'manager_review' | '
 
 export interface PurchaseRequest {
   id: number;
+  number?: string;
   title: string;
   description: string;
   project_id: number;

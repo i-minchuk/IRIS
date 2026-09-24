@@ -2,6 +2,33 @@ import { useState, useEffect } from 'react';
 import { ProjectDocument } from '../types/production';
 import { getDocuments } from '@/features/documents/api/documents';
 
+/** Статусы backend-документов → статусы трекера документов производства. */
+const STATUS_MAP: Record<string, ProjectDocument['status']> = {
+  draft: 'draft',
+  in_review: 'in_review',
+  crs_pending: 'in_review',
+  review: 'in_review',
+  approved: 'approved',
+  crs_approved: 'approved',
+  confirmed: 'approved',
+  sent: 'sent',
+  in_production: 'in_production',
+  rejected: 'rejected',
+  overdue: 'overdue',
+};
+
+/** Типы документов (doc_type) → типы производственного трекера. */
+function mapDocType(value?: string): ProjectDocument['type'] {
+  const v = (value || '').toLowerCase();
+  if (v.includes('spec') || v.includes('спец')) return 'spec';
+  if (v.includes('draw') || v.includes('черт')) return 'drawing';
+  if (v === 'rd' || v === 'рд') return 'rd';
+  if (v === 'kd' || v === 'кд' || v === 'tk' || v === 'тк') return 'kd';
+  if (v.includes('test') || v.includes('испыт')) return 'test_program';
+  if (v.includes('protocol') || v.includes('протокол')) return 'protocol';
+  return 'other';
+}
+
 export function useDocuments(projectIds: string[] = []) {
   const [documents, setDocuments] = useState<ProjectDocument[]>([]);
   const [loading, setLoading] = useState(true);
@@ -11,18 +38,18 @@ export function useDocuments(projectIds: string[] = []) {
     const load = async () => {
       try {
         setLoading(true);
-        const data = await getDocuments();
+        const data = await getDocuments({ page_size: 100 });
         const list = (Array.isArray(data) ? data : ((data as any)?.items ?? [])) as any[];
         const transformed: ProjectDocument[] = list.map((d) => ({
           id: String(d.id),
           projectId: String(d.project_id),
-          type: (d.doc_type?.includes('spec') ? 'spec' : d.doc_type?.includes('draw') ? 'drawing' : 'other') as ProjectDocument['type'],
+          type: mapDocType(d.doc_type),
           number: d.number || d.code || String(d.id),
           name: d.name || d.title || 'Документ',
-          status: (d.status === 'approved' ? 'approved' : d.status === 'in_review' ? 'in_review' : 'draft') as ProjectDocument['status'],
+          status: STATUS_MAP[(d.status || '').toLowerCase()] ?? 'draft',
           responsible: '—',
           plannedReady: d.created_at || '',
-          actualReady: d.created_at || '',
+          actualReady: undefined,
           remarks: [],
           approvers: [],
           history: [],

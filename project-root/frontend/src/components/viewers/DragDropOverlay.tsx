@@ -62,7 +62,7 @@ export const DragDropOverlay: React.FC<DragDropOverlayProps> = ({
 
   return (
     <div
-      className="relative w-full h-full"
+      className="relative flex w-full h-full flex-col"
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}

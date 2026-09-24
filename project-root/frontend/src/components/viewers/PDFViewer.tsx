@@ -20,6 +20,8 @@ export const PDFViewer: React.FC<ViewerProps> = ({
   fileUrl,
   fileName,
   mock = false,
+  hideDownload = false,
+  hideFileName = false,
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -145,6 +147,59 @@ export const PDFViewer: React.FC<ViewerProps> = ({
     /* integration hook: delegate to workspace store if needed */
   }, []);
 
+  // Куда прокрутить область просмотра после смены страницы
+  const pendingScrollRef = useRef<'top' | 'bottom' | null>(null);
+
+  // Сброс/установка прокрутки после того, как новая страница отрисована
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    if (pendingScrollRef.current === 'bottom') {
+      el.scrollTop = el.scrollHeight;
+    } else {
+      el.scrollTop = 0;
+    }
+    pendingScrollRef.current = null;
+  }, [currentPage]);
+
+  // Скролл колесом: вертикальный, горизонтальный (Shift), автопереход между страницами.
+  // Нативный непассивный listener — React-обработчик onWheel пассивный и не даёт preventDefault.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const onWheel = (e: WheelEvent) => {
+      // Жест pinch-to-zoom браузера не трогаем
+      if (e.ctrlKey) return;
+      e.preventDefault();
+
+      const step = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+
+      // Shift + колесо — горизонтальный скролл
+      if (e.shiftKey) {
+        el.scrollLeft += step;
+        return;
+      }
+
+      el.scrollTop += step;
+
+      // Доскроллили до конца страницы — переходим на следующую
+      if (step > 0 && el.scrollTop + el.clientHeight >= el.scrollHeight - 1) {
+        if (currentPage < totalPages) {
+          pendingScrollRef.current = 'top';
+          setCurrentPage((p) => Math.min(p + 1, totalPages));
+        }
+      } else if (step < 0 && el.scrollTop <= 0 && currentPage > 1) {
+        // Доскроллили до начала — возвращаемся на предыдущую (в конец её)
+        pendingScrollRef.current = 'bottom';
+        setCurrentPage((p) => Math.max(p - 1, 1));
+      }
+    };
+
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [currentPage, totalPages]);
+
   const mockContent = useMemo(
     () => (
       <div className={styles.pdfContainer}>
@@ -232,7 +287,8 @@ export const PDFViewer: React.FC<ViewerProps> = ({
       fileName={fileName}
       fileType="pdf"
       onFileDrop={handleFileDrop}
-      onDownload={handleDownload}
+      onDownload={hideDownload ? undefined : handleDownload}
+      hideFileName={hideFileName}
       loading={isLoading}
       error={error}
       loadingText="Загрузка PDF..."
@@ -254,7 +310,14 @@ export const PDFViewer: React.FC<ViewerProps> = ({
       ) : (
         <div
           ref={containerRef}
-          style={{ width: '100%', height: '100%', overflow: 'auto', backgroundColor: '#525659' }}
+          style={{
+            width: '100%',
+            height: '100%',
+            overflow: 'auto',
+            backgroundColor: '#525659',
+            display: 'flex',
+            position: 'relative',
+          }}
         >
           {currentPageData ? (
             <canvas
@@ -267,7 +330,7 @@ export const PDFViewer: React.FC<ViewerProps> = ({
                 }
               }}
               className={styles.pdfPage}
-              style={{ maxWidth: '100%', maxHeight: 'calc(100vh - 120px)', objectFit: 'contain' }}
+              style={{ margin: 'auto', flexShrink: 0, display: 'block' }}
             />
           ) : (
             <div className={styles.loading}>
@@ -275,6 +338,25 @@ export const PDFViewer: React.FC<ViewerProps> = ({
               <span style={{ marginLeft: '12px' }}>Рендеринг...</span>
             </div>
           )}
+          {/* Незаметная памятка о скролле */}
+          <div
+            style={{
+              position: 'absolute',
+              right: 10,
+              bottom: 8,
+              fontSize: 11,
+              lineHeight: 1.3,
+              color: 'rgba(255, 255, 255, 0.55)',
+              background: 'rgba(0, 0, 0, 0.25)',
+              padding: '2px 8px',
+              borderRadius: 6,
+              pointerEvents: 'none',
+              userSelect: 'none',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Shift + колесо — прокрутка вбок
+          </div>
         </div>
       )}
     </ViewerShell>

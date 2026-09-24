@@ -361,3 +361,136 @@ export const archiveApi = {
     return data.events;
   },
 };
+
+// ==================== Годовой архив (агрегация живых данных) ====================
+
+import client from '@/shared/api/client';
+
+export interface ArchiveYearItem {
+  year: number;
+  projects_count: number;
+  tenders_count: number;
+}
+
+export interface YearArchiveTender {
+  id: number;
+  kp_number: string | null;
+  name: string;
+  customer_name: string;
+  stage: string;
+  status: string;
+  nmc: number | null;
+  our_price: number | null;
+  created_at: string | null;
+}
+
+export interface YearArchiveContract {
+  id: number;
+  number: string;
+  title: string;
+  customer_name: string;
+  status: string;
+  amount: number | null;
+  currency: string;
+  start_date: string | null;
+  end_date: string | null;
+}
+
+export interface YearArchiveDocument {
+  id: number;
+  number: string;
+  name: string;
+  doc_type: string;
+  status: string;
+  created_at: string | null;
+}
+
+export interface YearArchiveRemark {
+  id: string;
+  title: string;
+  status: string;
+  priority: string;
+  author: string | null;
+  created_at: string | null;
+  resolved_at: string | null;
+}
+
+export interface YearArchivePurchaseRequest {
+  id: number;
+  number: string | null;
+  title: string;
+  status: string;
+  amount: number | null;
+  created_at: string | null;
+}
+
+export interface YearArchiveOrder {
+  id: number;
+  number: string;
+  supplier_name: string;
+  status: string;
+  amount: number | null;
+  order_date: string | null;
+  delivery_date: string | null;
+}
+
+export interface YearArchiveWorkload {
+  user_id: number;
+  name: string;
+  hours: number;
+}
+
+export interface YearArchiveTimelineEvent {
+  date: string | null;
+  type: 'tender' | 'contract' | 'document' | 'remark' | 'purchase_request' | 'order';
+  title: string;
+}
+
+export interface YearArchiveProject {
+  id: number;
+  code: string;
+  name: string;
+  customer_name: string | null;
+  status: string;
+  created_at: string | null;
+  planned_finish: string | null;
+  tenders: YearArchiveTender[];
+  contracts: YearArchiveContract[];
+  documents: YearArchiveDocument[];
+  remarks: YearArchiveRemark[];
+  remarks_by_status: Record<string, number>;
+  purchase_requests: YearArchivePurchaseRequest[];
+  orders: YearArchiveOrder[];
+  workload: YearArchiveWorkload[];
+  tasks_total: number;
+  tasks_by_status: Record<string, number>;
+  timeline: YearArchiveTimelineEvent[];
+}
+
+export interface YearArchiveSummary {
+  projects_count: number;
+  tenders_count: number;
+  contracts_count: number;
+  documents_count: number;
+  remarks_count: number;
+  purchase_requests_count: number;
+  orders_count: number;
+  orders_amount: number;
+  workload_hours: number;
+}
+
+export interface YearArchive {
+  year: number;
+  projects: YearArchiveProject[];
+  summary: YearArchiveSummary;
+}
+
+export async function getArchiveYears(): Promise<ArchiveYearItem[]> {
+  const { data } = await client.get<ArchiveYearItem[]>('/archive/years');
+  return data;
+}
+
+export async function getYearArchive(year: number): Promise<YearArchive> {
+  const { data } = await client.get<YearArchive>(`/archive/year/${year}`);
+  return data;
+}

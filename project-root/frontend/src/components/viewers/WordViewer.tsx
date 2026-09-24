@@ -9,6 +9,8 @@ export const WordViewer: React.FC<ViewerProps> = ({
   fileUrl,
   fileName,
   mock = false,
+  hideDownload = false,
+  hideFileName = false,
 }) => {
   const [html, setHtml] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -109,7 +111,8 @@ export const WordViewer: React.FC<ViewerProps> = ({
       fileName={fileName}
       fileType="word"
       onFileDrop={handleFileDrop}
-      onDownload={handleDownload}
+      onDownload={hideDownload ? undefined : handleDownload}
+      hideFileName={hideFileName}
       loading={isLoading}
       error={error}
       loadingText="Загрузка Word..."

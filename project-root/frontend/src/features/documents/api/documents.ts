@@ -51,7 +51,7 @@ export interface Revision {
   changes_summary?: string;
 }
 
-export const getDocuments = async (params?: { project_id?: number; section_id?: number }): Promise<DocumentItem[]> => {
+export const getDocuments = async (params?: { project_id?: number; section_id?: number; page?: number; page_size?: number }): Promise<DocumentItem[]> => {
   const { data } = await client.get('/documents', { params });
   return data;
 };

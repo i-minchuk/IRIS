@@ -5,6 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, HTTPException, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from app.core.mode import require_full_mode
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
@@ -472,3 +473,292 @@ async def get_timeline(
         ))
     
     return TimelineResponse(events=events, total=len(entries))
+
+
+# ==================== Годовой архив (агрегация живых данных) ====================
+
+from datetime import timezone
+
+
+def _year_bounds(year: int):
+    start = datetime(year, 1, 1, tzinfo=timezone.utc)
+    end = datetime(year + 1, 1, 1, tzinfo=timezone.utc)
+    return start, end
+
+
+def _iso(dt) -> Optional[str]:
+    return dt.isoformat() if dt else None
+
+
+@router.get("/years")
+async def list_archive_years(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Список годов архива с количеством проектов и тендеров."""
+    from app.modules.projects.models import Project
+    from app.modules.tenders.models import Tender
+
+    years: dict = {}
+
+    projects = (await db.execute(select(Project))).scalars().all()
+    for p in projects:
+        y = p.created_at.year if p.created_at else None
+        if not y:
+            continue
+        years.setdefault(y, {"year": y, "projects_count": 0, "tenders_count": 0})
+        years[y]["projects_count"] += 1
+
+    tenders = (await db.execute(select(Tender))).scalars().all()
+    for t in tenders:
+        y = t.created_at.year if t.created_at else None
+        if not y:
+            continue
+        years.setdefault(y, {"year": y, "projects_count": 0, "tenders_count": 0})
+        years[y]["tenders_count"] += 1
+
+    return sorted(years.values(), key=lambda x: x["year"], reverse=True)
+
+
+def _empty_year_summary() -> dict:
+    return {
+        "projects_count": 0,
+        "tenders_count": 0,
+        "contracts_count": 0,
+        "documents_count": 0,
+        "remarks_count": 0,
+        "purchase_requests_count": 0,
+        "orders_count": 0,
+        "orders_amount": 0.0,
+        "workload_hours": 0.0,
+    }
+
+
+@router.get("/year/{year}")
+async def get_year_archive(
+    year: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Полный архив года: по каждому проекту — тендеры, договоры, документы,
+    замечания, закупки (МТО), загрузка персонала, задачи и таймлайн событий."""
+    from app.modules.projects.models import Project
+    from app.modules.tenders.models import Tender
+    from app.modules.srm.models import Contract, PurchaseRequest, PurchaseOrder
+    from app.modules.documents.models import Document
+    from app.modules.remarks.models import Remark
+    from app.modules.tasks.models import Task
+    from app.modules.time_tracking.models import TimeSession
+    from app.modules.auth.models import User as UserModel
+
+    start, end = _year_bounds(year)
+
+    projects = (
+        await db.execute(
+            select(Project)
+            .where(Project.created_at >= start, Project.created_at < end)
+            .order_by(Project.created_at)
+        )
+    ).scalars().all()
+    project_ids = [p.id for p in projects]
+
+    if not project_ids:
+        return {"year": year, "projects": [], "summary": _empty_year_summary()}
+
+    users = (await db.execute(select(UserModel))).scalars().all()
+    user_names = {u.id: (u.full_name or u.username or f"#{u.id}") for u in users}
+
+    tenders = (
+        await db.execute(select(Tender).where(Tender.project_id.in_(project_ids)))
+    ).scalars().all()
+    contracts = (
+        await db.execute(select(Contract).where(Contract.project_id.in_(project_ids)))
+    ).scalars().all()
+    documents = (
+        await db.execute(select(Document).where(Document.project_id.in_(project_ids)))
+    ).scalars().all()
+    remarks = (
+        await db.execute(select(Remark).where(Remark.project_id.in_(project_ids)))
+    ).scalars().all()
+    requests = (
+        await db.execute(
+            select(PurchaseRequest).where(PurchaseRequest.project_id.in_(project_ids))
+        )
+    ).scalars().all()
+    orders = (
+        await db.execute(
+            select(PurchaseOrder).where(PurchaseOrder.project_id.in_(project_ids))
+        )
+    ).scalars().all()
+    tasks = (
+        await db.execute(select(Task).where(Task.project_id.in_(project_ids)))
+    ).scalars().all()
+    sessions = (
+        await db.execute(
+            select(TimeSession).where(TimeSession.project_id.in_(project_ids))
+        )
+    ).scalars().all()
+
+    def by_project(items):
+        grouped: dict = {pid: [] for pid in project_ids}
+        for item in items:
+            pid = getattr(item, "project_id", None)
+            if pid in grouped:
+                grouped[pid].append(item)
+        return grouped
+
+    tenders_by = by_project(tenders)
+    contracts_by = by_project(contracts)
+    documents_by = by_project(documents)
+    remarks_by = by_project(remarks)
+    requests_by = by_project(requests)
+    orders_by = by_project(orders)
+    tasks_by = by_project(tasks)
+    sessions_by = by_project(sessions)
+
+    result_projects = []
+    for p in projects:
+        pid = p.id
+        p_tenders = tenders_by[pid]
+        p_contracts = contracts_by[pid]
+        p_documents = documents_by[pid]
+        p_remarks = remarks_by[pid]
+        p_requests = requests_by[pid]
+        p_orders = orders_by[pid]
+        p_tasks = tasks_by[pid]
+        p_sessions = sessions_by[pid]
+
+        # Загрузка персонала: часы по сотрудникам
+        workload_map: dict = {}
+        for s in p_sessions:
+            entry = workload_map.setdefault(
+                s.user_id,
+                {
+                    "user_id": s.user_id,
+                    "name": user_names.get(s.user_id, f"#{s.user_id}"),
+                    "hours": 0.0,
+                },
+            )
+            entry["hours"] += round((s.total_duration or 0) / 3600, 2)
+        workload = sorted(workload_map.values(), key=lambda x: x["hours"], reverse=True)
+
+        remarks_by_status: dict = {}
+        for r in p_remarks:
+            remarks_by_status[r.status] = remarks_by_status.get(r.status, 0) + 1
+
+        tasks_by_status: dict = {}
+        for t in p_tasks:
+            key = str(t.status.value if hasattr(t.status, "value") else t.status)
+            tasks_by_status[key] = tasks_by_status.get(key, 0) + 1
+
+        # Таймлайн: ключевые события проекта «с момента тендера»
+        timeline = []
+        for t in p_tenders:
+            timeline.append({
+                "date": _iso(t.created_at), "type": "tender",
+                "title": f"Тендер {t.kp_number or ''} «{t.name}» — {t.stage}",
+            })
+        for c in p_contracts:
+            timeline.append({
+                "date": _iso(c.start_date or c.created_at), "type": "contract",
+                "title": f"Договор {c.number} «{c.title}» — {c.status}",
+            })
+        for d in p_documents:
+            timeline.append({
+                "date": _iso(d.created_at), "type": "document",
+                "title": f"Документ {d.number} «{d.name}» — {d.status}",
+            })
+        for r in p_remarks:
+            timeline.append({
+                "date": _iso(r.created_at), "type": "remark",
+                "title": f"Замечание «{r.title}» — {r.status}",
+            })
+        for rq in p_requests:
+            timeline.append({
+                "date": _iso(rq.created_at), "type": "purchase_request",
+                "title": f"Заявка {rq.number or rq.id} «{rq.title}» — {rq.status}",
+            })
+        for o in p_orders:
+            timeline.append({
+                "date": _iso(o.order_date or o.created_at), "type": "order",
+                "title": f"Заказ {o.number} ({o.supplier_name}) — {o.status}",
+            })
+        timeline.sort(key=lambda e: e["date"] or "")
+
+        result_projects.append({
+            "id": pid,
+            "code": p.code,
+            "name": p.name,
+            "customer_name": p.customer_name,
+            "status": p.status,
+            "created_at": _iso(p.created_at),
+            "planned_finish": _iso(p.planned_finish),
+            "tenders": [
+                {
+                    "id": t.id, "kp_number": t.kp_number, "name": t.name,
+                    "customer_name": t.customer_name, "stage": t.stage, "status": t.status,
+                    "nmc": t.nmc, "our_price": t.our_price, "created_at": _iso(t.created_at),
+                }
+                for t in p_tenders
+            ],
+            "contracts": [
+                {
+                    "id": c.id, "number": c.number, "title": c.title,
+                    "customer_name": c.supplier_name, "status": c.status,
+                    "amount": float(c.amount) if c.amount is not None else None,
+                    "currency": c.currency,
+                    "start_date": _iso(c.start_date), "end_date": _iso(c.end_date),
+                }
+                for c in p_contracts
+            ],
+            "documents": [
+                {
+                    "id": d.id, "number": d.number, "name": d.name,
+                    "doc_type": d.doc_type, "status": d.status, "created_at": _iso(d.created_at),
+                }
+                for d in p_documents
+            ],
+            "remarks": [
+                {
+                    "id": str(r.id), "title": r.title, "status": r.status,
+                    "priority": r.priority, "author": user_names.get(r.author_id),
+                    "created_at": _iso(r.created_at), "resolved_at": _iso(r.resolved_at),
+                }
+                for r in p_remarks
+            ],
+            "remarks_by_status": remarks_by_status,
+            "purchase_requests": [
+                {
+                    "id": rq.id, "number": rq.number, "title": rq.title,
+                    "status": rq.status, "amount": float(rq.amount) if rq.amount is not None else None,
+                    "created_at": _iso(rq.created_at),
+                }
+                for rq in p_requests
+            ],
+            "orders": [
+                {
+                    "id": o.id, "number": o.number, "supplier_name": o.supplier_name,
+                    "status": o.status, "amount": float(o.amount) if o.amount is not None else None,
+                    "order_date": _iso(o.order_date), "delivery_date": _iso(o.delivery_date),
+                }
+                for o in p_orders
+            ],
+            "workload": workload,
+            "tasks_total": len(p_tasks),
+            "tasks_by_status": tasks_by_status,
+            "timeline": timeline,
+        })
+
+    summary = {
+        "projects_count": len(result_projects),
+        "tenders_count": len(tenders),
+        "contracts_count": len(contracts),
+        "documents_count": len(documents),
+        "remarks_count": len(remarks),
+        "purchase_requests_count": len(requests),
+        "orders_count": len(orders),
+        "orders_amount": round(sum(float(o.amount or 0) for o in orders), 2),
+        "workload_hours": round(sum((s.total_duration or 0) for s in sessions) / 3600, 2),
+    }
+
+    return {"year": year, "projects": result_projects, "summary": summary}

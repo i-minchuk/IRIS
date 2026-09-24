@@ -106,6 +106,7 @@ export const router = createBrowserRouter([
   */
           { path: '/calendar', element: <Navigate to="/dashboard" replace /> },
           { path: '/reports', element: <SuspenseWrapper><ReportsPage /></SuspenseWrapper> },
+          { path: '/contacts', element: <Navigate to="/references" replace /> },
           { path: '/profile', element: <SuspenseWrapper><ProfileSettingsPage /></SuspenseWrapper> },
           { path: '/profile/2fa', element: <SuspenseWrapper><TwoFactorSettingsPage /></SuspenseWrapper> },
           { path: '/notifications', element: <SuspenseWrapper><NotificationPage /></SuspenseWrapper> },

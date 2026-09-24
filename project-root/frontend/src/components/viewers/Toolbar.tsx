@@ -73,6 +73,9 @@ export interface ToolbarProps {
   // Custom actions
   leftActions?: React.ReactNode;
   rightActions?: React.ReactNode;
+
+  /** Скрыть имя файла и бейдж типа (когда их показывает хост-контейнер) */
+  hideFileName?: boolean;
 }
 
 export const Toolbar: React.FC<ToolbarProps> = ({
@@ -80,6 +83,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   fileType,
   onClose,
   onDownload,
+  hideFileName = false,
   showZoom = false,
   zoom = 1,
   onZoomIn,
@@ -109,14 +113,18 @@ export const Toolbar: React.FC<ToolbarProps> = ({
       {/* Left section: File info + left actions */}
       <div className="flex items-center gap-2 min-w-0">
         {leftActions}
-        
-        <span className="text-sm font-medium text-text-primary truncate" title={fileName}>
-          {fileName}
-        </span>
-        
-        <span className="text-xs px-2 py-0.5 rounded font-medium bg-bg-surface-2 text-text-tertiary uppercase">
-          {fileType}
-        </span>
+
+        {!hideFileName && (
+          <>
+            <span className="text-sm font-medium text-text-primary truncate" title={fileName}>
+              {fileName}
+            </span>
+
+            <span className="text-xs px-2 py-0.5 rounded font-medium bg-bg-surface-2 text-text-tertiary uppercase">
+              {fileType}
+            </span>
+          </>
+        )}
       </div>
 
       {/* Center section: Controls */}
@@ -165,16 +173,17 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               </svg>
             </ToolbarButton>
             
-            <div className="flex items-center gap-1 text-xs text-text-primary">
+            <div className="flex items-center gap-1 text-xs" style={{ color: 'var(--text-primary)' }}>
               <input
                 type="number"
                 min={1}
                 max={totalPages}
                 value={currentPage}
                 onChange={handlePageInputChange}
-                className="w-12 px-1 py-0.5 text-center rounded border border-border-default bg-bg-surface-2 text-text-primary focus:outline-none focus:ring-1 focus:ring-accent-engineering"
+                className="w-10 px-1 py-0.5 text-center bg-transparent appearance-none focus:outline-none focus:ring-1 focus:ring-accent-engineering"
+                style={{ color: 'var(--text-primary)' }}
               />
-              <span className="text-text-tertiary">/ {totalPages}</span>
+              <span style={{ color: 'var(--text-tertiary)' }}>/ {totalPages}</span>
             </div>
             
             <ToolbarButton onClick={onNextPage} disabled={currentPage >= totalPages} title="Следующая">

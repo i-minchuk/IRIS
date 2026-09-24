@@ -10,6 +10,10 @@ export interface ViewerProps {
   fileName: string;
   mock?: boolean;
   documentId?: number; // Для связи с remarks
+  /** Скрыть встроенную кнопку скачивания в тулбаре (когда скачивание предоставляет хост-контейнер) */
+  hideDownload?: boolean;
+  /** Скрыть имя файла и бейдж типа в тулбаре (когда их показывает хост-контейнер) */
+  hideFileName?: boolean;
 }
 
 export interface ViewerConfig {

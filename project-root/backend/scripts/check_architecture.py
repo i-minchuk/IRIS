@@ -224,6 +224,8 @@ class ImportChecker:
             "releases": {"auth"},  # Release management
             "support": {"auth"},  # Support tickets, incidents, KB
             "srm": {"auth", "projects"},  # Procurement linked to projects
+            "production": {"auth", "operations", "projects", "remarks", "tenders", "time_tracking"},  # Production process strategy: BPMN scheme + real KPI from time tracking, tenders, remarks, operations
+            "employees": {"auth"},  # Employee cards linked to user accounts
         }
         
         has_violations = False

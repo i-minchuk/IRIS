@@ -1,9 +1,11 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useTabState } from '@/shared/hooks/useTabState';
 import { PageTabs } from '@/shared/components/PageTabs';
-import { Search, Plus, BookOpen, Hammer, FileCheck, Library } from 'lucide-react';
+import { Search, Plus, BookOpen, Hammer, FileCheck, Library, Phone } from 'lucide-react';
 import { Button, Card } from '@/components/ui';
 import GlossaryPanel from './ReferencePage/GlossaryPanel';
+import ContactsPage from '@/pages/ContactsPage';
 
 interface ReferenceItem {
   id: string;
@@ -13,18 +15,29 @@ interface ReferenceItem {
   category?: string;
 }
 
-type TabKey = 'materials' | 'constructions' | 'standards' | 'glossary';
+type TabKey = 'materials' | 'constructions' | 'standards' | 'glossary' | 'contacts';
 
 const TABS = [
   { key: 'materials' as TabKey, label: 'Материалы', icon: <BookOpen size={16} />, color: '#14B8A6' },
   { key: 'constructions' as TabKey, label: 'Конструкции', icon: <Hammer size={16} />, color: '#14B8A6' },
   { key: 'standards' as TabKey, label: 'Нормативы', icon: <FileCheck size={16} />, color: '#14B8A6' },
   { key: 'glossary' as TabKey, label: 'Глоссарий терминов', icon: <Library size={16} />, color: '#14B8A6' },
+  { key: 'contacts' as TabKey, label: 'Контакты', icon: <Phone size={16} />, color: '#14B8A6' },
 ];
 
 export default function ReferencePage() {
   const [activeTab, setActiveTab] = useTabState<TabKey>('iris_reference_tab', 'materials');
+  const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Deep link: ?tab=contacts (пункт меню «Справочники» открывает нужную вкладку)
+  useEffect(() => {
+    const tab = searchParams.get('tab') as TabKey | null;
+    if (tab && TABS.some((t) => t.key === tab)) {
+      setActiveTab(tab);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setActiveTab, setSearchParams]);
 
   // Backend-источника для справочников материалов/конструкций/нормативов нет — показываем пустое состояние
   const currentData = useMemo<ReferenceItem[]>(() => [], []);
@@ -48,18 +61,22 @@ export default function ReferencePage() {
             Справочники
           </h1>
           <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-            Материалы, конструкции, нормативы и термины
+            Материалы, конструкции, нормативы, термины и контакты сотрудников
           </p>
         </div>
-        <Button variant="primary" leftIcon={<Plus size={16} />}>
-          Добавить
-        </Button>
+        {activeTab !== 'contacts' && (
+          <Button variant="primary" leftIcon={<Plus size={16} />}>
+            Добавить
+          </Button>
+        )}
       </div>
 
       <PageTabs tabs={TABS} active={activeTab} onChange={setActiveTab} color="#14B8A6" />
 
       {/* Content */}
-      {activeTab === 'glossary' ? (
+      {activeTab === 'contacts' ? (
+        <ContactsPage />
+      ) : activeTab === 'glossary' ? (
         <GlossaryPanel />
       ) : (
         <>

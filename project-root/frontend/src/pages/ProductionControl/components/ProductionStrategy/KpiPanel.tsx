@@ -18,13 +18,15 @@ const statusClass = (status: KpiStatus) => {
 export const KpiPanel: React.FC<KpiPanelProps> = ({ departments, nodes, employees }) => {
   const totalCycle = nodes.reduce((sum, n) => sum + n.avgDays, 0);
   const bottleneckDays = nodes.filter((n) => n.issue === 'bottleneck').reduce((sum, n) => sum + n.avgDays, 0);
-  const avgLoad = Math.round(employees.reduce((s, e) => s + e.kpiLoad, 0) / employees.length);
+  const avgLoad = employees.length
+    ? Math.round(employees.reduce((s, e) => s + e.kpiLoad, 0) / employees.length)
+    : 0;
 
   const cards = [
     { label: 'Общий цикл производства', value: `${totalCycle} дн.`, icon: Clock, status: 'ok' as KpiStatus, note: 'плановая длительность' },
     { label: 'Потери на узких местах', value: `${bottleneckDays} дн.`, icon: AlertCircle, status: 'warn' as KpiStatus, note: 'влияние bottleneck' },
-    { label: 'Средняя загрузка сотрудников', value: `${avgLoad}%`, icon: Users, status: avgLoad >= 85 ? ('warn' as KpiStatus) : ('ok' as KpiStatus), note: 'по всем отделам' },
-    { label: 'Производительность, усл. ед./мес', value: '4–6', icon: TrendingUp, status: 'ok' as KpiStatus, note: 'фактическое значение' },
+    { label: 'Средняя загрузка сотрудников', value: avgLoad > 0 ? `${avgLoad}%` : ' ', icon: Users, status: avgLoad >= 85 ? ('warn' as KpiStatus) : ('ok' as KpiStatus), note: avgLoad > 0 ? 'по всем отделам' : 'нет данных' },
+    { label: 'Производительность, усл. ед./мес', value: ' ', icon: TrendingUp, status: 'ok' as KpiStatus, note: 'нет данных' },
   ];
 
   return (
@@ -62,7 +64,7 @@ export const KpiPanel: React.FC<KpiPanelProps> = ({ departments, nodes, employee
                     </div>
                   </div>
                   <Badge variant={avg >= 90 ? 'error' : avg >= 80 ? 'warning' : 'neutral'} className="text-xs">
-                    {avg}% загрузка
+                    {avg > 0 ? `${avg}% загрузка` : ' '}
                   </Badge>
                 </div>
               );
