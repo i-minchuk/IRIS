@@ -1,6 +1,6 @@
 {
   "name": "dokpotok-iris",
-  "version": "4.6.0",
+  "version": "4.7.0",
   "private": true,
   "description": "ДокПоток IRIS — корневые прокси-скрипты. Код: project-root/backend (FastAPI), project-root/frontend (React+Vite).",
   "scripts": {

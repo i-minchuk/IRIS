@@ -51,7 +51,7 @@ class Settings(BaseSettings):
     )
 
     PROJECT_NAME: str = "ДокПоток IRIS"
-    VERSION: str = "4.6.0"
+    VERSION: str = "4.7.0"
     API_V1_STR: str = "/api/v1"
 
     DATABASE_URL: str = Field(

@@ -1,7 +1,7 @@
 {
   "name": "dokpotok-iris-frontend",
   "private": true,
-  "version": "4.6.0",
+  "version": "4.7.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -13,7 +13,10 @@
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:qa": "playwright test e2e/qa-ui-ux.spec.ts e2e/qa-visual.spec.ts --project=chromium",
     "test:e2e:qa:update-snapshots": "playwright test e2e/qa-visual.spec.ts --project=chromium --update-snapshots",
-    "test:e2e:report": "playwright show-report playwright-report"
+    "test:e2e:report": "playwright show-report playwright-report",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
+    "test:unit:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.5.1",
@@ -39,6 +42,9 @@
   "devDependencies": {
     "@eslint/js": "^9.39.4",
     "@playwright/test": "^1.52.0",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.6",
     "@types/node": "^24.12.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
@@ -48,10 +54,12 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
+    "jsdom": "^30.0.1",
     "postcss": "^8.5.8",
     "tailwindcss": "^3.4.19",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.57.0",
-    "vite": "^8.0.1"
+    "vite": "^8.0.1",
+    "vitest": "^4.1.11"
   }
 }

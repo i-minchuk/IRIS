@@ -26,7 +26,7 @@ async function mockMeta(page: Page, mode: 'demo' | 'prod' = 'prod') {
       contentType: 'application/json',
       body: JSON.stringify({
         mode,
-        version: '4.6.0',
+        version: '4.7.0',
         features: {
           demo_data_seed: mode === 'demo',
           exports: mode === 'prod',

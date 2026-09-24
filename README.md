@@ -1,4 +1,4 @@
-# ДокПоток IRIS v4.6.0 MVP
+# ДокПоток IRIS v4.7.0 MVP
 
 ## Быстрый старт (SQLite)
 
@@ -40,3 +40,12 @@ smoke-скрипт `project-root/backend/scripts/smoke_modes.py`.
 ## Переход на PostgreSQL
 
 См. docs/MIGRATION_TO_POSTGRES.md
+
+# ДокПоток IRIS — QA suite
+
+BACKEND_URL=http://localhost:8000
+FRONTEND_URL=http://localhost:5173
+DEMO_LOGIN=admin
+DEMO_PASSWORD=your_password
+HEADLESS=1
+SLOW_MO=0
