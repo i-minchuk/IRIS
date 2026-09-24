@@ -192,3 +192,6 @@ preview-zoom.png
 structure.txt
 reports/
 qa-visual.spec.ts-snapshots/
+
+# Служебные документы
+scripts/*.docx
