@@ -212,6 +212,7 @@ function FileIcon({ type }: { type: DocType }) {
 function RegistryView() {
   const { autoStart } = useAutoTimeTracker();
   const [searchQuery, setSearchQuery] = useState('');
+  const [appliedQuery, setAppliedQuery] = useState('');
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
@@ -321,15 +322,18 @@ function RegistryView() {
 
   const projectNames = Array.from(projects.keys());
 
+  // Поиск применяется только по клику «Найти» или Enter — см. runSearch
   const filteredDocs = useMemo(() => {
-    if (!searchQuery.trim()) return docs;
-    const q = searchQuery.toLowerCase();
+    if (!appliedQuery) return docs;
+    const q = appliedQuery.toLowerCase();
     return docs.filter(d =>
       d.name.toLowerCase().includes(q) ||
       d.code.toLowerCase().includes(q) ||
       d.project.toLowerCase().includes(q)
     );
-  }, [searchQuery, docs]);
+  }, [appliedQuery, docs]);
+
+  const runSearch = () => setAppliedQuery(searchQuery.trim());
 
   const selectedDoc = useMemo(() =>
     docs.find(d => d.id === selectedDocId) || null,
@@ -401,16 +405,18 @@ function RegistryView() {
           <input
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') runSearch(); }}
             placeholder="Поиск по коду, названию или проекту..."
             className="bg-transparent text-xs outline-none w-full"
             style={{ color: 'var(--text-primary)' }}
           />
         </div>
         <button
+          onClick={runSearch}
           className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md transition-colors cursor-pointer"
           style={{ background: TAB_COLOR, color: '#ffffff' }}
         >
-          <Upload size={13} /> Загрузить
+          <Search size={13} /> Найти
         </button>
       </div>
 
@@ -461,7 +467,7 @@ function RegistryView() {
                     <div>
                       {docs.map(doc => {
                         const isDocSelected = selectedDocId === doc.id;
-                        const matchSearch = !searchQuery.trim() || doc.name.toLowerCase().includes(searchQuery.toLowerCase()) || doc.code.toLowerCase().includes(searchQuery.toLowerCase());
+                        const matchSearch = !appliedQuery || doc.name.toLowerCase().includes(appliedQuery.toLowerCase()) || doc.code.toLowerCase().includes(appliedQuery.toLowerCase());
                         if (!matchSearch) return null;
                         return (
                           <button
