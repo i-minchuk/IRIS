@@ -184,3 +184,11 @@ project-root/frontend/test-results/
 project-root/frontend/qa-output/
 project-root/frontend/qa-*.cjs
 backups/
+
+# ─── Служебные артефакты тестов и QA ───────
+tests_full_output*.txt
+test_full_output*.txt
+preview-zoom.png
+structure.txt
+reports/
+qa-visual.spec.ts-snapshots/
