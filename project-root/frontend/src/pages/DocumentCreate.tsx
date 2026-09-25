@@ -1,46 +1,100 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, FileText, Check } from 'lucide-react';
-import { createDocument } from '../features/documents/api/documents';
+import { ArrowLeft, FileText, Check, Users, ChevronDown } from 'lucide-react';
+import { createDocument, uploadDocumentFile } from '../features/documents/api/documents';
+import { getProjects, type Project } from '../features/projects/api/projects';
+import { getUsers } from '../features/users/api/users';
+import type { User } from '../types';
 import { Button, Input, Select, Card } from '../components/ui';
 import { toast } from 'sonner';
 
-interface Template {
+/** Соответствие категории и типа документа (тип выбирается на шаге «Категория») */
+const CATEGORY_DOC_TYPE: Record<string, string> = {
+  drawings: 'Чертеж',
+  schemes: 'Схема',
+  specs: 'Спецификация',
+  tests: 'Протокол',
+  certs: 'Сертификат',
+  manuals: 'Руководство',
+  registries: 'Реестр',
+};
+
+/** Категории документов на основе «Главного реестра документации Поставщика» (Excel) */
+interface DocCategory {
   id: string;
-  name: string;
+  label: string;
   description: string;
-  docType: string;
-  discipline: string;
+  titles: string[];
 }
 
-const TEMPLATES: Template[] = [
+const DOC_CATEGORIES: DocCategory[] = [
   {
-    id: 'tmpl-km1',
-    name: 'КМ1 — Общий вид конструкций',
-    description: 'Базовый шаблон для металлических конструкций',
-    docType: 'Чертеж',
-    discipline: 'КМ',
+    id: 'drawings',
+    label: 'Чертежи',
+    description: 'Компоновочные чертежи и паспортные таблички',
+    titles: [
+      'Общие компоновочные чертежи',
+      'Чертежи паспортных табличек',
+    ],
   },
   {
-    id: 'tmpl-km2',
-    name: 'КМ2 — Узлы сопряжения',
-    description: 'Шаблон для детальных узлов',
-    docType: 'Чертеж',
-    discipline: 'КМ',
+    id: 'schemes',
+    label: 'Электрические схемы',
+    description: 'Однолинейные и принципиальные схемы',
+    titles: [
+      'Однолинейные электрические схемы',
+      'Принципиальные электрические схемы',
+    ],
   },
   {
-    id: 'tmpl-es',
-    name: 'ЭС — Схема электроснабжения',
-    description: 'Шаблон электрических схем',
-    docType: 'Схема',
-    discipline: 'ЭС',
+    id: 'specs',
+    label: 'Спецификации',
+    description: 'Материалы и оборудование',
+    titles: [
+      'Спецификация материалов и оборудования',
+    ],
   },
   {
-    id: 'tmpl-tx',
-    name: 'ТХ — Технологические решения',
-    description: 'Шаблон для технологической документации',
-    docType: 'Пояснительная записка',
-    discipline: 'ТХ',
+    id: 'tests',
+    label: 'Испытания и протоколы',
+    description: 'FAT, планы и процедуры проверок',
+    titles: [
+      'Протоколы заводских приемочных испытаний (FAT)',
+      'Процедура заводских приемочных испытаний (FAT)',
+      'План проверок и испытаний',
+    ],
+  },
+  {
+    id: 'certs',
+    label: 'Паспорта и сертификаты',
+    description: 'Технические паспорта, сертификаты ТР ТС',
+    titles: [
+      'Технический паспорт',
+      'Сертификат ТР ТС или Декларация о соответствии',
+      'Сертификат об утверждении типа средств измерений',
+      'Сертификат/паспорт качества',
+    ],
+  },
+  {
+    id: 'manuals',
+    label: 'Руководства и инструкции',
+    description: 'Монтаж, пусконаладка, эксплуатация',
+    titles: [
+      'Инструкция по транспортировке и хранению',
+      'Процедуры подготовки к пусконаладке / пусконаладочных работ',
+      'Руководства по монтажу, пусконаладке, эксплуатации и техническому обслуживанию',
+    ],
+  },
+  {
+    id: 'registries',
+    label: 'Реестры и перечни',
+    description: 'Реестры оборудования, запчасти (SPIR)',
+    titles: [
+      'Перечни рекомендуемых запчастей для монтажных / пусконаладочных работ и ввода в эксплуатацию',
+      'Реестры оборудования',
+      'Реестры характеристик оборудования',
+      'Ведомость запчастей и таблица взаимозаменяемости (SPIR)',
+    ],
   },
 ];
 
@@ -49,25 +103,77 @@ export default function DocumentCreate() {
   const { projectId } = useParams();
 
   const [step, setStep] = useState<'category' | 'template' | 'details'>('category');
-  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<DocCategory | null>(null);
+  const [selectedTitle, setSelectedTitle] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<number>(
+    projectId ? Number(projectId) : 0
+  );
   const [formData, setFormData] = useState({
     code: '',
     title: '',
-    doc_type: '',
     discipline: '',
   });
+  const [file, setFile] = useState<File | null>(null);
 
-  const handleTemplateSelect = (template: Template) => {
-    setSelectedTemplate(template);
-    setFormData(prev => ({
+  // ── Исполнители (один ответственный или совместное редактирование) ──
+  const [users, setUsers] = useState<User[]>([]);
+  const [assigneeIds, setAssigneeIds] = useState<number[]>([]);
+  const [assigneeOpen, setAssigneeOpen] = useState(false);
+  const assigneeRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    getProjects()
+      .then((list: Project[]) => {
+        setProjects(list);
+        setSelectedProjectId((prev) =>
+          prev > 0 ? prev : list.length > 0 ? list[0].id : 0
+        );
+      })
+      .catch(() => {});
+    getUsers()
+      .then((list) => setUsers(list.filter((u) => u.is_active)))
+      .catch(() => setUsers([]));
+  }, []);
+
+  // Закрытие списка исполнителей по клику вне
+  useEffect(() => {
+    if (!assigneeOpen) return;
+    const onDocClick = (e: MouseEvent) => {
+      if (assigneeRef.current && !assigneeRef.current.contains(e.target as Node)) {
+        setAssigneeOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [assigneeOpen]);
+
+  const toggleAssignee = (id: number) => {
+    setAssigneeIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const handleTemplateSelect = (title: string) => {
+    setSelectedTitle(title);
+    setFormData((prev) => ({
       ...prev,
-      doc_type: template.docType,
-      discipline: template.discipline,
+      title,
     }));
     setErrors({});
     setStep('details');
+  };
+
+  /** Сброс ошибки поля при его изменении */
+  const clearError = (field: string) => {
+    setErrors((prev) => {
+      if (!(field in prev)) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
   };
 
   const validate = (): Record<string, string> => {
@@ -75,10 +181,8 @@ export default function DocumentCreate() {
 
     if (!formData.code.trim()) {
       errs.code = 'Код обязателен';
-    } else if (formData.code.length > 20) {
-      errs.code = 'Максимум 20 символов';
-    } else if (!/^[А-ЯA-Z0-9\-]+$/.test(formData.code)) {
-      errs.code = 'Только заглавные буквы, цифры и дефис';
+    } else if (!/^[А-ЯA-Z0-9.\-]+$/.test(formData.code)) {
+      errs.code = 'Только заглавные буквы, цифры, дефис и точка';
     }
 
     if (!formData.title.trim()) {
@@ -87,15 +191,11 @@ export default function DocumentCreate() {
       errs.title = 'Максимум 100 символов';
     }
 
-    if (!formData.doc_type) {
-      errs.doc_type = 'Тип документа обязателен';
-    }
-
     if (!formData.discipline) {
       errs.discipline = 'Дисциплина обязательна';
     }
 
-    const pid = projectId ? Number(projectId) : 0;
+    const pid = selectedProjectId;
     if (!pid || pid <= 0) {
       errs.project_id = 'Проект не выбран';
     }
@@ -113,13 +213,26 @@ export default function DocumentCreate() {
 
     setLoading(true);
     try {
-      const pid = projectId ? Number(projectId) : 0;
+      const pid = selectedProjectId;
       const doc = await createDocument({
         project_id: pid,
-        ...formData,
+        number: formData.code,
+        name: formData.title,
+        doc_type: selectedCategory
+          ? CATEGORY_DOC_TYPE[selectedCategory.id] ?? selectedCategory.label
+          : 'Документ',
+        assignee_ids: assigneeIds,
       });
+      if (file) {
+        try {
+          await uploadDocumentFile(doc.id, file);
+        } catch (uploadErr) {
+          console.error('Ошибка загрузки файла:', uploadErr);
+          toast.warning('Документ создан, но файл не загрузился — прикрепите его на странице документа');
+        }
+      }
       toast.success('Документ успешно создан');
-      navigate(`/documents/workspace/${doc.project_id || pid}`);
+      navigate(doc.id ? `/documents/${doc.id}` : '/documents');
     } catch (err: any) {
       toast.error(err.response?.data?.detail || 'Ошибка при создании документа');
       console.error('Ошибка создания:', err);
@@ -184,15 +297,13 @@ export default function DocumentCreate() {
             Выберите категорию документа
           </h2>
           <div className="space-y-2">
-            {[
-              { id: 'drawing', label: 'Чертеж', description: 'Технический чертеж или схема' },
-              { id: 'spec', label: 'Спецификация', description: 'Список оборудования и материалов' },
-              { id: 'calc', label: 'Расчет', description: 'Инженерный расчет' },
-              { id: 'note', label: 'Пояснительная записка', description: 'Текстовый документ' },
-            ].map((cat) => (
+            {DOC_CATEGORIES.map((cat) => (
               <button
                 key={cat.id}
-                onClick={() => setStep('template')}
+                onClick={() => {
+                  setSelectedCategory(cat);
+                  setStep('template');
+                }}
                 className="w-full text-left p-4 rounded-lg border transition-all hover:border-blue-400 hover:bg-blue-50"
                 style={{ borderColor: 'var(--border-default)' }}
               >
@@ -203,7 +314,7 @@ export default function DocumentCreate() {
                       {cat.label}
                     </div>
                     <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                      {cat.description}
+                      {cat.description} · {cat.titles.length} {cat.titles.length === 1 ? 'позиция' : cat.titles.length < 5 ? 'позиции' : 'позиций'}
                     </div>
                   </div>
                 </div>
@@ -218,7 +329,7 @@ export default function DocumentCreate() {
         <Card className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
-              Выберите шаблон
+              {selectedCategory ? `${selectedCategory.label}: выберите вид документа` : 'Выберите вид документа'}
             </h2>
             <button
               onClick={() => setStep('category')}
@@ -231,29 +342,23 @@ export default function DocumentCreate() {
             Шаблон определяет базовую структуру и метаданные документа
           </p>
           <div className="space-y-2">
-            {TEMPLATES.map((tmpl) => (
+            {(selectedCategory?.titles ?? []).map((title) => (
               <button
-                key={tmpl.id}
-                onClick={() => handleTemplateSelect(tmpl)}
+                key={title}
+                onClick={() => handleTemplateSelect(title)}
                 className="w-full text-left p-4 rounded-lg border transition-all hover:border-blue-400 hover:bg-blue-50"
                 style={{ borderColor: 'var(--border-default)' }}
               >
                 <div className="flex items-start justify-between">
                   <div>
                     <div className="font-medium mb-1" style={{ color: 'var(--text-primary)' }}>
-                      {tmpl.name}
+                      {title}
                     </div>
-                    <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                      {tmpl.description}
-                    </div>
-                    <div className="flex gap-2 mt-2">
+                    {selectedCategory && (
                       <span className="text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800" style={{ color: 'var(--text-tertiary)' }}>
-                        {tmpl.docType}
+                        {selectedCategory.label}
                       </span>
-                      <span className="text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800" style={{ color: 'var(--text-tertiary)' }}>
-                        {tmpl.discipline}
-                      </span>
-                    </div>
+                    )}
                   </div>
                   <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center" style={{ borderColor: 'var(--border-default)' }}>
                     <Check size={12} style={{ color: 'var(--accent-engineering)', opacity: 0 }} />
@@ -286,10 +391,10 @@ export default function DocumentCreate() {
             </button>
           </div>
 
-          {selectedTemplate && (
+          {selectedTitle && (
             <div className="mb-4 p-3 rounded bg-blue-50 border border-blue-200">
-              <div className="text-xs font-medium text-blue-700 mb-1">Используется шаблон:</div>
-              <div className="text-sm text-blue-800">{selectedTemplate.name}</div>
+              <div className="text-xs font-medium text-blue-700 mb-1">Вид документа из реестра:</div>
+              <div className="text-sm text-blue-800">{selectedTitle}</div>
             </div>
           )}
 
@@ -299,7 +404,10 @@ export default function DocumentCreate() {
                 label="Код документа"
                 placeholder="Например: НПЗ-КМ-001"
                 value={formData.code}
-                onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, code: e.target.value });
+                  clearError('code');
+                }}
                 helpText="Уникальный идентификатор"
               />
               {errors.code && <span className="text-red-500 text-sm">{errors.code}</span>}
@@ -310,49 +418,167 @@ export default function DocumentCreate() {
                 label="Название"
                 placeholder="Краткое описание содержимого"
                 value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, title: e.target.value });
+                  clearError('title');
+                }}
               />
               {errors.title && <span className="text-red-500 text-sm">{errors.title}</span>}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Select
-                  label="Дисциплина"
-                  options={[
-                    { value: 'КМ', label: 'Конструкции металлические' },
-                    { value: 'КЖ', label: 'Конструкции железобетонные' },
-                    { value: 'ЭС', label: 'Электроснабжение' },
-                    { value: 'ТМ', label: 'Тепломеханика' },
-                    { value: 'АР', label: 'Архитектурные решения' },
-                    { value: 'ТХ', label: 'Технологические решения' },
-                  ]}
-                  value={formData.discipline}
-                  onChange={(e) => setFormData({ ...formData, discipline: e.target.value })}
-                />
-                {errors.discipline && <span className="text-red-500 text-sm">{errors.discipline}</span>}
-              </div>
-
-              <div>
-                <Select
-                  label="Тип документа"
-                  options={[
-                    { value: 'Чертеж', label: 'Чертеж' },
-                    { value: 'Схема', label: 'Схема' },
-                    { value: 'Спецификация', label: 'Спецификация' },
-                    { value: 'Расчет', label: 'Расчет' },
-                    { value: 'Пояснительная записка', label: 'Пояснительная записка' },
-                  ]}
-                  value={formData.doc_type}
-                  onChange={(e) => setFormData({ ...formData, doc_type: e.target.value })}
-                />
-                {errors.doc_type && <span className="text-red-500 text-sm">{errors.doc_type}</span>}
-              </div>
+            <div>
+              <Select
+                label="Проект"
+                placeholder="— выберите проект —"
+                options={projects.map((p) => ({ value: String(p.id), label: p.name }))}
+                value={selectedProjectId ? String(selectedProjectId) : ''}
+                onChange={(e) => {
+                  setSelectedProjectId(Number(e.target.value));
+                  clearError('project_id');
+                }}
+              />
+              {errors.project_id && <span className="text-red-500 text-sm">{errors.project_id}</span>}
             </div>
 
-            {errors.project_id && (
-              <span className="text-red-500 text-sm">{errors.project_id}</span>
-            )}
+            <div>
+              <Select
+                label="Дисциплина"
+                placeholder="— выберите —"
+                options={[
+                  { value: '08', label: '08' },
+                  { value: '11', label: '11' },
+                  { value: '37', label: '37' },
+                  { value: '65', label: '65' },
+                  { value: '70', label: '70' },
+                  { value: '94', label: '94' },
+                  { value: '96', label: '96' },
+                ]}
+                value={formData.discipline}
+                onChange={(e) => {
+                  setFormData({ ...formData, discipline: e.target.value });
+                  clearError('discipline');
+                }}
+              />
+              {errors.discipline && <span className="text-red-500 text-sm">{errors.discipline}</span>}
+            </div>
+
+            {/* Исполнители: поручение одному или совместное редактирование */}
+            <div ref={assigneeRef}>
+              <label className="mb-1 block text-sm font-medium" style={{ color: 'inherit' }}>
+                Исполнитель(и) <span style={{ color: 'var(--text-tertiary)' }}>(необязательно)</span>
+              </label>
+              <button
+                type="button"
+                onClick={() => setAssigneeOpen((v) => !v)}
+                className="flex items-center gap-2 w-full rounded-md border px-3 py-2 text-sm text-left transition-colors"
+                style={{
+                  borderColor: 'var(--border-default, #e2e8f0)',
+                  backgroundColor: 'var(--bg-surface-2, #f8fafc)',
+                  color: assigneeIds.length > 0 ? 'var(--text-primary)' : 'var(--text-tertiary, #94a3b8)',
+                }}
+              >
+                <Users size={14} style={{ color: 'var(--accent-engineering)' }} />
+                <span className="flex-1 truncate">
+                  {assigneeIds.length === 0
+                    ? '— выберите сотрудников —'
+                    : assigneeIds
+                        .map((id) => users.find((u) => u.id === id)?.full_name || `#${id}`)
+                        .join(', ')}
+                </span>
+                <ChevronDown size={14} style={{ color: 'var(--text-tertiary)' }} />
+              </button>
+              {assigneeOpen && (
+                <div
+                  className="mt-1 rounded-md border max-h-52 overflow-y-auto"
+                  style={{
+                    borderColor: 'var(--border-default, #e2e8f0)',
+                    backgroundColor: 'var(--bg-surface, #ffffff)',
+                    boxShadow: 'var(--shadow-lg, 0 4px 16px rgba(0,0,0,0.12))',
+                  }}
+                >
+                  {users.length === 0 && (
+                    <div className="px-3 py-2 text-sm" style={{ color: 'var(--text-tertiary)' }}>
+                      Нет доступных сотрудников
+                    </div>
+                  )}
+                  {users.map((u) => {
+                    const checked = assigneeIds.includes(u.id);
+                    return (
+                      <button
+                        key={u.id}
+                        type="button"
+                        onClick={() => toggleAssignee(u.id)}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors"
+                        style={{
+                          background: checked ? 'var(--bg-surface-2)' : 'transparent',
+                          color: 'var(--text-primary)',
+                        }}
+                      >
+                        <span
+                          className="w-4 h-4 rounded border flex items-center justify-center shrink-0"
+                          style={{
+                            borderColor: checked ? 'var(--accent-engineering)' : 'var(--border-default)',
+                            background: checked ? 'var(--accent-engineering)' : 'transparent',
+                          }}
+                        >
+                          {checked && <Check size={10} style={{ color: '#fff' }} />}
+                        </span>
+                        <span className="flex-1 truncate">{u.full_name || u.username}</span>
+                        <span style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>
+                          {u.role === 'admin' ? 'Администратор' : u.role === 'manager' ? 'Менеджер' : u.role === 'norm_controller' ? 'Нормоконтролер' : 'Инженер'}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              <p className="mt-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                Можно выбрать одного ответственного или нескольких для совместного редактирования
+              </p>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium" style={{ color: 'inherit' }}>
+                Файл документа <span style={{ color: 'var(--text-tertiary)' }}>(необязательно)</span>
+              </label>
+              <input
+                id="doc-file"
+                type="file"
+                className="hidden"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.dwg,.dxf,.png,.jpg,.jpeg,.zip"
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              />
+              <label
+                htmlFor="doc-file"
+                className="flex items-center gap-3 w-full rounded-md border px-3 py-2 text-sm cursor-pointer transition-colors"
+                style={{
+                  borderColor: 'var(--border-default, #e2e8f0)',
+                  backgroundColor: 'var(--bg-surface-2, #f8fafc)',
+                }}
+              >
+                <FileText size={16} style={{ color: 'var(--accent-engineering)' }} />
+                <span
+                  className="truncate"
+                  style={{ color: file ? 'var(--text-primary)' : 'var(--text-tertiary, #94a3b8)' }}
+                >
+                  {file ? file.name : 'Выберите файл или шаблон…'}
+                </span>
+                {file && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setFile(null);
+                    }}
+                    className="ml-auto text-xs hover:underline shrink-0"
+                    style={{ color: 'var(--error, #dc2626)' }}
+                  >
+                    Убрать
+                  </button>
+                )}
+              </label>
+            </div>
           </div>
 
           <div className="flex gap-3 mt-6">

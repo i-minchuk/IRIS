@@ -80,6 +80,7 @@ class DocumentService:
             "content": doc.content,
             "variables_snapshot": doc.variables_snapshot,
             "author_id": doc.author_id,
+            "assignee_ids": doc.assignee_ids or [],
             "locked_by_user": locked_by_user,
             "ai_classified_type": doc.ai_classified_type,
             "ai_confidence": doc.ai_confidence,
@@ -90,6 +91,8 @@ class DocumentService:
                     "number": r.number,
                     "status": r.status,
                     "trigger_type": r.trigger_type,
+                    "file_path": r.file_path,
+                    "changes_summary": r.changes_summary,
                     "created_at": r.created_at.isoformat() if r.created_at else None,
                 }
                 for r in doc.revisions
@@ -114,6 +117,7 @@ class DocumentService:
             "author_id": user_id,
             "content": data.get("content", {}),
             "variables_snapshot": data.get("variables_snapshot", {}),
+            "assignee_ids": data.get("assignee_ids") or [],
         }
         
         doc = await self.doc_repo.create(doc_data)
@@ -214,6 +218,60 @@ class DocumentService:
             "status": doc.status,
             "content": doc.content,
         }
+
+    async def soft_delete_document(
+        self,
+        document_id: int,
+        user_id: int,
+        reason: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Exclude document from work (soft delete, restorable)."""
+        doc = await self.doc_repo.get_by_id(document_id)
+        if not doc:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Document not found"
+            )
+        if doc.is_deleted:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Document is already excluded"
+            )
+        doc = await self.doc_repo.soft_delete(doc, user_id, reason)
+        return {
+            "id": doc.id,
+            "number": doc.number,
+            "name": doc.name,
+            "status": doc.status,
+            "is_deleted": doc.is_deleted,
+            "deleted_at": doc.deleted_at.isoformat() if doc.deleted_at else None,
+            "delete_reason": doc.delete_reason,
+        }
+
+    async def restore_document(
+        self,
+        document_id: int,
+    ) -> Dict[str, Any]:
+        """Restore previously excluded document back to work."""
+        doc = await self.doc_repo.get_by_id(document_id)
+        if not doc:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Document not found"
+            )
+        if not doc.is_deleted:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Document is not excluded"
+            )
+        doc = await self.doc_repo.restore(doc)
+        return {
+            "id": doc.id,
+            "number": doc.number,
+            "name": doc.name,
+            "status": doc.status,
+            "is_deleted": doc.is_deleted,
+        }
     
     async def lock_document(
         self,
@@ -295,6 +353,7 @@ class DocumentService:
             "trigger_source_id": data.get("trigger_source_id"),
             "created_by_id": user_id,
             "changes_summary": data.get("changes_summary"),
+            "file_path": data.get("file_path"),
             "diff_before": data.get("diff_before"),
             "diff_after": data.get("diff_after"),
             "affected_variables": data.get("affected_variables", []),

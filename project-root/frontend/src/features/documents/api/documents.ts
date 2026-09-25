@@ -17,7 +17,12 @@ export interface DocumentItem {
   current_revision_id?: number | null;
   ai_classified_type?: string;
   ai_confidence?: number;
+  is_deleted?: boolean;
+  deleted_at?: string | null;
+  delete_reason?: string | null;
   created_at?: string;
+  has_file?: boolean;
+  assignee_ids?: number[] | null;
 }
 
 export interface LockedByUser {
@@ -53,6 +58,40 @@ export interface Revision {
 
 export const getDocuments = async (params?: { project_id?: number; section_id?: number; page?: number; page_size?: number }): Promise<DocumentItem[]> => {
   const { data } = await client.get('/documents', { params });
+  return data;
+};
+
+export interface DocumentListParams {
+  project_id?: number;
+  section_id?: number;
+  status?: string;
+  include_deleted?: boolean;
+  page?: number;
+  page_size?: number;
+}
+
+export interface DocumentListResponse {
+  items: DocumentItem[];
+  total: number;
+  page: number;
+  page_size: number;
+  pages: number;
+}
+
+export const getDocumentsList = async (params?: DocumentListParams): Promise<DocumentListResponse> => {
+  const { data } = await client.get('/documents', { params });
+  return data;
+};
+
+export const excludeDocument = async (id: number, reason?: string): Promise<DocumentItem> => {
+  const { data } = await client.delete(`/documents/${id}`, {
+    params: reason ? { reason } : {},
+  });
+  return data;
+};
+
+export const restoreDocument = async (id: number): Promise<DocumentItem> => {
+  const { data } = await client.post(`/documents/${id}/restore`);
   return data;
 };
 
@@ -133,4 +172,25 @@ export const uploadDocumentFile = async (documentId: number, file: File): Promis
     headers: { 'Content-Type': 'multipart/form-data' },
   });
   return data;
+};
+
+/** Скачать файл ревизии (возвращает имя файла и blob) */
+export const downloadRevisionFile = async (
+  documentId: number,
+  revisionId: number,
+): Promise<{ filename: string; blob: Blob }> => {
+  const res = await client.get(`/documents/${documentId}/revisions/${revisionId}/download`, {
+    responseType: 'blob',
+  });
+  const disposition: string = res.headers['content-disposition'] || '';
+  let filename = `file-${revisionId}`;
+  const match = disposition.match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/i);
+  if (match) {
+    try {
+      filename = decodeURIComponent(match[1]);
+    } catch {
+      filename = match[1];
+    }
+  }
+  return { filename, blob: res.data as Blob };
 };

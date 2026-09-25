@@ -10,17 +10,19 @@ import {
   CornerDownLeft, ArrowLeft, CheckCircle,
   Briefcase, UserCheck, X, FilePlus, FileSpreadsheet,
   Circle, AlertCircle, ArrowRight, FileCheck, Archive, Filter,
-  GitBranch,
+  GitBranch, Paperclip,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { getSessions, type TimeSession } from '@/features/time_tracking/api/sessions';
 import { useAutoTimeTracker } from '@/features/time_tracking/hooks/useAutoTimeTracker';
 import apiClient from '@/shared/api/client';
 import { getLeaderboard } from '@/features/gamification/api/gamification';
 import { getTasks } from '@/features/tasks/api/tasks';
 import { getRemarks, createRemark } from '@/features/remarks/api/remarks';
-import { getDocuments, type DocumentItem } from '@/features/documents/api/documents';
+import { getDocuments, getDocument, uploadDocumentFile, downloadRevisionFile, type DocumentItem } from '@/features/documents/api/documents';
+import ViewerContainer from '@/components/viewers/ViewerContainer';
 import { getProjects } from '@/features/projects/api/projects';
+import { toast } from 'sonner';
 import type { LeaderboardEntry } from '@/types';
 import type { Task } from '@/types';
 import type { RemarkListItem } from '@/types/remarks';
@@ -77,6 +79,7 @@ interface Document {
   date: string;
   size: string;
   format: string;
+  hasFile: boolean;
   remarks: DocRemark[];
 }
 
@@ -157,6 +160,7 @@ function mapApiDocument(d: DocumentItem, projectName: string): Document {
     date: d.created_at ? new Date(d.created_at).toLocaleDateString('ru-RU') : '—',
     size: '—',
     format: '—',
+    hasFile: d.has_file ?? false,
     remarks: [],
   };
 }
@@ -215,6 +219,7 @@ function RegistryView() {
   const [appliedQuery, setAppliedQuery] = useState('');
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
+  const navigate = useNavigate();
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
   const [newRemarkText, setNewRemarkText] = useState('');
   const [newRemarkAction, setNewRemarkAction] = useState<RemarkAction>('revise');
@@ -224,6 +229,49 @@ function RegistryView() {
   const [docsLoading, setDocsLoading] = useState(true);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [allProjects, setAllProjects] = useState<{ id: number; name: string; status?: string }[]>([]);
+
+  // ── Предпросмотр файла выбранного документа ──
+  const [previewFile, setPreviewFile] = useState<{ url: string; name: string } | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const previewCacheRef = useRef<Map<number, { url: string; name: string }>>(new Map());
+
+  // ── Модальное окно быстрого просмотра файла (по клику на скрепку) ──
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalFile, setModalFile] = useState<{ url: string; name: string } | null>(null);
+  const [modalLoading, setModalLoading] = useState(false);
+
+  const openFilePreview = async (doc: Document, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const numericId = Number.parseInt(doc.id, 10);
+    if (!numericId) return;
+    setModalOpen(true);
+    setModalLoading(true);
+    setModalFile(null);
+    try {
+      const file = await loadPreview(doc.id);
+      if (file) {
+        setModalFile(file);
+      } else {
+        toast.error('У документа нет загруженных файлов');
+        setModalOpen(false);
+      }
+    } catch {
+      toast.error('Не удалось загрузить файл');
+      setModalOpen(false);
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  // Закрытие модального окна по Escape
+  useEffect(() => {
+    if (!modalOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setModalOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [modalOpen]);
 
   // ── Ресайз колонок реестра (проекты / документы / замечания) ──
   const DEFAULT_LEFT_W = 220;
@@ -339,6 +387,44 @@ function RegistryView() {
     docs.find(d => d.id === selectedDocId) || null,
   [selectedDocId, docs]);
 
+  // ── Загрузка файла последней ревизии для предпросмотра ──
+  const loadPreview = async (docId: string): Promise<{ url: string; name: string } | null> => {
+    const numericId = Number.parseInt(docId, 10);
+    if (!numericId) return null;
+    const detail = await getDocument(numericId);
+    const withFile = [...(detail.revisions ?? [])].reverse().find((r) => r.file_path);
+    if (!withFile) return null;
+    const cached = previewCacheRef.current.get(withFile.id);
+    if (cached) return cached;
+    const { filename, blob } = await downloadRevisionFile(numericId, withFile.id);
+    const url = URL.createObjectURL(blob);
+    const file = { url, name: filename };
+    previewCacheRef.current.set(withFile.id, file);
+    return file;
+  };
+
+  useEffect(() => {
+    if (!selectedDocId) {
+      setPreviewFile(null);
+      return;
+    }
+    let cancelled = false;
+    setPreviewFile(null);
+    setPreviewLoading(true);
+    loadPreview(selectedDocId)
+      .then((file) => { if (!cancelled) setPreviewFile(file); })
+      .catch(() => { if (!cancelled) setPreviewFile(null); })
+      .finally(() => { if (!cancelled) setPreviewLoading(false); });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDocId]);
+
+  // Отзыв blob-URL при размонтировании
+  useEffect(() => () => {
+    previewCacheRef.current.forEach((f) => URL.revokeObjectURL(f.url));
+    previewCacheRef.current.clear();
+  }, []);
+
   const docsForProject = useMemo(() => {
     if (!selectedProject) return filteredDocs;
     return filteredDocs.filter(d => d.project === selectedProject);
@@ -367,6 +453,58 @@ function RegistryView() {
       } catch {
         setDocs(prev => prev.map(d => (d.id === doc.id ? { ...d, remarks: [] } : d)));
       }
+    }
+  };
+
+  const handlePanelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !selectedDoc) return;
+    const numericId = Number.parseInt(selectedDoc.id, 10);
+    if (!numericId) {
+      toast.error('Не удалось определить документ');
+      return;
+    }
+    try {
+      await uploadDocumentFile(numericId, file);
+      toast.success(`Файл «${file.name}» загружен`);
+      previewCacheRef.current.clear();
+      setPreviewLoading(true);
+      loadPreview(selectedDoc.id)
+        .then((f) => setPreviewFile(f))
+        .catch(() => setPreviewFile(null))
+        .finally(() => setPreviewLoading(false));
+    } catch {
+      toast.error('Не удалось загрузить файл');
+    }
+  };
+
+  const handlePanelOpen = () => {
+    if (selectedDoc) navigate(`/documents/${selectedDoc.id}`);
+  };
+
+  const handlePanelDownload = async () => {
+    if (!selectedDoc) return;
+    const numericId = Number.parseInt(selectedDoc.id, 10);
+    if (!numericId) return;
+    try {
+      const detail = await getDocument(numericId);
+      const withFile = [...(detail.revisions ?? [])].reverse().find((r) => r.file_path);
+      if (!withFile) {
+        toast.error('У документа нет загруженных файлов');
+        return;
+      }
+      const { filename, blob } = await downloadRevisionFile(numericId, withFile.id);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error('Не удалось скачать файл');
     }
   };
 
@@ -507,7 +645,7 @@ function RegistryView() {
         />
 
         {/* ═══ CENTER: DOCUMENT VIEWER ═══ */}
-        <div className="flex flex-col min-w-0">
+        <div className="flex flex-col min-w-0 min-h-0">
           {/* Center header */}
           <div className="px-3 py-2 text-xs font-bold uppercase tracking-wider flex items-center justify-between" style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border-default)' }}>
             <span>{selectedDoc ? 'Просмотр документа' : 'Документы проекта'}</span>
@@ -522,7 +660,7 @@ function RegistryView() {
             )}
           </div>
 
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 min-h-0 overflow-y-auto">
             {!selectedDoc ? (
               /* Document list for selected project */
               <div className="p-3 space-y-1">
@@ -532,10 +670,13 @@ function RegistryView() {
                   </div>
                 )}
                 {docsForProject.map(doc => (
-                  <button
+                  <div
                     key={doc.id}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => handleDocClick(doc)}
-                    className="w-full flex items-center gap-2 p-2 rounded-md text-left transition-colors"
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleDocClick(doc); }}
+                    className="w-full flex items-center gap-2 p-2 rounded-md text-left transition-colors cursor-pointer"
                     style={{ background: 'transparent', border: '1px solid transparent' }}
                     onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-surface-2)'; e.currentTarget.style.borderColor = 'var(--border-default)'; }}
                     onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'transparent'; }}
@@ -548,15 +689,31 @@ function RegistryView() {
                     <div className="flex items-center gap-1.5 shrink-0">
                       <TypeBadge type={doc.type} />
                       <StatusBadge status={doc.status} />
+                      {doc.hasFile ? (
+                        <button
+                          type="button"
+                          title="Открыть предпросмотр файла"
+                          className="p-0.5 rounded transition-transform hover:scale-125"
+                          onClick={(e) => { void openFilePreview(doc, e); }}
+                        >
+                          <Paperclip size={11} style={{ color: TAB_COLOR }} />
+                        </button>
+                      ) : (
+                        <span
+                          title="Файл не загружен"
+                          className="inline-block rounded-full"
+                          style={{ width: 9, height: 9, border: '1px dashed var(--text-muted)', opacity: 0.55 }}
+                        />
+                      )}
                     </div>
-                  </button>
+                  </div>
                 ))}
               </div>
             ) : (
               /* Document preview — compact */
-              <div className="p-3 space-y-3">
+              <div className="p-3 space-y-3 flex flex-col" style={{ height: '100%', minHeight: 500 }}>
                 {/* Compact header */}
-                <div className="flex items-center gap-2 p-2 rounded-lg" style={{ background: 'var(--bg-surface-2)', border: '1px solid var(--border-default)' }}>
+                <div className="flex items-center gap-2 p-2 rounded-lg shrink-0" style={{ background: 'var(--bg-surface-2)', border: '1px solid var(--border-default)' }}>
                   <FileText size={16} style={{ color: docTypeConfig[selectedDoc.type].color }} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
@@ -569,7 +726,7 @@ function RegistryView() {
                 </div>
 
                 {/* Compact meta — single row */}
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm shrink-0">
                   <span style={{ color: 'var(--text-secondary)' }}><span style={{ color: 'var(--text-muted)' }}>Проект:</span> {selectedDoc.project}</span>
                   <span style={{ color: 'var(--text-secondary)' }}><span style={{ color: 'var(--text-muted)' }}>Ревизия:</span> {selectedDoc.revision}</span>
                   <span style={{ color: 'var(--text-secondary)' }}><span style={{ color: 'var(--text-muted)' }}>Автор:</span> {selectedDoc.author}</span>
@@ -578,25 +735,75 @@ function RegistryView() {
                   <span style={{ color: 'var(--text-secondary)' }}><span style={{ color: 'var(--text-muted)' }}>Размер:</span> {selectedDoc.size} · {selectedDoc.format.toUpperCase()}</span>
                 </div>
 
-                {/* Preview placeholder */}
-                <div className="rounded-lg p-3" style={{ background: 'var(--bg-surface-2)', border: '1px dashed var(--border-default)' }}>
-                  <div className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>Предпросмотр</div>
-                  <div className="h-24 flex items-center justify-center rounded" style={{ background: 'var(--bg-surface)' }}>
-                    <div className="text-center">
-                      <FileText size={24} className="mx-auto mb-1" style={{ color: 'var(--text-muted)', opacity: 0.3 }} />
-                      <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Просмотр документа {selectedDoc.format.toUpperCase()}</p>
-                    </div>
+                {/* Preview — real file viewer, растягивается до низа страницы */}
+                <div className="rounded-lg overflow-hidden flex flex-col flex-1" style={{ border: '1px solid var(--border-default)', minHeight: 240 }}>
+                  <div
+                    className="px-3 py-1.5 text-xs font-bold uppercase tracking-wider shrink-0"
+                    style={{ color: 'var(--text-muted)', background: 'var(--bg-surface-2)', borderBottom: '1px solid var(--border-default)' }}
+                  >
+                    Предпросмотр
+                  </div>
+                  <div className="flex-1 min-h-0" style={{ background: 'var(--bg-surface)' }}>
+                    {previewLoading ? (
+                      <div className="h-full flex items-center justify-center">
+                        <div className="text-center">
+                          <div
+                            className="w-8 h-8 border-2 border-t-2 rounded-full animate-spin mx-auto mb-2"
+                            style={{ borderColor: 'var(--border-default)', borderTopColor: 'var(--accent-engineering)' }}
+                          />
+                          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Загрузка файла…</p>
+                        </div>
+                      </div>
+                    ) : previewFile ? (
+                      <div className="h-full flex flex-col">
+                        <ViewerContainer fileUrl={previewFile.url} fileName={previewFile.name} hideDownload hideFileName />
+                      </div>
+                    ) : (
+                      <div className="h-full flex items-center justify-center">
+                        <div className="text-center">
+                          <Upload size={24} className="mx-auto mb-1" style={{ color: 'var(--text-muted)', opacity: 0.4 }} />
+                          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                            Файл документа не загружен.
+                          </p>
+                          <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)', opacity: 0.7 }}>
+                            Загрузите файл кнопкой ниже — он появится здесь.
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-2">
-                  <button className="flex-1 text-xs py-1.5 rounded-md text-white text-center flex items-center justify-center gap-1.5" style={{ background: TAB_COLOR }}>
+                <div className="flex gap-2 shrink-0">
+                  <button
+                    onClick={handlePanelOpen}
+                    className="flex-1 text-xs py-1.5 rounded-md text-white text-center flex items-center justify-center gap-1.5"
+                    style={{ background: TAB_COLOR }}
+                  >
                     <Eye size={12} /> Открыть
                   </button>
-                  <button className="flex-1 text-base md:text-lg font-medium leading-relaxed mt-1 py-1.5 rounded-md border text-center flex items-center justify-center gap-1.5 transition-colors" style={{ color: 'var(--text-secondary)', borderColor: 'var(--border-default)', background: 'var(--bg-surface-2)' }}>
+                  <button
+                    onClick={handlePanelDownload}
+                    className="flex-1 text-xs py-1.5 rounded-md border text-center flex items-center justify-center gap-1.5 transition-colors"
+                    style={{ color: 'var(--text-secondary)', borderColor: 'var(--border-default)', background: 'var(--bg-surface-2)' }}
+                  >
                     <Download size={12} /> Скачать
                   </button>
+                  <input
+                    id="panel-doc-upload"
+                    type="file"
+                    className="hidden"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.dwg,.dxf,.png,.jpg,.jpeg,.zip"
+                    onChange={handlePanelUpload}
+                  />
+                  <label
+                    htmlFor="panel-doc-upload"
+                    className="flex-1 text-xs py-1.5 rounded-md border text-center flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    style={{ color: 'var(--text-secondary)', borderColor: 'var(--border-default)', background: 'var(--bg-surface-2)' }}
+                  >
+                    <Upload size={12} /> Загрузить файл
+                  </label>
                 </div>
               </div>
             )}
@@ -778,6 +985,53 @@ function RegistryView() {
           )}
         </div>
       </div>
+
+      {/* Модальное окно быстрого просмотра файла */}
+      {modalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.55)' }}
+          onClick={() => setModalOpen(false)}
+        >
+          <div
+            className="rounded-xl overflow-hidden flex flex-col w-full max-w-5xl"
+            style={{ background: 'var(--card-bg)', border: '1px solid var(--border-default)', height: '85vh' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div
+              className="px-4 py-2.5 flex items-center justify-between gap-3"
+              style={{ borderBottom: '1px solid var(--border-default)', background: 'var(--bg-surface-2)' }}
+            >
+              <span className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }} title={modalFile?.name}>
+                {modalLoading ? 'Загрузка файла…' : (modalFile?.name ?? 'Предпросмотр')}
+              </span>
+              <button
+                onClick={() => setModalOpen(false)}
+                className="p-1 rounded shrink-0 transition-colors"
+                style={{ color: 'var(--text-muted)' }}
+                title="Закрыть (Esc)"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="flex-1 min-h-0" style={{ background: 'var(--bg-surface)' }}>
+              {modalLoading ? (
+                <div className="h-full flex items-center justify-center">
+                  <div className="text-center">
+                    <div
+                      className="w-8 h-8 border-2 border-t-2 rounded-full animate-spin mx-auto mb-2"
+                      style={{ borderColor: 'var(--border-default)', borderTopColor: 'var(--accent-engineering)' }}
+                    />
+                    <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Загрузка файла…</p>
+                  </div>
+                </div>
+              ) : modalFile ? (
+                <ViewerContainer fileUrl={modalFile.url} fileName={modalFile.name} />
+              ) : null}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1593,7 +1847,7 @@ export default function DocumentsPage() {
               className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md transition-colors"
               style={{ background: TAB_COLOR, color: '#ffffff' }}
             >
-              <FilePlus size={13} /> Создать
+              <FilePlus size={13} /> Создать документ
             </Link>
             <Link
               to="/documents/import"

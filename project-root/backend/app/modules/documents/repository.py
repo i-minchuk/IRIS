@@ -72,6 +72,31 @@ class DocumentRepository:
         await self.db.delete(doc)
         await self.db.commit()
         return True
+
+    async def soft_delete(
+        self,
+        doc: Document,
+        user_id: int,
+        reason: Optional[str] = None,
+    ) -> Document:
+        """Soft delete: exclude document from work (restorable)."""
+        doc.is_deleted = True
+        doc.deleted_at = datetime.now(timezone.utc)
+        doc.deleted_by_id = user_id
+        doc.delete_reason = reason
+        await self.db.commit()
+        await self.db.refresh(doc)
+        return doc
+
+    async def restore(self, doc: Document) -> Document:
+        """Restore soft-deleted document back to work."""
+        doc.is_deleted = False
+        doc.deleted_at = None
+        doc.deleted_by_id = None
+        doc.delete_reason = None
+        await self.db.commit()
+        await self.db.refresh(doc)
+        return doc
     
     async def lock(self, doc: Document, user_id: int) -> Document:
         """Lock document."""

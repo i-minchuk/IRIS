@@ -79,6 +79,7 @@ class Document(Base):
     )
     content: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     variables_snapshot: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    assignee_ids: Mapped[Optional[list]] = mapped_column(JSON, default=list)
     planned_start: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
@@ -94,6 +95,17 @@ class Document(Base):
     duration_hours: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     ai_classified_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     ai_confidence: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    # Soft delete: исключён из работы (подсветка чёрной заливкой, можно вернуть)
+    is_deleted: Mapped[bool] = mapped_column(
+        nullable=False, default=False, server_default="0"
+    )
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    deleted_by_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id"), nullable=True
+    )
+    delete_reason: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -116,6 +128,7 @@ class Document(Base):
     checker: Mapped[Optional["User"]] = relationship(foreign_keys=[checker_id])
     approver: Mapped[Optional["User"]] = relationship(foreign_keys=[approver_id])
     locked_by: Mapped[Optional["User"]] = relationship(foreign_keys=[locked_by_id])
+    deleted_by: Mapped[Optional["User"]] = relationship(foreign_keys=[deleted_by_id])
     revisions: Mapped[list["Revision"]] = relationship(back_populates="document")
     approval_workflows: Mapped[list["ApprovalWorkflow"]] = relationship(
         back_populates="document"
@@ -127,6 +140,7 @@ class Document(Base):
         Index("ix_doc_author_created", "author_id", "created_at"),
         Index("ix_doc_project_status", "project_id", "status"),
         Index("ix_doc_project_type", "project_id", "doc_type"),
+        Index("ix_doc_project_deleted", "project_id", "is_deleted"),
         Index("ix_doc_section", "section_id"),
         Index("ix_doc_status", "status"),
         Index("ix_documents_number", "number"),

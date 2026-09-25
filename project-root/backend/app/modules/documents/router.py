@@ -1,6 +1,9 @@
 """Documents, revisions, remarks and approval workflow API router."""
 
+import os
+
 from fastapi import APIRouter, Depends, HTTPException, Request, Query, UploadFile, File
+from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
 
@@ -10,7 +13,7 @@ from app.modules.auth.models import User
 from app.modules.documents.dependencies import router as deps_router
 from app.modules.documents.service import DocumentService
 from app.modules.documents.deps import get_document_service
-from app.modules.documents.models import Document
+from app.modules.documents.models import Document, Revision
 from app.modules.documents.schemas import (
     DocumentCreateInput,
     DocumentUpdateInput,
@@ -34,6 +37,7 @@ async def list_documents(
     section_id: int = None,
     status: str = Query(None, description="Filter by status"),
     document_type: str = Query(None, description="Filter by document type"),
+    include_deleted: bool = Query(False, description="Include excluded documents"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db_read_only),
@@ -41,20 +45,21 @@ async def list_documents(
 ):
     """List documents with optional filters and pagination."""
     from app.modules.documents.crud import get_documents
-    
+
     skip = (page - 1) * page_size
     docs = await get_documents(
         db,
         project_id=project_id,
         status=status,
         document_type=document_type,
+        include_deleted=include_deleted,
         skip=skip,
         limit=page_size
     )
-    
+
     # Count total for pagination
     count_query = select(func.count()).select_from(Document)
-    filters = []
+    filters = [Document.is_deleted.is_(include_deleted)]
     if project_id:
         filters.append(Document.project_id == project_id)
     if status:
@@ -64,7 +69,18 @@ async def list_documents(
     if filters:
         count_query = count_query.where(and_(*filters))
     total = await db.scalar(count_query)
-    
+
+    # Признак наличия файла у документа (один запрос на всю страницу)
+    has_file_ids: set[int] = set()
+    if docs:
+        rows = await db.execute(
+            select(Revision.document_id).where(
+                Revision.document_id.in_([d.id for d in docs]),
+                Revision.file_path.is_not(None),
+            ).distinct()
+        )
+        has_file_ids = set(rows.scalars().all())
+
     items = [
         {
             "id": d.id,
@@ -76,7 +92,11 @@ async def list_documents(
             "author_id": d.author_id,
             "project_id": d.project_id,
             "section_id": d.section_id,
+            "is_deleted": d.is_deleted,
+            "deleted_at": d.deleted_at.isoformat() if d.deleted_at else None,
+            "delete_reason": d.delete_reason,
             "created_at": d.created_at.isoformat() if d.created_at else None,
+            "has_file": d.id in has_file_ids,
         }
         for d in docs
     ]
@@ -105,6 +125,26 @@ async def update_document(
     service: DocumentService = Depends(get_document_service),
 ):
     return await service.update_document(document_id, data.model_dump(exclude_unset=True))
+
+
+@router.delete("/{document_id}", response_model=dict)
+async def exclude_document(
+    document_id: int,
+    reason: str = Query(None, max_length=500, description="Причина исключения из работы"),
+    current_user: User = Depends(get_current_active_user),
+    service: DocumentService = Depends(get_document_service),
+):
+    """Исключить документ из работы (мягкое удаление, возврат возможен)."""
+    return await service.soft_delete_document(document_id, current_user.id, reason)
+
+
+@router.post("/{document_id}/restore", response_model=dict)
+async def restore_document(
+    document_id: int,
+    service: DocumentService = Depends(get_document_service),
+):
+    """Вернуть ранее исключённый документ в работу."""
+    return await service.restore_document(document_id)
 
 
 @router.get("/{document_id}", response_model=dict)
@@ -175,6 +215,34 @@ async def cascade_update_endpoint(
         data.project_id,
         data.changed_keys
     )
+
+
+@router.get("/{document_id}/revisions/{revision_id}/download")
+async def download_revision_file(
+    document_id: int,
+    revision_id: int,
+    db: AsyncSession = Depends(get_db_read_only),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Скачать файл ревизии документа."""
+    result = await db.execute(
+        select(Revision).where(
+            Revision.id == revision_id,
+            Revision.document_id == document_id,
+        )
+    )
+    revision = result.scalar_one_or_none()
+    if not revision or not revision.file_path:
+        raise HTTPException(status_code=404, detail="File not found")
+    if not os.path.exists(revision.file_path):
+        raise HTTPException(status_code=404, detail="File missing on storage")
+
+    filename = os.path.basename(revision.file_path)
+    if revision.changes_summary and "File uploaded:" in revision.changes_summary:
+        original = revision.changes_summary.split("File uploaded:", 1)[1].strip()
+        if original:
+            filename = original
+    return FileResponse(revision.file_path, filename=filename)
 
 
 @router.post("/{document_id}/lock", response_model=dict)

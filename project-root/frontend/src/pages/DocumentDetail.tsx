@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card } from '@/components/ui';
 import { Button } from '@/components/ui';
@@ -8,9 +8,13 @@ import { useRemarksStore } from '@/stores/remarksStore';
 import { DocumentAnalysisPanel } from '@/features/ai/components/DocumentAnalysisPanel';
 import { AIChatPanel } from '@/features/ai/components/AIChatPanel';
 import { RequirementsPanel } from '@/features/ai/components/RequirementsPanel';
-import { FileText, MessageSquare, History, Users, ArrowLeft, Sparkles, Wrench, Bot } from 'lucide-react';
+import { FileText, MessageSquare, History, Users, ArrowLeft, Sparkles, Wrench, Bot, Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { getDocument, type DocumentDetail } from '@/features/documents/api/documents';
+import { getDocument, downloadRevisionFile, uploadDocumentFile, type DocumentDetail, type Revision } from '@/features/documents/api/documents';
+import { getUsers } from '@/features/users/api/users';
+import type { User } from '@/types';
+import ViewerContainer from '@/components/viewers/ViewerContainer';
+import { toast } from 'sonner';
 import { getProject } from '@/features/projects/api/projects';
 import type { DocumentStatus } from '@/lib/documentStatusMachine';
 
@@ -28,6 +32,15 @@ function mapStatus(value?: string): DocumentStatus {
   return 'draft';
 }
 
+function revisionFileName(rev: Revision): string {
+  const stored = rev.file_path ? rev.file_path.split(/[\\/]/).pop() : '';
+  const original =
+    rev.changes_summary && rev.changes_summary.includes('File uploaded:')
+      ? rev.changes_summary.split('File uploaded:')[1].trim()
+      : '';
+  return original || stored || 'файл';
+}
+
 interface ProjectInfo {
   name: string;
   customer_name?: string;
@@ -41,8 +54,13 @@ export default function DocumentDetailPage() {
   const [doc, setDoc] = useState<DocumentDetail | null>(null);
   const [project, setProject] = useState<ProjectInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState<User[]>([]);
   const remarks = useRemarksStore(s => s.remarks);
   const documentRemarks = remarks.filter(r => r.document_id === Number(id));
+
+  useEffect(() => {
+    getUsers().then(setUsers).catch(() => setUsers([]));
+  }, []);
 
   useEffect(() => {
     const numericId = Number(id);
@@ -76,6 +94,75 @@ export default function DocumentDetailPage() {
 
   const revisions = doc?.revisions ?? [];
   const files = revisions.filter(r => r.file_path);
+  const assigneeNames = (doc?.assignee_ids ?? [])
+    .map((uid) => users.find((u) => u.id === uid)?.full_name || `#${uid}`);
+
+  // ── Предпросмотр файла ревизии ──
+  const [selectedRevId, setSelectedRevId] = useState<number | null>(null);
+  const [previewFile, setPreviewFile] = useState<{ url: string; name: string } | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const previewCacheRef = useRef<Map<number, { url: string; name: string }>>(new Map());
+  const activeRev = files.find(r => r.id === selectedRevId) ?? files[files.length - 1] ?? null;
+
+  useEffect(() => {
+    const numericId = Number(id);
+    if (!activeRev || !numericId) {
+      setPreviewFile(null);
+      return;
+    }
+    const cached = previewCacheRef.current.get(activeRev.id);
+    if (cached) {
+      setPreviewFile(cached);
+      return;
+    }
+    let cancelled = false;
+    setPreviewFile(null);
+    setPreviewLoading(true);
+    downloadRevisionFile(numericId, activeRev.id)
+      .then(({ filename, blob }) => {
+        if (cancelled) return;
+        const url = URL.createObjectURL(blob);
+        const file = { url, name: filename };
+        previewCacheRef.current.set(activeRev.id, file);
+        setPreviewFile(file);
+      })
+      .catch(() => {
+        if (!cancelled) setPreviewFile(null);
+      })
+      .finally(() => {
+        if (!cancelled) setPreviewLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [id, activeRev]);
+
+  // Отзыв blob-URL при размонтировании
+  useEffect(() => () => {
+    previewCacheRef.current.forEach(f => URL.revokeObjectURL(f.url));
+    previewCacheRef.current.clear();
+  }, []);
+
+  // ── Загрузка нового файла (новая ревизия) ──
+  const [uploading, setUploading] = useState(false);
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    const numericId = Number(id);
+    if (!file || !numericId) return;
+    setUploading(true);
+    try {
+      await uploadDocumentFile(numericId, file);
+      toast.success(`Файл «${file.name}» загружен`);
+      const detail = await getDocument(numericId);
+      setDoc(detail);
+      setSelectedRevId(null); // активным станет последний загруженный файл
+    } catch {
+      toast.error('Не удалось загрузить файл');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
     { key: 'info', label: 'Основное', icon: <FileText size={14} /> },
@@ -168,6 +255,12 @@ export default function DocumentDetailPage() {
                   <span style={{ color: 'var(--text-secondary)' }}>Автор:</span>
                   <span style={{ color: 'var(--text-primary)' }}>—</span>
                 </div>
+                <div className="flex justify-between gap-4">
+                  <span style={{ color: 'var(--text-secondary)' }}>Исполнитель(и):</span>
+                  <span className="text-right" style={{ color: 'var(--text-primary)' }}>
+                    {assigneeNames.length > 0 ? assigneeNames.join(', ') : '—'}
+                  </span>
+                </div>
                 <div className="flex justify-between">
                   <span style={{ color: 'var(--text-secondary)' }}>Создан:</span>
                   <span style={{ color: 'var(--text-primary)' }}>{doc?.created_at ? new Date(doc.created_at).toLocaleDateString('ru-RU') : '—'}</span>
@@ -251,22 +344,116 @@ export default function DocumentDetailPage() {
 
         {activeTab === 'files' && (
           <Card padding="md">
-            <h3 className="text-sm font-medium mb-4" style={{ color: 'var(--text-primary)' }}>Файлы</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Файлы</h3>
+              <input
+                id="detail-doc-upload"
+                type="file"
+                className="hidden"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.dwg,.dxf,.png,.jpg,.jpeg,.zip"
+                onChange={handleFileUpload}
+                disabled={uploading}
+              />
+              <label
+                htmlFor="detail-doc-upload"
+                className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border transition-colors ${uploading ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}`}
+                style={{ color: 'var(--text-secondary)', borderColor: 'var(--border-default)', background: 'var(--bg-surface-2)' }}
+              >
+                <Upload size={12} />
+                {uploading ? 'Загрузка…' : 'Загрузить файл'}
+              </label>
+            </div>
             {files.length === 0 ? (
               <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Нет загруженных файлов</p>
             ) : (
-              <div className="space-y-2">
-                {files.map(rev => (
+              <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-4">
+                {/* Список файлов */}
+                <div className="space-y-2">
+                  {files.map(rev => {
+                    const displayName = revisionFileName(rev);
+                    const isActive = activeRev?.id === rev.id;
+                    return (
+                      <div
+                        key={rev.id}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setSelectedRevId(rev.id)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setSelectedRevId(rev.id); }}
+                        className="flex items-center gap-3 p-2 rounded-lg transition-colors cursor-pointer"
+                        style={{
+                          backgroundColor: isActive ? 'var(--bg-surface)' : 'var(--bg-surface-2)',
+                          border: `1px solid ${isActive ? 'var(--brand-iris)' : 'var(--border-default)'}`,
+                        }}
+                      >
+                        <FileText size={16} style={{ color: 'var(--brand-iris)' }} />
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm truncate" style={{ color: 'var(--text-primary)' }} title={displayName}>
+                            {displayName}
+                          </div>
+                          <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                            Ревизия {rev.number}
+                            {rev.created_at ? ` · ${new Date(rev.created_at).toLocaleDateString('ru-RU')}` : ''}
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="shrink-0"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            if (!id) return;
+                            try {
+                              const { filename, blob } = await downloadRevisionFile(Number(id), rev.id);
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = filename;
+                              document.body.appendChild(a);
+                              a.click();
+                              a.remove();
+                              URL.revokeObjectURL(url);
+                            } catch {
+                              // toast об ошибке уже показан axios-интерцептором
+                            }
+                          }}
+                        >
+                          Скачать
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Предпросмотр выбранного файла */}
+                <div className="rounded-lg overflow-hidden flex flex-col min-w-0" style={{ border: '1px solid var(--border-default)' }}>
                   <div
-                    key={rev.id}
-                    className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:opacity-80"
-                    style={{ backgroundColor: 'var(--bg-surface-2)' }}
+                    className="px-3 py-1.5 text-xs font-bold uppercase tracking-wider truncate"
+                    style={{ color: 'var(--text-muted)', background: 'var(--bg-surface-2)', borderBottom: '1px solid var(--border-default)' }}
                   >
-                    <FileText size={16} style={{ color: 'var(--brand-iris)' }} />
-                    <span className="text-sm" style={{ color: 'var(--text-primary)' }}>{rev.file_path!.split('/').pop()}</span>
-                    <span className="text-xs ml-auto" style={{ color: 'var(--text-tertiary)' }}>Ревизия {rev.number}</span>
+                    Предпросмотр{previewFile ? ` — ${previewFile.name}` : ''}
                   </div>
-                ))}
+                  <div style={{ height: 'calc(100vh - 400px)', minHeight: 380, background: 'var(--bg-surface)' }}>
+                    {previewLoading ? (
+                      <div className="h-full flex items-center justify-center">
+                        <div className="text-center">
+                          <div
+                            className="w-8 h-8 border-2 border-t-2 rounded-full animate-spin mx-auto mb-2"
+                            style={{ borderColor: 'var(--border-default)', borderTopColor: 'var(--accent-engineering)' }}
+                          />
+                          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Загрузка файла…</p>
+                        </div>
+                      </div>
+                    ) : previewFile ? (
+                      <div className="h-full flex flex-col">
+                        <ViewerContainer fileUrl={previewFile.url} fileName={previewFile.name} hideDownload hideFileName />
+                      </div>
+                    ) : (
+                      <div className="h-full flex items-center justify-center">
+                        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Предпросмотр недоступен</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
           </Card>

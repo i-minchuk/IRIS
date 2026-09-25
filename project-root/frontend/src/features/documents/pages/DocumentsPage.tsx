@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { getDocumentWithRemarks, updateDocument, createDocument, createRevision, type DocumentDetailWithRemarks } from '@/features/documents/api/documents';
 import { DocumentEditor } from '../components/DocumentEditor';
 import { DocumentDetailPanels } from '../components/DocumentDetailPanels';
-import { projectsApi, type Project, type ProjectTree, type ProjectTreeDoc } from '@/features/projects/api/projects';
+import { DocumentRegistry } from '../components/DocumentRegistry';
+import { projectsApi, getProjects, type Project, type ProjectTree, type ProjectTreeDoc } from '@/features/projects/api/projects';
 import { ProjectTreeView } from '@/features/projects/components/ProjectTree';
 import { VariablePanel } from '@/features/variables/components/VariablePanel';
 import { variablesApi } from '@/features/variables/api/variables';
@@ -43,6 +44,7 @@ export const DocumentsPage: React.FC = () => {
   const [showCreate, setShowCreate] = useState(false);
   const [newDoc, setNewDoc] = useState<{ number: string; name: string; doc_type: string; project_id: number; section_id?: number }>({ number: '', name: '', doc_type: 'KM', project_id: 1 });
   const [activeTab, setActiveTab] = useState<'info' | 'editor' | 'revisions' | 'remarks' | 'variables' | 'preview'>('info');
+  const [viewMode, setViewMode] = useState<'tree' | 'registry'>('tree');
   const [editorContent, setEditorContent] = useState('');
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
 
@@ -52,10 +54,10 @@ export const DocumentsPage: React.FC = () => {
   const lockedDocRef = useRef<number | null>(null);
 
   useEffect(() => {
-    projectsApi.list().then((res: { data: Project[] }) => {
-      setProjects(res.data);
-      if (res.data.length > 0 && !selectedProjectId) {
-        setSelectedProjectId(res.data[0].id);
+    getProjects().then((list: Project[]) => {
+      setProjects(list);
+      if (list.length > 0 && !selectedProjectId) {
+        setSelectedProjectId(list[0].id);
       }
     }).catch(() => {});
   }, []);
@@ -206,11 +208,33 @@ export const DocumentsPage: React.FC = () => {
               <option key={p.id} value={p.id}>{p.name}</option>
             ))}
           </select>
+          <div className="flex rounded-md border border-gray-300 dark:border-gray-600 overflow-hidden text-sm">
+            <button
+              onClick={() => setViewMode('tree')}
+              className={`px-3 py-1.5 transition-colors ${viewMode === 'tree' ? 'bg-emerald-500 text-white' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+            >
+              Дерево
+            </button>
+            <button
+              onClick={() => setViewMode('registry')}
+              className={`px-3 py-1.5 border-l border-gray-300 dark:border-gray-600 transition-colors ${viewMode === 'registry' ? 'bg-emerald-500 text-white' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+            >
+              Реестр
+            </button>
+          </div>
         </div>
-        <Button onClick={() => setShowCreate(true)}>+ Новый документ</Button>
+        {viewMode === 'tree' && <Button onClick={() => setShowCreate(true)}>+ Новый документ</Button>}
       </div>
 
+      {/* Registry view — Excel-like таблица с цветовой подсветкой */}
+      {viewMode === 'registry' && selectedProjectId && (
+        <div className="flex-1 min-h-0 overflow-auto bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+          <DocumentRegistry projectId={selectedProjectId} />
+        </div>
+      )}
+
       {/* Main content: Tree + Details */}
+      {viewMode === 'tree' && (
       <div className="flex-1 grid grid-cols-12 gap-4 min-h-0">
         {/* Left: Project Tree */}
         <div className="col-span-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-auto p-3">
@@ -404,6 +428,7 @@ export const DocumentsPage: React.FC = () => {
           )}
         </div>
       </div>
+      )}
 
       {/* Create Document Modal */}
       {showCreate && (

@@ -195,6 +195,7 @@ async def create_section(
 @router.get("/{project_id}/tree", response_model=dict)
 async def get_project_tree(
     project_id: int,
+    include_deleted: bool = Query(False, description="Include excluded documents"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -236,8 +237,10 @@ async def get_project_tree(
                                         "doc_type": d.doc_type,
                                         "status": d.status,
                                         "crs_code": d.crs_code,
+                                        "is_deleted": d.is_deleted,
                                     }
                                     for d in sec.documents
+                                    if include_deleted or not d.is_deleted
                                 ],
                             }
                             for sec in k.sections

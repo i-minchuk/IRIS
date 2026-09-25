@@ -226,6 +226,7 @@ class DocumentCreateInput(BaseModel):
     section_id: Optional[int] = None
     variables: Optional[dict] = Field(default_factory=dict)
     standard_template_id: Optional[int] = None
+    assignee_ids: Optional[list[int]] = None
 
 
 class DocumentUpdateInput(BaseModel):
@@ -241,6 +242,7 @@ class DocumentUpdateInput(BaseModel):
     section_id: Optional[int] = None
     variables: Optional[dict] = None
     standard_template_id: Optional[int] = None
+    assignee_ids: Optional[list[int]] = None
 
 
 class RevisionCreateInput(BaseModel):

@@ -13,13 +13,16 @@ async def get_documents(
     project_id: Optional[int] = None,
     status: Optional[str] = None,
     document_type: Optional[str] = None,
+    include_deleted: bool = False,
     skip: int = 0,
     limit: int = 100
 ) -> List[Document]:
     """Get documents with optional filters."""
     query = select(Document)
-    
+
     filters = []
+    if not include_deleted:
+        filters.append(Document.is_deleted.is_(False))
     if project_id:
         filters.append(Document.project_id == project_id)
     if status:
