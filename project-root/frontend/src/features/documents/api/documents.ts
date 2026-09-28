@@ -140,6 +140,43 @@ export const submitForReview = async (documentId: number): Promise<{ document_id
   return data;
 };
 
+export interface ApprovalRecord {
+  user_id: number;
+  user_name: string;
+  approved_at: string;
+}
+
+export interface ApproveResult {
+  document_id: number;
+  status: string;
+  approved: boolean;
+  approvals: ApprovalRecord[];
+  next_approver: { user_id: number; user_name: string } | null;
+  pending_approvers: { user_id: number; user_name: string }[];
+}
+
+/** Согласовать документ: переход к следующему согласующему или утверждение. */
+export const approveDocument = async (documentId: number): Promise<ApproveResult> => {
+  const { data } = await client.post(`/documents/${documentId}/approve`);
+  return data;
+};
+
+export interface ApprovalFeedItem {
+  document_id: number;
+  document_code: string;
+  document_name: string;
+  user_id: number;
+  user_name: string;
+  approved_at: string;
+  document_status: string;
+}
+
+/** Лента согласований по всем документам (вкладка «Документооборот»). */
+export const getApprovalFeed = async (): Promise<ApprovalFeedItem[]> => {
+  const { data } = await client.get('/documents/approval-feed');
+  return data;
+};
+
 export interface BulkImportDocumentItem {
   name: string;
   number?: string;

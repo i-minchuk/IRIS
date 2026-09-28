@@ -19,7 +19,7 @@ import apiClient from '@/shared/api/client';
 import { getLeaderboard } from '@/features/gamification/api/gamification';
 import { getTasks } from '@/features/tasks/api/tasks';
 import { getRemarks, createRemark } from '@/features/remarks/api/remarks';
-import { getDocuments, getDocument, uploadDocumentFile, downloadRevisionFile, type DocumentItem } from '@/features/documents/api/documents';
+import { getDocuments, getDocument, uploadDocumentFile, downloadRevisionFile, approveDocument, getApprovalFeed, type ApprovalFeedItem, type DocumentItem } from '@/features/documents/api/documents';
 import ViewerContainer from '@/components/viewers/ViewerContainer';
 import { getProjects } from '@/features/projects/api/projects';
 import { toast } from 'sonner';
@@ -545,9 +545,34 @@ function RegistryView() {
   };
 
   const handleAddRemark = async () => {
-    if (!newRemarkText.trim() || !selectedDoc) return;
+    if (!selectedDoc) return;
     const numericId = Number.parseInt(selectedDoc.id, 10);
     if (!numericId) return;
+
+    // «Согласовать» — запускает цепочку согласования документа
+    if (newRemarkAction === 'approve') {
+      try {
+        const result = await approveDocument(numericId);
+        setDocs(prev => prev.map(d => (d.id === selectedDoc.id ? { ...d, status: result.status as Document['status'] } : d)));
+        if (result.approved) {
+          toast.success(`Документ утверждён — все согласующие подтвердили (${result.approvals.length})`);
+        } else if (result.next_approver) {
+          toast.success(`Согласовано. Следующий согласующий: ${result.next_approver.user_name}`);
+        } else {
+          toast.success('Согласовано. Ожидаются остальные согласующие');
+        }
+      } catch {
+        return; // ошибка (дубль, не в списке и т.п.) — toast показал интерцептор
+      }
+    }
+
+    if (!newRemarkText.trim()) {
+      setNewRemarkText('');
+      setSelectedAssignee('');
+      setDelegateOpen(false);
+      return;
+    }
+
     try {
       await createRemark({
         document_id: numericId,
@@ -946,7 +971,7 @@ function RegistryView() {
               <textarea
                 value={newRemarkText}
                 onChange={e => setNewRemarkText(e.target.value)}
-                placeholder="Опишите замечание..."
+                placeholder={newRemarkAction === 'approve' ? 'Комментарий к согласованию (необязательно)...' : 'Опишите замечание...'}
                 rows={2}
                 className="w-full text-xs rounded-md p-2 outline-none resize-none"
                 style={{ background: 'var(--bg-surface-2)', color: 'var(--text-primary)', border: '1px solid var(--border-default)' }}
@@ -1027,11 +1052,12 @@ function RegistryView() {
               </div>
               <button
                 onClick={handleAddRemark}
-                disabled={!newRemarkText.trim()}
+                disabled={newRemarkAction === 'approve' ? false : !newRemarkText.trim()}
                 className="w-full text-xs py-1.5 rounded-md text-white flex items-center justify-center gap-1.5 transition-opacity"
-                style={{ background: TAB_COLOR, opacity: newRemarkText.trim() ? 1 : 0.5 }}
+                style={{ background: TAB_COLOR, opacity: (newRemarkAction === 'approve' || newRemarkText.trim()) ? 1 : 0.5 }}
               >
-                <Send size={12} /> Отправить замечание
+                {newRemarkAction === 'approve' ? <CheckCircle size={12} /> : <Send size={12} />}
+                {newRemarkAction === 'approve' ? 'Согласовать документ' : 'Отправить замечание'}
               </button>
             </div>
           )}
@@ -1121,6 +1147,7 @@ function WorkflowView() {
   const [tab, setTab] = useState<'tasks' | 'remarks'>('tasks');
   const [tasks, setTasks] = useState<Task[]>([]);
   const [remarks, setRemarks] = useState<RemarkListItem[]>([]);
+  const [approvalFeed, setApprovalFeed] = useState<ApprovalFeedItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [taskSearch, setTaskSearch] = useState('');
@@ -1135,10 +1162,12 @@ function WorkflowView() {
     Promise.all([
       getTasks().catch(() => null),
       getRemarks({ page: 1, page_size: 50 }).catch(() => null),
-    ]).then(([tasksData, remarksData]) => {
+      getApprovalFeed().catch(() => [] as ApprovalFeedItem[]),
+    ]).then(([tasksData, remarksData, feedData]) => {
       if (cancelled) return;
       if (tasksData?.length) setTasks(tasksData);
       if (remarksData?.items?.length) setRemarks(remarksData.items);
+      if (feedData?.length) setApprovalFeed(feedData);
       setLoaded(true);
       setLoading(false);
     });
@@ -1249,6 +1278,37 @@ function WorkflowView() {
 
   return (
     <div className="space-y-5">
+      {/* Лента согласований */}
+      <div className="p-3 rounded-lg" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-default)' }}>
+        <h3 className="text-sm font-semibold mb-2 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+          <GitBranch size={14} style={{ color: TAB_COLOR }} /> Лента согласований
+        </h3>
+        {approvalFeed.length === 0 ? (
+          <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Согласований пока не было</p>
+        ) : (
+          <div className="divide-y" style={{ borderColor: 'var(--border-default)' }}>
+            {approvalFeed.slice(0, 10).map((item, idx) => (
+              <div key={`${item.document_id}-${item.user_id}-${idx}`} className="flex items-center gap-3 py-2">
+                <CheckCircle size={14} style={{ color: '#4F7A4C' }} className="shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{item.user_name || `Пользователь #${item.user_id}`}</span>
+                  <span className="text-sm" style={{ color: 'var(--text-secondary)' }}> согласовал(а) </span>
+                  <Link to={`/documents/${item.document_id}`} className="text-sm font-medium hover:underline" style={{ color: TAB_COLOR }}>
+                    {item.document_code || `Документ #${item.document_id}`}
+                  </Link>
+                  {item.document_status === 'approved' && (
+                    <span className="ml-2 text-xs px-1.5 py-0.5 rounded-full" style={{ color: '#4F7A4C', background: 'rgba(79,122,76,0.12)' }}>утверждён</span>
+                  )}
+                </div>
+                <span className="text-xs shrink-0" style={{ color: 'var(--text-muted)' }}>
+                  {item.approved_at ? new Date(item.approved_at).toLocaleString('ru-RU') : ''}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Process cards */}
       <div className="flex flex-wrap items-center gap-3">
         {processCards.map((card, idx) => (

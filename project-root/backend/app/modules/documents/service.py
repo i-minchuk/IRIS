@@ -537,6 +537,114 @@ class DocumentService:
             "document_id": doc.id,
             "status": doc.status,
         }
+
+    async def approve_document(
+        self,
+        document_id: int,
+        user_id: int,
+    ) -> Dict[str, Any]:
+        """Согласование документа текущим пользователем.
+
+        Логика цепочки:
+        - согласующие берутся из assignee_ids (Исполнитель(и));
+        - если список пуст — документ согласует отправитель (одношаговое утверждение);
+        - после каждого согласования документ передаётся следующему
+          несогласовавшему из списка (статус in_review);
+        - когда все согласовали — документ утверждается (статус approved).
+        Прогресс хранится в content["approvals"] и возвращается в ответе.
+        """
+        from sqlalchemy import select
+        from app.modules.auth.models import User
+
+        doc = await self.doc_repo.get_by_id(document_id)
+        if not doc:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Document not found"
+            )
+
+        if doc.status == "approved":
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Документ уже утверждён",
+            )
+
+        content = dict(doc.content) if isinstance(doc.content, dict) else {}
+        approvals = list(content.get("approvals") or [])
+        if any(a.get("user_id") == user_id for a in approvals):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Вы уже согласовали этот документ",
+            )
+
+        approvers = list(doc.assignee_ids or [])
+        if not approvers:
+            approvers = [user_id]
+
+        user = (
+            await self.db.execute(select(User).where(User.id == user_id))
+        ).scalar_one_or_none()
+        user_name = (user.full_name if user else None) or f"Пользователь #{user_id}"
+
+        approvals.append({
+            "user_id": user_id,
+            "user_name": user_name,
+            "approved_at": datetime.now(timezone.utc).isoformat(),
+        })
+        content["approvals"] = approvals
+
+        approved_ids = {a["user_id"] for a in approvals}
+        pending_ids = [uid for uid in approvers if uid not in approved_ids]
+
+        new_status = "approved" if not pending_ids else "in_review"
+        doc = await self.doc_repo.update(doc, {"status": new_status, "content": content})
+
+        pending = []
+        if pending_ids:
+            rows = (
+                await self.db.execute(select(User).where(User.id.in_(pending_ids)))
+            ).scalars().all()
+            names = {u.id: u.full_name for u in rows}
+            pending = [
+                {"user_id": uid, "user_name": names.get(uid) or f"Пользователь #{uid}"}
+                for uid in pending_ids
+            ]
+
+        return {
+            "document_id": doc.id,
+            "status": doc.status,
+            "approved": not pending_ids,
+            "approvals": approvals,
+            "next_approver": pending[0] if pending else None,
+            "pending_approvers": pending,
+        }
+
+    async def approval_feed(self, limit: int = 50) -> List[Dict[str, Any]]:
+        """Лента согласований по всем документам (для Документооборота)."""
+        from sqlalchemy import select
+        from app.modules.documents.models import Document
+
+        result = await self.db.execute(
+            select(Document)
+            .where(Document.is_deleted.is_(False))
+            .order_by(Document.updated_at.desc())
+        )
+        feed: List[Dict[str, Any]] = []
+        for doc in result.scalars().all():
+            content = doc.content if isinstance(doc.content, dict) else {}
+            for a in content.get("approvals") or []:
+                feed.append({
+                    "document_id": doc.id,
+                    "document_code": doc.number,
+                    "document_name": doc.name,
+                    "user_id": a.get("user_id"),
+                    "user_name": a.get("user_name"),
+                    "approved_at": a.get("approved_at"),
+                    "document_status": doc.status,
+                })
+        feed.sort(key=lambda x: x["approved_at"] or "", reverse=True)
+        return feed[:limit]
+
     
     async def render_document(
         self,

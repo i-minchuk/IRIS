@@ -15,7 +15,42 @@ export const WordViewer: React.FC<ViewerProps> = ({
   const [html, setHtml] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [scale, setScale] = useState(1);
+  const containerRef = React.useRef<HTMLDivElement>(null);
   const hasSource = Boolean(file || fileUrl);
+
+  const handleZoomIn = useCallback(() => setScale((s) => Math.min(s + 0.25, 3)), []);
+  const handleZoomOut = useCallback(() => setScale((s) => Math.max(s - 0.25, 0.5)), []);
+  const handleZoomReset = useCallback(() => setScale(1), []);
+
+  // Ctrl + колесо / pinch — масштаб только документа, а не всей программы
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey) return;
+      e.preventDefault();
+      const delta = e.deltaY < 0 ? 0.25 : -0.25;
+      setScale((prev) => Math.min(3, Math.max(0.5, Number((prev + delta).toFixed(2)))));
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, []);
+
+  // Ctrl +/-/0 — масштаб документа при фокусе на области просмотра
+  const handleViewerKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (!e.ctrlKey) return;
+    if (e.key === '+' || e.key === '=') {
+      e.preventDefault();
+      setScale((s) => Math.min(s + 0.25, 3));
+    } else if (e.key === '-') {
+      e.preventDefault();
+      setScale((s) => Math.max(s - 0.25, 0.5));
+    } else if (e.key === '0') {
+      e.preventDefault();
+      setScale(1);
+    }
+  }, []);
 
   useEffect(() => {
     if (mock || !hasSource) return;
@@ -117,6 +152,11 @@ export const WordViewer: React.FC<ViewerProps> = ({
       error={error}
       loadingText="Загрузка Word..."
       errorActions={errorActions}
+      showZoom
+      zoom={scale}
+      onZoomIn={handleZoomIn}
+      onZoomOut={handleZoomOut}
+      onZoomReset={handleZoomReset}
     >
       {mock || !hasSource ? (
         <div className={styles.wordContainer}>
@@ -142,7 +182,13 @@ export const WordViewer: React.FC<ViewerProps> = ({
           </div>
         </div>
       ) : (
-        <div className={styles.wordContainer}>
+        <div
+          ref={containerRef}
+          tabIndex={0}
+          onKeyDown={handleViewerKeyDown}
+          className={styles.wordContainer}
+          style={{ zoom: scale, outline: 'none' }}
+        >
           <div className={styles.wordContent} dangerouslySetInnerHTML={{ __html: html }} />
         </div>
       )}

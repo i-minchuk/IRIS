@@ -118,6 +118,15 @@ async def create_document(
     return await service.create_document(data.model_dump(), current_user.id)
 
 
+@router.get("/approval-feed", response_model=list)
+async def approval_feed(
+    current_user: User = Depends(get_current_active_user),
+    service: DocumentService = Depends(get_document_service),
+):
+    """Лента согласований по документам (для вкладки «Документооборот»)."""
+    return await service.approval_feed()
+
+
 @router.patch("/{document_id}", response_model=dict)
 async def update_document(
     document_id: int,
@@ -305,6 +314,16 @@ async def submit_for_review(
     service: DocumentService = Depends(get_document_service),
 ):
     return await service.submit_for_review(document_id, current_user.id)
+
+
+@router.post("/{document_id}/approve", response_model=dict)
+async def approve_document(
+    document_id: int,
+    current_user: User = Depends(get_current_active_user),
+    service: DocumentService = Depends(get_document_service),
+):
+    """Согласовать документ: переход к следующему согласующему или утверждение."""
+    return await service.approve_document(document_id, current_user.id)
 
 
 @router.post("/{document_id}/classify", response_model=dict)

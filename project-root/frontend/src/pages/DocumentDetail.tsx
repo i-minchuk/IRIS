@@ -8,9 +8,9 @@ import { useRemarksStore } from '@/stores/remarksStore';
 import { DocumentAnalysisPanel } from '@/features/ai/components/DocumentAnalysisPanel';
 import { AIChatPanel } from '@/features/ai/components/AIChatPanel';
 import { RequirementsPanel } from '@/features/ai/components/RequirementsPanel';
-import { FileText, MessageSquare, History, Users, ArrowLeft, Sparkles, Wrench, Bot, Upload, PencilLine, Maximize2, Minimize2 } from 'lucide-react';
+import { FileText, MessageSquare, History, Users, ArrowLeft, Sparkles, Wrench, Bot, Upload, PencilLine, Maximize2, Minimize2, Clock, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { getDocument, downloadRevisionFile, uploadDocumentFile, updateDocument, type DocumentDetail, type Revision } from '@/features/documents/api/documents';
+import { getDocument, downloadRevisionFile, uploadDocumentFile, updateDocument, approveDocument, type ApprovalRecord, type DocumentDetail, type Revision } from '@/features/documents/api/documents';
 import { getUsers } from '@/features/users/api/users';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import { DocumentEditor } from '@/features/documents/components/DocumentEditor';
@@ -468,12 +468,82 @@ export default function DocumentDetailPage() {
           </Card>
         )}
 
-        {activeTab === 'approval' && (
-          <Card padding="md">
-            <h3 className="text-sm font-medium mb-4" style={{ color: 'var(--text-primary)' }}>Цепочка согласования</h3>
-            <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Нет данных о цепочке согласования</p>
-          </Card>
-        )}
+        {activeTab === 'approval' && (() => {
+          const approvals = ((doc?.content as { approvals?: ApprovalRecord[] } | null)?.approvals) ?? [];
+          const approverIds = (doc?.assignee_ids ?? []) as number[];
+          const approvedBy = new Map(approvals.map(a => [a.user_id, a]));
+          const me = useAuthStore.getState().user;
+          const myId = (me as { id?: number } | null)?.id;
+          const alreadyApproved = myId != null && approvedBy.has(myId);
+          const isApproved = doc?.status === 'approved';
+          const canApprove = Boolean(doc && !isApproved && !alreadyApproved && (approverIds.length === 0 || (myId != null && approverIds.includes(myId)) || (me as { role?: string } | null)?.role === 'admin'));
+          const nameOf = (uid: number) => users.find(u => u.id === uid)?.full_name || `#${uid}`;
+
+          return (
+            <Card padding="md">
+              <h3 className="text-sm font-medium mb-4" style={{ color: 'var(--text-primary)' }}>Цепочка согласования</h3>
+              {!doc ? null : approverIds.length === 0 && approvals.length === 0 ? (
+                <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Согласующие не назначены. Назначьте исполнителей в разделе «Основное» — поле «Исполнитель(и)».</p>
+              ) : (
+                <div className="space-y-2">
+                  {(approverIds.length > 0 ? approverIds : approvals.map(a => a.user_id)).map((uid, idx) => {
+                    const rec = approvedBy.get(uid);
+                    return (
+                      <div key={uid} className="flex items-center gap-3 p-2.5 rounded-lg border" style={{ borderColor: 'var(--border-default)' }}>
+                        <div
+                          className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+                          style={
+                            rec
+                              ? { background: 'rgba(79,122,76,0.15)', color: '#4F7A4C' }
+                              : { background: 'var(--bg-surface-2)', color: 'var(--text-muted)' }
+                          }
+                        >
+                          {idx + 1}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{nameOf(uid)}</div>
+                          <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                            {rec
+                              ? `Согласовано ${new Date(rec.approved_at).toLocaleString('ru-RU')}`
+                              : 'Ожидает согласования'}
+                          </div>
+                        </div>
+                        {rec ? <CheckCircle size={16} style={{ color: '#4F7A4C' }} /> : <Clock size={16} style={{ color: 'var(--text-muted)' }} />}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              {isApproved && (
+                <div className="mt-4 p-2.5 rounded-lg text-sm font-medium" style={{ background: 'rgba(79,122,76,0.12)', color: '#4F7A4C' }}>
+                  Документ утверждён — все согласующие подтвердили.
+                </div>
+              )}
+              {!isApproved && approvals.length > 0 && (
+                <div className="mt-4 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                  Согласовано {approvals.length} из {approverIds.length > 0 ? approverIds.length : 1}
+                </div>
+              )}
+              {canApprove && id && (
+                <Button
+                  className="mt-4"
+                  leftIcon={<CheckCircle size={14} />}
+                  onClick={async () => {
+                    try {
+                      const result = await approveDocument(Number(id));
+                      const updated = await getDocument(Number(id));
+                      setDoc(updated);
+                      if (result.approved) toast.success('Документ утверждён — все согласующие подтвердили');
+                      else if (result.next_approver) toast.success(`Согласовано. Следующий согласующий: ${result.next_approver.user_name}`);
+                    } catch { /* toast об ошибке показал интерцептор */ }
+                  }}
+                >
+                  Согласовать документ
+                </Button>
+              )}
+            </Card>
+          );
+        })()}
 
         {activeTab === 'remarks' && (
           <Card padding="md">
