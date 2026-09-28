@@ -10,7 +10,7 @@ import {
   CornerDownLeft, ArrowLeft, CheckCircle,
   Briefcase, UserCheck, X, FilePlus, FileSpreadsheet,
   Circle, AlertCircle, ArrowRight, FileCheck, Archive, Filter,
-  GitBranch, Paperclip,
+  GitBranch, Paperclip, Maximize2, Minimize2,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getSessions, type TimeSession } from '@/features/time_tracking/api/sessions';
@@ -234,6 +234,28 @@ function RegistryView() {
   const [previewFile, setPreviewFile] = useState<{ url: string; name: string } | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const previewCacheRef = useRef<Map<number, { url: string; name: string }>>(new Map());
+
+  // ── Полноэкранный режим предпросмотра ──
+  const previewBoxRef = useRef<HTMLDivElement | null>(null);
+  const [previewFullscreen, setPreviewFullscreen] = useState(false);
+
+  useEffect(() => {
+    const onChange = () => {
+      setPreviewFullscreen(document.fullscreenElement === previewBoxRef.current);
+    };
+    document.addEventListener('fullscreenchange', onChange);
+    return () => document.removeEventListener('fullscreenchange', onChange);
+  }, []);
+
+  const togglePreviewFullscreen = () => {
+    if (document.fullscreenElement === previewBoxRef.current) {
+      void document.exitFullscreen();
+    } else {
+      void previewBoxRef.current?.requestFullscreen().catch(() => {
+        toast.error('Не удалось развернуть предпросмотр на весь экран');
+      });
+    }
+  };
 
   // ── Модальное окно быстрого просмотра файла (по клику на скрепку) ──
   const [modalOpen, setModalOpen] = useState(false);
@@ -736,12 +758,28 @@ function RegistryView() {
                 </div>
 
                 {/* Preview — real file viewer, растягивается до низа страницы */}
-                <div className="rounded-lg overflow-hidden flex flex-col flex-1" style={{ border: '1px solid var(--border-default)', minHeight: 240 }}>
+                <div
+                  ref={previewBoxRef}
+                  className="rounded-lg overflow-hidden flex flex-col flex-1"
+                  style={{ border: '1px solid var(--border-default)', minHeight: 240, background: 'var(--bg-app)' }}
+                >
                   <div
-                    className="px-3 py-1.5 text-xs font-bold uppercase tracking-wider shrink-0"
-                    style={{ color: 'var(--text-muted)', background: 'var(--bg-surface-2)', borderBottom: '1px solid var(--border-default)' }}
+                    className="px-3 py-1.5 flex items-center gap-2 shrink-0"
+                    style={{ background: 'var(--bg-surface-2)', borderBottom: '1px solid var(--border-default)' }}
                   >
-                    Предпросмотр
+                    <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
+                      Предпросмотр{previewFile ? ` — ${previewFile.name}` : ''}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={togglePreviewFullscreen}
+                      title={previewFullscreen ? 'Свернуть' : 'Развернуть на весь экран'}
+                      className="ml-auto inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium transition-colors hover:opacity-80"
+                      style={{ color: 'var(--text-secondary)', background: 'var(--bg-surface)' }}
+                    >
+                      {previewFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+                      {previewFullscreen ? 'Свернуть' : 'На весь экран'}
+                    </button>
                   </div>
                   <div className="flex-1 min-h-0" style={{ background: 'var(--bg-surface)' }}>
                     {previewLoading ? (
