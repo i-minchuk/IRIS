@@ -812,9 +812,7 @@ export default function DocumentDetailPage() {
         )}
 
         {activeTab === 'ai-chat' && id && (
-          <div className="h-[600px]">
-            <AIChatPanel documentId={id} />
-          </div>
+          <AIChatPanel documentId={id} />
         )}
       </div>
     </div>

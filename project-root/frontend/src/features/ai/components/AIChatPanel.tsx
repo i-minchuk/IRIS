@@ -29,7 +29,7 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({ documentId, projectId,
   };
 
   return (
-    <div className="flex flex-col h-full border rounded-xl overflow-hidden" style={{ borderColor: 'var(--border-default)', backgroundColor: 'var(--bg-surface)' }}>
+    <div className="flex flex-col border rounded-xl overflow-hidden max-h-[600px]" style={{ borderColor: 'var(--border-default)', backgroundColor: 'var(--bg-surface)' }}>
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: 'var(--border-default)' }}>
         <div className="flex items-center gap-2">
