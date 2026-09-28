@@ -238,10 +238,13 @@ function RegistryView() {
   // ── Полноэкранный режим предпросмотра ──
   const previewBoxRef = useRef<HTMLDivElement | null>(null);
   const [previewFullscreen, setPreviewFullscreen] = useState(false);
+  const modalBoxRef = useRef<HTMLDivElement | null>(null);
+  const [modalFullscreen, setModalFullscreen] = useState(false);
 
   useEffect(() => {
     const onChange = () => {
       setPreviewFullscreen(document.fullscreenElement === previewBoxRef.current);
+      setModalFullscreen(document.fullscreenElement === modalBoxRef.current);
     };
     document.addEventListener('fullscreenchange', onChange);
     return () => document.removeEventListener('fullscreenchange', onChange);
@@ -253,6 +256,16 @@ function RegistryView() {
     } else {
       void previewBoxRef.current?.requestFullscreen().catch(() => {
         toast.error('Не удалось развернуть предпросмотр на весь экран');
+      });
+    }
+  };
+
+  const toggleModalFullscreen = () => {
+    if (document.fullscreenElement === modalBoxRef.current) {
+      void document.exitFullscreen();
+    } else {
+      void modalBoxRef.current?.requestFullscreen().catch(() => {
+        toast.error('Не удалось развернуть просмотр на весь экран');
       });
     }
   };
@@ -289,7 +302,8 @@ function RegistryView() {
   useEffect(() => {
     if (!modalOpen) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setModalOpen(false);
+      // В полноэкранном режиме Esc сначала сворачивает экран (обрабатывает браузер)
+      if (e.key === 'Escape' && !document.fullscreenElement) setModalOpen(false);
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
@@ -1032,8 +1046,9 @@ function RegistryView() {
           onClick={() => setModalOpen(false)}
         >
           <div
+            ref={modalBoxRef}
             className="rounded-xl overflow-hidden flex flex-col w-full max-w-5xl"
-            style={{ background: 'var(--card-bg)', border: '1px solid var(--border-default)', height: '85vh' }}
+            style={{ background: 'var(--card-bg)', border: '1px solid var(--border-default)', height: modalFullscreen ? '100%' : '85vh' }}
             onClick={e => e.stopPropagation()}
           >
             <div
@@ -1043,14 +1058,25 @@ function RegistryView() {
               <span className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }} title={modalFile?.name}>
                 {modalLoading ? 'Загрузка файла…' : (modalFile?.name ?? 'Предпросмотр')}
               </span>
-              <button
-                onClick={() => setModalOpen(false)}
-                className="p-1 rounded shrink-0 transition-colors"
-                style={{ color: 'var(--text-muted)' }}
-                title="Закрыть (Esc)"
-              >
-                <X size={16} />
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={toggleModalFullscreen}
+                  className="inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium transition-colors hover:opacity-80"
+                  style={{ color: 'var(--text-secondary)', background: 'var(--bg-surface)' }}
+                  title={modalFullscreen ? 'Свернуть' : 'Развернуть на весь экран'}
+                >
+                  {modalFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+                  {modalFullscreen ? 'Свернуть' : 'На весь экран'}
+                </button>
+                <button
+                  onClick={() => setModalOpen(false)}
+                  className="p-1 rounded shrink-0 transition-colors"
+                  style={{ color: 'var(--text-muted)' }}
+                  title="Закрыть (Esc)"
+                >
+                  <X size={16} />
+                </button>
+              </div>
             </div>
             <div className="flex-1 min-h-0" style={{ background: 'var(--bg-surface)' }}>
               {modalLoading ? (

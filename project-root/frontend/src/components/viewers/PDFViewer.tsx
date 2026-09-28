@@ -29,9 +29,11 @@ export const PDFViewer: React.FC<ViewerProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [scale, setScale] = useState(1.0);
+  const [fitMode, setFitMode] = useState(true); // вписать страницу по ширине
   const [renderedPages, setRenderedPages] = useState<Map<number, RenderedPage>>(new Map());
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const basePageWidthRef = useRef<number | null>(null);
   const hasSource = Boolean(file || fileUrl);
 
   // Загрузка PDF документа (из File или URL)
@@ -70,6 +72,36 @@ export const PDFViewer: React.FC<ViewerProps> = ({
       cancelled = true;
     };
   }, [file, fileUrl, mock, hasSource]);
+
+  // Базовая ширина первой страницы при масштабе 1 — нужна для автоподгонки
+  useEffect(() => {
+    if (!pdfDoc) return;
+    let cancelled = false;
+    pdfDoc.getPage(1).then((page) => {
+      if (cancelled) return;
+      basePageWidthRef.current = page.getViewport({ scale: 1 }).width;
+    }).catch(() => { /* оставляем null — fit не применится */ });
+    return () => {
+      cancelled = true;
+    };
+  }, [pdfDoc]);
+
+  // Автоподгонка масштаба под ширину области просмотра (в т.ч. при развороте на весь экран)
+  useEffect(() => {
+    if (!fitMode) return;
+    const el = containerRef.current;
+    if (!el) return;
+    const applyFit = () => {
+      const base = basePageWidthRef.current;
+      if (!base) return;
+      const next = Math.min(4.0, Math.max(0.5, (el.clientWidth - 32) / base));
+      setScale(Number(next.toFixed(2)));
+    };
+    applyFit();
+    const ro = new ResizeObserver(applyFit);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [fitMode, pdfDoc]);
 
   // Рендеринг текущей страницы + буфер (prev/next)
   const renderPage = useCallback(async (pageNum: number) => {
@@ -112,9 +144,25 @@ export const PDFViewer: React.FC<ViewerProps> = ({
     setRenderedPages(new Map());
   }, [scale]);
 
-  const handleZoomIn = useCallback(() => setScale((prev) => Math.min(prev + 0.25, 3.0)), []);
-  const handleZoomOut = useCallback(() => setScale((prev) => Math.max(prev - 0.25, 0.5)), []);
-  const handleZoomReset = useCallback(() => setScale(1.0), []);
+  const handleZoomIn = useCallback(() => { setFitMode(false); setScale((prev) => Math.min(prev + 0.25, 3.0)); }, []);
+  const handleZoomOut = useCallback(() => { setFitMode(false); setScale((prev) => Math.max(prev - 0.25, 0.5)); }, []);
+  const handleZoomReset = useCallback(() => { setFitMode(false); setScale(1.0); }, []);
+  const handleFitToPage = useCallback(() => setFitMode(true), []);
+
+  // Ctrl +/-/0 — масштаб страницы при фокусе на области просмотра
+  const handleViewerKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (!e.ctrlKey) return;
+    if (e.key === '+' || e.key === '=') {
+      e.preventDefault();
+      handleZoomIn();
+    } else if (e.key === '-') {
+      e.preventDefault();
+      handleZoomOut();
+    } else if (e.key === '0') {
+      e.preventDefault();
+      handleZoomReset();
+    }
+  }, [handleZoomIn, handleZoomOut, handleZoomReset]);
   const handlePrevPage = useCallback(() => setCurrentPage((prev) => Math.max(prev - 1, 1)), []);
   const handleNextPage = useCallback(
     () => setCurrentPage((prev) => Math.min(prev + 1, totalPages)),
@@ -169,8 +217,14 @@ export const PDFViewer: React.FC<ViewerProps> = ({
     if (!el) return;
 
     const onWheel = (e: WheelEvent) => {
-      // Жест pinch-to-zoom браузера не трогаем
-      if (e.ctrlKey) return;
+      // Ctrl + колесо / pinch: масштабируем только страницу PDF, а не всю программу
+      if (e.ctrlKey) {
+        e.preventDefault();
+        const delta = e.deltaY < 0 ? 0.25 : -0.25;
+        setFitMode(false);
+        setScale((prev) => Math.min(4.0, Math.max(0.5, Number((prev + delta).toFixed(2)))));
+        return;
+      }
       e.preventDefault();
 
       const step = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
@@ -298,6 +352,8 @@ export const PDFViewer: React.FC<ViewerProps> = ({
       onZoomIn={handleZoomIn}
       onZoomOut={handleZoomOut}
       onZoomReset={handleZoomReset}
+      onFitToPage={handleFitToPage}
+      fitToPageActive={fitMode}
       showPagination
       currentPage={currentPage}
       totalPages={totalPages}
@@ -310,6 +366,8 @@ export const PDFViewer: React.FC<ViewerProps> = ({
       ) : (
         <div
           ref={containerRef}
+          tabIndex={0}
+          onKeyDown={handleViewerKeyDown}
           style={{
             width: '100%',
             height: '100%',
@@ -317,6 +375,7 @@ export const PDFViewer: React.FC<ViewerProps> = ({
             backgroundColor: '#525659',
             display: 'flex',
             position: 'relative',
+            outline: 'none',
           }}
         >
           {currentPageData ? (
