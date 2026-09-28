@@ -11,6 +11,7 @@ from app.modules.documents.repository import (
 )
 from app.modules.documents.variable_engine import render_document, cascade_update
 from app.modules.gamification.service import GamificationService
+from app.modules.gamification.repository import NotificationRepository
 from app.parser.indexer import DocumentIndexer
 from app.parser.factory import ParserFactory
 from app.ai.classification import classify_document
@@ -28,6 +29,7 @@ class DocumentService:
         self.doc_repo = DocumentRepository(db)
         self.revision_repo = RevisionRepository(db)
         self.workflow_repo = ApprovalWorkflowRepository(db)
+        self.notif_repo = NotificationRepository(db)
     
     async def list_documents(
         self,
@@ -609,6 +611,33 @@ class DocumentService:
                 {"user_id": uid, "user_name": names.get(uid) or f"Пользователь #{uid}"}
                 for uid in pending_ids
             ]
+
+        try:
+            if pending:
+                next_name = pending[0]["user_name"]
+                await self.notif_repo.create(
+                    user_id=pending[0]["user_id"],
+                    type="approval_pending",
+                    title="Документ на согласовании",
+                    message=(
+                        f"Документ {doc.number} передан вам на согласование "
+                        f"({user_name} согласовал). Далее в цепочке: {next_name}"
+                        if len(pending) > 1
+                        else f"Документ {doc.number} передан вам на согласование "
+                             f"({user_name} согласовал)."
+                    ),
+                )
+            else:
+                if doc.author_id and doc.author_id != user_id:
+                    await self.notif_repo.create(
+                        user_id=doc.author_id,
+                        type="document_approved",
+                        title="Документ утверждён",
+                        message=f"Документ {doc.number} полностью согласован "
+                                f"({user_name} завершил цепочку согласования).",
+                    )
+        except Exception:
+            logger.exception("Failed to create approval notification")
 
         return {
             "document_id": doc.id,
