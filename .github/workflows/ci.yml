@@ -42,6 +42,7 @@ jobs:
         python: [3.12]
     env:
       SECRET_KEY: Ci-Test-Secret-Key-0123456789-abcdef-Not-For-Prod!
+      OPENAI_API_KEY: sk-ci-dummy
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -106,6 +107,7 @@ jobs:
       SECRET_KEY: iris-secret-key-test-only
       IRIS_STORAGE_ROOT: /tmp/iris_test_storage
       IRIS_LOG_LEVEL: INFO
+      OPENAI_API_KEY: sk-ci-dummy
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
