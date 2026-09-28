@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main, develop]
 
+permissions:
+  contents: read
+  security-events: write
+
 jobs:
   lint:
     name: Lint backend and frontend
@@ -36,6 +40,8 @@ jobs:
     strategy:
       matrix:
         python: [3.12]
+    env:
+      SECRET_KEY: Ci-Test-Secret-Key-0123456789-abcdef-Not-For-Prod!
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
