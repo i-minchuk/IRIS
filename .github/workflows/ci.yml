@@ -24,8 +24,9 @@ jobs:
         run: python -m compileall project-root/backend
       - name: Security scan with safety
         run: |
-          pip install safety "typer==0.15.4"
-          safety check -r project-root/backend/requirements.txt
+          python -m venv /tmp/safety-env
+          /tmp/safety-env/bin/pip install --quiet safety
+          /tmp/safety-env/bin/safety check -r project-root/backend/requirements.txt
 
   test:
     name: Run unit tests
