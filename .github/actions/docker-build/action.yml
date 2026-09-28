@@ -9,4 +9,4 @@ runs:
 
     - name: Build frontend image
       shell: bash
-      run: docker build -f Dockerfile.frontend -t dokpotok-iris-frontend:latest .
+      run: docker build -f project-root/frontend/Dockerfile -t dokpotok-iris-frontend:latest .
