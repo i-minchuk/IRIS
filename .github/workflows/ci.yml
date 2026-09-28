@@ -173,4 +173,11 @@ jobs:
           "
       - name: Run integration tests
         working-directory: project-root/backend
-        run: python -m pytest -q -m integration
+        # Тестов с маркером integration пока нет — pytest выходит с кодом 5
+        # (no tests collected); это допустимо, остальные коды — падение.
+        run: |
+          python -m pytest -q -m integration
+          code=$?
+          if [ "$code" -ne 0 ] && [ "$code" -ne 5 ]; then
+            exit "$code"
+          fi
