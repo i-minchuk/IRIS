@@ -138,7 +138,7 @@ jobs:
           --health-retries=10
     env:
       DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/iris_test
-      SECRET_KEY: iris-secret-key-test-only
+      SECRET_KEY: Ci-Test-Secret-Key-0123456789-abcdef-Not-For-Prod!
       IRIS_STORAGE_ROOT: /tmp/iris_test_storage
       IRIS_LOG_LEVEL: INFO
       OPENAI_API_KEY: sk-ci-dummy
