@@ -41,6 +41,11 @@ export interface EmployeeProfile {
   notes?: string;
 }
 
+export interface AIKeyStatus {
+  openai_api_key: string;
+  configured: boolean;
+}
+
 export const adminApi = {
   getUsers: async (): Promise<AdminUser[]> => {
     const { data } = await client.get('/auth/users');
@@ -73,6 +78,16 @@ export const adminApi = {
 
   updateEmployeeProfile: async (userId: number, payload: Partial<EmployeeProfile>): Promise<EmployeeProfile> => {
     const { data } = await client.put(`/employees/${userId}`, payload);
+    return data;
+  },
+
+  getAIKey: async (): Promise<AIKeyStatus> => {
+    const { data } = await client.get('/auth/admin/settings/ai-key');
+    return data;
+  },
+
+  updateAIKey: async (openai_api_key: string): Promise<AIKeyStatus> => {
+    const { data } = await client.post('/auth/admin/settings/ai-key', { openai_api_key });
     return data;
   },
 };

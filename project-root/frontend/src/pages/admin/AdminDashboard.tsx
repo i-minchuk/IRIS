@@ -6,13 +6,14 @@ import { Badge } from '@/components/ui';
 import { useAuditStore } from '@/stores/auditStore';
 import { useSupportStore } from '@/stores/supportStore';
 import { useReleaseStore } from '@/stores/releaseStore';
+import { toast } from 'sonner';
 import { AuditLogTable } from '@/components/admin/AuditLogTable';
 import SessionList from '@/features/time_tracking/components/SessionList';
 import AnalyticsPanel from '@/features/time_tracking/components/AnalyticsPanel';
 import { adminApi, type AdminUser } from '@/features/auth/api/adminApi';
 import RegistrationTab from './Registration';
 import {
-  Users, Shield, Ticket, AlertTriangle, LayoutDashboard, Timer, UserPlus,
+  Users, Shield, Ticket, AlertTriangle, LayoutDashboard, Timer, UserPlus, Sparkles, KeyRound, Loader2,
 } from 'lucide-react';
 
 type AdminTab = 'overview' | 'time' | 'registration';
@@ -39,12 +40,27 @@ function DashboardOverview() {
   const fetchReleases = useReleaseStore(s => s.fetchReleases);
   const [users, setUsers] = useState<AdminUser[] | null>(null);
 
+  /* AI key */
+  const [aiKey, setAiKey] = useState('');
+  const [aiKeyMasked, setAiKeyMasked] = useState('');
+  const [aiKeyConfigured, setAiKeyConfigured] = useState(false);
+  const [aiKeySaving, setAiKeySaving] = useState(false);
+
   useEffect(() => {
     fetchAuditEntries();
     fetchTickets();
     fetchIncidents();
     fetchReleases();
     adminApi.getUsers().then(setUsers).catch(() => setUsers([]));
+    adminApi.getAIKey()
+      .then(res => {
+        setAiKeyMasked(res.openai_api_key);
+        setAiKeyConfigured(res.configured);
+      })
+      .catch(() => {
+        setAiKeyMasked('');
+        setAiKeyConfigured(false);
+      });
   }, [fetchAuditEntries, fetchTickets, fetchIncidents, fetchReleases]);
 
   const usersCount = users === null ? '…' : String(users.length);
@@ -102,6 +118,23 @@ function DashboardOverview() {
 
   const readyReleases = useMemo(() => releases.filter(r => r.status === 'ready').length, [releases]);
 
+  const handleSaveAIKey = async () => {
+    const key = aiKey.trim();
+    if (!key) return;
+    setAiKeySaving(true);
+    try {
+      const res = await adminApi.updateAIKey(key);
+      setAiKeyMasked(res.openai_api_key);
+      setAiKeyConfigured(res.configured);
+      setAiKey('');
+      toast.success('OpenAI API ключ сохранён');
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || 'Ошибка сохранения ключа');
+    } finally {
+      setAiKeySaving(false);
+    }
+  };
+
   const maxTicket = ticketPriorityData.reduce((m, d) => Math.max(m, d.value), 0) || 1;
   const maxIncident = incidentSeverityData.reduce((m, d) => Math.max(m, d.value), 0) || 1;
 
@@ -114,6 +147,46 @@ function DashboardOverview() {
         <StatCard icon={<Ticket size={18} />} label="Открытых тикетов" value={String(openTickets.length)} color="#F59E0B" />
         <StatCard icon={<AlertTriangle size={18} />} label="Инцидентов" value={String(openIncidents.length)} color="#EF4444" />
       </div>
+
+      {/* AI key settings */}
+      <Card padding="md">
+        <div className="flex items-center gap-2 mb-3">
+          <Sparkles size={16} style={{ color: 'var(--accent-ai, #a855f7)' }} />
+          <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Настройки AI</h3>
+          {aiKeyConfigured && (
+            <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: 'rgba(12,114,5,0.12)', color: '#0C7205' }}>
+              Настроен
+            </span>
+          )}
+        </div>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex-1 space-y-1">
+            <label className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>OpenAI API ключ</label>
+            <input
+              type="password"
+              value={aiKey}
+              onChange={(e) => setAiKey(e.target.value)}
+              placeholder={aiKeyMasked || 'sk-...'}
+              className="w-full px-3 py-2 rounded-lg text-sm"
+              style={{ background: 'var(--iris-bg-app)', border: '1px solid var(--iris-border-subtle)', color: 'var(--text-primary)' }}
+            />
+            {aiKeyMasked && !aiKey && (
+              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Сохранённый ключ: {aiKeyMasked}</p>
+            )}
+          </div>
+          <div className="flex items-end">
+            <button
+              onClick={handleSaveAIKey}
+              disabled={aiKeySaving || !aiKey.trim()}
+              className="flex items-center gap-1.5 text-xs px-4 py-2.5 rounded-lg font-medium transition-opacity"
+              style={{ background: 'var(--accent-ai, #a855f7)', color: '#fff', opacity: aiKeySaving || !aiKey.trim() ? 0.5 : 1 }}
+            >
+              {aiKeySaving ? <Loader2 size={14} className="animate-spin" /> : <KeyRound size={14} />}
+              Сохранить ключ
+            </button>
+          </div>
+        </div>
+      </Card>
 
       {/* Audit + Tickets */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

@@ -30,7 +30,7 @@ class DocumentUploadRequest(BaseModel):
     document_type: DocumentType
 
 class DocumentAnalysisResult(BaseModel):
-    document_id: UUID
+    document_id: str
     overall_score: float
     findings: List[Dict[str, Any]]
     critical_count: int

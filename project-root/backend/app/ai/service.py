@@ -278,20 +278,25 @@ class AIService:
             model="heuristic"
         )
 
-    async def analyze_document(self, document_id: UUID) -> DocumentAnalysisResult:
-        """Анализ документа на ошибки"""
-        # 1. Получаем все чанки документа
-        # (специальный поиск с фильтром по document_id и большим top_k)
-        chunks = await self.indexer.search(
-            query="анализ структуры документа проверка ГОСТ ошибки",
-            top_k=50,
-            document_id=document_id
-        )
+    async def analyze_document(self, document_id: str, document_text: Optional[str] = None) -> DocumentAnalysisResult:
+        """Анализ документа на ошибки."""
+        # 1. Получаем текст для анализа
+        if document_text:
+            full_text = document_text
+        else:
+            # Fallback: поиск по Qdrant (legacy, требует UUID)
+            try:
+                doc_uuid = UUID(document_id)
+                chunks = await self.indexer.search(
+                    query="анализ структуры документа проверка ГОСТ ошибки",
+                    top_k=50,
+                    document_id=doc_uuid
+                )
+                full_text = "\n\n".join(c["text"] for c in chunks)
+            except ValueError:
+                full_text = ""
         
-        # 2. Формируем полный текст документа
-        full_text = "\n\n".join(c["text"] for c in chunks)
-        
-        # 3. Запрос на анализ
+        # 2. Запрос на анализ
         messages = [
             {"role": "system", "content": ANALYSIS_SYSTEM_PROMPT},
             {"role": "user", "content": f"Проанализируй документ:\n\n{full_text[:10000]}"}

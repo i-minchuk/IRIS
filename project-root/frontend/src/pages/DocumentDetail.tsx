@@ -2,15 +2,16 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card } from '@/components/ui';
 import { Button } from '@/components/ui';
-import { Badge } from '@/components/ui';
 import { DocumentStatusBadge } from '@/components/documents/DocumentStatusBadge';
-import { useRemarksStore } from '@/stores/remarksStore';
+
 import { DocumentAnalysisPanel } from '@/features/ai/components/DocumentAnalysisPanel';
 import { AIChatPanel } from '@/features/ai/components/AIChatPanel';
 import { RequirementsPanel } from '@/features/ai/components/RequirementsPanel';
 import { FileText, MessageSquare, History, Users, ArrowLeft, Sparkles, Wrench, Bot, Upload, PencilLine, Maximize2, Minimize2, Clock, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { getDocument, downloadRevisionFile, uploadDocumentFile, updateDocument, approveDocument, type ApprovalRecord, type DocumentDetail, type Revision } from '@/features/documents/api/documents';
+import { getDocument, downloadRevisionFile, uploadDocumentFile, updateDocument, approveDocument, getApprovalFeed, type ApprovalRecord, type DocumentDetail, type Revision } from '@/features/documents/api/documents';
+import { getRemarks } from '@/features/remarks/api/remarks';
+import type { RemarkListItem } from '@/types/remarks';
 import { getUsers } from '@/features/users/api/users';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import { DocumentEditor } from '@/features/documents/components/DocumentEditor';
@@ -32,6 +33,49 @@ function mapStatus(value?: string): DocumentStatus {
   if (v === 'review' || v === 'in_progress' || v === 'on_review') return 'in_review';
   if (v === 'confirmed') return 'approved';
   return 'draft';
+}
+
+function getRemarkStatusLabel(status: string) {
+  switch (status) {
+    case 'new': return 'Новое';
+    case 'in_progress': return 'В работе';
+    case 'resolved': return 'Устранено';
+    case 'rejected': return 'Отклонено';
+    case 'closed': return 'Закрыто';
+    case 'deferred': return 'Отложено';
+    default: return status;
+  }
+}
+
+function getRemarkStatusColor(status: string) {
+  switch (status) {
+    case 'new': return { color: '#3B82F6', bg: 'rgba(59,130,246,0.15)', border: 'rgba(59,130,246,0.4)' };
+    case 'in_progress': return { color: '#D4AF37', bg: 'rgba(212,175,55,0.15)', border: 'rgba(212,175,55,0.4)' };
+    case 'resolved': return { color: '#4F7A4C', bg: 'rgba(79,122,76,0.15)', border: 'rgba(79,122,76,0.4)' };
+    case 'rejected': return { color: '#EF4444', bg: 'rgba(239,68,68,0.15)', border: 'rgba(239,68,68,0.4)' };
+    case 'closed': return { color: '#6B7280', bg: 'rgba(107,114,128,0.15)', border: 'rgba(107,114,128,0.4)' };
+    default: return { color: '#94A3B8', bg: 'rgba(148,163,184,0.15)', border: 'rgba(148,163,184,0.4)' };
+  }
+}
+
+function getRemarkPriorityLabel(priority: string) {
+  switch (priority) {
+    case 'low': return 'Низкий';
+    case 'medium': return 'Средний';
+    case 'high': return 'Высокий';
+    case 'critical': return 'Критический';
+    default: return priority;
+  }
+}
+
+function getRemarkPriorityColor(priority: string) {
+  switch (priority) {
+    case 'critical': return { color: '#DC2626', bg: 'rgba(220,38,38,0.15)', border: 'rgba(220,38,38,0.4)' };
+    case 'high': return { color: '#F59E0B', bg: 'rgba(245,158,11,0.15)', border: 'rgba(245,158,11,0.4)' };
+    case 'medium': return { color: '#3B82F6', bg: 'rgba(59,130,246,0.15)', border: 'rgba(59,130,246,0.4)' };
+    case 'low': return { color: '#6B7280', bg: 'rgba(107,114,128,0.15)', border: 'rgba(107,114,128,0.4)' };
+    default: return { color: '#94A3B8', bg: 'rgba(148,163,184,0.15)', border: 'rgba(148,163,184,0.4)' };
+  }
 }
 
 function revisionFileName(rev: Revision): string {
@@ -57,8 +101,10 @@ export default function DocumentDetailPage() {
   const [project, setProject] = useState<ProjectInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<User[]>([]);
-  const remarks = useRemarksStore(s => s.remarks);
-  const documentRemarks = remarks.filter(r => r.document_id === Number(id));
+  const [documentRemarks, setDocumentRemarks] = useState<RemarkListItem[]>([]);
+  const [remarksLoading, setRemarksLoading] = useState(false);
+  const [documentApprovals, setDocumentApprovals] = useState<ApprovalRecord[]>([]);
+  const [approvalsLoading, setApprovalsLoading] = useState(false);
 
   useEffect(() => {
     getUsers().then(setUsers).catch(() => setUsers([]));
@@ -72,6 +118,23 @@ export default function DocumentDetailPage() {
     }
     let cancelled = false;
     setLoading(true);
+    setRemarksLoading(true);
+    setApprovalsLoading(true);
+    getRemarks({ document_id: numericId, page: 1, page_size: 100 })
+      .then(res => { if (!cancelled) setDocumentRemarks(res.items); })
+      .catch(() => { if (!cancelled) setDocumentRemarks([]); })
+      .finally(() => { if (!cancelled) setRemarksLoading(false); });
+    getApprovalFeed()
+      .then(feed => {
+        if (!cancelled) {
+          const records = feed
+            .filter(item => item.document_id === numericId)
+            .map(item => ({ user_id: item.user_id, user_name: item.user_name, approved_at: item.approved_at }));
+          setDocumentApprovals(records);
+        }
+      })
+      .catch(() => { if (!cancelled) setDocumentApprovals([]); })
+      .finally(() => { if (!cancelled) setApprovalsLoading(false); });
     getDocument(numericId)
       .then(async (data) => {
         if (cancelled) return;
@@ -286,24 +349,7 @@ export default function DocumentDetailPage() {
             {doc && <DocumentStatusBadge status={mapStatus(doc.status)} />}
             <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Проект: {project?.name || (doc ? `Проект #${doc.project_id}` : '—')}</span>
             <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Дисциплина: {doc?.discipline || doc?.doc_type || '—'}</span>
-            {activeTab === 'ai-analysis' && id && (
-          <Card padding="md">
-            <DocumentAnalysisPanel documentId={id} />
-          </Card>
-        )}
-
-        {activeTab === 'ai-requirements' && id && (
-          <Card padding="md">
-            <RequirementsPanel documentId={id} />
-          </Card>
-        )}
-
-        {activeTab === 'ai-chat' && id && (
-          <div className="h-[600px]">
-            <AIChatPanel documentId={id} />
           </div>
-        )}
-      </div>
         </div>
       </div>
 
@@ -469,9 +515,10 @@ export default function DocumentDetailPage() {
         )}
 
         {activeTab === 'approval' && (() => {
-          const approvals = ((doc?.content as { approvals?: ApprovalRecord[] } | null)?.approvals) ?? [];
+          const contentApprovals = ((doc?.content as { approvals?: ApprovalRecord[] } | null)?.approvals) ?? [];
+          const allApprovals = [...contentApprovals, ...documentApprovals];
+          const approvedBy = new Map(allApprovals.map(a => [a.user_id, a]));
           const approverIds = (doc?.assignee_ids ?? []) as number[];
-          const approvedBy = new Map(approvals.map(a => [a.user_id, a]));
           const me = useAuthStore.getState().user;
           const myId = (me as { id?: number } | null)?.id;
           const alreadyApproved = myId != null && approvedBy.has(myId);
@@ -482,11 +529,16 @@ export default function DocumentDetailPage() {
           return (
             <Card padding="md">
               <h3 className="text-sm font-medium mb-4" style={{ color: 'var(--text-primary)' }}>Цепочка согласования</h3>
-              {!doc ? null : approverIds.length === 0 && approvals.length === 0 ? (
+              {approvalsLoading ? (
+                <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-tertiary)' }}>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-t-transparent" style={{ borderColor: 'var(--brand-iris)' }} />
+                  Загрузка согласований…
+                </div>
+              ) : !doc ? null : approverIds.length === 0 && allApprovals.length === 0 ? (
                 <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Согласующие не назначены. Назначьте исполнителей в разделе «Основное» — поле «Исполнитель(и)».</p>
               ) : (
                 <div className="space-y-2">
-                  {(approverIds.length > 0 ? approverIds : approvals.map(a => a.user_id)).map((uid, idx) => {
+                  {(approverIds.length > 0 ? approverIds : allApprovals.map(a => a.user_id)).map((uid, idx) => {
                     const rec = approvedBy.get(uid);
                     return (
                       <div key={uid} className="flex items-center gap-3 p-2.5 rounded-lg border" style={{ borderColor: 'var(--border-default)' }}>
@@ -519,9 +571,9 @@ export default function DocumentDetailPage() {
                   Документ утверждён — все согласующие подтвердили.
                 </div>
               )}
-              {!isApproved && approvals.length > 0 && (
+              {!isApproved && allApprovals.length > 0 && (
                 <div className="mt-4 text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                  Согласовано {approvals.length} из {approverIds.length > 0 ? approverIds.length : 1}
+                  Согласовано {allApprovals.length} из {approverIds.length > 0 ? approverIds.length : 1}
                 </div>
               )}
               {canApprove && id && (
@@ -531,8 +583,12 @@ export default function DocumentDetailPage() {
                   onClick={async () => {
                     try {
                       const result = await approveDocument(Number(id));
-                      const updated = await getDocument(Number(id));
+                      const [updated, feed] = await Promise.all([
+                        getDocument(Number(id)),
+                        getApprovalFeed().catch(() => []),
+                      ]);
                       setDoc(updated);
+                      setDocumentApprovals(feed.filter(item => item.document_id === Number(id)).map(item => ({ user_id: item.user_id, user_name: item.user_name, approved_at: item.approved_at })));
                       if (result.approved) toast.success('Документ утверждён — все согласующие подтвердили');
                       else if (result.next_approver) toast.success(`Согласовано. Следующий согласующий: ${result.next_approver.user_name}`);
                     } catch { /* toast об ошибке показал интерцептор */ }
@@ -548,21 +604,39 @@ export default function DocumentDetailPage() {
         {activeTab === 'remarks' && (
           <Card padding="md">
             <h3 className="text-sm font-medium mb-4" style={{ color: 'var(--text-primary)' }}>Замечания</h3>
-            {documentRemarks.length === 0 ? (
+            {remarksLoading ? (
+              <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-tertiary)' }}>
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-t-transparent" style={{ borderColor: 'var(--brand-iris)' }} />
+                Загрузка замечаний…
+              </div>
+            ) : documentRemarks.length === 0 ? (
               <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Нет замечаний</p>
             ) : (
               <div className="space-y-3">
-                {documentRemarks.map(r => (
-                  <div key={r.id} className="p-3 rounded-lg border" style={{ borderColor: 'var(--border-default)' }}>
-                    <div className="flex items-center gap-2 mb-1">
-                      <Badge variant={r.priority === 'critical' ? 'error' : r.priority === 'high' ? 'warning' : 'info'}>
-                        {r.priority}
-                      </Badge>
-                      <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{r.author_name}</span>
+                {documentRemarks.map(r => {
+                  const statusCfg = getRemarkStatusColor(r.status);
+                  const priorityCfg = getRemarkPriorityColor(r.priority);
+                  return (
+                    <div key={r.id} className="p-3 rounded-lg border" style={{ borderColor: 'var(--border-default)', background: 'var(--bg-surface-2)' }}>
+                      <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                        <span className="text-xs px-2 py-0.5 rounded-full border font-medium" style={{ color: statusCfg.color, background: statusCfg.bg, borderColor: statusCfg.border }}>
+                          {getRemarkStatusLabel(r.status)}
+                        </span>
+                        <span className="text-xs px-2 py-0.5 rounded-full border font-medium" style={{ color: priorityCfg.color, background: priorityCfg.bg, borderColor: priorityCfg.border }}>
+                          {getRemarkPriorityLabel(r.priority)}
+                        </span>
+                        <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Автор: {r.author_name}</span>
+                        {r.assignee_name && (
+                          <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>→ Исполнитель: {r.assignee_name}</span>
+                        )}
+                        <span className="text-xs ml-auto" style={{ color: 'var(--text-tertiary)' }}>
+                          {r.created_at ? `Создано: ${new Date(r.created_at).toLocaleString('ru-RU')}` : '—'}
+                        </span>
+                      </div>
+                      <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{r.title}</p>
                     </div>
-                    <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{r.title}</p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </Card>
@@ -723,6 +797,24 @@ export default function DocumentDetailPage() {
               </div>
             )}
           </Card>
+        )}
+
+        {activeTab === 'ai-analysis' && id && (
+          <Card padding="md">
+            <DocumentAnalysisPanel documentId={id} />
+          </Card>
+        )}
+
+        {activeTab === 'ai-requirements' && id && (
+          <Card padding="md">
+            <RequirementsPanel documentId={id} />
+          </Card>
+        )}
+
+        {activeTab === 'ai-chat' && id && (
+          <div className="h-[600px]">
+            <AIChatPanel documentId={id} />
+          </div>
         )}
       </div>
     </div>

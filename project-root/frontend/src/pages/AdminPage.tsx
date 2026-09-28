@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   Loader2, Shield, UserCheck, UserX, Mail, Calendar,
-  UserPlus, X, KeyRound, Edit3, Save, IdCard, FileWarning, Phone, Copy
+  UserPlus, X, KeyRound, Edit3, Save, IdCard, FileWarning, Phone, Copy, Sparkles
 } from 'lucide-react';
 import {
   adminApi,
@@ -93,6 +93,12 @@ export const AdminPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  /* AI key */
+  const [aiKey, setAiKey] = useState('');
+  const [aiKeyMasked, setAiKeyMasked] = useState('');
+  const [aiKeyConfigured, setAiKeyConfigured] = useState(false);
+  const [aiKeySaving, setAiKeySaving] = useState(false);
+
   /* Registration modal */
   const [showRegister, setShowRegister] = useState(false);
   const [userForm, setUserForm] = useState<UserFormData>(initialUserForm);
@@ -145,6 +151,15 @@ export const AdminPage: React.FC = () => {
 
   useEffect(() => {
     fetchUsers();
+    adminApi.getAIKey()
+      .then(res => {
+        setAiKeyMasked(res.openai_api_key);
+        setAiKeyConfigured(res.configured);
+      })
+      .catch(() => {
+        setAiKeyMasked('');
+        setAiKeyConfigured(false);
+      });
   }, []);
 
   /* ─── Registration ─── */
@@ -285,6 +300,26 @@ export const AdminPage: React.FC = () => {
     }
   };
 
+  const handleSaveAIKey = async () => {
+    const key = aiKey.trim();
+    if (!key) {
+      toast.error('Введите API ключ');
+      return;
+    }
+    setAiKeySaving(true);
+    try {
+      const res = await adminApi.updateAIKey(key);
+      setAiKeyMasked(res.openai_api_key);
+      setAiKeyConfigured(res.configured);
+      setAiKey('');
+      toast.success('OpenAI API ключ сохранён');
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || 'Ошибка сохранения ключа');
+    } finally {
+      setAiKeySaving(false);
+    }
+  };
+
   const roleLabels: Record<string, string> = {
     admin: 'Администратор',
     manager: 'Менеджер',
@@ -343,6 +378,46 @@ export const AdminPage: React.FC = () => {
           {error}
         </div>
       )}
+
+      {/* AI key settings */}
+      <div className="rounded-xl border p-4" style={{ borderColor: 'var(--border-default)', backgroundColor: 'var(--bg-surface)' }}>
+        <div className="flex items-center gap-2 mb-3">
+          <Sparkles size={16} style={{ color: 'var(--accent-ai, #a855f7)' }} />
+          <h2 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Настройки AI</h2>
+          {aiKeyConfigured && (
+            <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: 'rgba(12,114,5,0.12)', color: '#0C7205' }}>
+              Настроен
+            </span>
+          )}
+        </div>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex-1 space-y-1">
+            <label className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>OpenAI API ключ</label>
+            <input
+              type="password"
+              value={aiKey}
+              onChange={(e) => setAiKey(e.target.value)}
+              placeholder={aiKeyMasked || 'sk-...'}
+              className="w-full px-3 py-2 rounded-lg text-sm"
+              style={inputStyle}
+            />
+            {aiKeyMasked && !aiKey && (
+              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Сохранённый ключ: {aiKeyMasked}</p>
+            )}
+          </div>
+          <div className="flex items-end">
+            <button
+              onClick={handleSaveAIKey}
+              disabled={aiKeySaving || !aiKey.trim()}
+              className="flex items-center gap-1.5 text-xs px-4 py-2.5 rounded-lg font-medium transition-opacity"
+              style={{ background: 'var(--accent-ai, #a855f7)', color: '#fff', opacity: aiKeySaving || !aiKey.trim() ? 0.5 : 1 }}
+            >
+              {aiKeySaving ? <Loader2 size={14} className="animate-spin" /> : <KeyRound size={14} />}
+              Сохранить ключ
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* Users table */}
       {loading ? (

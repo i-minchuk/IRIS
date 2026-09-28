@@ -9,7 +9,7 @@ import {
   ChevronRight, ChevronDown, MessageSquare, Send,
   CornerDownLeft, ArrowLeft, CheckCircle,
   Briefcase, UserCheck, X, FilePlus, FileSpreadsheet,
-  Circle, AlertCircle, ArrowRight, FileCheck, Archive, Filter,
+  AlertCircle, ArrowRight, FileCheck, Archive, Filter,
   GitBranch, Paperclip, Maximize2, Minimize2,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -17,14 +17,12 @@ import { getSessions, type TimeSession } from '@/features/time_tracking/api/sess
 import { useAutoTimeTracker } from '@/features/time_tracking/hooks/useAutoTimeTracker';
 import apiClient from '@/shared/api/client';
 import { getLeaderboard } from '@/features/gamification/api/gamification';
-import { getTasks } from '@/features/tasks/api/tasks';
 import { getRemarks, createRemark } from '@/features/remarks/api/remarks';
 import { getDocuments, getDocument, uploadDocumentFile, downloadRevisionFile, approveDocument, getApprovalFeed, type ApprovalFeedItem, type DocumentItem } from '@/features/documents/api/documents';
 import ViewerContainer from '@/components/viewers/ViewerContainer';
 import { getProjects } from '@/features/projects/api/projects';
 import { toast } from 'sonner';
 import type { LeaderboardEntry } from '@/types';
-import type { Task } from '@/types';
 import type { RemarkListItem } from '@/types/remarks';
 import {
   ResponsiveContainer,
@@ -77,6 +75,7 @@ interface Document {
   author: string;
   reviewer: string;
   date: string;
+  createdAt?: string | null;
   size: string;
   format: string;
   hasFile: boolean;
@@ -158,6 +157,7 @@ function mapApiDocument(d: DocumentItem, projectName: string): Document {
     author: '—',
     reviewer: '',
     date: d.created_at ? new Date(d.created_at).toLocaleDateString('ru-RU') : '—',
+    createdAt: d.created_at || null,
     size: '—',
     format: '—',
     hasFile: d.has_file ?? false,
@@ -1145,9 +1145,10 @@ function tooltipStyle() {
 
 function WorkflowView() {
   const [tab, setTab] = useState<'tasks' | 'remarks'>('tasks');
-  const [tasks, setTasks] = useState<Task[]>([]);
   const [remarks, setRemarks] = useState<RemarkListItem[]>([]);
   const [approvalFeed, setApprovalFeed] = useState<ApprovalFeedItem[]>([]);
+  const [docs, setDocs] = useState<Document[]>([]);
+  const [allProjects, setAllProjects] = useState<{ id: number; name: string; status?: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [taskSearch, setTaskSearch] = useState('');
@@ -1160,40 +1161,32 @@ function WorkflowView() {
     let cancelled = false;
     setLoading(true);
     Promise.all([
-      getTasks().catch(() => null),
       getRemarks({ page: 1, page_size: 50 }).catch(() => null),
       getApprovalFeed().catch(() => [] as ApprovalFeedItem[]),
-    ]).then(([tasksData, remarksData, feedData]) => {
+      getDocuments().catch(() => [] as DocumentItem[]),
+      getProjects().catch(() => [] as { id: number; name: string; status?: string }[]),
+    ]).then(([remarksData, feedData, docsData, projectsData]) => {
       if (cancelled) return;
-      if (tasksData?.length) setTasks(tasksData);
       if (remarksData?.items?.length) setRemarks(remarksData.items);
       if (feedData?.length) setApprovalFeed(feedData);
+      const docsList = Array.isArray(docsData)
+        ? docsData
+        : (docsData as any)?.items ?? [];
+      const projectsList = extractItems<{ id: number; name: string; status?: string }>(projectsData);
+      const projectNames = new Map(projectsList.map(p => [p.id, p.name]));
+      setAllProjects(projectsList);
+      setDocs(docsList.map((d: DocumentItem) => mapApiDocument(d, projectNames.get(d.project_id) || `Проект #${d.project_id}`)));
       setLoaded(true);
       setLoading(false);
     });
     return () => { cancelled = true; };
   }, [loaded]);
 
-  const filteredTasks = tasks.filter(t => {
-    const matchSearch = t.title.toLowerCase().includes(taskSearch.toLowerCase());
-    const matchStatus = taskFilter === 'all' || t.status === taskFilter;
-    return matchSearch && matchStatus;
-  });
-
   const filteredRemarks = remarks.filter(r => {
     const matchSearch = r.title.toLowerCase().includes(remarkSearch.toLowerCase());
     const matchStatus = remarkFilter === 'all' || r.status === remarkFilter;
     return matchSearch && matchStatus;
   });
-
-  const getTaskStatusIcon = (status: string) => {
-    switch (status) {
-      case 'DONE': return <CheckCircle2 size={16} className="text-green-500" />;
-      case 'IN_PROGRESS': return <Circle size={16} className="text-blue-500" />;
-      case 'NEW': return <Circle size={16} className="text-gray-400" />;
-      default: return <AlertCircle size={16} className="text-gray-400" />;
-    }
-  };
 
   const getTaskStatusLabel = (status: string) => {
     switch (status) {
@@ -1231,38 +1224,145 @@ function WorkflowView() {
     }
   };
 
+  const getRemarkPriorityLabel = (priority: string) => {
+    switch (priority) {
+      case 'low': return 'Низкий';
+      case 'medium': return 'Средний';
+      case 'high':
+      case 'critical': return 'Высокий';
+      default: return priority;
+    }
+  };
+
+  const getTaskPriorityLabel = (priority: string) => {
+    switch (priority) {
+      case 'LOW':
+      case 'low': return 'Низкий';
+      case 'NORMAL':
+      case 'MEDIUM':
+      case 'medium': return 'Средний';
+      case 'HIGH':
+      case 'high': return 'Высокий';
+      default: return priority;
+    }
+  };
+
+  type ActionTaskType = 'create_document' | 'approve' | 'fix_remark' | 'attach_file';
+  interface ActionTask {
+    id: string;
+    type: ActionTaskType;
+    title: string;
+    project?: string;
+    document?: string;
+    documentId?: number;
+    projectId?: number;
+    status: 'NEW' | 'IN_PROGRESS' | 'DONE';
+    priority: 'low' | 'medium' | 'high';
+  }
+
+  const getActionTaskMeta = (type: ActionTaskType) => {
+    switch (type) {
+      case 'create_document': return { label: 'Создать документ', icon: <FilePlus size={16} />, color: '#3B82F6', bg: 'rgba(59,130,246,0.15)', border: 'rgba(59,130,246,0.4)' };
+      case 'approve': return { label: 'Согласовать', icon: <FileCheck size={16} />, color: '#F59E0B', bg: 'rgba(245,158,11,0.15)', border: 'rgba(245,158,11,0.4)' };
+      case 'fix_remark': return { label: 'Исправить замечание', icon: <AlertCircle size={16} />, color: '#EF4444', bg: 'rgba(239,68,68,0.15)', border: 'rgba(239,68,68,0.4)' };
+      case 'attach_file': return { label: 'Прикрепить файл', icon: <Paperclip size={16} />, color: '#8B5CF6', bg: 'rgba(139,92,246,0.15)', border: 'rgba(139,92,246,0.4)' };
+    }
+  };
+
+  const actionTasks = useMemo<ActionTask[]>(() => {
+    const items: ActionTask[] = [];
+    // Создать документ — активные проекты без документов
+    const activeProjects = allProjects.filter(p => !p.status || p.status === 'active');
+    const projectDocCounts = new Map<number, number>();
+    docs.forEach(d => {
+      if (d.projectId) projectDocCounts.set(d.projectId, (projectDocCounts.get(d.projectId) || 0) + 1);
+    });
+    activeProjects.forEach(p => {
+      if (!projectDocCounts.get(p.id)) {
+        items.push({ id: `create-doc-${p.id}`, type: 'create_document', title: 'Создать документ', project: p.name, projectId: p.id, status: 'NEW', priority: 'medium' });
+      }
+    });
+    // Действия по документам
+    docs.forEach(d => {
+      if (d.status === 'review') {
+        items.push({ id: `approve-${d.id}`, type: 'approve', title: 'Согласовать документ', project: d.project, document: `${d.code} — ${d.name}`, documentId: Number(d.id), status: 'NEW', priority: 'high' });
+      }
+      if (d.status === 'draft' && !d.hasFile) {
+        items.push({ id: `attach-${d.id}`, type: 'attach_file', title: 'Прикрепить файл к документу', project: d.project, document: `${d.code} — ${d.name}`, documentId: Number(d.id), status: 'NEW', priority: 'medium' });
+      }
+    });
+    // Исправить замечание
+    remarks.filter(r => r.status === 'new' || r.status === 'in_progress').forEach(r => {
+      const linkedDoc = docs.find(d => Number(d.id) === r.document_id);
+      items.push({
+        id: `fix-remark-${r.id}`,
+        type: 'fix_remark',
+        title: 'Исправить замечание',
+        project: r.project_name || linkedDoc?.project || (r.project_id ? `Проект #${r.project_id}` : '—'),
+        document: r.document_name || linkedDoc?.code || (r.document_id ? `Документ #${r.document_id}` : '—'),
+        documentId: r.document_id,
+        status: 'NEW',
+        priority: r.priority === 'critical' || r.priority === 'high' ? 'high' : r.priority === 'medium' ? 'medium' : 'low',
+      });
+    });
+    return items;
+  }, [docs, remarks, allProjects]);
+
+  const filteredActionTasks = useMemo(() => actionTasks.filter(t => {
+    const q = taskSearch.toLowerCase();
+    const matchSearch = t.title.toLowerCase().includes(q) || (t.project?.toLowerCase().includes(q) ?? false) || (t.document?.toLowerCase().includes(q) ?? false);
+    const matchStatus = taskFilter === 'all' || t.status === taskFilter;
+    return matchSearch && matchStatus;
+  }), [actionTasks, taskSearch, taskFilter]);
+
+  const openRemarksDocIds = useMemo(
+    () => new Set(
+      remarks
+        .filter(r => (r.status === 'new' || r.status === 'in_progress') && r.document_id != null)
+        .map(r => String(r.document_id))
+    ),
+    [remarks],
+  );
+
   const processCards = [
-    { icon: <Upload size={20} />, count: tasks.filter(t => t.status === 'NEW').length, label: 'Загрузка', color: '#3B82F6', onClick: () => { setTab('tasks'); setTaskFilter('NEW'); } },
-    { icon: <Search size={20} />, count: tasks.filter(t => t.status === 'IN_PROGRESS').length, label: 'Проверка', color: '#8B5CF6', onClick: () => { setTab('tasks'); setTaskFilter('IN_PROGRESS'); } },
-    { icon: <FileCheck size={20} />, count: remarks.filter(r => r.status === 'in_progress').length, label: 'Согласование', color: '#F59E0B', onClick: () => { setTab('remarks'); setRemarkFilter('in_progress'); } },
-    { icon: <Archive size={20} />, count: tasks.filter(t => t.status === 'DONE').length, label: 'Архив', color: '#6B7280', onClick: () => { setTab('tasks'); setTaskFilter('DONE'); } },
+    { icon: <FileText size={20} />, count: docs.length, label: 'Всего', color: '#64748B', onClick: () => { setTab('tasks'); } },
+    { icon: <Upload size={20} />, count: docs.filter(d => d.status === 'draft').length, label: 'Черновик', color: '#3B82F6', onClick: () => { setTab('tasks'); } },
+    { icon: <Search size={20} />, count: docs.filter(d => openRemarksDocIds.has(d.id)).length, label: 'Проверка', color: '#8B5CF6', onClick: () => { setTab('remarks'); setRemarkFilter('all'); } },
+    { icon: <FileCheck size={20} />, count: docs.filter(d => d.status === 'review').length, label: 'Согласование', color: '#F59E0B', onClick: () => { setTab('remarks'); } },
+    { icon: <Award size={20} />, count: docs.filter(d => d.status === 'approved' || d.status === 'confirmed').length, label: 'Утверждено', color: '#22C55E', onClick: () => { setTab('tasks'); } },
+    { icon: <Archive size={20} />, count: docs.filter(d => d.status === 'archived').length, label: 'Архив', color: '#6B7280', onClick: () => { setTab('tasks'); } },
   ];
 
   const statusPieData = useMemo(() => {
     const counts: Record<string, number> = {};
-    tasks.forEach(t => {
-      const label = t.status === 'NEW' ? 'Новые' : t.status === 'IN_PROGRESS' ? 'В работе' : t.status === 'DONE' ? 'Выполнены' : t.status;
+    docs.forEach(d => {
+      const label =
+        d.status === 'draft' ? 'Черновики' :
+        d.status === 'review' ? 'На согласовании' :
+        d.status === 'approved' || d.status === 'confirmed' ? 'Утверждено' :
+        d.status === 'archived' ? 'В архиве' :
+        'Прочие';
       counts[label] = (counts[label] || 0) + 1;
     });
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
-  }, [tasks]);
+  }, [docs]);
 
   const templateBarData = useMemo(() => {
     const counts: Record<string, number> = {};
-    tasks.forEach(t => {
-      const template = t.title.split(':')[0] || 'Без шаблона';
-      counts[template] = (counts[template] || 0) + 1;
+    docs.forEach(d => {
+      const label = docTypeConfig[d.type]?.label || 'Прочее';
+      counts[label] = (counts[label] || 0) + 1;
     });
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
-  }, [tasks]);
+  }, [docs]);
 
   const monthlyLineData = useMemo(() => {
     const months = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
     const counts: Record<string, number> = {};
     months.forEach(m => counts[m] = 0);
-    tasks.forEach(t => {
-      const date = t.due_date ? new Date(t.due_date) : null;
-      if (date) {
+    docs.forEach(d => {
+      const date = d.createdAt ? new Date(d.createdAt) : null;
+      if (date && !Number.isNaN(date.getTime())) {
         const m = months[date.getMonth()];
         counts[m] = (counts[m] || 0) + 1;
       }
@@ -1271,7 +1371,7 @@ function WorkflowView() {
       return months.map(m => ({ month: m, count: 0 }));
     }
     return months.map(m => ({ month: m, count: counts[m] || 0 }));
-  }, [tasks]);
+  }, [docs]);
 
   const chartTextColor = 'var(--text-secondary, #8892A8)';
   const chartGridColor = 'var(--border-divider, rgba(255,255,255,0.06))';
@@ -1381,15 +1481,15 @@ function WorkflowView() {
         </div>
 
         <div className="p-3 rounded-lg" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-default)' }}>
-          <h3 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Динамика запусков</h3>
+          <h3 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Динамика документов</h3>
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={monthlyLineData} margin={{ top: 4, right: 8, left: -12, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} />
                 <XAxis dataKey="month" tick={{ fill: chartTextColor, fontSize: 11 }} axisLine={{ stroke: chartGridColor }} tickLine={false} />
                 <YAxis tick={{ fill: chartTextColor, fontSize: 11 }} axisLine={{ stroke: chartGridColor }} tickLine={false} />
-                <Tooltip contentStyle={tooltipStyle()} formatter={(value) => [`${value}`, 'Запуски']} />
-                <Line type="monotone" dataKey="count" name="Запуски" stroke={LINE_COLORS[0]} strokeWidth={2} dot={{ r: 3, strokeWidth: 2, fill: 'var(--card-bg)' }} activeDot={{ r: 5 }} />
+                <Tooltip contentStyle={tooltipStyle()} formatter={(value) => [`${value}`, 'Документы']} />
+                <Line type="monotone" dataKey="count" name="Документы" stroke={LINE_COLORS[0]} strokeWidth={2} dot={{ r: 3, strokeWidth: 2, fill: 'var(--card-bg)' }} activeDot={{ r: 5 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -1399,7 +1499,7 @@ function WorkflowView() {
       {/* Sub-tabs */}
       <div className="flex items-center gap-1 flex-wrap">
         {[
-          { key: 'tasks' as const, label: 'Задачи', icon: <FileCheck size={16} />, count: filteredTasks.length, color: TASKS_TAB_COLOR },
+          { key: 'tasks' as const, label: 'Задачи', icon: <FileCheck size={16} />, count: filteredActionTasks.length, color: TASKS_TAB_COLOR },
           { key: 'remarks' as const, label: 'Замечания', icon: <AlertCircle size={16} />, count: filteredRemarks.length, color: WORKFLOW_TAB_COLOR },
         ].map(t => {
           const isSubActive = tab === t.key;
@@ -1454,36 +1554,52 @@ function WorkflowView() {
                 </button>
               ))}
             </div>
-            <span className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Найдено: {filteredTasks.length}</span>
+            <span className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Найдено: {filteredActionTasks.length}</span>
           </div>
 
           <div className="space-y-2">
-            {filteredTasks.length === 0 ? (
+            {filteredActionTasks.length === 0 ? (
               <div className="text-center py-12">
                 <FileCheck size={48} style={{ color: 'var(--text-muted)' }} className="mx-auto mb-4 opacity-30" />
-                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Задачи не найдены. Измените фильтры или создайте новую.</p>
+                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Действий не требуется. Все текущие задачи выполнены.</p>
               </div>
             ) : (
-              filteredTasks.map((task) => {
-                const st = getTaskStatusStyle(task.status);
+              filteredActionTasks.map((task) => {
+                const meta = getActionTaskMeta(task.type);
+                const target = task.documentId ? `/documents/${task.documentId}` : (task.projectId ? `/documents/create?projectId=${task.projectId}` : '/documents');
+                const priorityClass = task.priority === 'high' ? 'bg-red-100 text-red-700' : task.priority === 'medium' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700';
                 return (
-                  <div key={task.id} className="rounded-xl border p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-default)' }}>
-                    <div className="flex items-center gap-3">
-                      {getTaskStatusIcon(task.status)}
-                      <div>
+                  <Link
+                    key={task.id}
+                    to={target}
+                    className="rounded-xl border p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors hover:bg-[var(--bg-surface-2)]"
+                    style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-default)' }}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ color: meta.color, background: meta.bg, border: `1px solid ${meta.border}` }}>
+                        {meta.icon}
+                      </span>
+                      <div className="min-w-0">
                         <h3 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{task.title}</h3>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-xs px-1.5 py-0.5 rounded border font-medium" style={{ color: st.color, borderColor: st.border, background: st.bg }}>{getTaskStatusLabel(task.status)}</span>
-                          <span className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Срок: {task.due_date ? new Date(task.due_date).toLocaleDateString('ru-RU') : '—'}</span>
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                          {task.project && (
+                            <span className="inline-flex items-center gap-1" title="Проект">
+                              <FolderKanban size={12} style={{ color: 'var(--text-muted)' }} /> {task.project}
+                            </span>
+                          )}
+                          {task.document && (
+                            <span className="inline-flex items-center gap-1" title="Документ">
+                              <FileText size={12} style={{ color: 'var(--text-muted)' }} /> {task.document}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium self-start sm:self-auto ${
-                      task.priority === 'HIGH' ? 'bg-red-100 text-red-700' :
-                      task.priority === 'NORMAL' ? 'bg-blue-100 text-blue-700' :
-                      'bg-gray-100 text-gray-700'
-                    }`}>{task.priority}</span>
-                  </div>
+                    <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+                      <span className="text-xs px-1.5 py-0.5 rounded border font-medium" style={{ color: meta.color, borderColor: meta.border, background: meta.bg }}>{meta.label}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${priorityClass}`}>{getTaskPriorityLabel(task.priority.toUpperCase())}</span>
+                    </div>
+                  </Link>
                 );
               })
             )}
@@ -1526,21 +1642,36 @@ function WorkflowView() {
                 <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Замечания не найдены. Измените фильтры или создайте новое.</p>
               </div>
             ) : (
-              filteredRemarks.map((remark) => (
-                <div key={remark.id} className="rounded-xl border p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-default)' }}>
-                  <div>
-                    <h3 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{remark.title}</h3>
-                    <div className="flex items-center gap-2 mt-1 text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>
-                      <span>{remark.project_name}</span>
-                      <span>·</span>
-                      <span>{remark.document_name}</span>
-                      <span>·</span>
-                      <span>Приоритет: {remark.priority}</span>
+              filteredRemarks.map((remark) => {
+                const linkedDoc = docs.find(d => Number(d.id) === remark.document_id);
+                const projectName = remark.project_name || linkedDoc?.project || (remark.project_id ? `Проект #${remark.project_id}` : '—');
+                const documentName = remark.document_name || linkedDoc?.code || (remark.document_id ? `Документ #${remark.document_id}` : '—');
+                return (
+                  <div key={remark.id} className="rounded-xl border p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-default)' }}>
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{remark.title}</h3>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                        <span className="inline-flex items-center gap-1" title="Проект">
+                          <FolderKanban size={12} style={{ color: 'var(--text-muted)' }} /> {projectName}
+                        </span>
+                        <span className="inline-flex items-center gap-1" title="Документ">
+                          <FileText size={12} style={{ color: 'var(--text-muted)' }} /> {documentName}
+                        </span>
+                        <span className="inline-flex items-center gap-1" title="Приоритет">
+                          <AlertCircle size={12} style={{ color: 'var(--text-muted)' }} /> Приоритет: {getRemarkPriorityLabel(remark.priority)}
+                        </span>
+                        <span className="inline-flex items-center gap-1" title="Автор">
+                          <User size={12} style={{ color: 'var(--text-muted)' }} /> {remark.author_name}
+                        </span>
+                        <span className="inline-flex items-center gap-1 ml-auto" title="Дата">
+                          <Clock size={12} style={{ color: 'var(--text-muted)' }} /> {remark.created_at ? new Date(remark.created_at).toLocaleString('ru-RU') : '—'}
+                        </span>
+                      </div>
                     </div>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium self-start sm:self-auto ${getRemarkStatusColor(remark.status)}`}>{getRemarkStatusLabel(remark.status)}</span>
                   </div>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium self-start sm:self-auto ${getRemarkStatusColor(remark.status)}`}>{getRemarkStatusLabel(remark.status)}</span>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>

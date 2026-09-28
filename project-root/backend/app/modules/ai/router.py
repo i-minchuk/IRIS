@@ -1,11 +1,14 @@
 """AI router — v0.3.0 endpoints: semantic search, document analysis, RAG chat, requirements extraction."""
 from __future__ import annotations
 
+import json
 import logging
+from datetime import datetime, timezone
+from io import BytesIO
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,6 +18,7 @@ from app.modules.auth.models import User
 from app.ai.service import AIService
 from app.ai.classification import classify_document
 from app.ai.autofill import suggest_document_fields
+from app.parser.factory import ParserFactory
 from app.parser.indexer import DocumentIndexer
 from app.core.config import settings
 from app.core.mode import require_integrations
@@ -84,6 +88,17 @@ class ExtractRequirementsResponse(BaseModel):
     document_id: str
     requirements: List[Dict[str, Any]]
     extracted_at: str
+
+
+class ComplianceCheckRequest(BaseModel):
+    document_id: str
+    requirements: str
+
+
+class ComplianceCheckResponse(BaseModel):
+    document_id: str
+    compliant: bool
+    findings: List[Dict[str, Any]]
 
 
 # ---------------------------------------------------------------------------
@@ -156,29 +171,43 @@ async def analyze_document_endpoint(
         raise HTTPException(status_code=503, detail="AI недоступен: OPENAI_API_KEY не настроен")
 
     try:
-        doc_uuid = UUID(document_id)
+        numeric_id = int(document_id)
     except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid document_id UUID")
+        raise HTTPException(status_code=400, detail="Invalid document_id")
 
     try:
-        ai = AIService()
-        result = await ai.analyze_document(doc_uuid)
-
-        # Persist result to DB (optional — store in document.content or new field)
         from sqlalchemy import select
         from app.modules.documents.models import Document
-        db_result = await db.execute(select(Document).where(Document.id == int(document_id)))
+
+        db_result = await db.execute(select(Document).where(Document.id == numeric_id))
         doc = db_result.scalar_one_or_none()
-        if doc and doc.content is not None and isinstance(doc.content, dict):
-            doc.content["ai_analysis"] = {
-                "overall_score": result.overall_score,
-                "findings": result.findings,
-                "critical_count": result.critical_count,
-                "warning_count": result.warning_count,
-                "info_count": result.info_count,
-                "analyzed_at": str(datetime.now(timezone.utc)),
-            }
-            await db.commit()
+        if not doc:
+            raise HTTPException(status_code=404, detail="Документ не найден")
+
+        # Извлекаем текст для анализа из content.body, названия или номера документа
+        document_text = ""
+        if isinstance(doc.content, dict):
+            body = doc.content.get("body")
+            if isinstance(body, str):
+                document_text = body
+        if not document_text:
+            document_text = f"{doc.number} {doc.name}".strip()
+
+        ai = AIService()
+        result = await ai.analyze_document(document_id, document_text=document_text)
+
+        # Сохраняем результат в document.content
+        if doc.content is None or not isinstance(doc.content, dict):
+            doc.content = {}
+        doc.content["ai_analysis"] = {
+            "overall_score": result.overall_score,
+            "findings": result.findings,
+            "critical_count": result.critical_count,
+            "warning_count": result.warning_count,
+            "info_count": result.info_count,
+            "analyzed_at": str(datetime.now(timezone.utc)),
+        }
+        await db.commit()
 
         return DocumentAnalysisResponse(
             document_id=document_id,
@@ -188,6 +217,8 @@ async def analyze_document_endpoint(
             warning_count=result.warning_count,
             info_count=result.info_count,
         )
+    except HTTPException:
+        raise
     except Exception as exc:
         logger.warning("Document analysis failed: %s", exc)
         raise HTTPException(status_code=500, detail=f"Ошибка анализа: {exc}")
@@ -318,6 +349,120 @@ async def extract_requirements_endpoint(
     except Exception as exc:
         logger.warning("Requirements extraction failed: %s", exc)
         raise HTTPException(status_code=500, detail=f"Ошибка извлечения: {exc}")
+
+
+# ---------------------------------------------------------------------------
+# 3.5 Extract requirements text from uploaded DOCX/PDF file
+# ---------------------------------------------------------------------------
+
+class ExtractRequirementsFileResponse(BaseModel):
+    text: str
+    file_name: str
+
+
+@router.post("/extract-requirements-file", response_model=ExtractRequirementsFileResponse)
+async def extract_requirements_file(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Извлечь текст из загруженного файла с требованиями (.docx или .pdf)."""
+    allowed_exts = {".docx", ".pdf"}
+    file_name = file.filename or ""
+    ext = f".{file_name.lower().split('.')[-1]}" if "." in file_name else ""
+    if ext not in allowed_exts:
+        raise HTTPException(
+            status_code=400, detail="Поддерживаются только файлы .docx и .pdf"
+        )
+
+    try:
+        contents = await file.read()
+        parsed = ParserFactory.parse(BytesIO(contents), file_name)
+        return ExtractRequirementsFileResponse(text=parsed.content, file_name=file_name)
+    except Exception as exc:
+        logger.warning("Requirements file extraction failed: %s", exc)
+        raise HTTPException(status_code=500, detail=f"Ошибка извлечения текста: {exc}")
+    finally:
+        await file.close()
+
+
+# ---------------------------------------------------------------------------
+# 3.6 Compliance check against manually uploaded requirements
+# ---------------------------------------------------------------------------
+
+@router.post("/check-compliance", response_model=ComplianceCheckResponse)
+async def check_compliance_endpoint(
+    request: ComplianceCheckRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+    _: None = Depends(require_integrations),
+):
+    """Проверить соответствие документа вручную загруженным требованиям."""
+    if not settings.OPENAI_API_KEY:
+        raise HTTPException(status_code=503, detail="AI недоступен: OPENAI_API_KEY не настроен")
+
+    try:
+        numeric_id = int(request.document_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid document_id")
+
+    from sqlalchemy import select
+    from app.modules.documents.models import Document
+
+    db_result = await db.execute(select(Document).where(Document.id == numeric_id))
+    doc = db_result.scalar_one_or_none()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Документ не найден")
+
+    document_text = ""
+    if isinstance(doc.content, dict):
+        body = doc.content.get("body")
+        if isinstance(body, str):
+            document_text = body
+    if not document_text:
+        document_text = f"{doc.number} {doc.name}".strip()
+
+    requirements = request.requirements.strip()
+    if not requirements:
+        raise HTTPException(status_code=400, detail="Требования не могут быть пустыми")
+
+    try:
+        from openai import AsyncOpenAI
+        client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY, base_url=settings.OPENAI_BASE_URL)
+
+        response = await client.chat.completions.create(
+            model=settings.LLM_MODEL,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "Ты проверяешь соответствие документа списку требований. "
+                        "Для каждого пункта требований укажи, соблюдено ли оно в документе. "
+                        "Ответь строго JSON: {\"compliant\": true/false, \"findings\": [{\"requirement\": \"текст требования\", \"status\": \"ok|fail\", \"comment\": \"пояснение\"}]}. "
+                        "Если требование соблюдено — status ok, иначе — fail и пояснение, чего не хватает."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": f"Документ:\n{document_text[:8000]}\n\nТребования:\n{requirements[:4000]}",
+                },
+            ],
+            response_format={"type": "json_object"},
+            max_tokens=2000,
+            temperature=0.1,
+        )
+
+        result = json.loads(response.choices[0].message.content)
+        findings = result.get("findings", [])
+        compliant = result.get("compliant", all(f.get("status") == "ok" for f in findings))
+
+        return ComplianceCheckResponse(
+            document_id=request.document_id,
+            compliant=compliant,
+            findings=findings,
+        )
+    except Exception as exc:
+        logger.warning("Compliance check failed: %s", exc)
+        raise HTTPException(status_code=500, detail=f"Ошибка проверки: {exc}")
 
 
 # ---------------------------------------------------------------------------

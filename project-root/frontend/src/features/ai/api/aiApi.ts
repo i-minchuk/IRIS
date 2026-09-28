@@ -88,6 +88,26 @@ export interface ExtractRequirementsResponse {
   extracted_at: string;
 }
 
+export interface ComplianceCheckResponse {
+  document_id: string;
+  compliant: boolean;
+  findings: Array<{
+    requirement: string;
+    status: 'ok' | 'fail';
+    comment: string;
+  }>;
+}
+
+export interface ComplianceCheckRequest {
+  document_id: string;
+  requirements: string;
+}
+
+export interface ExtractRequirementsFileResponse {
+  text: string;
+  file_name: string;
+}
+
 /**
  * REST fallback для inline-подсказок (если WebSocket недоступен)
  */
@@ -135,5 +155,33 @@ export const extractRequirements = async (
   documentId: string
 ): Promise<ExtractRequirementsResponse> => {
   const { data } = await client.post(`/ai/extract-requirements/${documentId}`);
+  return data;
+};
+
+/**
+ * Проверить соответствие документа вручную заданным требованиям
+ */
+export const checkCompliance = async (
+  documentId: string,
+  requirements: string
+): Promise<ComplianceCheckResponse> => {
+  const { data } = await client.post('/ai/check-compliance', {
+    document_id: documentId,
+    requirements,
+  });
+  return data;
+};
+
+/**
+ * Извлечь текст из загруженного файла с требованиями (.docx / .pdf)
+ */
+export const extractRequirementsFile = async (
+  file: File
+): Promise<ExtractRequirementsFileResponse> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const { data } = await client.post('/ai/extract-requirements-file', formData, {
+    headers: { 'Content-Type': undefined },
+  });
   return data;
 };
