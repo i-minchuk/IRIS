@@ -40,15 +40,35 @@ jobs:
     strategy:
       matrix:
         python: [3.12]
+    services:
+      db:
+        image: postgres:15-alpine
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: iris_test
+        options: >
+          --health-cmd="pg_isready -U postgres -d iris_test"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
     env:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/iris_test
       SECRET_KEY: Ci-Test-Secret-Key-0123456789-abcdef-Not-For-Prod!
       OPENAI_API_KEY: sk-ci-dummy
+      IRIS_STORAGE_ROOT: /tmp/iris_test_storage
+      IRIS_LOG_LEVEL: INFO
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
       - uses: ./.github/actions/python-deps
+      - name: Run migrations
+        working-directory: project-root/backend
+        run: alembic upgrade head
       - name: Run pytest
         working-directory: project-root/backend
         run: python -m pytest -q -m 'not integration' --cov=app --cov-report=xml
