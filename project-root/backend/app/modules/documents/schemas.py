@@ -243,6 +243,7 @@ class DocumentUpdateInput(BaseModel):
     variables: Optional[dict] = None
     standard_template_id: Optional[int] = None
     assignee_ids: Optional[list[int]] = None
+    content: Optional[dict] = None
 
 
 class RevisionCreateInput(BaseModel):

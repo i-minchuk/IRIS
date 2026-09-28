@@ -8,17 +8,19 @@ import { useRemarksStore } from '@/stores/remarksStore';
 import { DocumentAnalysisPanel } from '@/features/ai/components/DocumentAnalysisPanel';
 import { AIChatPanel } from '@/features/ai/components/AIChatPanel';
 import { RequirementsPanel } from '@/features/ai/components/RequirementsPanel';
-import { FileText, MessageSquare, History, Users, ArrowLeft, Sparkles, Wrench, Bot, Upload } from 'lucide-react';
+import { FileText, MessageSquare, History, Users, ArrowLeft, Sparkles, Wrench, Bot, Upload, PencilLine } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { getDocument, downloadRevisionFile, uploadDocumentFile, type DocumentDetail, type Revision } from '@/features/documents/api/documents';
+import { getDocument, downloadRevisionFile, uploadDocumentFile, updateDocument, type DocumentDetail, type Revision } from '@/features/documents/api/documents';
 import { getUsers } from '@/features/users/api/users';
+import { useAuthStore } from '@/features/auth/store/authStore';
+import { DocumentEditor } from '@/features/documents/components/DocumentEditor';
 import type { User } from '@/types';
 import ViewerContainer from '@/components/viewers/ViewerContainer';
 import { toast } from 'sonner';
 import { getProject } from '@/features/projects/api/projects';
 import type { DocumentStatus } from '@/lib/documentStatusMachine';
 
-type Tab = 'info' | 'files' | 'approval' | 'remarks' | 'history' | 'ai-analysis' | 'ai-requirements' | 'ai-chat';
+type Tab = 'info' | 'editor' | 'files' | 'approval' | 'remarks' | 'history' | 'ai-analysis' | 'ai-requirements' | 'ai-chat';
 
 const DOC_STATUSES: DocumentStatus[] = [
   'draft', 'in_review', 'review_ok', 'approval', 'approved', 'release', 'archived', 'cancelled',
@@ -143,6 +145,78 @@ export default function DocumentDetailPage() {
     previewCacheRef.current.clear();
   }, []);
 
+  // ── Редактируемый предпросмотр (TipTap, content.body) ──
+  const [editorContent, setEditorContent] = useState('<p></p>');
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
+  const [editorRev, setEditorRev] = useState(0); // для пересоздания редактора при откате
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const contentRef = useRef<Record<string, unknown>>({});
+
+  useEffect(() => {
+    const body = (doc?.content as { body?: string } | null)?.body;
+    contentRef.current = { ...(doc?.content ?? {}) };
+    setEditorContent(body && body.trim() ? body : '<p></p>');
+    setSaveStatus('saved');
+  }, [doc?.id]);
+
+  useEffect(() => () => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+  }, []);
+
+  const MAX_HISTORY = 20;
+  const currentUserName = useAuthStore((s) => s.user)?.full_name || 'Неизвестный';
+
+  const buildContent = (body: string): Record<string, unknown> => {
+    const cur = contentRef.current;
+    const prevBody = (cur.body as string) || '<p></p>';
+    let history = Array.isArray(cur.body_history) ? [...(cur.body_history as { body: string; at: string; by?: string }[])] : [];
+    if (prevBody !== body) {
+      history = [{ body: prevBody, at: new Date().toISOString(), by: currentUserName }, ...history].slice(0, MAX_HISTORY);
+    }
+    const next = { ...cur, body, body_history: history };
+    contentRef.current = next;
+    return next;
+  };
+
+  const handleEditorChange = (html: string) => {
+    const numericId = Number(id);
+    if (!numericId) return;
+    setEditorContent(html);
+    setSaveStatus('unsaved');
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(async () => {
+      try {
+        setSaveStatus('saving');
+        await updateDocument(numericId, { content: buildContent(html) });
+        setSaveStatus('saved');
+      } catch {
+        setSaveStatus('unsaved');
+        toast.error('Не удалось сохранить изменения');
+      }
+    }, 1200);
+  };
+
+  const bodyHistory = Array.isArray(contentRef.current.body_history)
+    ? (contentRef.current.body_history as { body: string; at: string; by?: string }[])
+    : [];
+  const stripHtml = (html: string) => html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+
+  const restoreVersion = async (entry: { body: string; at: string; by?: string }) => {
+    const numericId = Number(id);
+    if (!numericId) return;
+    try {
+      const next = buildContent(entry.body);
+      await updateDocument(numericId, { content: next });
+      setEditorContent(entry.body);
+      setEditorRev((r) => r + 1); // пересоздать редактор с восстановленным текстом
+      setSaveStatus('saved');
+      toast.success('Версия восстановлена');
+    } catch {
+      toast.error('Не удалось восстановить версию');
+    }
+  };
+
   // ── Загрузка нового файла (новая ревизия) ──
   const [uploading, setUploading] = useState(false);
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -166,6 +240,7 @@ export default function DocumentDetailPage() {
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
     { key: 'info', label: 'Основное', icon: <FileText size={14} /> },
+    { key: 'editor', label: 'Редактор', icon: <PencilLine size={14} /> },
     { key: 'files', label: 'Файлы', icon: <FileText size={14} /> },
     { key: 'approval', label: 'Согласование', icon: <Users size={14} /> },
     { key: 'remarks', label: `Замечания (${documentRemarks.length})`, icon: <MessageSquare size={14} /> },
@@ -286,6 +361,89 @@ export default function DocumentDetailPage() {
               </div>
             </Card>
           </div>
+        )}
+
+        {activeTab === 'editor' && doc && (
+          <Card padding="md">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                  Редактируемый предпросмотр
+                </h3>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                  Текст документа — изменения сохраняются автоматически
+                </p>
+              </div>
+              <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                {saveStatus === 'saved' && '💾 Сохранено'}
+                {saveStatus === 'saving' && '⏳ Сохранение…'}
+                {saveStatus === 'unsaved' && '● Не сохранено'}
+              </span>
+            </div>
+            <div style={{ height: 'calc(100vh - 520px)', minHeight: 300 }}>
+              <DocumentEditor
+                key={editorRev}
+                content={editorContent}
+                onChange={handleEditorChange}
+                documentId={String(id)}
+                documentType={doc.doc_type}
+              />
+            </div>
+
+            {/* История изменений текста */}
+            <div className="mt-4 rounded-lg border" style={{ borderColor: 'var(--border-default)' }}>
+              <button
+                type="button"
+                onClick={() => setHistoryOpen((v) => !v)}
+                className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium"
+                style={{ color: 'var(--text-primary)', background: 'var(--bg-surface-2)' }}
+              >
+                <span>История изменений ({bodyHistory.length})</span>
+                <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                  {historyOpen ? 'Свернуть' : 'Развернуть'}
+                </span>
+              </button>
+              {historyOpen && (
+                <div className="max-h-56 overflow-y-auto">
+                  {bodyHistory.length === 0 ? (
+                    <p className="px-3 py-2 text-sm" style={{ color: 'var(--text-tertiary)' }}>
+                      Истории пока нет — версии появятся после первых правок текста.
+                    </p>
+                  ) : (
+                    bodyHistory.map((entry, idx) => (
+                      <div
+                        key={`${entry.at}-${idx}`}
+                        className="flex items-center gap-3 px-3 py-2 text-sm"
+                        style={{ borderTop: idx === 0 ? 'none' : '1px solid var(--border-default)' }}
+                      >
+                        <span className="shrink-0 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                          {new Date(entry.at).toLocaleString('ru-RU')}
+                        </span>
+                        <span
+                          className="shrink-0 text-xs px-1.5 py-0.5 rounded-full"
+                          style={{ background: 'var(--bg-surface-2)', color: 'var(--text-secondary)' }}
+                          title="Автор правки"
+                        >
+                          {entry.by || 'Неизвестный'}
+                        </span>
+                        <span className="flex-1 truncate" style={{ color: 'var(--text-secondary)' }} title={stripHtml(entry.body)}>
+                          {stripHtml(entry.body) || '(пусто)'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => { void restoreVersion(entry); }}
+                          className="shrink-0 text-xs px-2 py-1 rounded-md border transition-colors"
+                          style={{ color: 'var(--text-secondary)', borderColor: 'var(--border-default)', background: 'var(--bg-surface-2)' }}
+                        >
+                          Восстановить
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          </Card>
         )}
 
         {activeTab === 'approval' && (
