@@ -8,7 +8,7 @@ import { useRemarksStore } from '@/stores/remarksStore';
 import { DocumentAnalysisPanel } from '@/features/ai/components/DocumentAnalysisPanel';
 import { AIChatPanel } from '@/features/ai/components/AIChatPanel';
 import { RequirementsPanel } from '@/features/ai/components/RequirementsPanel';
-import { FileText, MessageSquare, History, Users, ArrowLeft, Sparkles, Wrench, Bot, Upload, PencilLine } from 'lucide-react';
+import { FileText, MessageSquare, History, Users, ArrowLeft, Sparkles, Wrench, Bot, Upload, PencilLine, Maximize2, Minimize2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getDocument, downloadRevisionFile, uploadDocumentFile, updateDocument, type DocumentDetail, type Revision } from '@/features/documents/api/documents';
 import { getUsers } from '@/features/users/api/users';
@@ -105,6 +105,28 @@ export default function DocumentDetailPage() {
   const [previewLoading, setPreviewLoading] = useState(false);
   const previewCacheRef = useRef<Map<number, { url: string; name: string }>>(new Map());
   const activeRev = files.find(r => r.id === selectedRevId) ?? files[files.length - 1] ?? null;
+
+  // ── Полноэкранный режим предпросмотра ──
+  const previewBoxRef = useRef<HTMLDivElement | null>(null);
+  const [previewFullscreen, setPreviewFullscreen] = useState(false);
+
+  useEffect(() => {
+    const onChange = () => {
+      setPreviewFullscreen(document.fullscreenElement === previewBoxRef.current);
+    };
+    document.addEventListener('fullscreenchange', onChange);
+    return () => document.removeEventListener('fullscreenchange', onChange);
+  }, []);
+
+  const togglePreviewFullscreen = () => {
+    if (document.fullscreenElement === previewBoxRef.current) {
+      void document.exitFullscreen();
+    } else {
+      void previewBoxRef.current?.requestFullscreen().catch(() => {
+        toast.error('Не удалось развернуть предпросмотр на весь экран');
+      });
+    }
+  };
 
   useEffect(() => {
     const numericId = Number(id);
@@ -583,14 +605,30 @@ export default function DocumentDetailPage() {
                 </div>
 
                 {/* Предпросмотр выбранного файла */}
-                <div className="rounded-lg overflow-hidden flex flex-col min-w-0" style={{ border: '1px solid var(--border-default)' }}>
+                <div
+                  ref={previewBoxRef}
+                  className="rounded-lg overflow-hidden flex flex-col min-w-0"
+                  style={{ border: '1px solid var(--border-default)', background: 'var(--bg-app)' }}
+                >
                   <div
-                    className="px-3 py-1.5 text-xs font-bold uppercase tracking-wider truncate"
-                    style={{ color: 'var(--text-muted)', background: 'var(--bg-surface-2)', borderBottom: '1px solid var(--border-default)' }}
+                    className="px-3 py-1.5 flex items-center gap-2"
+                    style={{ background: 'var(--bg-surface-2)', borderBottom: '1px solid var(--border-default)' }}
                   >
-                    Предпросмотр{previewFile ? ` — ${previewFile.name}` : ''}
+                    <span className="text-xs font-bold uppercase tracking-wider truncate" style={{ color: 'var(--text-muted)' }}>
+                      Предпросмотр{previewFile ? ` — ${previewFile.name}` : ''}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={togglePreviewFullscreen}
+                      title={previewFullscreen ? 'Свернуть' : 'Развернуть на весь экран'}
+                      className="ml-auto inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium transition-colors hover:opacity-80"
+                      style={{ color: 'var(--text-secondary)', background: 'var(--bg-surface)' }}
+                    >
+                      {previewFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+                      {previewFullscreen ? 'Свернуть' : 'На весь экран'}
+                    </button>
                   </div>
-                  <div style={{ height: 'calc(100vh - 400px)', minHeight: 380, background: 'var(--bg-surface)' }}>
+                  <div style={previewFullscreen ? { flex: '1 1 0%', minHeight: 0, background: 'var(--bg-surface)' } : { height: 'calc(100vh - 400px)', minHeight: 380, background: 'var(--bg-surface)' }}>
                     {previewLoading ? (
                       <div className="h-full flex items-center justify-center">
                         <div className="text-center">
