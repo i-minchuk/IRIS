@@ -313,6 +313,7 @@ class TestTenders:
         """Create a properly mocked tender with all required fields."""
         tender = MagicMock()
         tender.id = 1
+        tender.kp_number = None
         tender.name = "Tender A"
         tender.customer_name = "Customer"
         tender.project_type = "KM"
@@ -320,6 +321,8 @@ class TestTenders:
         tender.volume_unit = None
         tender.complexity = "medium"
         tender.standards = []
+        tender.scope_items = []
+        tender.standard_files = []
         tender.start_date = None
         tender.deadline = None
         tender.duration_months = None
