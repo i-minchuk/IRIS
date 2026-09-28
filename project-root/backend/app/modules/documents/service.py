@@ -86,6 +86,7 @@ class DocumentService:
             "locked_by_user": locked_by_user,
             "ai_classified_type": doc.ai_classified_type,
             "ai_confidence": doc.ai_confidence,
+            "has_file": any(r.file_path for r in doc.revisions),
             "created_at": doc.created_at.isoformat() if doc.created_at else None,
             "revisions": [
                 {
