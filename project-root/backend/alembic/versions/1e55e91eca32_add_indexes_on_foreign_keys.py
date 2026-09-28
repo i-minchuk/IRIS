@@ -18,14 +18,22 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    from sqlalchemy import inspect
+
+    def _has_column(table: str, column: str) -> bool:
+        # На существующих БД колонки уже есть; на чистой они добавляются
+        # поздней корректирующей миграцией — индекс создаём только если
+        # колонка уже существует, иначе обходимся без него здесь.
+        insp = inspect(op.get_bind())
+        return any(c["name"] == column for c in insp.get_columns(table))
+
     # documents
-    op.create_index('idx_documents_stage_id', 'documents', ['stage_id'])
-    op.create_index('idx_documents_kit_id', 'documents', ['kit_id'])
-    op.create_index('idx_documents_section_id', 'documents', ['section_id'])
-    op.create_index('idx_documents_operation_id', 'documents', ['operation_id'])
-    op.create_index('idx_documents_author_id', 'documents', ['author_id'])
-    op.create_index('idx_documents_checker_id', 'documents', ['checker_id'])
-    op.create_index('idx_documents_approver_id', 'documents', ['approver_id'])
+    for column in (
+        "stage_id", "kit_id", "section_id", "operation_id",
+        "author_id", "checker_id", "approver_id",
+    ):
+        if _has_column("documents", column):
+            op.create_index(f"idx_documents_{column}", "documents", [column])
 
     # tasks
     op.create_index('idx_tasks_creator_id', 'tasks', ['creator_id'])

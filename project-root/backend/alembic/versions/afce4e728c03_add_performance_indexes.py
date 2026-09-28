@@ -19,14 +19,34 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Use IF NOT EXISTS for idempotency
-    op.execute("CREATE INDEX IF NOT EXISTS ix_doc_project_status_type ON documents (project_id, status, doc_type)")
-    op.execute("CREATE INDEX IF NOT EXISTS ix_tasks_project_status_assignee ON tasks (project_id, status, assignee_id)")
-    op.execute("CREATE INDEX IF NOT EXISTS ix_remarks_document_status ON remarks (document_id, status)")
-    op.execute("CREATE INDEX IF NOT EXISTS idx_approval_workflows_document_id ON approval_workflows (document_id)")
-    op.execute("CREATE INDEX IF NOT EXISTS idx_revisions_created_by ON revisions (created_by_id)")
-    op.execute("CREATE INDEX IF NOT EXISTS idx_revisions_approved_by ON revisions (approved_by_id)")
-    op.execute("CREATE INDEX IF NOT EXISTS idx_documents_locked_by ON documents (locked_by_id) WHERE locked_by_id IS NOT NULL")
+    from sqlalchemy import inspect
+
+    def _columns_exist(table: str, columns: tuple) -> bool:
+        # На чистой БД часть колонок появится поздней корректирующей
+        # миграцией — индекс создаём только когда все колонки на месте.
+        insp = inspect(op.get_bind())
+        existing = {c["name"] for c in insp.get_columns(table)}
+        return all(c in existing for c in columns)
+
+    stmts = [
+        ("documents", ("project_id", "status", "doc_type"),
+         "CREATE INDEX IF NOT EXISTS ix_doc_project_status_type ON documents (project_id, status, doc_type)"),
+        ("tasks", ("project_id", "status", "assignee_id"),
+         "CREATE INDEX IF NOT EXISTS ix_tasks_project_status_assignee ON tasks (project_id, status, assignee_id)"),
+        ("remarks", ("document_id", "status"),
+         "CREATE INDEX IF NOT EXISTS ix_remarks_document_status ON remarks (document_id, status)"),
+        ("approval_workflows", ("document_id",),
+         "CREATE INDEX IF NOT EXISTS idx_approval_workflows_document_id ON approval_workflows (document_id)"),
+        ("revisions", ("created_by_id",),
+         "CREATE INDEX IF NOT EXISTS idx_revisions_created_by ON revisions (created_by_id)"),
+        ("revisions", ("approved_by_id",),
+         "CREATE INDEX IF NOT EXISTS idx_revisions_approved_by ON revisions (approved_by_id)"),
+        ("documents", ("locked_by_id",),
+         "CREATE INDEX IF NOT EXISTS idx_documents_locked_by ON documents (locked_by_id) WHERE locked_by_id IS NOT NULL"),
+    ]
+    for table, columns, sql in stmts:
+        if _columns_exist(table, columns):
+            op.execute(sql)
 
 
 def downgrade() -> None:

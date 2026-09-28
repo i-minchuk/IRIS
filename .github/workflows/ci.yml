@@ -66,23 +66,9 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - uses: ./.github/actions/python-deps
-      - name: Create test schema
+      - name: Run migrations
         working-directory: project-root/backend
-        # История миграций рассинхронизирована с моделями (fresh alembic upgrade
-        # head падает) — в CI схема создаётся напрямую из моделей.
-        # TODO: починить миграции для развёртывания с нуля.
-        run: |
-          python -c "
-          import asyncio
-          import app.models
-          from app.db.base import Base
-          from app.db.session import primary_engine
-          async def main():
-              async with primary_engine.begin() as conn:
-                  await conn.run_sync(Base.metadata.create_all)
-              await primary_engine.dispose()
-          asyncio.run(main())
-          "
+        run: alembic upgrade head
       - name: Run pytest
         working-directory: project-root/backend
         run: python -m pytest -q -m 'not integration' --cov=app --cov-report=xml
@@ -154,23 +140,9 @@ jobs:
             pg_isready -h localhost -p 5432 -U postgres -d iris_test && break
             sleep 2
           done
-      - name: Create test schema
+      - name: Run migrations
         working-directory: project-root/backend
-        # История миграций рассинхронизирована с моделями (fresh alembic upgrade
-        # head падает) — в CI схема создаётся напрямую из моделей.
-        # TODO: починить миграции для развёртывания с нуля.
-        run: |
-          python -c "
-          import asyncio
-          import app.models
-          from app.db.base import Base
-          from app.db.session import primary_engine
-          async def main():
-              async with primary_engine.begin() as conn:
-                  await conn.run_sync(Base.metadata.create_all)
-              await primary_engine.dispose()
-          asyncio.run(main())
-          "
+        run: alembic upgrade head
       - name: Run integration tests
         working-directory: project-root/backend
         # Тестов с маркером integration пока нет — pytest выходит с кодом 5
