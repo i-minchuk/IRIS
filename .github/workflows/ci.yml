@@ -72,7 +72,17 @@ jobs:
         # head падает) — в CI схема создаётся напрямую из моделей.
         # TODO: починить миграции для развёртывания с нуля.
         run: |
-          python -c "import asyncio; import app.models; from app.db.base import Base; from app.db.session import primary_engine as e; asyncio.run(Base.metadata.create_all(e))"
+          python -c "
+          import asyncio
+          import app.models
+          from app.db.base import Base
+          from app.db.session import primary_engine
+          async def main():
+              async with primary_engine.begin() as conn:
+                  await conn.run_sync(Base.metadata.create_all)
+              await primary_engine.dispose()
+          asyncio.run(main())
+          "
       - name: Run pytest
         working-directory: project-root/backend
         run: python -m pytest -q -m 'not integration' --cov=app --cov-report=xml
@@ -150,7 +160,17 @@ jobs:
         # head падает) — в CI схема создаётся напрямую из моделей.
         # TODO: починить миграции для развёртывания с нуля.
         run: |
-          python -c "import asyncio; import app.models; from app.db.base import Base; from app.db.session import primary_engine as e; asyncio.run(Base.metadata.create_all(e))"
+          python -c "
+          import asyncio
+          import app.models
+          from app.db.base import Base
+          from app.db.session import primary_engine
+          async def main():
+              async with primary_engine.begin() as conn:
+                  await conn.run_sync(Base.metadata.create_all)
+              await primary_engine.dispose()
+          asyncio.run(main())
+          "
       - name: Run integration tests
         working-directory: project-root/backend
         run: python -m pytest -q -m integration
