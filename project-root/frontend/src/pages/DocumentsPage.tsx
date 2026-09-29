@@ -1176,7 +1176,8 @@ function WorkflowView() {
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [taskSearch, setTaskSearch] = useState('');
-  const [taskFilter, setTaskFilter] = useState<'all' | 'NEW' | 'IN_PROGRESS' | 'DONE'>('all');
+  const [taskFilter, setTaskFilter] = useState<'all' | 'new' | 'in_progress' | 'done'>('all');
+  const [taskStatuses, setTaskStatuses] = useState<Record<string, 'new' | 'in_progress' | 'done'>>({});
   const [remarkSearch, setRemarkSearch] = useState('');
   const [remarkFilter, setRemarkFilter] = useState<'all' | 'new' | 'in_progress' | 'resolved'>('all');
 
@@ -1214,18 +1215,18 @@ function WorkflowView() {
 
   const getTaskStatusLabel = (status: string) => {
     switch (status) {
-      case 'DONE': return 'Выполнена';
-      case 'IN_PROGRESS': return 'В работе';
-      case 'NEW': return 'Новая';
+      case 'done': return 'Выполнена';
+      case 'in_progress': return 'В работе';
+      case 'new': return 'Новая';
       default: return status;
     }
   };
 
   const getTaskStatusStyle = (status: string) => {
     switch (status) {
-      case 'DONE': return { color: '#4F7A4C', bg: 'rgba(79,122,76,0.15)', border: 'rgba(79,122,76,0.4)' };
-      case 'IN_PROGRESS': return { color: '#3B82F6', bg: 'rgba(59,130,246,0.15)', border: 'rgba(59,130,246,0.4)' };
-      case 'NEW': return { color: '#94A3B8', bg: 'rgba(148,163,184,0.15)', border: 'rgba(148,163,184,0.4)' };
+      case 'done': return { color: '#4F7A4C', bg: 'rgba(79,122,76,0.15)', border: 'rgba(79,122,76,0.4)' };
+      case 'in_progress': return { color: '#3B82F6', bg: 'rgba(59,130,246,0.15)', border: 'rgba(59,130,246,0.4)' };
+      case 'new': return { color: '#94A3B8', bg: 'rgba(148,163,184,0.15)', border: 'rgba(148,163,184,0.4)' };
       default: return { color: '#94A3B8', bg: 'rgba(148,163,184,0.15)', border: 'rgba(148,163,184,0.4)' };
     }
   };
@@ -1259,16 +1260,19 @@ function WorkflowView() {
   };
 
   const getTaskPriorityLabel = (priority: string) => {
-    switch (priority) {
-      case 'LOW':
+    const p = priority.toLowerCase();
+    switch (p) {
       case 'low': return 'Низкий';
-      case 'NORMAL':
-      case 'MEDIUM':
+      case 'normal':
       case 'medium': return 'Средний';
-      case 'HIGH':
       case 'high': return 'Высокий';
+      case 'critical': return 'Критический';
       default: return priority;
     }
+  };
+
+  const updateTaskStatus = (id: string, status: 'new' | 'in_progress' | 'done') => {
+    setTaskStatuses(prev => ({ ...prev, [id]: status }));
   };
 
   type ActionTaskType = 'create_document' | 'approve' | 'fix_remark' | 'attach_file';
@@ -1280,7 +1284,7 @@ function WorkflowView() {
     document?: string;
     documentId?: number;
     projectId?: number;
-    status: 'NEW' | 'IN_PROGRESS' | 'DONE';
+    status: 'new' | 'in_progress' | 'done';
     priority: 'low' | 'medium' | 'high';
   }
 
@@ -1303,16 +1307,16 @@ function WorkflowView() {
     });
     activeProjects.forEach(p => {
       if (!projectDocCounts.get(p.id)) {
-        items.push({ id: `create-doc-${p.id}`, type: 'create_document', title: 'Создать документ', project: p.name, projectId: p.id, status: 'NEW', priority: 'medium' });
+        items.push({ id: `create-doc-${p.id}`, type: 'create_document', title: 'Создать документ', project: p.name, projectId: p.id, status: 'new', priority: 'medium' });
       }
     });
     // Действия по документам
     docs.forEach(d => {
       if (d.status === 'review') {
-        items.push({ id: `approve-${d.id}`, type: 'approve', title: 'Согласовать документ', project: d.project, document: `${d.code} — ${d.name}`, documentId: Number(d.id), status: 'NEW', priority: 'high' });
+        items.push({ id: `approve-${d.id}`, type: 'approve', title: 'Согласовать документ', project: d.project, document: `${d.code} — ${d.name}`, documentId: Number(d.id), status: 'new', priority: 'high' });
       }
       if (d.status === 'draft' && !d.hasFile) {
-        items.push({ id: `attach-${d.id}`, type: 'attach_file', title: 'Прикрепить файл к документу', project: d.project, document: `${d.code} — ${d.name}`, documentId: Number(d.id), status: 'NEW', priority: 'medium' });
+        items.push({ id: `attach-${d.id}`, type: 'attach_file', title: 'Прикрепить файл к документу', project: d.project, document: `${d.code} — ${d.name}`, documentId: Number(d.id), status: 'new', priority: 'medium' });
       }
     });
     // Исправить замечание
@@ -1325,12 +1329,18 @@ function WorkflowView() {
         project: r.project_name || linkedDoc?.project || (r.project_id ? `Проект #${r.project_id}` : '—'),
         document: r.document_name || linkedDoc?.code || (r.document_id ? `Документ #${r.document_id}` : '—'),
         documentId: r.document_id,
-        status: 'NEW',
+        status: 'new',
         priority: r.priority === 'critical' || r.priority === 'high' ? 'high' : r.priority === 'medium' ? 'medium' : 'low',
       });
     });
+    // Применяем пользовательские статусы
+    items.forEach(task => {
+      if (taskStatuses[task.id]) {
+        task.status = taskStatuses[task.id];
+      }
+    });
     return items;
-  }, [docs, remarks, allProjects]);
+  }, [docs, remarks, allProjects, taskStatuses]);
 
   const filteredActionTasks = useMemo(() => actionTasks.filter(t => {
     const q = taskSearch.toLowerCase();
@@ -1563,7 +1573,7 @@ function WorkflowView() {
             </div>
             <div className="flex items-center gap-2">
               <Filter size={14} style={{ color: 'var(--text-muted)' }} />
-              {(['all', 'NEW', 'IN_PROGRESS', 'DONE'] as const).map(s => (
+              {(['all', 'new', 'in_progress', 'done'] as const).map(s => (
                 <button
                   key={s}
                   onClick={() => setTaskFilter(s)}
@@ -1592,6 +1602,7 @@ function WorkflowView() {
                 const meta = getActionTaskMeta(task.type);
                 const target = task.documentId ? `/documents/${task.documentId}` : (task.projectId ? `/documents/create?projectId=${task.projectId}` : '/documents');
                 const priorityClass = task.priority === 'high' ? 'bg-red-100 text-red-700' : task.priority === 'medium' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700';
+                const linkedDoc = task.documentId != null ? docs.find(d => Number(d.id) === task.documentId) : undefined;
                 return (
                   <Link
                     key={task.id}
@@ -1614,14 +1625,60 @@ function WorkflowView() {
                           {task.document && (
                             <span className="inline-flex items-center gap-1" title="Документ">
                               <FileText size={12} style={{ color: 'var(--text-muted)' }} /> {task.document}
+                              {linkedDoc?.hasFile && (
+                                <span
+                                  className="inline-flex items-center gap-0.5 text-[10px] px-1 py-px rounded-full border font-medium"
+                                  title="Файл прикреплён"
+                                  style={{ color: '#4F7A4C', background: 'rgba(79,122,76,0.15)', borderColor: 'rgba(79,122,76,0.4)' }}
+                                >
+                                  <Paperclip size={9} />
+                                  Файл
+                                </span>
+                              )}
                             </span>
                           )}
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+                    <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto shrink-0">
                       <span className="text-xs px-1.5 py-0.5 rounded border font-medium" style={{ color: meta.color, borderColor: meta.border, background: meta.bg }}>{meta.label}</span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${priorityClass}`}>{getTaskPriorityLabel(task.priority.toUpperCase())}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${priorityClass}`}>{getTaskPriorityLabel(task.priority)}</span>
+                      {task.status === 'new' && (
+                        <button
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); updateTaskStatus(task.id, 'in_progress'); }}
+                          className="text-xs px-2 py-0.5 rounded border font-medium transition-colors hover:opacity-80"
+                          style={{ color: '#3B82F6', borderColor: 'rgba(59,130,246,0.4)', background: 'rgba(59,130,246,0.15)' }}
+                        >
+                          В работу
+                        </button>
+                      )}
+                      {task.status === 'in_progress' && (
+                        <>
+                          <button
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); updateTaskStatus(task.id, 'done'); }}
+                            className="text-xs px-2 py-0.5 rounded border font-medium transition-colors hover:opacity-80"
+                            style={{ color: '#4F7A4C', borderColor: 'rgba(79,122,76,0.4)', background: 'rgba(79,122,76,0.15)' }}
+                          >
+                            Выполнено
+                          </button>
+                          <button
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); updateTaskStatus(task.id, 'new'); }}
+                            className="text-xs px-2 py-0.5 rounded border font-medium transition-colors hover:opacity-80"
+                            style={{ color: 'var(--text-muted)', borderColor: 'var(--border-default)', background: 'var(--bg-surface-2)' }}
+                          >
+                            Вернуть
+                          </button>
+                        </>
+                      )}
+                      {task.status === 'done' && (
+                        <button
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); updateTaskStatus(task.id, 'in_progress'); }}
+                          className="text-xs px-2 py-0.5 rounded border font-medium transition-colors hover:opacity-80"
+                          style={{ color: 'var(--text-muted)', borderColor: 'var(--border-default)', background: 'var(--bg-surface-2)' }}
+                        >
+                          Вернуть в работу
+                        </button>
+                      )}
                     </div>
                   </Link>
                 );
@@ -1680,6 +1737,16 @@ function WorkflowView() {
                         </span>
                         <span className="inline-flex items-center gap-1" title="Документ">
                           <FileText size={12} style={{ color: 'var(--text-muted)' }} /> {documentName}
+                          {linkedDoc?.hasFile && (
+                            <span
+                              className="inline-flex items-center gap-0.5 text-[10px] px-1 py-px rounded-full border font-medium"
+                              title="Файл прикреплён"
+                              style={{ color: '#4F7A4C', background: 'rgba(79,122,76,0.15)', borderColor: 'rgba(79,122,76,0.4)' }}
+                            >
+                              <Paperclip size={9} />
+                              Файл
+                            </span>
+                          )}
                         </span>
                         <span className="inline-flex items-center gap-1" title="Приоритет">
                           <AlertCircle size={12} style={{ color: 'var(--text-muted)' }} /> Приоритет: {getRemarkPriorityLabel(remark.priority)}
