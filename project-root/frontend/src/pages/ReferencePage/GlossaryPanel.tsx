@@ -39,15 +39,34 @@ function GlossaryCard({ term, isDark, onDelete }: GlossaryCardProps) {
         <h3 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>
           {term.term}
         </h3>
-        <span
-          className="text-xs px-2 py-0.5 rounded-full font-medium shrink-0"
-          style={{
-            background: 'rgba(20, 184, 166, 0.12)',
-            color: '#14B8A6',
-          }}
-        >
-          {term.department || 'Общие'}
-        </span>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span
+            className="text-xs px-2 py-0.5 rounded-full font-medium"
+            style={{
+              background: 'rgba(20, 184, 166, 0.12)',
+              color: '#14B8A6',
+            }}
+          >
+            {term.department || 'Общие'}
+          </span>
+          <span
+            className="text-xs px-2 py-0.5 rounded-full font-medium"
+            style={
+              term.source === 'manual'
+                ? {
+                    background: 'rgba(139, 92, 246, 0.12)',
+                    color: '#8B5CF6',
+                  }
+                : {
+                    background: 'rgba(59, 130, 246, 0.12)',
+                    color: '#3B82F6',
+                  }
+            }
+            title={term.source === 'manual' ? 'Добавлен вручную' : 'Извлечён AI из документации'}
+          >
+            {term.source === 'manual' ? 'Вручную' : 'AI'}
+          </span>
+        </div>
       </div>
       <p className="text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
         {term.definition}
