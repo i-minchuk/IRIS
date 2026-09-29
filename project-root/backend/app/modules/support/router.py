@@ -32,10 +32,16 @@ router = APIRouter(tags=["support"])
 async def list_tickets(
     status: Optional[str] = None,
     priority: Optional[str] = None,
+    archived: bool = False,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
     query = select(SupportTicket)
+    # По умолчанию архивные тикеты не показываем — только вид «Архив»
+    if archived:
+        query = query.where(SupportTicket.archived_at.is_not(None))
+    else:
+        query = query.where(SupportTicket.archived_at.is_(None))
     if status:
         query = query.where(SupportTicket.status == status)
     if priority:
@@ -87,6 +93,38 @@ async def update_ticket(
         update_data.setdefault("resolved_at", datetime.utcnow())
     for key, value in update_data.items():
         setattr(ticket, key, value)
+    await db.commit()
+    await db.refresh(ticket)
+    return ticket
+
+
+@router.post("/tickets/{ticket_id}/archive", response_model=SupportTicketResponse)
+async def archive_ticket(
+    ticket_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    result = await db.execute(select(SupportTicket).where(SupportTicket.id == ticket_id))
+    ticket = result.scalar_one_or_none()
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    ticket.archived_at = datetime.utcnow()
+    await db.commit()
+    await db.refresh(ticket)
+    return ticket
+
+
+@router.post("/tickets/{ticket_id}/unarchive", response_model=SupportTicketResponse)
+async def unarchive_ticket(
+    ticket_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    result = await db.execute(select(SupportTicket).where(SupportTicket.id == ticket_id))
+    ticket = result.scalar_one_or_none()
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    ticket.archived_at = None
     await db.commit()
     await db.refresh(ticket)
     return ticket

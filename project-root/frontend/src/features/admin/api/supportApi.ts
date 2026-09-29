@@ -3,8 +3,9 @@ import type { SupportTicket, Incident, KBArticle } from '@/types/support';
 
 /** Ответ backend /support/tickets (SupportTicketResponse).
  * sla_deadline может прийти null — нормализуем в ''. */
-interface TicketApiItem extends Omit<SupportTicket, 'sla_deadline'> {
+interface TicketApiItem extends Omit<SupportTicket, 'sla_deadline' | 'archived_at'> {
   sla_deadline: string | null;
+  archived_at: string | null;
 }
 
 /** Ответ backend /support/incidents (IncidentResponse).
@@ -30,8 +31,8 @@ function mapToIncident(item: IncidentApiItem): Incident {
 
 // ---------- Tickets ----------
 
-export async function getTickets(): Promise<SupportTicket[]> {
-  const { data } = await apiClient.get<TicketApiItem[]>('/support/tickets');
+export async function getTickets(params?: { archived?: boolean }): Promise<SupportTicket[]> {
+  const { data } = await apiClient.get<TicketApiItem[]>('/support/tickets', { params });
   return data.map(mapToTicket);
 }
 
@@ -52,6 +53,16 @@ export async function updateTicket(id: number, payload: TicketUpdatePayload): Pr
 
 export async function deleteTicket(id: number): Promise<void> {
   await apiClient.delete(`/support/tickets/${id}`);
+}
+
+export async function archiveTicket(id: number): Promise<SupportTicket> {
+  const { data } = await apiClient.post<TicketApiItem>(`/support/tickets/${id}/archive`);
+  return mapToTicket(data);
+}
+
+export async function unarchiveTicket(id: number): Promise<SupportTicket> {
+  const { data } = await apiClient.post<TicketApiItem>(`/support/tickets/${id}/unarchive`);
+  return mapToTicket(data);
 }
 
 // ---------- Incidents ----------

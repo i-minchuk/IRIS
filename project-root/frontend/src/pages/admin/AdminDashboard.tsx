@@ -16,7 +16,7 @@ import RegistrationTab from './Registration';
 import type { TicketStatus } from '@/types/support';
 import {
   Users, Shield, Ticket, AlertTriangle, LayoutDashboard, Timer, UserPlus, Sparkles, KeyRound, Loader2,
-  MessageSquareWarning, CheckCircle2, CircleDot,
+  MessageSquareWarning, CheckCircle2, CircleDot, Archive, ArchiveRestore,
 } from 'lucide-react';
 
 type AdminTab = 'overview' | 'time' | 'registration' | 'support';
@@ -303,12 +303,21 @@ function DashboardOverview() {
    ═══════════════════════════════════════════════════════════ */
 function SupportTab() {
   const tickets = useSupportStore(s => s.tickets);
+  const archivedTickets = useSupportStore(s => s.archivedTickets);
   const fetchTickets = useSupportStore(s => s.fetchTickets);
+  const fetchArchivedTickets = useSupportStore(s => s.fetchArchivedTickets);
   const updateTicketStatus = useSupportStore(s => s.updateTicketStatus);
+  const archiveTicket = useSupportStore(s => s.archiveTicket);
+  const unarchiveTicket = useSupportStore(s => s.unarchiveTicket);
+  const [view, setView] = useState<'active' | 'archive'>('active');
 
   useEffect(() => {
     fetchTickets();
   }, [fetchTickets]);
+
+  useEffect(() => {
+    if (view === 'archive') fetchArchivedTickets();
+  }, [view, fetchArchivedTickets]);
 
   const handleStatusChange = async (id: number, status: TicketStatus) => {
     try {
@@ -319,6 +328,24 @@ function SupportTab() {
     }
   };
 
+  const handleArchive = async (id: number) => {
+    try {
+      await archiveTicket(id);
+      toast.success('Тикет отправлен в архив');
+    } catch {
+      toast.error('Не удалось отправить тикет в архив');
+    }
+  };
+
+  const handleUnarchive = async (id: number) => {
+    try {
+      await unarchiveTicket(id);
+      toast.success('Тикет возвращён из архива');
+    } catch {
+      toast.error('Не удалось вернуть тикет из архива');
+    }
+  };
+
   // Обращения, отправленные через кнопку «Сообщить о проблеме»
   const feedbackTickets = useMemo(
     () =>
@@ -326,6 +353,13 @@ function SupportTab() {
         .filter(t => t.category === 'feedback')
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
     [tickets],
+  );
+  const archivedFeedback = useMemo(
+    () =>
+      archivedTickets
+        .filter(t => t.category === 'feedback')
+        .sort((a, b) => new Date(b.archived_at || b.created_at).getTime() - new Date(a.archived_at || a.created_at).getTime()),
+    [archivedTickets],
   );
   const activeFeedback = feedbackTickets.filter(t =>
     ['new', 'open', 'in_progress', 'escalated'].includes(t.status),
@@ -340,7 +374,7 @@ function SupportTab() {
     return null;
   };
 
-  const renderFeedbackCard = (t: (typeof feedbackTickets)[number]) => {
+  const renderFeedbackCard = (t: (typeof feedbackTickets)[number], archived = false) => {
     const action = nextAction(t.status);
     return (
       <div
@@ -369,19 +403,45 @@ function SupportTab() {
             </p>
             <p className="text-xs mt-1.5" style={{ color: 'var(--text-muted)' }}>
               {t.requester} · {new Date(t.created_at).toLocaleString('ru-RU')}
+              {archived && t.archived_at && ` · в архиве с ${new Date(t.archived_at).toLocaleDateString('ru-RU')}`}
             </p>
           </div>
-          {action && (
-            <button
-              type="button"
-              onClick={() => handleStatusChange(t.id, action.to)}
-              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-medium shrink-0 transition-opacity"
-              style={{ background: 'var(--accent-ai, #a855f7)', color: '#fff' }}
-            >
-              {action.to === 'resolved' ? <CheckCircle2 size={13} /> : <CircleDot size={13} />}
-              {action.label}
-            </button>
-          )}
+          <div className="flex flex-col gap-2 shrink-0">
+            {action && (
+              <button
+                type="button"
+                onClick={() => handleStatusChange(t.id, action.to)}
+                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-medium transition-opacity"
+                style={{ background: 'var(--accent-ai, #a855f7)', color: '#fff' }}
+              >
+                {action.to === 'resolved' ? <CheckCircle2 size={13} /> : <CircleDot size={13} />}
+                {action.label}
+              </button>
+            )}
+            {archived ? (
+              <button
+                type="button"
+                onClick={() => handleUnarchive(t.id)}
+                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-medium"
+                style={{ background: 'var(--iris-bg-app)', color: 'var(--text-primary)', border: '1px solid var(--iris-border-subtle)' }}
+              >
+                <ArchiveRestore size={13} />
+                Вернуть из архива
+              </button>
+            ) : (
+              ['resolved', 'closed'].includes(t.status) && (
+                <button
+                  type="button"
+                  onClick={() => handleArchive(t.id)}
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-medium"
+                  style={{ background: 'var(--iris-bg-app)', color: 'var(--text-secondary)', border: '1px solid var(--iris-border-subtle)' }}
+                >
+                  <Archive size={13} />
+                  В архив
+                </button>
+              )
+            )}
+          </div>
         </div>
       </div>
     );
@@ -389,52 +449,91 @@ function SupportTab() {
 
   return (
     <div className="space-y-6">
-      {/* Обращения из «Сообщить о проблеме» */}
-      <Card padding="md">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <MessageSquareWarning size={16} style={{ color: '#F59E0B' }} />
-            <h3 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>
-              Обращения пользователей
-            </h3>
-          </div>
-          <Badge variant="warning">{activeFeedback.length} активных</Badge>
-        </div>
+      {/* Переключатель видов */}
+      <div className="flex items-center gap-2">
+        {(
+          [
+            { key: 'active', label: 'Активные' },
+            { key: 'archive', label: `Архив (${archivedFeedback.length})` },
+          ] as const
+        ).map(v => (
+          <button
+            key={v.key}
+            type="button"
+            onClick={() => setView(v.key)}
+            className="text-xs px-3 py-1.5 rounded-lg font-medium transition-all"
+            style={
+              view === v.key
+                ? { background: 'rgba(255,107,107,0.15)', color: '#FF6B6B' }
+                : { background: 'var(--iris-bg-hover)', color: 'var(--text-secondary)' }
+            }
+          >
+            {v.label}
+          </button>
+        ))}
+      </div>
 
-        {feedbackTickets.length === 0 ? (
-          <p className="text-sm py-6 text-center" style={{ color: 'var(--text-muted)' }}>
-            Обращений пока нет. Они появятся, когда пользователь нажмёт «Сообщить о проблеме».
-          </p>
-        ) : (
-          <div className="space-y-3">
-            {activeFeedback.map(renderFeedbackCard)}
-            {resolvedFeedback.length > 0 && (
-              <details>
-                <summary
-                  className="text-xs cursor-pointer select-none"
-                  style={{ color: 'var(--text-muted)' }}
-                >
-                  Решённые и закрытые ({resolvedFeedback.length})
-                </summary>
-                <div className="space-y-3 mt-3 opacity-70">
-                  {resolvedFeedback.slice(0, 10).map(renderFeedbackCard)}
-                </div>
-              </details>
+      {view === 'active' ? (
+        <>
+          {/* Обращения из «Сообщить о проблеме» */}
+          <Card padding="md">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <MessageSquareWarning size={16} style={{ color: '#F59E0B' }} />
+                <h3 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>
+                  Обращения пользователей
+                </h3>
+              </div>
+              <Badge variant="warning">{activeFeedback.length} активных</Badge>
+            </div>
+
+            {feedbackTickets.length === 0 ? (
+              <p className="text-sm py-6 text-center" style={{ color: 'var(--text-muted)' }}>
+                Обращений пока нет. Они появятся, когда пользователь нажмёт «Сообщить о проблеме».
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {activeFeedback.map(t => renderFeedbackCard(t))}
+                {resolvedFeedback.map(t => renderFeedbackCard(t))}
+              </div>
             )}
-          </div>
-        )}
-      </Card>
+          </Card>
 
-      {/* Полный канбан всех тикетов */}
-      <Card padding="md">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>Все тикеты</h3>
-          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-            Нажмите на карточку, чтобы перевести в следующий статус
-          </span>
-        </div>
-        <TicketKanban tickets={tickets} onStatusChange={(id, status) => handleStatusChange(id, status)} />
-      </Card>
+          {/* Полный канбан всех тикетов */}
+          <Card padding="md">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>Все тикеты</h3>
+              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                Нажмите на карточку, чтобы перевести в следующий статус
+              </span>
+            </div>
+            <TicketKanban tickets={tickets} onStatusChange={(id, status) => handleStatusChange(id, status)} />
+          </Card>
+        </>
+      ) : (
+        /* Архив обращений */
+        <Card padding="md">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Archive size={16} style={{ color: 'var(--text-muted)' }} />
+              <h3 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>
+                Архив обращений
+              </h3>
+            </div>
+            <Badge variant="info">{archivedFeedback.length}</Badge>
+          </div>
+
+          {archivedFeedback.length === 0 ? (
+            <p className="text-sm py-6 text-center" style={{ color: 'var(--text-muted)' }}>
+              Архив пуст. Решённые обращения можно отправить сюда кнопкой «В архив».
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {archivedFeedback.map(t => renderFeedbackCard(t, true))}
+            </div>
+          )}
+        </Card>
+      )}
     </div>
   );
 }

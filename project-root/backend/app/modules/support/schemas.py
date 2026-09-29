@@ -42,6 +42,7 @@ class SupportTicketResponse(SupportTicketBase):
 
     id: int
     resolved_at: Optional[datetime] = None
+    archived_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
 

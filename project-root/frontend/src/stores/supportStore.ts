@@ -6,10 +6,13 @@ import {
   getKbArticles,
   updateTicket,
   updateIncident,
+  archiveTicket as apiArchiveTicket,
+  unarchiveTicket as apiUnarchiveTicket,
 } from '@/features/admin/api/supportApi';
 
 interface SupportState {
   tickets: SupportTicket[];
+  archivedTickets: SupportTicket[];
   incidents: Incident[];
   kbArticles: KBArticle[];
   selectedTicket: SupportTicket | null;
@@ -18,12 +21,15 @@ interface SupportState {
   error: string | null;
 
   fetchTickets: () => Promise<void>;
+  fetchArchivedTickets: () => Promise<void>;
   fetchIncidents: () => Promise<void>;
   fetchKbArticles: () => Promise<void>;
   setTickets: (tickets: SupportTicket[]) => void;
   setIncidents: (incidents: Incident[]) => void;
   setKBArticles: (articles: KBArticle[]) => void;
   updateTicketStatus: (ticketId: number, status: TicketStatus) => Promise<void>;
+  archiveTicket: (ticketId: number) => Promise<void>;
+  unarchiveTicket: (ticketId: number) => Promise<void>;
   updateIncidentStatus: (incidentId: number, status: IncidentStatus) => Promise<void>;
   getTicketsByStatus: (status: TicketStatus) => SupportTicket[];
   getOpenTickets: () => SupportTicket[];
@@ -35,6 +41,7 @@ interface SupportState {
 
 export const useSupportStore = create<SupportState>((set, get) => ({
   tickets: [],
+  archivedTickets: [],
   incidents: [],
   kbArticles: [],
   selectedTicket: null,
@@ -45,11 +52,23 @@ export const useSupportStore = create<SupportState>((set, get) => ({
   fetchTickets: async () => {
     set({ isLoading: true, error: null });
     try {
+      // Без параметров backend не отдаёт архивные тикеты
       const tickets = await getTickets();
       set({ tickets, isLoading: false });
     } catch (err) {
       console.error('Failed to load support tickets:', err);
       set({ isLoading: false, error: 'Не удалось загрузить тикеты поддержки' });
+    }
+  },
+
+  fetchArchivedTickets: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const archivedTickets = await getTickets({ archived: true });
+      set({ archivedTickets, isLoading: false });
+    } catch (err) {
+      console.error('Failed to load archived tickets:', err);
+      set({ isLoading: false, error: 'Не удалось загрузить архив тикетов' });
     }
   },
 
@@ -89,6 +108,32 @@ export const useSupportStore = create<SupportState>((set, get) => ({
     } catch (err) {
       console.error('Failed to update ticket status:', err);
       set({ error: 'Не удалось обновить статус тикета' });
+    }
+  },
+
+  archiveTicket: async (ticketId) => {
+    try {
+      const archived = await apiArchiveTicket(ticketId);
+      set(state => ({
+        tickets: state.tickets.filter(t => t.id !== ticketId),
+        archivedTickets: [archived, ...state.archivedTickets.filter(t => t.id !== ticketId)],
+      }));
+    } catch (err) {
+      console.error('Failed to archive ticket:', err);
+      set({ error: 'Не удалось отправить тикет в архив' });
+    }
+  },
+
+  unarchiveTicket: async (ticketId) => {
+    try {
+      const restored = await apiUnarchiveTicket(ticketId);
+      set(state => ({
+        archivedTickets: state.archivedTickets.filter(t => t.id !== ticketId),
+        tickets: [restored, ...state.tickets.filter(t => t.id !== ticketId)],
+      }));
+    } catch (err) {
+      console.error('Failed to unarchive ticket:', err);
+      set({ error: 'Не удалось вернуть тикет из архива' });
     }
   },
 
