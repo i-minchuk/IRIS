@@ -8,15 +8,18 @@ import { useSupportStore } from '@/stores/supportStore';
 import { useReleaseStore } from '@/stores/releaseStore';
 import { toast } from 'sonner';
 import { AuditLogTable } from '@/components/admin/AuditLogTable';
+import { TicketKanban } from '@/components/admin/TicketKanban';
 import SessionList from '@/features/time_tracking/components/SessionList';
 import AnalyticsPanel from '@/features/time_tracking/components/AnalyticsPanel';
 import { adminApi, type AdminUser } from '@/features/auth/api/adminApi';
 import RegistrationTab from './Registration';
+import type { TicketStatus } from '@/types/support';
 import {
   Users, Shield, Ticket, AlertTriangle, LayoutDashboard, Timer, UserPlus, Sparkles, KeyRound, Loader2,
+  MessageSquareWarning, CheckCircle2, CircleDot,
 } from 'lucide-react';
 
-type AdminTab = 'overview' | 'time' | 'registration';
+type AdminTab = 'overview' | 'time' | 'registration' | 'support';
 
 const TAB_COLOR = '#FF6B6B';
 
@@ -24,7 +27,26 @@ const TABS = [
   { key: 'overview' as AdminTab, label: 'Обзор', icon: <LayoutDashboard size={16} />, color: TAB_COLOR },
   { key: 'time' as AdminTab, label: 'Учёт времени', icon: <Timer size={16} />, color: TAB_COLOR },
   { key: 'registration' as AdminTab, label: 'Регистрация', icon: <UserPlus size={16} />, color: TAB_COLOR },
+  { key: 'support' as AdminTab, label: 'Поддержка', icon: <Ticket size={16} />, color: TAB_COLOR },
 ];
+
+const TICKET_STATUS_LABELS: Record<string, string> = {
+  new: 'Новый',
+  open: 'Открыт',
+  in_progress: 'В работе',
+  resolved: 'Решён',
+  closed: 'Закрыт',
+  escalated: 'Эскалирован',
+};
+
+const TICKET_STATUS_COLORS: Record<string, string> = {
+  new: '#F59E0B',
+  open: '#3B82F6',
+  in_progress: '#8B5CF6',
+  resolved: '#10B981',
+  closed: '#6B7280',
+  escalated: '#EF4444',
+};
 
 /* ═══════════════════════════════════════════════════════════
    DASHBOARD OVERVIEW TAB
@@ -275,6 +297,148 @@ function DashboardOverview() {
   );
 }
 
+/* ═══════════════════════════════════════════════════════════
+   SUPPORT TAB — обращения пользователей («Сообщить о проблеме»)
+   и полный канбан тикетов
+   ═══════════════════════════════════════════════════════════ */
+function SupportTab() {
+  const tickets = useSupportStore(s => s.tickets);
+  const fetchTickets = useSupportStore(s => s.fetchTickets);
+  const updateTicketStatus = useSupportStore(s => s.updateTicketStatus);
+
+  useEffect(() => {
+    fetchTickets();
+  }, [fetchTickets]);
+
+  const handleStatusChange = async (id: number, status: TicketStatus) => {
+    try {
+      await updateTicketStatus(id, status);
+      toast.success(`Тикет переведён в статус «${TICKET_STATUS_LABELS[status] || status}»`);
+    } catch {
+      toast.error('Не удалось обновить статус тикета');
+    }
+  };
+
+  // Обращения, отправленные через кнопку «Сообщить о проблеме»
+  const feedbackTickets = useMemo(
+    () =>
+      tickets
+        .filter(t => t.category === 'feedback')
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
+    [tickets],
+  );
+  const activeFeedback = feedbackTickets.filter(t =>
+    ['new', 'open', 'in_progress', 'escalated'].includes(t.status),
+  );
+  const resolvedFeedback = feedbackTickets.filter(t =>
+    ['resolved', 'closed'].includes(t.status),
+  );
+
+  const nextAction = (status: TicketStatus): { label: string; to: TicketStatus } | null => {
+    if (status === 'new' || status === 'open') return { label: 'Взять в работу', to: 'in_progress' };
+    if (status === 'in_progress' || status === 'escalated') return { label: 'Отметить решённым', to: 'resolved' };
+    return null;
+  };
+
+  const renderFeedbackCard = (t: (typeof feedbackTickets)[number]) => {
+    const action = nextAction(t.status);
+    return (
+      <div
+        key={t.id}
+        className="rounded-lg border p-3"
+        style={{ background: 'var(--iris-bg-hover)', borderColor: 'var(--iris-border-subtle)' }}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+                {t.title}
+              </span>
+              <span
+                className="text-xs px-1.5 py-0.5 rounded-full font-medium"
+                style={{
+                  background: `${TICKET_STATUS_COLORS[t.status] || '#6B7280'}18`,
+                  color: TICKET_STATUS_COLORS[t.status] || '#6B7280',
+                }}
+              >
+                {TICKET_STATUS_LABELS[t.status] || t.status}
+              </span>
+            </div>
+            <p className="text-xs mt-1 line-clamp-3 whitespace-pre-wrap" style={{ color: 'var(--text-secondary)' }}>
+              {t.description}
+            </p>
+            <p className="text-xs mt-1.5" style={{ color: 'var(--text-muted)' }}>
+              {t.requester} · {new Date(t.created_at).toLocaleString('ru-RU')}
+            </p>
+          </div>
+          {action && (
+            <button
+              type="button"
+              onClick={() => handleStatusChange(t.id, action.to)}
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-medium shrink-0 transition-opacity"
+              style={{ background: 'var(--accent-ai, #a855f7)', color: '#fff' }}
+            >
+              {action.to === 'resolved' ? <CheckCircle2 size={13} /> : <CircleDot size={13} />}
+              {action.label}
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Обращения из «Сообщить о проблеме» */}
+      <Card padding="md">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <MessageSquareWarning size={16} style={{ color: '#F59E0B' }} />
+            <h3 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>
+              Обращения пользователей
+            </h3>
+          </div>
+          <Badge variant="warning">{activeFeedback.length} активных</Badge>
+        </div>
+
+        {feedbackTickets.length === 0 ? (
+          <p className="text-sm py-6 text-center" style={{ color: 'var(--text-muted)' }}>
+            Обращений пока нет. Они появятся, когда пользователь нажмёт «Сообщить о проблеме».
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {activeFeedback.map(renderFeedbackCard)}
+            {resolvedFeedback.length > 0 && (
+              <details>
+                <summary
+                  className="text-xs cursor-pointer select-none"
+                  style={{ color: 'var(--text-muted)' }}
+                >
+                  Решённые и закрытые ({resolvedFeedback.length})
+                </summary>
+                <div className="space-y-3 mt-3 opacity-70">
+                  {resolvedFeedback.slice(0, 10).map(renderFeedbackCard)}
+                </div>
+              </details>
+            )}
+          </div>
+        )}
+      </Card>
+
+      {/* Полный канбан всех тикетов */}
+      <Card padding="md">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>Все тикеты</h3>
+          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+            Нажмите на карточку, чтобы перевести в следующий статус
+          </span>
+        </div>
+        <TicketKanban tickets={tickets} onStatusChange={(id, status) => handleStatusChange(id, status)} />
+      </Card>
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useTabState<AdminTab>('iris_admin_tab', 'overview');
 
@@ -300,6 +464,7 @@ export default function AdminDashboard() {
         </div>
       )}
       {activeTab === 'registration' && <RegistrationTab />}
+      {activeTab === 'support' && <SupportTab />}
     </div>
   );
 }
