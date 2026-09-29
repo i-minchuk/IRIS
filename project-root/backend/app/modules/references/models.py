@@ -69,7 +69,7 @@ class Standard(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    code: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, index=True)
+    code: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     file_path: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     file_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
