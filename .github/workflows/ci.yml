@@ -78,6 +78,50 @@ jobs:
           file: ./project-root/backend/coverage.xml
           flags: backend
 
+  migrations-clean-db:
+    name: Migrations on clean DB
+    runs-on: ubuntu-latest
+    needs: lint
+    services:
+      db:
+        image: postgres:15-alpine
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: iris_migrations
+        options: >
+          --health-cmd="pg_isready -U postgres -d iris_migrations"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/iris_migrations
+      SECRET_KEY: Ci-Test-Secret-Key-0123456789-abcdef-Not-For-Prod!
+      IRIS_STORAGE_ROOT: /tmp/iris_migrations_storage
+      IRIS_LOG_LEVEL: INFO
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+      - uses: ./.github/actions/python-deps
+      - name: Run migrations from scratch
+        working-directory: project-root/backend
+        run: alembic upgrade head
+      - name: Verify models match schema (autogenerate audit)
+        working-directory: project-root/backend
+        run: |
+          alembic revision --autogenerate -m ci_audit
+          file=$(ls -t alembic/versions/*ci_audit*.py | head -1)
+          if grep -q "op\." "$file"; then
+            echo "Обнаружены расхождения моделей и схемы БД:"
+            cat "$file"
+            exit 1
+          fi
+          echo "Модели и схема БД совпадают"
+
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
@@ -99,7 +143,7 @@ jobs:
   docker-build:
     name: Build Docker images
     runs-on: ubuntu-latest
-    needs: [test, security-scan]
+    needs: [test, security-scan, migrations-clean-db]
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/docker-build
