@@ -18,6 +18,8 @@ class SupportTicketBase(BaseModel):
     category: str = "general"
     tags: List[str] = []
     sla_deadline: Optional[datetime] = None
+    attachment_name: Optional[str] = None
+    attachment_stored: Optional[str] = None
 
 
 class SupportTicketCreate(SupportTicketBase):
@@ -34,6 +36,8 @@ class SupportTicketUpdate(BaseModel):
     category: Optional[str] = None
     tags: Optional[List[str]] = None
     sla_deadline: Optional[datetime] = None
+    attachment_name: Optional[str] = None
+    attachment_stored: Optional[str] = None
     resolved_at: Optional[datetime] = None
 
 

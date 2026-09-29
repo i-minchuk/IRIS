@@ -3,6 +3,7 @@ import { useTabState } from '@/shared/hooks/useTabState';
 import { PageTabs } from '@/shared/components/PageTabs';
 import { Card } from '@/components/ui';
 import { Badge } from '@/components/ui';
+import apiClient from '@/shared/api/client';
 import { useAuditStore } from '@/stores/auditStore';
 import { useSupportStore } from '@/stores/supportStore';
 import { useReleaseStore } from '@/stores/releaseStore';
@@ -301,6 +302,42 @@ function DashboardOverview() {
    SUPPORT TAB — обращения пользователей («Сообщить о проблеме»)
    и полный канбан тикетов
    ═══════════════════════════════════════════════════════════ */
+
+/** Скриншот обращения: файл отдаётся с авторизацией, поэтому
+ * загружаем через API-клиент (blob) и показываем превью. */
+function TicketAttachmentImage({ storedName }: { storedName: string }) {
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let objectUrl: string | null = null;
+    let cancelled = false;
+    apiClient
+      .get(`/support/attachments/${storedName}`, { responseType: 'blob' })
+      .then((res) => {
+        if (cancelled) return;
+        objectUrl = URL.createObjectURL(res.data);
+        setUrl(objectUrl);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [storedName]);
+
+  if (!url) return null;
+  return (
+    <a href={url} target="_blank" rel="noreferrer" className="block mt-2">
+      <img
+        src={url}
+        alt="Скриншот обращения"
+        className="max-h-40 rounded-lg border"
+        style={{ borderColor: 'var(--iris-border-subtle)' }}
+      />
+    </a>
+  );
+}
+
 function SupportTab() {
   const tickets = useSupportStore(s => s.tickets);
   const archivedTickets = useSupportStore(s => s.archivedTickets);
@@ -401,6 +438,7 @@ function SupportTab() {
             <p className="text-xs mt-1 line-clamp-3 whitespace-pre-wrap" style={{ color: 'var(--text-secondary)' }}>
               {t.description}
             </p>
+            {t.attachment_stored && <TicketAttachmentImage storedName={t.attachment_stored} />}
             <p className="text-xs mt-1.5" style={{ color: 'var(--text-muted)' }}>
               {t.requester} · {new Date(t.created_at).toLocaleString('ru-RU')}
               {archived && t.archived_at && ` · в архиве с ${new Date(t.archived_at).toLocaleDateString('ru-RU')}`}

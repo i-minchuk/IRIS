@@ -22,6 +22,9 @@ class SupportTicket(Base):
     tags: Mapped[Optional[list]] = mapped_column(JSON, default=list)
     sla_deadline: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     resolved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    # Вложение (скриншот), прикреплённый к обращению
+    attachment_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    attachment_stored: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     # Архив: тикеты скрыты из обычных списков, доступны только в виде «Архив»
     archived_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True

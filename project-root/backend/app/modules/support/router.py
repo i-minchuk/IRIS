@@ -1,11 +1,15 @@
 """Support API router: tickets, incidents, knowledge base."""
 from datetime import datetime
+from pathlib import Path
 from typing import List, Optional
+from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
+from app.core.config import settings
 from app.db.session import get_db
 from app.modules.auth.deps import get_current_active_user
 from app.modules.auth.models import User
@@ -23,6 +27,56 @@ from app.modules.support.schemas import (
 )
 
 router = APIRouter(tags=["support"])
+
+# Вложения обращений (скриншоты)
+ATTACHMENT_MAX_BYTES = 5 * 1024 * 1024  # 5 МБ
+ALLOWED_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp"}
+
+
+def _support_attachments_dir() -> Path:
+    path = Path(settings.IRIS_STORAGE_ROOT) / "support"
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+# ---------- Attachments ----------
+
+
+@router.post("/attachments/upload")
+async def upload_attachment(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Загрузить скриншот для обращения. Возвращает имена для создания тикета."""
+    original_name = file.filename or "screenshot.png"
+    ext = Path(original_name).suffix.lower()
+    if ext not in ALLOWED_IMAGE_EXTENSIONS:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Разрешены только изображения: {', '.join(sorted(ALLOWED_IMAGE_EXTENSIONS))}",
+        )
+    content = await file.read()
+    if len(content) > ATTACHMENT_MAX_BYTES:
+        raise HTTPException(status_code=422, detail="Файл больше 5 МБ")
+    stored_name = f"{uuid4().hex}{ext}"
+    (_support_attachments_dir() / stored_name).write_bytes(content)
+    return {"stored_name": stored_name, "original_name": original_name}
+
+
+@router.get("/attachments/{stored_name}")
+async def get_attachment(
+    stored_name: str,
+    current_user: User = Depends(get_current_active_user),
+):
+    """Отдать файл вложения (скриншот обращения)."""
+    # Защита от path traversal: только имя файла без разделителей
+    safe_name = Path(stored_name).name
+    if safe_name != stored_name:
+        raise HTTPException(status_code=400, detail="Invalid file name")
+    file_path = _support_attachments_dir() / safe_name
+    if not file_path.is_file():
+        raise HTTPException(status_code=404, detail="Attachment not found")
+    return FileResponse(file_path)
 
 
 # ---------- Tickets ----------

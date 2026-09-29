@@ -9,6 +9,7 @@ import {
   BarChart3, FileText, Archive,
   Shield, Briefcase, Factory,
   BookOpen, Settings, MessageSquareWarning,
+  ImagePlus, X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -67,6 +68,8 @@ export default function Layout() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackText, setFeedbackText] = useState('');
   const [feedbackSending, setFeedbackSending] = useState(false);
+  const [feedbackImage, setFeedbackImage] = useState<File | null>(null);
+  const feedbackFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchMeta();
@@ -76,21 +79,49 @@ export default function Layout() {
     if (!feedbackText.trim()) return;
     setFeedbackSending(true);
     try {
+      // Сначала грузим скриншот (если прикреплён), затем создаём тикет
+      let attachment_name: string | undefined;
+      let attachment_stored: string | undefined;
+      if (feedbackImage) {
+        const formData = new FormData();
+        formData.append('file', feedbackImage);
+        const uploadRes = await client.post('/support/attachments/upload', formData);
+        attachment_stored = uploadRes.data.stored_name;
+        attachment_name = uploadRes.data.original_name;
+      }
       await client.post('/support/tickets', {
         title: feedbackText.trim().slice(0, 80),
         description: feedbackText.trim(),
         requester: user?.email || 'unknown',
         priority: 'medium',
         category: 'feedback',
+        attachment_name,
+        attachment_stored,
       });
       toast.success('Спасибо! Обращение отправлено.');
       setFeedbackText('');
+      setFeedbackImage(null);
       setShowFeedback(false);
     } catch {
       toast.error('Не удалось отправить обращение');
     } finally {
       setFeedbackSending(false);
     }
+  };
+
+  const onFeedbackImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Можно прикрепить только изображение');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Изображение больше 5 МБ');
+      return;
+    }
+    setFeedbackImage(file);
+    e.target.value = '';
   };
 
   const scale = useZoomStore((state) => state.scale);
@@ -388,6 +419,51 @@ export default function Layout() {
                 color: 'var(--text-primary)',
               }}
             />
+
+            {/* Скриншот */}
+            {feedbackImage ? (
+              <div className="mt-2 flex items-center gap-2 rounded-lg border px-3 py-2" style={{ borderColor: 'var(--iris-border-subtle)', background: 'var(--iris-bg-app)' }}>
+                <img
+                  src={URL.createObjectURL(feedbackImage)}
+                  alt="Скриншот"
+                  className="h-10 w-10 rounded object-cover"
+                />
+                <span className="flex-1 text-xs truncate" style={{ color: 'var(--text-secondary)' }}>
+                  {feedbackImage.name}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setFeedbackImage(null)}
+                  className="p-1 rounded"
+                  style={{ color: 'var(--text-muted)' }}
+                  title="Убрать изображение"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => feedbackFileInputRef.current?.click()}
+                className="mt-2 flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-medium"
+                style={{
+                  background: 'var(--iris-bg-hover)',
+                  color: 'var(--text-secondary)',
+                  border: '1px dashed var(--iris-border-subtle)',
+                }}
+              >
+                <ImagePlus size={14} />
+                Прикрепить скриншот
+              </button>
+            )}
+            <input
+              ref={feedbackFileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={onFeedbackImageSelect}
+              className="hidden"
+            />
+
             <div className="flex justify-end gap-2 mt-3">
               <button
                 type="button"

@@ -16,6 +16,8 @@ export interface SupportTicket {
   updated_at: string;
   resolved_at: string | null;
   archived_at?: string | null;
+  attachment_name?: string | null;
+  attachment_stored?: string | null;
   sla_deadline: string;
   tags: string[];
 }
