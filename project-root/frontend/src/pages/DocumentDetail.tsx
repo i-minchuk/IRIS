@@ -7,7 +7,7 @@ import { DocumentStatusBadge } from '@/components/documents/DocumentStatusBadge'
 import { DocumentAnalysisPanel } from '@/features/ai/components/DocumentAnalysisPanel';
 import { AIChatPanel } from '@/features/ai/components/AIChatPanel';
 import { RequirementsPanel } from '@/features/ai/components/RequirementsPanel';
-import { FileText, MessageSquare, History, Users, ArrowLeft, Sparkles, Wrench, Bot, Upload, PencilLine, Maximize2, Minimize2, Clock, CheckCircle } from 'lucide-react';
+import { FileText, MessageSquare, History, Users, ArrowLeft, Sparkles, Wrench, Bot, Upload, PencilLine, Maximize2, Minimize2, Clock, CheckCircle, Paperclip } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getDocument, downloadRevisionFile, uploadDocumentFile, updateDocument, approveDocument, getApprovalFeed, type ApprovalRecord, type DocumentDetail, type Revision } from '@/features/documents/api/documents';
 import { getRemarks } from '@/features/remarks/api/remarks';
@@ -349,6 +349,27 @@ export default function DocumentDetailPage() {
             {doc && <DocumentStatusBadge status={mapStatus(doc.status)} />}
             <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Проект: {project?.name || (doc ? `Проект #${doc.project_id}` : '—')}</span>
             <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Дисциплина: {doc?.discipline || doc?.doc_type || '—'}</span>
+            {doc && (
+              doc.has_file ? (
+                <span
+                  className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border font-medium"
+                  title="К документу прикреплён файл"
+                  style={{ color: '#4F7A4C', background: 'rgba(79,122,76,0.15)', borderColor: 'rgba(79,122,76,0.4)' }}
+                >
+                  <Paperclip size={11} />
+                  Файл
+                </span>
+              ) : (
+                <span
+                  className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border font-medium"
+                  title="Файл не прикреплён"
+                  style={{ color: 'var(--text-muted)', background: 'var(--bg-surface-2)', borderColor: 'var(--border-default)' }}
+                >
+                  <Paperclip size={11} />
+                  Нет файла
+                </span>
+              )
+            )}
           </div>
         </div>
       </div>
