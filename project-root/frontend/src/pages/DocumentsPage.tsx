@@ -786,6 +786,25 @@ function RegistryView() {
                       <h2 className="text-xs font-bold font-mono" style={{ color: 'var(--text-primary)' }}>{selectedDoc.code}</h2>
                       <TypeBadge type={selectedDoc.type} />
                       <StatusBadge status={selectedDoc.status} />
+                      {selectedDoc.hasFile ? (
+                        <span
+                          className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full border font-medium"
+                          title="Файл прикреплён"
+                          style={{ color: '#4F7A4C', background: 'rgba(79,122,76,0.15)', borderColor: 'rgba(79,122,76,0.4)' }}
+                        >
+                          <Paperclip size={10} />
+                          Файл
+                        </span>
+                      ) : (
+                        <span
+                          className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full border font-medium"
+                          title="Файл не загружен"
+                          style={{ color: 'var(--text-muted)', background: 'var(--bg-surface-2)', borderColor: 'var(--border-default)' }}
+                        >
+                          <Paperclip size={10} />
+                          Нет файла
+                        </span>
+                      )}
                     </div>
                     <p className="text-sm truncate" style={{ color: 'var(--text-secondary)' }}>{selectedDoc.name}</p>
                   </div>
