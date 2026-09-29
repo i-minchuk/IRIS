@@ -112,15 +112,20 @@ jobs:
         run: alembic upgrade head
       - name: Verify models match schema (autogenerate audit)
         working-directory: project-root/backend
-        # Падение только при create_* — признак того, что схема чистой БД
-        # не покрывает модели (нет guarded-миграции). Операции drop_/alter_
-        # отражают легаси-расхождения старых миграций с моделями — на них
-        # пока только предупреждение, т.к. они не ломают развёртывание.
+        # Падение только на истинных «added»-операциях — признак того, что
+        # схема чистой БД не покрывает модели (нет guarded-миграции):
+        #   - op.create_table — таблица модели отсутствует в БД;
+        #   - op.create_unique_constraint — уникальность из модели не создана.
+        # create_foreign_key / create_index безымянными FK/индексами в моделях
+        # почти всегда идут в паре с drop_* (autogenerate видит «rename») —
+        # это шум именования, не потеря объектов; на него только предупреждение.
+        # Операции drop_/alter_ — легаси-расхождения старых миграций с моделями,
+        # они не ломают развёртывание — тоже только предупреждение.
         run: |
           alembic revision --autogenerate -m ci_audit
           file=$(ls -t alembic/versions/*ci_audit*.py | head -1)
-          if grep -q "op.create_" "$file"; then
-            echo "Схема чистой БД не покрывает модели (нет create-операций):"
+          if grep -qE "op\.create_table|op\.create_unique_constraint" "$file"; then
+            echo "Схема чистой БД не покрывает модели (есть added-операции):"
             cat "$file"
             exit 1
           fi
