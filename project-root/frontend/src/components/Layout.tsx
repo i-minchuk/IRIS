@@ -13,7 +13,6 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { useTheme } from '@/providers/ThemeProvider';
 import { useLanguageContext } from "@/features/profile/i18n/LanguageContext";
 import { t } from "@/features/profile/i18n/translations";
 import { useZoomStore } from "@/features/zoom/store/zoomStore";
@@ -48,7 +47,6 @@ function getNavItems(role: UserRole | undefined) {
 
 
 export default function Layout() {
-  const { theme } = useTheme();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [avatarUrl] = useState<string | null>(() => {
     if (typeof window === 'undefined') return null;
@@ -58,7 +56,6 @@ export default function Layout() {
   const location = useLocation();
   const setActiveTab = useGlobalSearchStore((state) => state.setActiveTab);
   const userMenuRef = useRef<HTMLDivElement | null>(null);
-  const isDark = theme === 'dark' || theme === 'midnight' || theme === 'contrast';
   const { user } = useAuth();
   const navItems = getNavItems(user?.role);
 
@@ -244,7 +241,7 @@ export default function Layout() {
                 </button>
 
                 {showUserMenu && (
-                  <div className="absolute right-0 mt-2 w-64 rounded-xl border shadow-lg" style={{ background: 'var(--iris-bg-surface)', backgroundColor: isDark ? '#1e1e2e' : '#ffffff', borderColor: 'var(--iris-border-subtle)', color: 'var(--text-primary)', boxShadow: 'var(--iris-shadow-lg)', zIndex: 100 }} role="menu">
+                  <div className="absolute right-0 mt-2 w-64 rounded-xl border shadow-lg" style={{ background: 'var(--iris-bg-surface)', borderColor: 'var(--iris-border-subtle)', color: 'var(--text-primary)', boxShadow: 'var(--iris-shadow-lg)', zIndex: 100 }} role="menu">
                     <div className="border-b px-4 py-3" style={{ borderColor: 'var(--iris-border-subtle)' }}>
                       <div className="font-semibold">{user?.full_name || user?.username || 'Пользователь'}</div>
                       <div className="text-sm" style={{ color: 'var(--text-muted)' }}>{user?.email || ''}</div>
