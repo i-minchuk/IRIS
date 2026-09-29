@@ -18,7 +18,7 @@ import { useAutoTimeTracker } from '@/features/time_tracking/hooks/useAutoTimeTr
 import apiClient from '@/shared/api/client';
 import { getLeaderboard } from '@/features/gamification/api/gamification';
 import { getRemarks, createRemark } from '@/features/remarks/api/remarks';
-import { getDocuments, getDocument, uploadDocumentFile, downloadRevisionFile, approveDocument, getApprovalFeed, type ApprovalFeedItem, type DocumentItem } from '@/features/documents/api/documents';
+import { getDocuments, getDocument, uploadDocumentFile, downloadRevisionFile, approveDocument, getApprovalFeed, getActionTaskStatuses, setActionTaskStatus, type ApprovalFeedItem, type DocumentItem, type ActionTaskStatus } from '@/features/documents/api/documents';
 import ViewerContainer from '@/components/viewers/ViewerContainer';
 import { getProjects } from '@/features/projects/api/projects';
 import { toast } from 'sonner';
@@ -1190,10 +1190,12 @@ function WorkflowView() {
       getApprovalFeed().catch(() => [] as ApprovalFeedItem[]),
       getDocuments().catch(() => [] as DocumentItem[]),
       getProjects().catch(() => [] as { id: number; name: string; status?: string }[]),
-    ]).then(([remarksData, feedData, docsData, projectsData]) => {
+      getActionTaskStatuses().catch(() => ({}) as Record<string, ActionTaskStatus>),
+    ]).then(([remarksData, feedData, docsData, projectsData, taskStatusesData]) => {
       if (cancelled) return;
       if (remarksData?.items?.length) setRemarks(remarksData.items);
       if (feedData?.length) setApprovalFeed(feedData);
+      setTaskStatuses(taskStatusesData);
       const docsList = Array.isArray(docsData)
         ? docsData
         : (docsData as any)?.items ?? [];
@@ -1271,8 +1273,11 @@ function WorkflowView() {
     }
   };
 
-  const updateTaskStatus = (id: string, status: 'new' | 'in_progress' | 'done') => {
+  const updateTaskStatus = (id: string, status: ActionTaskStatus) => {
     setTaskStatuses(prev => ({ ...prev, [id]: status }));
+    setActionTaskStatus(id, status).catch(() => {
+      toast.error('Не удалось сохранить статус задачи');
+    });
   };
 
   type ActionTaskType = 'create_document' | 'approve' | 'fix_remark' | 'attach_file';
@@ -1600,7 +1605,9 @@ function WorkflowView() {
             ) : (
               filteredActionTasks.map((task) => {
                 const meta = getActionTaskMeta(task.type);
-                const target = task.documentId ? `/documents/${task.documentId}` : (task.projectId ? `/documents/create?projectId=${task.projectId}` : '/documents');
+                const target = task.documentId
+                  ? (task.type === 'fix_remark' ? `/documents/${task.documentId}?tab=remarks` : `/documents/${task.documentId}`)
+                  : (task.projectId ? `/documents/create?projectId=${task.projectId}` : '/documents');
                 const priorityClass = task.priority === 'high' ? 'bg-red-100 text-red-700' : task.priority === 'medium' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700';
                 const linkedDoc = task.documentId != null ? docs.find(d => Number(d.id) === task.documentId) : undefined;
                 return (
@@ -1727,8 +1734,14 @@ function WorkflowView() {
                 const linkedDoc = docs.find(d => Number(d.id) === remark.document_id);
                 const projectName = remark.project_name || linkedDoc?.project || (remark.project_id ? `Проект #${remark.project_id}` : '—');
                 const documentName = remark.document_name || linkedDoc?.code || (remark.document_id ? `Документ #${remark.document_id}` : '—');
+                const remarkTarget = remark.document_id ? `/documents/${remark.document_id}?tab=remarks` : '#';
                 return (
-                  <div key={remark.id} className="rounded-xl border p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-default)' }}>
+                  <Link
+                    key={remark.id}
+                    to={remarkTarget}
+                    className="rounded-xl border p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors hover:bg-[var(--bg-surface-2)]"
+                    style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-default)' }}
+                  >
                     <div className="min-w-0">
                       <h3 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{remark.title}</h3>
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
@@ -1760,7 +1773,7 @@ function WorkflowView() {
                       </div>
                     </div>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium self-start sm:self-auto ${getRemarkStatusColor(remark.status)}`}>{getRemarkStatusLabel(remark.status)}</span>
-                  </div>
+                  </Link>
                 );
               })
             )}

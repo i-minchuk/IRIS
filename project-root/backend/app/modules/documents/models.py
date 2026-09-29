@@ -4,7 +4,8 @@ from datetime import datetime
 from typing import Optional, TYPE_CHECKING
 
 from sqlalchemy import (
-    String, DateTime, ForeignKey, func, Index, Text, JSON, Integer, Float
+    String, DateTime, ForeignKey, func, Index, Text, JSON, Integer, Float,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -284,4 +285,26 @@ class DocumentDependency(Base):
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=datetime.utcnow
+    )
+
+
+class ActionTaskStatus(Base):
+    """Пользовательские статусы производных задач документооборота."""
+
+    __tablename__ = "action_task_statuses"
+    __table_args__ = (
+        UniqueConstraint("user_id", "task_key", name="uq_action_task_status_user_key"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id"),
+        nullable=False,
+    )
+    task_key: Mapped[str] = mapped_column(String(100), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="new")
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
     )

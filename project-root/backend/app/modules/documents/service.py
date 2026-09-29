@@ -6,8 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException, status
 
 from app.modules.documents.repository import (
-    DocumentRepository, RevisionRepository, 
-    ApprovalWorkflowRepository
+    DocumentRepository, RevisionRepository,
+    ApprovalWorkflowRepository, ActionTaskStatusRepository
 )
 from app.modules.documents.variable_engine import render_document, cascade_update
 from app.modules.gamification.service import GamificationService
@@ -29,6 +29,7 @@ class DocumentService:
         self.doc_repo = DocumentRepository(db)
         self.revision_repo = RevisionRepository(db)
         self.workflow_repo = ApprovalWorkflowRepository(db)
+        self.action_task_repo = ActionTaskStatusRepository(db)
         self.notif_repo = NotificationRepository(db)
     
     async def list_documents(
@@ -674,6 +675,22 @@ class DocumentService:
                 })
         feed.sort(key=lambda x: x["approved_at"] or "", reverse=True)
         return feed[:limit]
+
+    async def get_action_task_statuses(self, user_id: int) -> Dict[str, str]:
+        """Статусы производных задач документооборота для пользователя."""
+        return await self.action_task_repo.get_for_user(user_id)
+
+    async def set_action_task_status(
+        self, user_id: int, task_key: str, new_status: str
+    ) -> Dict[str, str]:
+        """Сохранить статус производной задачи (new/in_progress/done)."""
+        if new_status not in ("new", "in_progress", "done"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Статус должен быть одним из: new, in_progress, done",
+            )
+        await self.action_task_repo.upsert(user_id, task_key, new_status)
+        return {"task_key": task_key, "status": new_status}
 
     
     async def render_document(

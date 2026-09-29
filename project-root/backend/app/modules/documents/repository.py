@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.modules.documents.models import (
-    Document, Revision, ApprovalWorkflow, ApprovalStage
+    Document, Revision, ApprovalWorkflow, ApprovalStage, ActionTaskStatus
 )
 from app.modules.projects.models import Project
 
@@ -181,3 +181,34 @@ class ApprovalWorkflowRepository:
         await self.db.commit()
         await self.db.refresh(workflow)
         return workflow
+
+
+class ActionTaskStatusRepository:
+    """Repository for user-specific action task statuses."""
+
+    def __init__(self, db: AsyncSession):
+        self.db = db
+
+    async def get_for_user(self, user_id: int) -> Dict[str, str]:
+        """Return {task_key: status} for user."""
+        result = await self.db.execute(
+            select(ActionTaskStatus).where(ActionTaskStatus.user_id == user_id)
+        )
+        return {row.task_key: row.status for row in result.scalars().all()}
+
+    async def upsert(self, user_id: int, task_key: str, status: str) -> None:
+        """Create or update status for (user, task_key)."""
+        result = await self.db.execute(
+            select(ActionTaskStatus).where(
+                ActionTaskStatus.user_id == user_id,
+                ActionTaskStatus.task_key == task_key,
+            )
+        )
+        row = result.scalar_one_or_none()
+        if row:
+            row.status = status
+        else:
+            self.db.add(
+                ActionTaskStatus(user_id=user_id, task_key=task_key, status=status)
+            )
+        await self.db.commit()

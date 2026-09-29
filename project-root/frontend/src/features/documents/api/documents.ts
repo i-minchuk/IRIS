@@ -231,3 +231,19 @@ export const downloadRevisionFile = async (
   }
   return { filename, blob: res.data as Blob };
 };
+
+export type ActionTaskStatus = 'new' | 'in_progress' | 'done';
+
+/** Статусы производных задач документооборота текущего пользователя */
+export const getActionTaskStatuses = async (): Promise<Record<string, ActionTaskStatus>> => {
+  const { data } = await client.get('/documents/action-tasks/statuses');
+  return data.statuses ?? {};
+};
+
+/** Сохранить статус производной задачи (new/in_progress/done) */
+export const setActionTaskStatus = async (
+  taskKey: string,
+  status: ActionTaskStatus,
+): Promise<void> => {
+  await client.put(`/documents/action-tasks/${encodeURIComponent(taskKey)}/status`, { status });
+};

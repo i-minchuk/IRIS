@@ -4,6 +4,7 @@ import os
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Query, UploadFile, File
 from fastapi.responses import FileResponse
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
 
@@ -125,6 +126,34 @@ async def approval_feed(
 ):
     """Лента согласований по документам (для вкладки «Документооборот»)."""
     return await service.approval_feed()
+
+
+class ActionTaskStatusInput(BaseModel):
+    status: str
+
+
+@router.get("/action-tasks/statuses", response_model=dict)
+async def action_task_statuses(
+    current_user: User = Depends(get_current_active_user),
+    service: DocumentService = Depends(get_document_service),
+):
+    """Статусы производных задач документооборота текущего пользователя."""
+    return {"statuses": await service.get_action_task_statuses(current_user.id)}
+
+
+@router.put("/action-tasks/{task_key}/status", response_model=dict)
+async def set_action_task_status(
+    task_key: str,
+    data: ActionTaskStatusInput,
+    current_user: User = Depends(get_current_active_user),
+    service: DocumentService = Depends(get_document_service),
+):
+    """Сохранить статус производной задачи (new/in_progress/done)."""
+    if not task_key or len(task_key) > 100:
+        raise HTTPException(status_code=400, detail="Некорректный ключ задачи")
+    return await service.set_action_task_status(
+        current_user.id, task_key, data.status
+    )
 
 
 @router.patch("/{document_id}", response_model=dict)
