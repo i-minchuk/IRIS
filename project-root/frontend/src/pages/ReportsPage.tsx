@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { FileText, Download, Printer, Play } from 'lucide-react';
 import { toast } from 'sonner';
+import * as XLSX from 'xlsx';
 import apiClient from '@/shared/api/client';
+import { DateInput } from '@/components/ui';
 
 type ReportTemplate = 'projects' | 'tenders' | 'load' | 'finances' | 'documents' | 'remarks';
 
@@ -22,12 +24,6 @@ const TEMPLATE_LABELS: Record<ReportTemplate, string> = {
 };
 
 const REPORT_ACCENT = '#EC4899';
-
-function toCSV(columns: string[], rows: { columns: Record<string, string | number | null> }[]): string {
-  const esc = (v: string | number | null) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-  const lines = rows.map((r) => columns.map((c) => esc(r.columns[c])).join(';'));
-  return [columns.map(esc).join(';'), ...lines].join('\n');
-}
 
 export default function ReportsPage() {
   const [template, setTemplate] = useState<ReportTemplate>('projects');
@@ -53,18 +49,24 @@ export default function ReportsPage() {
     }
   };
 
-  const handleExportCSV = () => {
+  const handleExportExcel = () => {
     if (!report || report.rows.length === 0) return;
-    const csv = toCSV(report.columns, report.rows);
-    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `report_${template}_${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+
+    const data = report.rows.map((row) => {
+      const obj: Record<string, string | number | null> = {};
+      report.columns.forEach((col) => {
+        obj[col] = row.columns[col] ?? '';
+      });
+      return obj;
+    });
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Отчёт');
+    XLSX.writeFile(
+      wb,
+      `report_${template}_${new Date().toISOString().slice(0, 10)}.xlsx`
+    );
   };
 
   const handlePrint = () => {
@@ -74,7 +76,34 @@ export default function ReportsPage() {
   const resetReport = () => setReport(null);
 
   return (
-    <div className="w-full pt-2 pb-6 px-4">
+    <>
+      <style>
+        {`
+          @media print {
+            body * { visibility: hidden !important; }
+            .printable-report, .printable-report * { visibility: visible !important; }
+            .printable-report {
+              position: absolute !important;
+              left: 0 !important;
+              top: 0 !important;
+              width: 100% !important;
+              background: white !important;
+              color: black !important;
+            }
+            .printable-report table {
+              width: 100% !important;
+              border-collapse: collapse !important;
+            }
+            .printable-report th,
+            .printable-report td {
+              border: 1px solid #ccc !important;
+              padding: 8px !important;
+            }
+            .no-print { display: none !important; }
+          }
+        `}
+      </style>
+      <div className="w-full pt-2 pb-6 px-4">
       <div className="flex items-center gap-3 mb-6">
         <h1 className="sr-only" style={{ color: 'var(--text-primary)' }}>
           Отчёты
@@ -107,16 +136,10 @@ export default function ReportsPage() {
             <label className="text-base md:text-lg font-medium leading-relaxed mt-1 font-medium" style={{ color: 'var(--text-secondary)' }}>
               Дата начала
             </label>
-            <input
-              type="date"
+            <DateInput
               value={startDate}
-              onChange={(e) => { setStartDate(e.target.value); resetReport(); }}
-              className="rounded-lg border px-3 py-2 text-sm outline-none"
-              style={{
-                background: 'var(--bg-surface)',
-                borderColor: 'var(--border-default)',
-                color: 'var(--text-primary)',
-              }}
+              onChange={(v) => { setStartDate(v); resetReport(); }}
+              className="min-w-[160px]"
             />
           </div>
 
@@ -124,16 +147,10 @@ export default function ReportsPage() {
             <label className="text-base md:text-lg font-medium leading-relaxed mt-1 font-medium" style={{ color: 'var(--text-secondary)' }}>
               Дата окончания
             </label>
-            <input
-              type="date"
+            <DateInput
               value={endDate}
-              onChange={(e) => { setEndDate(e.target.value); resetReport(); }}
-              className="rounded-lg border px-3 py-2 text-sm outline-none"
-              style={{
-                background: 'var(--bg-surface)',
-                borderColor: 'var(--border-default)',
-                color: 'var(--text-primary)',
-              }}
+              onChange={(v) => { setEndDate(v); resetReport(); }}
+              className="min-w-[160px]"
             />
           </div>
 
@@ -151,21 +168,21 @@ export default function ReportsPage() {
       </div>
 
       {report && (
-        <div className="rounded-xl border overflow-hidden" style={{ background: 'var(--iris-bg-surface)', borderColor: 'var(--iris-border-subtle)' }}>
-          <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: 'var(--iris-border-subtle)' }}>
+        <div className="printable-report rounded-xl border overflow-hidden" style={{ background: 'var(--iris-bg-surface)', borderColor: 'var(--iris-border-subtle)' }}>
+          <div className="no-print flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: 'var(--iris-border-subtle)' }}>
             <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
               {TEMPLATE_LABELS[template]} — {report.rows.length} записей
             </span>
             <div className="flex items-center gap-2">
               <button
-                onClick={handleExportCSV}
+                onClick={handleExportExcel}
                 disabled={report.rows.length === 0}
                 className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50"
                 style={{ background: 'var(--iris-bg-hover)', color: 'var(--text-primary)', border: '1px solid var(--iris-border-subtle)' }}
                 onMouseEnter={(e) => { if (report.rows.length > 0) { e.currentTarget.style.backgroundColor = 'var(--iris-border-subtle)'; } }}
                 onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)'; }}
               >
-                <Download size={14} /> Экспорт CSV
+                <Download size={14} /> Экспорт Excel
               </button>
               <button
                 onClick={handlePrint}
@@ -231,5 +248,6 @@ export default function ReportsPage() {
         </div>
       )}
     </div>
+    </>
   );
 }

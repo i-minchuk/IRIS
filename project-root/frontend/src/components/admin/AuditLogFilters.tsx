@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { AuditFilter, AuditAction, AuditSeverity } from '@/types/audit';
 import { Input } from '@/components/ui';
 import { Button } from '@/components/ui';
+import { DateInput } from '@/components/ui';
 import { Search, RotateCcw } from 'lucide-react';
 
 const ACTIONS: { value: AuditAction | ''; label: string }[] = [
@@ -70,10 +71,9 @@ export function AuditLogFilters({ filter, onChange }: AuditLogFiltersProps) {
           <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
             С даты
           </label>
-          <Input
-            type="date"
+          <DateInput
             value={localFilter.dateFrom || ''}
-            onChange={(e) => setLocalFilter({ ...localFilter, dateFrom: e.target.value })}
+            onChange={(v) => setLocalFilter({ ...localFilter, dateFrom: v })}
           />
         </div>
 
@@ -81,10 +81,9 @@ export function AuditLogFilters({ filter, onChange }: AuditLogFiltersProps) {
           <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
             По дату
           </label>
-          <Input
-            type="date"
+          <DateInput
             value={localFilter.dateTo || ''}
-            onChange={(e) => setLocalFilter({ ...localFilter, dateTo: e.target.value })}
+            onChange={(v) => setLocalFilter({ ...localFilter, dateTo: v })}
           />
         </div>
 

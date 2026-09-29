@@ -5,6 +5,7 @@ import { Project, ProjectStatus, ProjectPriority } from '../../types/project';
 import { PROJECT_STATUS_CONFIG } from '../../constants/projectStatuses';
 import { PROJECT_PRIORITY_CONFIG } from '../../constants/projectStatuses';
 import { createProject } from '@/features/projects/api/projects';
+import { DateInput } from '@/components/ui';
 
 interface ProjectFormProps {
   project?: Project | null;
@@ -222,36 +223,30 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
 
           {/* Timeline */}
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-[#e2e8f0]">Сроки</h2>
+            <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Сроки</h2>
             
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm text-[#94a3b8] mb-1">
+                <label className="block text-sm mb-1" style={{ color: 'var(--text-muted)' }}>
                   Дата начала *
                 </label>
-                <input
-                  type="date"
+                <DateInput
                   value={formData.startDate}
-                  onChange={(e) =>
-                    setFormData({ ...formData, startDate: e.target.value })
+                  onChange={(v) =>
+                    setFormData({ ...formData, startDate: v })
                   }
-                  className="w-full px-3 py-2 bg-[#0f172a] border border-[#334155] rounded-lg text-[#e2e8f0] focus:outline-none focus:border-[#3b82f6]"
-                  required
                 />
               </div>
 
               <div>
-                <label className="block text-sm text-[#94a3b8] mb-1">
+                <label className="block text-sm mb-1" style={{ color: 'var(--text-muted)' }}>
                   Дедлайн *
                 </label>
-                <input
-                  type="date"
+                <DateInput
                   value={formData.deadline}
-                  onChange={(e) =>
-                    setFormData({ ...formData, deadline: e.target.value })
+                  onChange={(v) =>
+                    setFormData({ ...formData, deadline: v })
                   }
-                  className="w-full px-3 py-2 bg-[#0f172a] border border-[#334155] rounded-lg text-[#e2e8f0] focus:outline-none focus:border-[#3b82f6]"
-                  required
                 />
               </div>
             </div>

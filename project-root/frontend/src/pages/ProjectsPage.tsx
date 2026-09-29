@@ -104,9 +104,9 @@ function FilterBar({
           onClick={() => onChange(opt.key)}
           className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md transition-colors cursor-pointer outline-none"
           style={{
-            background: '#ffffff',
-            color: active === opt.key ? '#111827' : '#64748b',
-            border: active === opt.key ? '1px solid #cbd5e1' : '1px solid #e2e8f0',
+            background: 'var(--card-bg)',
+            color: active === opt.key ? 'var(--text-primary)' : 'var(--text-muted)',
+            border: '1px solid var(--border-color)',
             fontWeight: active === opt.key ? 500 : 400,
           }}
         >
@@ -115,7 +115,7 @@ function FilterBar({
         </button>
       ))}
       {count !== undefined && (
-        <span className="text-xs ml-1" style={{ color: '#94a3b8' }}>Найдено: {count}</span>
+        <span className="text-xs ml-1" style={{ color: 'var(--text-muted)' }}>Найдено: {count}</span>
       )}
     </div>
   );

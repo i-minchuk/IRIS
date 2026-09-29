@@ -3,6 +3,7 @@ import { useRemarksStore } from '@/stores/remarksStore';
 import { RemarkStatus, RemarkPriority, RemarkCategory, RemarkFilter } from '@/types/remarks';
 import { getProjects } from '@/features/projects/api/projects';
 import { getUsers } from '@/features/users/api/users';
+import { DateInput } from '@/components/ui';
 
 export const RemarksFilters: React.FC = () => {
   const { filters, setFilters, resetFilters, tags } = useRemarksStore();
@@ -209,21 +210,17 @@ export const RemarksFilters: React.FC = () => {
       {/* Date range */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs text-[#94a3b8] mb-1">Создано с</label>
-          <input
-            type="date"
+          <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Создано с</label>
+          <DateInput
             value={filters.date_from || ''}
-            onChange={(e) => setFilters({ date_from: e.target.value })}
-            className="w-full px-3 py-1.5 bg-[#0f172a] border border-[#334155] rounded text-xs text-[#e2e8f0] focus:border-[#3b82f6] focus:outline-none"
+            onChange={(v) => setFilters({ date_from: v })}
           />
         </div>
         <div>
-          <label className="block text-xs text-[#94a3b8] mb-1">Создано по</label>
-          <input
-            type="date"
+          <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Создано по</label>
+          <DateInput
             value={filters.date_to || ''}
-            onChange={(e) => setFilters({ date_to: e.target.value })}
-            className="w-full px-3 py-1.5 bg-[#0f172a] border border-[#334155] rounded text-xs text-[#e2e8f0] focus:border-[#3b82f6] focus:outline-none"
+            onChange={(v) => setFilters({ date_to: v })}
           />
         </div>
       </div>

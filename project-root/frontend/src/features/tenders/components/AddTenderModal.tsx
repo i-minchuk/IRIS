@@ -5,6 +5,7 @@ import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
+import DateInput from '@/components/ui/DateInput';
 import { resourcesApi } from '@/features/resources/api/resources';
 import type { WorkloadData } from '@/features/resources/api/resources';
 import { createTender, updateTender, uploadStandardAttachment, getNextKpNumber } from '@/features/tenders/api/tenders';
@@ -413,7 +414,7 @@ export default function AddTenderModal({ isOpen, onClose, onCreated, editTender 
           <Input label="Заказчик" value={form.customer_name} onChange={(e) => handleChange('customer_name', e.target.value)} placeholder="ООО «Заказчик»" />
           <Select label="Тип объекта" value={form.project_type} onChange={(e) => handleChange('project_type', e.target.value)} options={PROJECT_TYPES} placeholder="Выберите тип" />
           <Select label="Сложность" value={form.complexity} onChange={(e) => handleChange('complexity', e.target.value)} options={COMPLEXITY_OPTIONS} />
-          <Input label="Дедлайн подачи" type="date" value={form.deadline} onChange={(e) => handleChange('deadline', e.target.value)} />
+          <DateInput label="Дедлайн подачи" value={form.deadline} onChange={(v) => handleChange('deadline', v)} />
           <Input label="НМЦ, ₽" type="number" value={form.nmc} onChange={(e) => handleChange('nmc', e.target.value)} placeholder="420000000" />
           <Input label="Вероятность выигрыша, %" type="number" min={0} max={100} value={form.probability} onChange={(e) => handleChange('probability', e.target.value)} />
           <Input label="Наша цена, ₽" type="number" value={form.our_price} onChange={(e) => handleChange('our_price', e.target.value)} placeholder="500000000" />

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Loader2, UserPlus, KeyRound, CheckCircle2, Save, IdCard } from 'lucide-react';
 import { Card } from '@/components/ui';
+import { DateInput } from '@/components/ui';
 import {
   adminApi,
   type CreateUserPayload,
@@ -451,12 +452,9 @@ export default function RegistrationTab() {
                 <label className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
                   Дата приёма
                 </label>
-                <input
-                  type="date"
+                <DateInput
                   value={employeeForm.hire_date}
-                  onChange={(e) => setEmployee('hire_date', e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg text-sm"
-                  style={inputStyle}
+                  onChange={(v) => setEmployee('hire_date', v)}
                 />
               </div>
             </div>

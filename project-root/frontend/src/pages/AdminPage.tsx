@@ -10,6 +10,7 @@ import {
   type EmployeeProfile,
 } from '@/features/auth/api/adminApi';
 import { toast } from 'sonner';
+import { DateInput } from '@/components/ui';
 
 /* ─── Role config ─── */
 const ROLE_OPTIONS = [
@@ -744,12 +745,9 @@ export const AdminPage: React.FC = () => {
                   </div>
                   <div className="space-y-1">
                     <label className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Дата приёма</label>
-                    <input
-                      type="date"
+                    <DateInput
                       value={employeeForm.hire_date}
-                      onChange={(e) => setEmployeeForm((prev) => ({ ...prev, hire_date: e.target.value }))}
-                      className="w-full px-3 py-2 rounded-lg text-sm"
-                      style={inputStyle}
+                      onChange={(v) => setEmployeeForm((prev) => ({ ...prev, hire_date: v }))}
                     />
                   </div>
                 </div>
@@ -1070,12 +1068,9 @@ export const AdminPage: React.FC = () => {
                   </div>
                   <div className="space-y-1">
                     <label className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Дата приёма</label>
-                    <input
-                      type="date"
+                    <DateInput
                       value={employeeForm.hire_date}
-                      onChange={(e) => setEmployeeForm((prev) => ({ ...prev, hire_date: e.target.value }))}
-                      className="w-full px-3 py-2 rounded-lg text-sm"
-                      style={inputStyle}
+                      onChange={(v) => setEmployeeForm((prev) => ({ ...prev, hire_date: v }))}
                     />
                   </div>
                 </div>

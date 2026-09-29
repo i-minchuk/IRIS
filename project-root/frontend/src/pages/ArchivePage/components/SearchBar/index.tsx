@@ -1,5 +1,6 @@
 // src/pages/ArchivePage/components/SearchBar/index.tsx
 import React, { useState, useCallback } from 'react';
+import { DateInput } from '@/components/ui';
 import { ArchiveEntryType } from '../../types/archive';
 
 interface SearchBarProps {
@@ -97,18 +98,16 @@ export const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
         </label>
 
         <div className="flex items-center gap-2">
-          <input
-            type="date"
+          <DateInput
             value={filters.dateFrom || ''}
-            onChange={(e) => setFilters((prev) => ({ ...prev, dateFrom: e.target.value }))}
-            className="px-3 py-1.5 bg-[#0f172a] border border-[#334155] rounded-lg text-sm text-[#e2e8f0]"
+            onChange={(v) => setFilters((prev) => ({ ...prev, dateFrom: v }))}
+            className="w-40"
           />
-          <span className="text-[#64748b]">—</span>
-          <input
-            type="date"
+          <span style={{ color: 'var(--text-muted)' }}>—</span>
+          <DateInput
             value={filters.dateTo || ''}
-            onChange={(e) => setFilters((prev) => ({ ...prev, dateTo: e.target.value }))}
-            className="px-3 py-1.5 bg-[#0f172a] border border-[#334155] rounded-lg text-sm text-[#e2e8f0]"
+            onChange={(v) => setFilters((prev) => ({ ...prev, dateTo: v }))}
+            className="w-40"
           />
         </div>
       </div>

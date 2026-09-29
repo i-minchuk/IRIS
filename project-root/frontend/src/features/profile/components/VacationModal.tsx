@@ -1,6 +1,7 @@
 import { X, Plane, BriefcaseMedical } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { DateInput } from "@/components/ui";
 import { t } from "../i18n/translations";
 import type { Language } from "../i18n/translations";
 
@@ -91,22 +92,16 @@ export function VacationModal({ isOpen, onClose, onSubmit, lang }: Props) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-sm text-[var(--text-muted)] mb-1 block">{t("from", lang)}</label>
-              <input
-                type="date"
-                required
+              <DateInput
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] text-[var(--text-main)] text-sm focus:outline-none focus:border-purple-500"
+                onChange={setStartDate}
               />
             </div>
             <div>
               <label className="text-sm text-[var(--text-muted)] mb-1 block">{t("to", lang)}</label>
-              <input
-                type="date"
-                required
+              <DateInput
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] text-[var(--text-main)] text-sm focus:outline-none focus:border-purple-500"
+                onChange={setEndDate}
               />
             </div>
           </div>

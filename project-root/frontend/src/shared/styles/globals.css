@@ -218,6 +218,8 @@ select:-webkit-autofill:active {
     --bg-surface-2: #F3F4F6;
     --border-default: var(--iris-border-default);
     --accent-engineering: var(--iris-accent-cyan);
+    --card-bg: var(--iris-bg-card);
+    --border-color: var(--iris-border-default);
 
     /* Status bridges (Badge variants) */
     --success: #15803D;
@@ -317,6 +319,8 @@ select:-webkit-autofill:active {
     --bg-surface: var(--iris-bg-surface);
     --bg-surface-2: #252B3D;
     --border-default: var(--iris-border-default);
+    --card-bg: var(--iris-bg-card);
+    --border-color: var(--iris-border-default);
 
     /* Status bridges (Badge variants) */
     --success: #34D399;
@@ -402,6 +406,8 @@ select:-webkit-autofill:active {
     --bg-surface-2: #111111;
     --border-default: var(--iris-border-default);
     --accent-engineering: var(--iris-accent-cyan);
+    --card-bg: var(--iris-bg-card);
+    --border-color: var(--iris-border-default);
 
     /* Status bridges (Badge variants) */
     --success: #00FF88;
@@ -487,6 +493,8 @@ select:-webkit-autofill:active {
     --bg-surface-2: #DDD0B8;
     --border-default: var(--iris-border-default);
     --accent-engineering: var(--iris-accent-cyan);
+    --card-bg: var(--iris-bg-card);
+    --border-color: var(--iris-border-default);
   }
 
   /* ── MIDNIGHT THEME ── */
@@ -566,6 +574,8 @@ select:-webkit-autofill:active {
     --bg-surface-2: #0F1623;
     --border-default: var(--iris-border-default);
     --accent-engineering: var(--iris-accent-cyan);
+    --card-bg: var(--iris-bg-card);
+    --border-color: var(--iris-border-default);
 
     /* Status bridges (Badge variants) */
     --success: #34D399;
