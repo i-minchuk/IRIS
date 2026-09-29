@@ -753,18 +753,23 @@ function RegistryView() {
                       {doc.hasFile ? (
                         <button
                           type="button"
-                          title="Открыть предпросмотр файла"
-                          className="p-0.5 rounded transition-transform hover:scale-125"
+                          title="Файл прикреплён — открыть предпросмотр"
+                          className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full border font-medium transition-transform hover:scale-105"
+                          style={{ color: '#4F7A4C', background: 'rgba(79,122,76,0.15)', borderColor: 'rgba(79,122,76,0.4)' }}
                           onClick={(e) => { void openFilePreview(doc, e); }}
                         >
-                          <Paperclip size={11} style={{ color: TAB_COLOR }} />
+                          <Paperclip size={10} />
+                          Файл
                         </button>
                       ) : (
                         <span
                           title="Файл не загружен"
-                          className="inline-block rounded-full"
-                          style={{ width: 9, height: 9, border: '1px dashed var(--text-muted)', opacity: 0.55 }}
-                        />
+                          className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full border font-medium"
+                          style={{ color: 'var(--text-muted)', background: 'var(--bg-surface-2)', borderColor: 'var(--border-default)' }}
+                        >
+                          <Paperclip size={10} />
+                          Нет файла
+                        </span>
                       )}
                     </div>
                   </div>
