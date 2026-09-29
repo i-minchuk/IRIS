@@ -7,6 +7,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from app.db.session import get_db
 from app.modules.auth.deps import get_current_active_user
@@ -15,7 +16,8 @@ from app.modules.projects.models import Project
 from app.modules.tasks.models import Task
 from app.modules.tenders.models import Tender
 from app.modules.time_tracking.models import TimeSession, EmployeeLoad
-from app.modules.documents.models import Document
+from app.modules.documents.models import Document, Revision
+from app.modules.remarks.models import Remark
 from app.modules.reports.schemas import ReportRequest, ReportResponse, ReportRow, ReportTemplate
 
 router = APIRouter(tags=["reports"])
@@ -304,6 +306,163 @@ async def _generate_finances_report(
     )
 
 
+async def _generate_documents_report(
+    db: AsyncSession,
+    from_date: datetime | None,
+    to_date: datetime | None,
+    project_id: int | None,
+    user_id: int | None,
+) -> ReportResponse:
+    """Generate Documents registry report (MDR/VDR style)."""
+    columns = [
+        "№ п/п",
+        "Код документа",
+        "Наименование",
+        "Проект",
+        "Дисциплина",
+        "Тип",
+        "Статус",
+        "Ревизия",
+        "Дата создания",
+    ]
+
+    query = select(Document).options(
+        joinedload(Document.project),
+    )
+    if project_id is not None:
+        query = query.where(Document.project_id == project_id)
+    if from_date is not None:
+        query = query.where(Document.created_at >= from_date)
+    if to_date is not None:
+        query = query.where(Document.created_at <= to_date)
+    if user_id is not None:
+        query = query.where(Document.author_id == user_id)
+
+    result = await db.execute(query.order_by(Document.created_at.desc()))
+    docs = result.scalars().unique().all()
+
+    current_revision_ids = [doc.current_revision_id for doc in docs if doc.current_revision_id]
+    revision_map: dict[int, Revision] = {}
+    if current_revision_ids:
+        rev_result = await db.execute(
+            select(Revision).where(Revision.id.in_(current_revision_ids))
+        )
+        revision_map = {rev.id: rev for rev in rev_result.scalars().all()}
+
+    rows: list[ReportRow] = []
+    for idx, doc in enumerate(docs, start=1):
+        current_revision = revision_map.get(doc.current_revision_id) if doc.current_revision_id else None
+        revision_number = current_revision.number if current_revision and current_revision.number else "—"
+        rows.append(
+            _build_report_row(
+                columns,
+                {
+                    "№ п/п": idx,
+                    "Код документа": doc.number or "—",
+                    "Наименование": doc.name or "—",
+                    "Проект": doc.project.name if doc.project else "—",
+                    "Дисциплина": doc.doc_type or "—",
+                    "Тип": doc.doc_type or "—",
+                    "Статус": doc.status or "—",
+                    "Ревизия": revision_number,
+                    "Дата создания": doc.created_at.isoformat() if doc.created_at else "—",
+                },
+            )
+        )
+
+    return ReportResponse(
+        template=ReportTemplate.DOCUMENTS.value,
+        columns=columns,
+        rows=rows,
+        generated_at=datetime.now(timezone.utc),
+    )
+
+
+async def _generate_remarks_report(
+    db: AsyncSession,
+    from_date: datetime | None,
+    to_date: datetime | None,
+    project_id: int | None,
+    user_id: int | None,
+) -> ReportResponse:
+    """Generate Remarks report grouped by document per project."""
+    columns = [
+        "№ п/п",
+        "Проект",
+        "Код документа",
+        "Наименование документа",
+        "Ревизия",
+        "Дата ревизии",
+        "Замечание",
+        "Код замечания",
+        "Автор замечания",
+        "Ответ подрядчика",
+        "Автор ответа",
+        "Не исправлено в ревизии",
+        "Статус",
+    ]
+
+    query = (
+        select(Remark)
+        .options(
+            joinedload(Remark.document),
+            joinedload(Remark.project),
+            joinedload(Remark.revision),
+            joinedload(Remark.author),
+            joinedload(Remark.resolved_by_user),
+        )
+    )
+    if project_id is not None:
+        query = query.where(Remark.project_id == project_id)
+    if user_id is not None:
+        query = query.where(
+            (Remark.author_id == user_id) | (Remark.assignee_id == user_id)
+        )
+    if from_date is not None:
+        query = query.where(Remark.created_at >= from_date)
+    if to_date is not None:
+        query = query.where(Remark.created_at <= to_date)
+
+    result = await db.execute(query.order_by(Remark.project_id, Remark.document_id, Remark.created_at))
+    remarks = result.scalars().unique().all()
+
+    rows: list[ReportRow] = []
+    for idx, remark in enumerate(remarks, start=1):
+        doc = remark.document
+        project = remark.project
+        revision = remark.revision
+        author_name = remark.author.full_name if remark.author else "—"
+        resolved_name = remark.resolved_by_user.full_name if remark.resolved_by_user else "—"
+        not_fixed = "Да" if remark.status not in ("resolved", "closed") else "Нет"
+        rows.append(
+            _build_report_row(
+                columns,
+                {
+                    "№ п/п": idx,
+                    "Проект": project.name if project else "—",
+                    "Код документа": doc.number if doc else "—",
+                    "Наименование документа": doc.name if doc else "—",
+                    "Ревизия": revision.number if revision else "—",
+                    "Дата ревизии": revision.created_at.isoformat() if revision and revision.created_at else "—",
+                    "Замечание": remark.title or "—",
+                    "Код замечания": remark.category or "—",
+                    "Автор замечания": author_name,
+                    "Ответ подрядчика": remark.resolution or "—",
+                    "Автор ответа": resolved_name,
+                    "Не исправлено в ревизии": not_fixed,
+                    "Статус": remark.status or "—",
+                },
+            )
+        )
+
+    return ReportResponse(
+        template=ReportTemplate.REMARKS.value,
+        columns=columns,
+        rows=rows,
+        generated_at=datetime.now(timezone.utc),
+    )
+
+
 # ---------------------------------------------------------------------------
 # Endpoint
 # ---------------------------------------------------------------------------
@@ -336,6 +495,14 @@ async def generate_report(
         )
     elif request.template == ReportTemplate.FINANCES:
         return await _generate_finances_report(
+            db, from_date, to_date, request.project_id, request.user_id
+        )
+    elif request.template == ReportTemplate.DOCUMENTS:
+        return await _generate_documents_report(
+            db, from_date, to_date, request.project_id, request.user_id
+        )
+    elif request.template == ReportTemplate.REMARKS:
+        return await _generate_remarks_report(
             db, from_date, to_date, request.project_id, request.user_id
         )
 

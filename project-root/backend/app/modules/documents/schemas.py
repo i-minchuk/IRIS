@@ -53,6 +53,7 @@ class DocumentResponse(DocumentBase):
     operation_id: Optional[int] = None
     ai_classified_type: Optional[str] = None
     ai_confidence: Optional[float] = None
+    standard_ids: Optional[list] = None
     created_at: datetime
     updated_at: datetime
 
@@ -226,6 +227,7 @@ class DocumentCreateInput(BaseModel):
     section_id: Optional[int] = None
     variables: Optional[dict] = Field(default_factory=dict)
     standard_template_id: Optional[int] = None
+    standard_ids: Optional[list[int]] = None
     assignee_ids: Optional[list[int]] = None
 
 
@@ -242,6 +244,7 @@ class DocumentUpdateInput(BaseModel):
     section_id: Optional[int] = None
     variables: Optional[dict] = None
     standard_template_id: Optional[int] = None
+    standard_ids: Optional[list[int]] = None
     assignee_ids: Optional[list[int]] = None
     content: Optional[dict] = None
 

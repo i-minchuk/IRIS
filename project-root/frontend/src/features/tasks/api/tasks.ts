@@ -2,8 +2,8 @@ import client from '@/shared/api/client';
 import type { Task } from '@/types';
 
 export const getTasks = async (): Promise<Task[]> => {
-  const { data } = await client.get('/tasks');
-  return data;
+  const { data } = await client.get('/tasks?page_size=100');
+  return data.items ?? [];
 };
 
 export const getTodayTasks = async (): Promise<Task[]> => {

@@ -10,11 +10,6 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-client = AsyncOpenAI(
-    api_key=settings.OPENAI_API_KEY,
-    base_url=settings.OPENAI_BASE_URL,
-)
-
 
 async def classify_document(content: str) -> dict:
     """Classify an engineering document using OpenAI.
@@ -24,6 +19,11 @@ async def classify_document(content: str) -> dict:
     """
     if not settings.OPENAI_API_KEY:
         return {"type": "unknown", "confidence": 0.0, "keywords": []}
+
+    client = AsyncOpenAI(
+        api_key=settings.OPENAI_API_KEY,
+        base_url=settings.OPENAI_BASE_URL,
+    )
 
     try:
         response = await client.chat.completions.create(

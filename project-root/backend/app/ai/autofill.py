@@ -2,8 +2,6 @@ from openai import AsyncOpenAI
 from app.core.config import settings
 import json
 
-client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
-
 
 async def suggest_document_fields(template_type: str, project_name: str) -> dict:
     if not settings.OPENAI_API_KEY:
@@ -11,6 +9,7 @@ async def suggest_document_fields(template_type: str, project_name: str) -> dict
 
     prompt = f"Предложи поля для документа типа {template_type} в проекте {project_name}. Ответь JSON: {{code, name, discipline}}"
 
+    client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
     response = await client.chat.completions.create(
         model=settings.LLM_MODEL,
         messages=[{"role": "user", "content": prompt}],

@@ -7,6 +7,9 @@ from app.db.base import Base  # noqa
 # 1. Auth — нет внешних ссылок
 from app.modules.auth.models import User, ApiToken  # noqa
 
+# 1.25 AI settings — нет внешних ссылок
+from app.modules.ai.models import AISetting  # noqa
+
 # 1.5 Calendar — ссылается на User
 from app.modules.calendar.models import CalendarEventModel  # noqa
 
@@ -116,3 +119,4 @@ from app.modules.production.models import (  # noqa
     ProdProblem,
 )
 from app.modules.employees.models import EmployeeProfile  # noqa
+from app.modules.references.models import GlossaryTerm, Standard  # noqa

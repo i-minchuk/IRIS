@@ -15,6 +15,8 @@ class ReportTemplate(str, Enum):
     TENDERS = "tenders"
     LOAD = "load"
     FINANCES = "finances"
+    DOCUMENTS = "documents"
+    REMARKS = "remarks"
 
 
 class ReportRequest(BaseModel):

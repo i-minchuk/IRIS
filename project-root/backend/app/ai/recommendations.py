@@ -3,8 +3,6 @@ from openai import AsyncOpenAI
 from app.core.config import settings
 import json
 
-client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
-
 
 async def get_task_recommendations(user_id: int, db) -> list:
     if not settings.OPENAI_API_KEY:
@@ -22,6 +20,7 @@ async def get_task_recommendations(user_id: int, db) -> list:
 
     prompt = f"Пользователь имеет {len(tasks)} задач. Рекомендуй 3 приоритетные. Ответь JSON: [{{'task_id', 'reason'}}]"
 
+    client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
     response = await client.chat.completions.create(
         model=settings.LLM_MODEL,
         messages=[{"role": "user", "content": prompt}],

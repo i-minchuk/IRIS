@@ -96,6 +96,7 @@ class Document(Base):
     duration_hours: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     ai_classified_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     ai_confidence: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    standard_ids: Mapped[Optional[list]] = mapped_column(JSON, default=list)
     # Soft delete: исключён из работы (подсветка чёрной заливкой, можно вернуть)
     is_deleted: Mapped[bool] = mapped_column(
         nullable=False, default=False, server_default="0"

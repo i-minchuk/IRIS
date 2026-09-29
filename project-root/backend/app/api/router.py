@@ -20,6 +20,7 @@ from app.modules.workflow.router import router as workflow_router
 from app.modules.audit import router as audit_router
 from app.modules.calendar import router as calendar_router
 from app.modules.reports import router as reports_router
+from app.modules.references.router import router as references_router
 from app.api.v1.endpoints import archive as archive_router
 from app.modules.notifications import router as notifications_router
 from app.modules.integrations.router import router as integrations_router
@@ -51,6 +52,7 @@ api_router.include_router(remarks_router, prefix=f"{settings.API_V1_STR}/remarks
 api_router.include_router(audit_router, prefix=f"{settings.API_V1_STR}/audit", tags=["Audit"])
 api_router.include_router(calendar_router, prefix=f"{settings.API_V1_STR}/calendar", tags=["Calendar"])
 api_router.include_router(reports_router, prefix=f"{settings.API_V1_STR}/reports", tags=["Reports"])
+api_router.include_router(references_router, prefix=f"{settings.API_V1_STR}/references", tags=["References"])
 api_router.include_router(ai_chatbot_router, prefix=f"{settings.API_V1_STR}/ai", tags=["AI"])
 api_router.include_router(integrations_router, prefix=f"{settings.API_V1_STR}/integrations", tags=["Integrations"])
 api_router.include_router(monitoring_router, prefix="/monitoring", tags=["Monitoring"])

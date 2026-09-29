@@ -56,8 +56,9 @@ class DocumentRepository:
     async def update(self, doc: Document, data: Dict[str, Any]) -> Document:
         """Update document."""
         allowed = {
-            "name", "status", "crs_code", "content", 
-            "variables_snapshot", "section_id", "kit_id", "stage_id"
+            "name", "number", "status", "crs_code", "content",
+            "variables_snapshot", "section_id", "kit_id", "stage_id",
+            "standard_ids", "assignee_ids",
         }
         for key, value in data.items():
             if key in allowed:

@@ -1,6 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Upload, FileSpreadsheet, CheckCircle2, ArrowRight, ArrowLeft, Plus, X } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { getProjects } from '@/features/projects/api/projects';
+import { bulkImportDocuments, type BulkImportDocumentItem } from '@/features/documents/api/documents';
+import { toast } from 'sonner';
 
 type ImportStep = 'upload' | 'mapping' | 'preview' | 'done';
 
@@ -32,7 +35,73 @@ const TARGET_FIELDS = [
   { key: 'status', label: 'Статус', required: false },
 ] as const;
 
+function headerMatches(header: string, keywords: string[]): boolean {
+  const h = header.toLowerCase();
+  return keywords.some((k) => h.includes(k));
+}
 
+function guessColumnMapping(columns: ExcelColumn[]): Record<string, string> {
+  const mappings: Record<string, string> = {};
+  const used = new Set<string>();
+
+  const pick = (keywords: string[], exclude?: string[]): string | null => {
+    const col = columns.find((c) => {
+      if (used.has(c.key)) return false;
+      if (exclude && headerMatches(c.header, exclude)) return false;
+      return headerMatches(c.header, keywords);
+    });
+    if (col) {
+      used.add(col.key);
+      return col.key;
+    }
+    return null;
+  };
+
+  mappings.code =
+    pick(['owner document number', 'номер документа заказчика', '№ документа заказчика']) ??
+    pick(['document number', 'номер документа', '№ документа']) ??
+    '';
+
+  mappings.title =
+    pick(['english document title', 'наименование на английском']) ??
+    pick(['document title', 'наименование документа', 'наименование']) ??
+    pick(['russian document title', 'наименование на русском']) ??
+    '';
+
+  mappings.discipline = pick(['discipline', 'дисциплина']) ?? '';
+  mappings.doc_type = pick(['vdr code', 'код vdr', 'тип документа', 'doc type']) ?? '';
+  mappings.revision = pick(['revision', 'ревизия']) ?? '';
+  mappings.status = pick(['reason for issue', 'причина выпуска', 'статус', 'status']) ?? '';
+
+  return mappings;
+}
+
+function mapIssueReasonToStatus(reason: string | number | null): string {
+  if (reason == null) return 'draft';
+  const r = String(reason).toLowerCase();
+  if (r.includes('cef')) return 'approved';
+  if (r.includes('ifr') || r.includes('ifc')) return 'in_review';
+  if (r.includes('can')) return 'archived';
+  if (r.includes('sup')) return 'archived';
+  return 'draft';
+}
+
+function getColumnKey(index: number): string {
+  let key = '';
+  let i = index;
+  do {
+    key = String.fromCharCode(65 + (i % 26)) + key;
+    i = Math.floor(i / 26) - 1;
+  } while (i >= 0);
+  return key;
+}
+
+function cleanHeader(header: unknown): string {
+  return String(header || '')
+    .replace(/\r\n|\r|\n/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
 async function parseExcelFile(file: File): Promise<{ sheets: ExcelSheet[] }> {
   return new Promise((resolve, reject) => {
@@ -47,37 +116,49 @@ async function parseExcelFile(file: File): Promise<{ sheets: ExcelSheet[] }> {
           const worksheet = workbook.Sheets[sheetName];
           const jsonRows = XLSX.utils.sheet_to_json<unknown[]>(worksheet, { header: 1, defval: '' });
 
-          const headerRow = (jsonRows[0] || []).map(String);
-          const dataRows = jsonRows.slice(1);
+          const isVDR = /vendor.document.register|vdr/i.test(sheetName);
+          // VDR-регистр: заголовки в 3-й строке (индекс 2), данные с 5-й (индекс 4)
+          const headerRowIndex = isVDR ? 2 : 0;
+          const dataStartIndex = isVDR ? 4 : 1;
+          const headerRow = (jsonRows[headerRowIndex] || []).map(cleanHeader);
+          const dataRows = jsonRows.slice(dataStartIndex);
 
           // Build columns from header row
           const columns: ExcelColumn[] = headerRow.map((header, index) => {
-            const key = String.fromCharCode(65 + index); // A, B, C...
+            const key = getColumnKey(index);
             // Find first non-empty sample value
             const sample = dataRows.find((row) => row[index] !== undefined && row[index] !== '')?.[index];
             return {
               key,
-              header: String(header || `Col ${index + 1}`),
+              header: header || `Col ${index + 1}`,
               sample: sample !== undefined ? String(sample) : undefined,
             };
           });
 
           // Build rows as Record<columnKey, value>
-          const rows: Record<string, string | number | null>[] = dataRows.map((row) => {
-            const record: Record<string, string | number | null> = {};
-            headerRow.forEach((_, index) => {
-              const key = String.fromCharCode(65 + index);
-              const value = row[index];
-              if (value === undefined || value === null || value === '') {
-                record[key] = null;
-              } else if (typeof value === 'number') {
-                record[key] = value;
-              } else {
-                record[key] = String(value);
-              }
+          const rows: Record<string, string | number | null>[] = dataRows
+            .filter((row) => {
+              // Пропускаем удалённые/заменённые строки в VDR
+              const action = String(row[0] || '').toLowerCase();
+              return !['deleted', 'superseded'].includes(action);
+            })
+            .map((row) => {
+              const record: Record<string, string | number | null> = {};
+              headerRow.forEach((_, index) => {
+                const key = getColumnKey(index);
+                const value = row[index];
+                if (value === undefined || value === null || value === '') {
+                  record[key] = null;
+                } else if (typeof value === 'number') {
+                  record[key] = value;
+                } else if (value instanceof Date) {
+                  record[key] = value.toISOString();
+                } else {
+                  record[key] = String(value);
+                }
+              });
+              return record;
             });
-            return record;
-          });
 
           return { name: sheetName, columns, rows };
         });
@@ -107,6 +188,25 @@ export default function ImportExcel() {
   const [mappings, setMappings] = useState<Record<string, MappingValue>>({});
   const [customCols, setCustomCols] = useState<CustomColumn[]>([]);
   const [newCustomColName, setNewCustomColName] = useState('');
+  const [projects, setProjects] = useState<{ id: number; name: string; code?: string }[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<number | ''>('');
+
+  useEffect(() => {
+    getProjects()
+      .then((data) => {
+        const list = Array.isArray(data) ? data : (data as { items?: typeof projects }).items ?? [];
+        setProjects(list);
+      })
+      .catch(() => setProjects([]));
+  }, []);
+
+  useEffect(() => {
+    if (selectedSheet) {
+      setMappings(guessColumnMapping(selectedSheet.columns));
+    } else {
+      setMappings({});
+    }
+  }, [selectedSheet]);
 
   const selectedColumns = selectedSheet?.columns ?? [];
 
@@ -183,12 +283,46 @@ export default function ImportExcel() {
   };
 
   const handleImport = async () => {
+    if (!selectedSheet) return;
     setLoading(true);
 
-    await new Promise((resolve) => setTimeout(resolve, 900));
+    try {
+      const items: BulkImportDocumentItem[] = selectedSheet.rows
+        .filter((row) => {
+          const code = row[mappings.code];
+          const title = row[mappings.title];
+          return code != null && String(code).trim() !== '' && title != null && String(title).trim() !== '';
+        })
+        .map((row) => {
+          const code = String(row[mappings.code] ?? '');
+          const title = String(row[mappings.title] ?? '');
+          const discipline = mappings.discipline ? String(row[mappings.discipline] ?? '') : undefined;
+          const docType = mappings.doc_type ? String(row[mappings.doc_type] ?? '') : undefined;
+          const statusValue = mappings.status ? mapIssueReasonToStatus(row[mappings.status]) : 'draft';
 
-    setLoading(false);
-    setStep('done');
+          return {
+            name: title,
+            number: code,
+            doc_type: docType || discipline || 'specification',
+            status: statusValue,
+            project_id: selectedProjectId ? Number(selectedProjectId) : undefined,
+          };
+        });
+
+      if (items.length === 0) {
+        toast.error('Нет данных для импорта. Проверьте сопоставление колонок.');
+        setLoading(false);
+        return;
+      }
+
+      await bulkImportDocuments(items);
+      toast.success(`Импортировано документов: ${items.length}`);
+      setStep('done');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Ошибка импорта документов');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const resetAll = () => {
@@ -199,6 +333,7 @@ export default function ImportExcel() {
     setCustomCols([]);
     setFilename('');
     setNewCustomColName('');
+    setSelectedProjectId('');
   };
 
   return (
@@ -285,6 +420,24 @@ export default function ImportExcel() {
             <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5 shadow-sm">
               <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Файл</h3>
               <p className="mt-2 break-all text-sm font-medium text-gray-900 dark:text-white">{filename || '—'}</p>
+
+              <div className="mt-4">
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                  Проект
+                </label>
+                <select
+                  value={selectedProjectId}
+                  onChange={(e) => setSelectedProjectId(e.target.value === '' ? '' : Number(e.target.value))}
+                  className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm outline-none focus:border-primary-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                >
+                  <option value="">— без проекта —</option>
+                  {projects.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
               <button
                 type="button"

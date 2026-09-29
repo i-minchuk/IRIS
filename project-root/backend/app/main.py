@@ -20,6 +20,7 @@ from app.core.middleware import PerformanceMiddleware
 from app.core.metrics import http_requests_total, http_request_duration, get_metrics
 from app.core.mode import get_mode_config
 from app.core.security_utils import is_secure_secret_key, limiter
+from app.core.ai_key import load_openai_api_key_into_settings
 from app.db.session import get_db, AsyncSessionLocal, primary_engine as engine
 from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
@@ -110,6 +111,11 @@ async def lifespan(app: FastAPI):
 
     await ensure_schema()
     await redis_pubsub.connect()
+
+    # Загружаем OpenAI API ключ из БД (если он не задан через env).
+    async with AsyncSessionLocal() as session:
+        await load_openai_api_key_into_settings(session)
+
     # Демо-сид строго только в demo-режиме: двойная проверка режима и флага,
     # плюс проверка целевой БД внутри seed_demo_data().
     if mode_config.mode == "demo" and mode_config.features.demo_data_seed:

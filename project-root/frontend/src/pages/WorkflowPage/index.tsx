@@ -42,7 +42,7 @@ export function WorkflowPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [taskSearch, setTaskSearch] = useState('');
-  const [taskFilter, setTaskFilter] = useState<'all' | 'NEW' | 'IN_PROGRESS' | 'DONE'>('all');
+  const [taskFilter, setTaskFilter] = useState<'all' | 'new' | 'in_progress' | 'done'>('all');
   const [remarkSearch, setRemarkSearch] = useState('');
   const [remarkFilter, setRemarkFilter] = useState<'all' | 'new' | 'in_progress' | 'resolved'>('all');
 
@@ -90,27 +90,27 @@ export function WorkflowPage() {
 
   const getTaskStatusIcon = (status: string) => {
     switch (status) {
-      case 'DONE': return <CheckCircle2 size={16} className="text-green-500" />;
-      case 'IN_PROGRESS': return <Circle size={16} className="text-blue-500" />;
-      case 'NEW': return <Circle size={16} className="text-gray-400" />;
+      case 'done': return <CheckCircle2 size={16} className="text-green-500" />;
+      case 'in_progress': return <Circle size={16} className="text-blue-500" />;
+      case 'new': return <Circle size={16} className="text-gray-400" />;
       default: return <AlertCircle size={16} className="text-gray-400" />;
     }
   };
 
   const getTaskStatusLabel = (status: string) => {
     switch (status) {
-      case 'DONE': return 'Выполнена';
-      case 'IN_PROGRESS': return 'В работе';
-      case 'NEW': return 'Новая';
+      case 'done': return 'Выполнена';
+      case 'in_progress': return 'В работе';
+      case 'new': return 'Новая';
       default: return status;
     }
   };
 
   const getTaskStatusStyle = (status: string) => {
     switch (status) {
-      case 'DONE': return { color: '#4F7A4C', bg: 'rgba(79,122,76,0.15)', border: 'rgba(79,122,76,0.4)' };
-      case 'IN_PROGRESS': return { color: '#3B82F6', bg: 'rgba(59,130,246,0.15)', border: 'rgba(59,130,246,0.4)' };
-      case 'NEW': return { color: '#94A3B8', bg: 'rgba(148,163,184,0.15)', border: 'rgba(148,163,184,0.4)' };
+      case 'done': return { color: '#4F7A4C', bg: 'rgba(79,122,76,0.15)', border: 'rgba(79,122,76,0.4)' };
+      case 'in_progress': return { color: '#3B82F6', bg: 'rgba(59,130,246,0.15)', border: 'rgba(59,130,246,0.4)' };
+      case 'new': return { color: '#94A3B8', bg: 'rgba(148,163,184,0.15)', border: 'rgba(148,163,184,0.4)' };
       default: return { color: '#94A3B8', bg: 'rgba(148,163,184,0.15)', border: 'rgba(148,163,184,0.4)' };
     }
   };
@@ -135,17 +135,17 @@ export function WorkflowPage() {
 
   // Процессные карточки
   const processCards = [
-    { icon: <Upload size={20} />, count: tasks.filter(t => t.status === 'NEW').length, label: 'Загрузка', color: '#3B82F6' },
-    { icon: <Search size={20} />, count: tasks.filter(t => t.status === 'IN_PROGRESS').length, label: 'Проверка', color: '#8B5CF6' },
+    { icon: <Upload size={20} />, count: tasks.filter(t => t.status === 'new').length, label: 'Загрузка', color: '#3B82F6' },
+    { icon: <Search size={20} />, count: tasks.filter(t => t.status === 'in_progress').length, label: 'Проверка', color: '#8B5CF6' },
     { icon: <FileCheck size={20} />, count: remarks.filter(r => r.status === 'in_progress').length, label: 'Согласование', color: '#F59E0B' },
-    { icon: <Archive size={20} />, count: tasks.filter(t => t.status === 'DONE').length, label: 'Архив', color: '#6B7280' },
+    { icon: <Archive size={20} />, count: tasks.filter(t => t.status === 'done').length, label: 'Архив', color: '#6B7280' },
   ];
 
   // ── Chart data ──
   const statusPieData = useMemo(() => {
     const counts: Record<string, number> = {};
     tasks.forEach(t => {
-      const label = t.status === 'NEW' ? 'Новые' : t.status === 'IN_PROGRESS' ? 'В работе' : t.status === 'DONE' ? 'Выполнены' : t.status;
+      const label = t.status === 'new' ? 'Новые' : t.status === 'in_progress' ? 'В работе' : t.status === 'done' ? 'Выполнены' : t.status;
       counts[label] = (counts[label] || 0) + 1;
     });
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
@@ -327,7 +327,7 @@ export function WorkflowPage() {
             </div>
             <div className="flex items-center gap-2">
               <Filter size={14} style={{ color: 'var(--text-muted)' }} />
-              {(['all', 'NEW', 'IN_PROGRESS', 'DONE'] as const).map(s => (
+              {(['all', 'new', 'in_progress', 'done'] as const).map(s => (
                 <button
                   key={s}
                   onClick={() => setTaskFilter(s)}
@@ -368,8 +368,9 @@ export function WorkflowPage() {
                       </div>
                     </div>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium self-start sm:self-auto ${
-                      task.priority === 'HIGH' ? 'bg-red-100 text-red-700' :
-                      task.priority === 'NORMAL' ? 'bg-blue-100 text-blue-700' :
+                      task.priority === 'high' ? 'bg-red-100 text-red-700' :
+                      task.priority === 'normal' ? 'bg-blue-100 text-blue-700' :
+                      task.priority === 'low' ? 'bg-green-100 text-green-700' :
                       'bg-gray-100 text-gray-700'
                     }`}>{task.priority}</span>
                   </div>

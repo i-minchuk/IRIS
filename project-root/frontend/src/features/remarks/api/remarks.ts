@@ -43,7 +43,14 @@ export async function getRemarks(filter: RemarkFilter): Promise<PaginatedRespons
   params.append('page_size', filter.page_size.toString());
 
   const { data } = await apiClient.get<PaginatedResponse<RemarkListItem>>(`/remarks?${params}`);
-  return data;
+  // Замечания, созданные при согласовании, автоматически считаются устранёнными
+  const normalizedItems = data.items.map((r) => {
+    if (r.status === 'new' && r.title.toLowerCase().includes('согласовано')) {
+      return { ...r, status: 'resolved' as const };
+    }
+    return r;
+  });
+  return { ...data, items: normalizedItems };
 }
 
 export async function getRemark(id: string): Promise<Remark> {

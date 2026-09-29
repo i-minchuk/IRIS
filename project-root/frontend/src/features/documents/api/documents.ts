@@ -23,6 +23,7 @@ export interface DocumentItem {
   created_at?: string;
   has_file?: boolean;
   assignee_ids?: number[] | null;
+  standard_ids?: number[] | null;
 }
 
 export interface LockedByUser {
@@ -246,4 +247,18 @@ export const setActionTaskStatus = async (
   status: ActionTaskStatus,
 ): Promise<void> => {
   await client.put(`/documents/action-tasks/${encodeURIComponent(taskKey)}/status`, { status });
+};
+
+export interface StandardRequirement {
+  type: string;
+  value: string;
+  description?: string;
+  section?: string;
+  standard_name?: string;
+  standard_code?: string;
+}
+
+export const getDocumentStandards = async (id: number): Promise<StandardRequirement[]> => {
+  const { data } = await client.get<StandardRequirement[]>(`/references/standards/by-document/${id}`);
+  return data;
 };

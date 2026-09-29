@@ -5,6 +5,7 @@ import { PageTabs } from '@/shared/components/PageTabs';
 import { Search, Plus, BookOpen, Hammer, FileCheck, Library, Phone } from 'lucide-react';
 import { Button, Card } from '@/components/ui';
 import GlossaryPanel from './ReferencePage/GlossaryPanel';
+import StandardsPanel from './ReferencePage/StandardsPanel';
 import ContactsPage from '@/pages/ContactsPage';
 
 interface ReferenceItem {
@@ -78,6 +79,8 @@ export default function ReferencePage() {
         <ContactsPage />
       ) : activeTab === 'glossary' ? (
         <GlossaryPanel />
+      ) : activeTab === 'standards' ? (
+        <StandardsPanel />
       ) : (
         <>
           {/* Search */}

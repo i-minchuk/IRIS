@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, FileText, Check, Users, ChevronDown } from 'lucide-react';
+import { ArrowLeft, FileText, Check, Users, ChevronDown, FileCheck } from 'lucide-react';
 import { createDocument, uploadDocumentFile } from '../features/documents/api/documents';
 import { getProjects, type Project } from '../features/projects/api/projects';
 import { getUsers } from '../features/users/api/users';
+import { fetchStandards, type Standard } from './ReferencePage/standardsApi';
 import type { User } from '../types';
 import { Button, Input, Select, Card } from '../components/ui';
 import { toast } from 'sonner';
@@ -124,6 +125,12 @@ export default function DocumentCreate() {
   const [assigneeOpen, setAssigneeOpen] = useState(false);
   const assigneeRef = useRef<HTMLDivElement>(null);
 
+  // Нормативы
+  const [standards, setStandards] = useState<Standard[]>([]);
+  const [selectedStandardIds, setSelectedStandardIds] = useState<number[]>([]);
+  const [standardsOpen, setStandardsOpen] = useState(false);
+  const standardsRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     getProjects()
       .then((list: Project[]) => {
@@ -136,6 +143,9 @@ export default function DocumentCreate() {
     getUsers()
       .then((list) => setUsers(list.filter((u) => u.is_active)))
       .catch(() => setUsers([]));
+    fetchStandards()
+      .then((list) => setStandards(list))
+      .catch(() => setStandards([]));
   }, []);
 
   // Закрытие списка исполнителей по клику вне
@@ -150,8 +160,26 @@ export default function DocumentCreate() {
     return () => document.removeEventListener('mousedown', onDocClick);
   }, [assigneeOpen]);
 
+  // Закрытие списка нормативов по клику вне
+  useEffect(() => {
+    if (!standardsOpen) return;
+    const onDocClick = (e: MouseEvent) => {
+      if (standardsRef.current && !standardsRef.current.contains(e.target as Node)) {
+        setStandardsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [standardsOpen]);
+
   const toggleAssignee = (id: number) => {
     setAssigneeIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const toggleStandard = (id: number) => {
+    setSelectedStandardIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
   };
@@ -222,6 +250,7 @@ export default function DocumentCreate() {
           ? CATEGORY_DOC_TYPE[selectedCategory.id] ?? selectedCategory.label
           : 'Документ',
         assignee_ids: assigneeIds,
+        standard_ids: selectedStandardIds,
       });
       if (file) {
         try {
@@ -534,6 +563,81 @@ export default function DocumentCreate() {
               )}
               <p className="mt-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>
                 Можно выбрать одного ответственного или нескольких для совместного редактирования
+              </p>
+            </div>
+
+            {/* Нормативы */}
+            <div ref={standardsRef}>
+              <label className="mb-1 block text-sm font-medium" style={{ color: 'inherit' }}>
+                Применяемые нормативы <span style={{ color: 'var(--text-tertiary)' }}>(необязательно)</span>
+              </label>
+              <button
+                type="button"
+                onClick={() => setStandardsOpen((v) => !v)}
+                className="flex items-center gap-2 w-full rounded-md border px-3 py-2 text-sm text-left transition-colors"
+                style={{
+                  borderColor: 'var(--border-default, #e2e8f0)',
+                  backgroundColor: 'var(--bg-surface-2, #f8fafc)',
+                  color: selectedStandardIds.length > 0 ? 'var(--text-primary)' : 'var(--text-tertiary, #94a3b8)',
+                }}
+              >
+                <FileCheck size={14} style={{ color: 'var(--accent-engineering)' }} />
+                <span className="flex-1 truncate">
+                  {selectedStandardIds.length === 0
+                    ? '— выберите нормативы —'
+                    : selectedStandardIds
+                        .map((id) => standards.find((s) => s.id === id)?.name || `#${id}`)
+                        .join(', ')}
+                </span>
+                <ChevronDown size={14} style={{ color: 'var(--text-tertiary)' }} />
+              </button>
+              {standardsOpen && (
+                <div
+                  className="mt-1 rounded-md border max-h-52 overflow-y-auto"
+                  style={{
+                    borderColor: 'var(--border-default, #e2e8f0)',
+                    backgroundColor: 'var(--bg-surface, #ffffff)',
+                    boxShadow: 'var(--shadow-lg, 0 4px 16px rgba(0,0,0,0.12))',
+                  }}
+                >
+                  {standards.length === 0 && (
+                    <div className="px-3 py-2 text-sm" style={{ color: 'var(--text-tertiary)' }}>
+                      Нет загруженных нормативов. Добавьте их в разделе «Справочники → Нормативы».
+                    </div>
+                  )}
+                  {standards.map((s) => {
+                    const checked = selectedStandardIds.includes(s.id);
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => toggleStandard(s.id)}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors"
+                        style={{
+                          background: checked ? 'var(--bg-surface-2)' : 'transparent',
+                          color: 'var(--text-primary)',
+                        }}
+                      >
+                        <span
+                          className="w-4 h-4 rounded border flex items-center justify-center shrink-0"
+                          style={{
+                            borderColor: checked ? 'var(--accent-engineering)' : 'var(--border-default)',
+                            background: checked ? 'var(--accent-engineering)' : 'transparent',
+                          }}
+                        >
+                          {checked && <Check size={10} style={{ color: '#fff' }} />}
+                        </span>
+                        <span className="flex-1 truncate">{s.name}</span>
+                        <span style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>
+                          {s.code || `${s.requirements.length} треб.`}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              <p className="mt-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                Требования выбранных нормативов отобразятся во вкладке «Требования» карточки документа
               </p>
             </div>
 

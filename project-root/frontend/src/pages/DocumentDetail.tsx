@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { Card } from '@/components/ui';
 import { Button } from '@/components/ui';
 import { DocumentStatusBadge } from '@/components/documents/DocumentStatusBadge';
@@ -10,7 +10,7 @@ import { RequirementsPanel } from '@/features/ai/components/RequirementsPanel';
 import { FileText, MessageSquare, History, Users, ArrowLeft, Sparkles, Wrench, Bot, Upload, PencilLine, Maximize2, Minimize2, Clock, CheckCircle, Paperclip } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getDocument, downloadRevisionFile, uploadDocumentFile, updateDocument, approveDocument, getApprovalFeed, type ApprovalRecord, type DocumentDetail, type Revision } from '@/features/documents/api/documents';
-import { getRemarks } from '@/features/remarks/api/remarks';
+import { getRemarks, updateRemark } from '@/features/remarks/api/remarks';
 import type { RemarkListItem } from '@/types/remarks';
 import { getUsers } from '@/features/users/api/users';
 import { useAuthStore } from '@/features/auth/store/authStore';
@@ -96,7 +96,13 @@ interface ProjectInfo {
 export default function DocumentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<Tab>('info');
+  const [searchParams] = useSearchParams();
+  const initialTab = (searchParams.get('tab') as Tab | null) ?? 'info';
+  const [activeTab, setActiveTab] = useState<Tab>(
+    ['info', 'editor', 'files', 'approval', 'remarks', 'history', 'ai-analysis', 'ai-requirements', 'ai-chat'].includes(initialTab)
+      ? initialTab
+      : 'info'
+  );
   const [doc, setDoc] = useState<DocumentDetail | null>(null);
   const [project, setProject] = useState<ProjectInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -105,6 +111,18 @@ export default function DocumentDetailPage() {
   const [remarksLoading, setRemarksLoading] = useState(false);
   const [documentApprovals, setDocumentApprovals] = useState<ApprovalRecord[]>([]);
   const [approvalsLoading, setApprovalsLoading] = useState(false);
+
+  const handleResolveRemark = async (remarkId: string) => {
+    try {
+      await updateRemark(remarkId, { status: 'resolved' });
+      setDocumentRemarks(prev =>
+        prev.map(r => (r.id === remarkId ? { ...r, status: 'resolved' as const } : r))
+      );
+      toast.success('Замечание отмечено как устранённое');
+    } catch {
+      toast.error('Не удалось обновить статус замечания');
+    }
+  };
 
   useEffect(() => {
     getUsers().then(setUsers).catch(() => setUsers([]));
@@ -654,7 +672,18 @@ export default function DocumentDetailPage() {
                           {r.created_at ? `Создано: ${new Date(r.created_at).toLocaleString('ru-RU')}` : '—'}
                         </span>
                       </div>
-                      <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{r.title}</p>
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{r.title}</p>
+                        {r.status !== 'resolved' && r.status !== 'closed' && r.status !== 'rejected' && (
+                          <button
+                            onClick={() => handleResolveRemark(r.id)}
+                            className="shrink-0 text-xs px-2 py-1 rounded border font-medium transition-colors hover:opacity-80"
+                            style={{ color: '#4F7A4C', borderColor: 'rgba(79,122,76,0.4)', background: 'rgba(79,122,76,0.15)' }}
+                          >
+                            Согласовано
+                          </button>
+                        )}
+                      </div>
                     </div>
                   );
                 })}

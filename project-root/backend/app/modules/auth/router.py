@@ -10,6 +10,12 @@ from datetime import datetime, timedelta, timezone
 from pydantic import BaseModel
 
 from app.core import security
+from app.core.ai_key import (
+    get_openai_api_key,
+    is_openai_configured,
+    mask_openai_api_key,
+    set_openai_api_key,
+)
 from app.core.config import settings
 from app.core.security_utils import limiter, rate_limit_standard, rate_limit_refresh_route
 from app.db.session import get_db
@@ -758,18 +764,11 @@ class AIKeyUpdate(BaseModel):
     openai_api_key: str
 
 
-def _mask_key(key: str) -> str:
-    if not key:
-        return ""
-    if len(key) <= 8:
-        return "*" * len(key)
-    return f"{key[:4]}{'*' * (len(key) - 8)}{key[-4:]}"
-
-
 @router.get("/admin/settings/ai-key")
 @rate_limit_standard()
 async def get_ai_key(
     request: Request,
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
     """Получить маскированный OpenAI API ключ (только для админов)."""
@@ -778,8 +777,8 @@ async def get_ai_key(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required",
         )
-    key = settings.OPENAI_API_KEY or ""
-    return {"openai_api_key": _mask_key(key), "configured": bool(key)}
+    key = await get_openai_api_key(db)
+    return {"openai_api_key": mask_openai_api_key(key), "configured": bool(key)}
 
 
 @router.post("/admin/settings/ai-key")
@@ -787,9 +786,10 @@ async def get_ai_key(
 async def update_ai_key(
     request: Request,
     data: AIKeyUpdate,
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    """Обновить OpenAI API ключ в runtime (только для админов)."""
+    """Обновить OpenAI API ключ в БД (только для админов)."""
     if not is_admin(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -801,9 +801,6 @@ async def update_ai_key(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="API ключ не может быть пустым",
         )
-    try:
-        settings.OPENAI_API_KEY = key
-    except Exception:
-        # Pydantic Settings v2 может запретить прямое присваивание
-        object.__setattr__(settings, "OPENAI_API_KEY", key)
-    return {"status": "updated", "openai_api_key": _mask_key(key)}
+    masked = await set_openai_api_key(db, key)
+    configured = await is_openai_configured(db)
+    return {"openai_api_key": masked, "configured": configured}

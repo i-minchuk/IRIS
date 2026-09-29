@@ -20,6 +20,7 @@ from app.ai.classification import classify_document
 from app.ai.autofill import suggest_document_fields
 from app.parser.factory import ParserFactory
 from app.parser.indexer import DocumentIndexer
+from app.core.ai_key import get_openai_api_key, is_openai_configured
 from app.core.config import settings
 from app.core.mode import require_integrations
 
@@ -116,11 +117,12 @@ def _ai_disabled_response() -> Dict[str, Any]:
 @router.post("/search", response_model=SemanticSearchResponse)
 async def semantic_search(
     request: SemanticSearchRequest,
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
     _: None = Depends(require_integrations),
 ):
     """Семантический поиск по документам через Qdrant + embeddings."""
-    if not settings.OPENAI_API_KEY:
+    if not await is_openai_configured(db):
         raise HTTPException(status_code=503, detail="AI недоступен: OPENAI_API_KEY не настроен")
 
     try:
@@ -167,7 +169,7 @@ async def analyze_document_endpoint(
     _: None = Depends(require_integrations),
 ):
     """AI-анализ документа на ошибки, структуру, ГОСТ."""
-    if not settings.OPENAI_API_KEY:
+    if not await is_openai_configured(db):
         raise HTTPException(status_code=503, detail="AI недоступен: OPENAI_API_KEY не настроен")
 
     try:
@@ -231,11 +233,12 @@ async def analyze_document_endpoint(
 @router.post("/chat", response_model=ChatResponse)
 async def chat_endpoint(
     request: ChatRequest,
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
     _: None = Depends(require_integrations),
 ):
     """RAG-чат с AI — ответы на основе документов из Qdrant."""
-    if not settings.OPENAI_API_KEY:
+    if not await is_openai_configured(db):
         raise HTTPException(status_code=503, detail="AI недоступен: OPENAI_API_KEY не настроен")
 
     try:
@@ -278,7 +281,7 @@ async def extract_requirements_endpoint(
     _: None = Depends(require_integrations),
 ):
     """Извлечь технические требования из документа (ГОСТ, материалы, размеры)."""
-    if not settings.OPENAI_API_KEY:
+    if not await is_openai_configured(db):
         raise HTTPException(status_code=503, detail="AI недоступен: OPENAI_API_KEY не настроен")
 
     try:
@@ -306,7 +309,8 @@ async def extract_requirements_endpoint(
 
         # 2. LLM extraction
         from openai import AsyncOpenAI
-        client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY, base_url=settings.OPENAI_BASE_URL)
+        api_key = await get_openai_api_key(db)
+        client = AsyncOpenAI(api_key=api_key, base_url=settings.OPENAI_BASE_URL)
 
         response = await client.chat.completions.create(
             model=settings.LLM_MODEL,
@@ -397,7 +401,7 @@ async def check_compliance_endpoint(
     _: None = Depends(require_integrations),
 ):
     """Проверить соответствие документа вручную загруженным требованиям."""
-    if not settings.OPENAI_API_KEY:
+    if not await is_openai_configured(db):
         raise HTTPException(status_code=503, detail="AI недоступен: OPENAI_API_KEY не настроен")
 
     try:
@@ -427,7 +431,8 @@ async def check_compliance_endpoint(
 
     try:
         from openai import AsyncOpenAI
-        client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY, base_url=settings.OPENAI_BASE_URL)
+        api_key = await get_openai_api_key(db)
+        client = AsyncOpenAI(api_key=api_key, base_url=settings.OPENAI_BASE_URL)
 
         response = await client.chat.completions.create(
             model=settings.LLM_MODEL,
@@ -472,10 +477,11 @@ async def check_compliance_endpoint(
 @router.post("/inline-suggest")
 async def inline_suggest_endpoint(
     request: dict,
+    db: AsyncSession = Depends(get_db),
     _: None = Depends(require_integrations),
 ):
     """Inline suggestions — REST fallback for WebSocket."""
-    if not settings.OPENAI_API_KEY:
+    if not await is_openai_configured(db):
         return {"suggestions": [], "request_id": "", "model": "disabled"}
 
     try:

@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Wrench,
   BookOpen,
@@ -16,6 +16,7 @@ import {
 import { useExtractRequirements } from '@/features/ai/hooks/useExtractRequirements';
 import { useComplianceCheck } from '@/features/ai/hooks/useComplianceCheck';
 import { extractRequirementsFile } from '@/features/ai/api/aiApi';
+import { getDocumentStandards, type StandardRequirement } from '@/features/documents/api/documents';
 import { toast } from 'sonner';
 
 const typeIcons: Record<string, React.ReactNode> = {
@@ -47,6 +48,18 @@ export const RequirementsPanel: React.FC<RequirementsPanelProps> = ({ documentId
   const [showModal, setShowModal] = useState(false);
   const [uploadLoading, setUploadLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [standardRequirements, setStandardRequirements] = useState<StandardRequirement[]>([]);
+  const [standardsLoading, setStandardsLoading] = useState(false);
+
+  useEffect(() => {
+    const numericId = Number(documentId);
+    if (!numericId) return;
+    setStandardsLoading(true);
+    getDocumentStandards(numericId)
+      .then(setStandardRequirements)
+      .catch(() => setStandardRequirements([]))
+      .finally(() => setStandardsLoading(false));
+  }, [documentId]);
 
   const handleCheck = async () => {
     await runCheck(documentId, manualRequirements);
@@ -154,6 +167,64 @@ export const RequirementsPanel: React.FC<RequirementsPanelProps> = ({ documentId
           </button>
         </div>
       </div>
+
+      {/* Standards requirements */}
+      {standardsLoading ? (
+        <div className="flex items-center justify-center gap-2 py-4 text-sm" style={{ color: 'var(--text-muted)' }}>
+          <Loader2 size={16} className="animate-spin" /> Загрузка требований из нормативов…
+        </div>
+      ) : standardRequirements.length > 0 ? (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+              Требования из нормативов
+            </h3>
+            <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'var(--iris-bg-hover)', color: 'var(--text-muted)' }}>
+              {standardRequirements.length}
+            </span>
+          </div>
+          <div className="space-y-2">
+            {standardRequirements.map((req, index) => (
+              <div
+                key={`std-${index}`}
+                className="flex items-start gap-2 p-3 rounded-lg border"
+                style={{ borderColor: 'var(--border-default)', backgroundColor: 'var(--bg-surface-2)' }}
+              >
+                <div className="mt-0.5" style={{ color: 'var(--accent-engineering)' }}>
+                  {typeIcons[req.type] || typeIcons.other}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                    <span className="text-xs font-medium" style={{ color: 'var(--accent-engineering)' }}>
+                      {typeLabels[req.type] || req.type}
+                    </span>
+                    {req.standard_name && (
+                      <span className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>
+                        {req.standard_code || req.standard_name}
+                      </span>
+                    )}
+                    {req.section && (
+                      <span className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>
+                        {req.section}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                    {req.value}
+                  </div>
+                  {req.description && (
+                    <div className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                      {req.description}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      <div className="border-t" style={{ borderColor: 'var(--border-default)' }} />
 
       {/* Extracted requirements list */}
       {result?.requirements && result.requirements.length > 0 ? (

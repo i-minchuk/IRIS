@@ -3,7 +3,7 @@ import { FileText, Download, Printer, Play } from 'lucide-react';
 import { toast } from 'sonner';
 import apiClient from '@/shared/api/client';
 
-type ReportTemplate = 'projects' | 'tenders' | 'load' | 'finances';
+type ReportTemplate = 'projects' | 'tenders' | 'load' | 'finances' | 'documents' | 'remarks';
 
 interface ReportResponse {
   template: string;
@@ -17,6 +17,8 @@ const TEMPLATE_LABELS: Record<ReportTemplate, string> = {
   tenders: 'Тендеры',
   load: 'Загрузка по отделам',
   finances: 'Финансы',
+  documents: 'Документы',
+  remarks: 'Замечания',
 };
 
 const REPORT_ACCENT = '#EC4899';

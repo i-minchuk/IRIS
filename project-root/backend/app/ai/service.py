@@ -11,13 +11,19 @@ import tiktoken
 
 class AIService:
     def __init__(self):
-        self.client = AsyncOpenAI(
-            api_key=settings.OPENAI_API_KEY,
-            base_url=settings.OPENAI_BASE_URL
-        )
+        self._client: AsyncOpenAI | None = None
         self._indexer = None
         self.model = settings.LLM_MODEL
         self.max_tokens = settings.MAX_CONTEXT_TOKENS
+
+    @property
+    def client(self) -> AsyncOpenAI:
+        if self._client is None:
+            self._client = AsyncOpenAI(
+                api_key=settings.OPENAI_API_KEY,
+                base_url=settings.OPENAI_BASE_URL
+            )
+        return self._client
 
     @property
     def indexer(self):

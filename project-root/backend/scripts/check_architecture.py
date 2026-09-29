@@ -199,7 +199,7 @@ class ImportChecker:
             "routes": set(),  # technological routes
             
             # Level 1 (business entities)
-            "documents": {"auth", "gamification", "operations", "projects", "variables"},  # Documents relate to projects, use variables, gamification, operations
+            "documents": {"auth", "gamification", "operations", "projects", "references", "variables"},  # Documents relate to projects, use variables, gamification, operations, references
             "projects": {"auth"},  # Projects are independent
             "tasks": {"auth", "documents", "gamification", "operations", "projects", "routes", "time_tracking"},  # Tasks sync with production, time tracking
             "tenders": {"auth", "documents", "projects", "tasks", "operations", "workflow"},  # Tenders detail view needs work centers and workflows
@@ -218,7 +218,7 @@ class ImportChecker:
             "audit": {"auth"},  # Audit logs depend on auth for user tracking
             "calendar": {"auth", "documents", "operations", "projects", "tasks", "tenders"},  # Calendar aggregates events
             "notifications": {"auth", "gamification"},  # Notifications for gamification and auth events
-            "reports": {"auth", "documents", "projects", "tasks", "tenders", "time_tracking"},  # Reports aggregate all data
+            "reports": {"auth", "documents", "projects", "remarks", "tasks", "tenders", "time_tracking"},  # Reports aggregate all data
             "ai": {"auth", "documents"},  # AI assistant works with user context and documents
             "integrations": {"auth"},  # External integrations require authenticated user
             "releases": {"auth"},  # Release management
@@ -226,6 +226,7 @@ class ImportChecker:
             "srm": {"auth", "projects"},  # Procurement linked to projects
             "production": {"auth", "operations", "projects", "remarks", "tenders", "time_tracking"},  # Production process strategy: BPMN scheme + real KPI from time tracking, tenders, remarks, operations
             "employees": {"auth"},  # Employee cards linked to user accounts
+            "references": {"auth", "documents", "projects"},  # Glossary and reference data linked to documents/projects
         }
         
         has_violations = False
