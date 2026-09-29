@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Search, BookOpen, ChevronDown, ChevronUp, Library, Sparkles, Loader2, Trash2 } from 'lucide-react';
+import { Search, BookOpen, ChevronDown, ChevronUp, Library, Sparkles, Loader2, Trash2, Plus, X } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   fetchGlossaryTerms,
   generateGlossary,
   deleteGlossaryTerm,
+  createGlossaryTerm,
   type GlossaryTerm,
 } from './glossaryApi';
 
@@ -175,6 +176,12 @@ export default function GlossaryPanel({ isDark = false }: GlossaryPanelProps) {
   const [terms, setTerms] = useState<GlossaryTerm[]>([]);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [showManual, setShowManual] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [formTerm, setFormTerm] = useState('');
+  const [formDefinition, setFormDefinition] = useState('');
+  const [formUsage, setFormUsage] = useState('');
+  const [formDepartment, setFormDepartment] = useState('');
 
   const loadTerms = async () => {
     setLoading(true);
@@ -205,6 +212,34 @@ export default function GlossaryPanel({ isDark = false }: GlossaryPanelProps) {
       toast.error(message);
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const handleManualSubmit = async () => {
+    if (!formTerm.trim() || !formDefinition.trim()) {
+      toast.error('Заполните термин и определение');
+      return;
+    }
+    setSaving(true);
+    try {
+      await createGlossaryTerm({
+        term: formTerm.trim(),
+        definition: formDefinition.trim(),
+        company_usage: formUsage.trim() || null,
+        department: formDepartment.trim() || null,
+      });
+      toast.success('Термин добавлен');
+      setFormTerm('');
+      setFormDefinition('');
+      setFormUsage('');
+      setFormDepartment('');
+      setShowManual(false);
+      await loadTerms();
+    } catch (err) {
+      console.error('Failed to create term:', err);
+      toast.error('Не удалось добавить термин');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -277,22 +312,140 @@ export default function GlossaryPanel({ isDark = false }: GlossaryPanelProps) {
           )}
         </div>
 
-        <button
-          onClick={handleGenerate}
-          disabled={generating}
-          className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-60 shrink-0"
-          style={{ background: '#14B8A6', color: '#FFFFFF' }}
-          onMouseEnter={(e) => {
-            if (!generating) e.currentTarget.style.backgroundColor = '#0D9488';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = '#14B8A6';
-          }}
-        >
-          {generating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-          {generating ? 'Генерация…' : 'Сгенерировать из документации'}
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={handleGenerate}
+            disabled={generating}
+            className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-60 shrink-0"
+            style={{ background: '#14B8A6', color: '#FFFFFF' }}
+            onMouseEnter={(e) => {
+              if (!generating) e.currentTarget.style.backgroundColor = '#0D9488';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#14B8A6';
+            }}
+          >
+            {generating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+            {generating ? 'Генерация…' : 'Сгенерировать из документации'}
+          </button>
+          <button
+            onClick={() => setShowManual((v) => !v)}
+            className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+            style={{
+              background: 'var(--iris-bg-hover)',
+              color: 'var(--text-primary)',
+              border: '1px solid var(--iris-border-subtle)',
+            }}
+          >
+            <Plus size={16} /> Добавить вручную
+          </button>
+        </div>
       </div>
+
+      {/* Manual add form */}
+      {showManual && (
+        <div
+          className="rounded-xl p-4 space-y-3"
+          style={{ background: 'var(--card-bg)', border: '1px solid var(--border-default)' }}
+        >
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+              Новый термин
+            </h3>
+            <button onClick={() => setShowManual(false)} style={{ color: 'var(--text-muted)' }}>
+              <X size={16} />
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+                Термин <span style={{ color: '#EF4444' }}>*</span>
+              </label>
+              <input
+                type="text"
+                value={formTerm}
+                onChange={(e) => setFormTerm(e.target.value)}
+                placeholder="Например: КМД"
+                className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                style={{
+                  background: 'var(--iris-bg-app)',
+                  border: '1px solid var(--iris-border-subtle)',
+                  color: 'var(--text-primary)',
+                }}
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+                Отдел
+              </label>
+              <input
+                type="text"
+                value={formDepartment}
+                onChange={(e) => setFormDepartment(e.target.value)}
+                placeholder="Например: КМ / ПД / Общие"
+                className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                style={{
+                  background: 'var(--iris-bg-app)',
+                  border: '1px solid var(--iris-border-subtle)',
+                  color: 'var(--text-primary)',
+                }}
+              />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+              Определение <span style={{ color: '#EF4444' }}>*</span>
+            </label>
+            <textarea
+              value={formDefinition}
+              onChange={(e) => setFormDefinition(e.target.value)}
+              placeholder="Расшифровка и смысл термина"
+              rows={2}
+              className="w-full px-3 py-2 rounded-lg text-sm outline-none resize-y"
+              style={{
+                background: 'var(--iris-bg-app)',
+                border: '1px solid var(--iris-border-subtle)',
+                color: 'var(--text-primary)',
+              }}
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+              Использование в компании
+            </label>
+            <textarea
+              value={formUsage}
+              onChange={(e) => setFormUsage(e.target.value)}
+              placeholder="Как термин применяется внутри компании (необязательно)"
+              rows={2}
+              className="w-full px-3 py-2 rounded-lg text-sm outline-none resize-y"
+              style={{
+                background: 'var(--iris-bg-app)',
+                border: '1px solid var(--iris-border-subtle)',
+                color: 'var(--text-primary)',
+              }}
+            />
+          </div>
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={handleManualSubmit}
+              disabled={saving || !formTerm.trim() || !formDefinition.trim()}
+              className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-60"
+              style={{ background: '#14B8A6', color: '#FFFFFF' }}
+              onMouseEnter={(e) => {
+                if (!saving) e.currentTarget.style.backgroundColor = '#0D9488';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#14B8A6';
+              }}
+            >
+              {saving ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
+              {saving ? 'Сохранение…' : 'Сохранить термин'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="flex items-center gap-4 text-xs" style={{ color: 'var(--text-muted)' }}>

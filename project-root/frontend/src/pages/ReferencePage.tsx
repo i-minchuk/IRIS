@@ -65,7 +65,8 @@ export default function ReferencePage() {
             Материалы, конструкции, нормативы, термины и контакты сотрудников
           </p>
         </div>
-        {activeTab !== 'contacts' && (
+        {/* Глоссарий и нормативы имеют собственные кнопки в панелях */}
+        {activeTab !== 'contacts' && activeTab !== 'glossary' && activeTab !== 'standards' && (
           <Button variant="primary" leftIcon={<Plus size={16} />}>
             Добавить
           </Button>

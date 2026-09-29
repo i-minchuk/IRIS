@@ -52,3 +52,20 @@ export const generateGlossary = async (
 export const deleteGlossaryTerm = async (termId: number): Promise<void> => {
   await apiClient.delete(`/references/glossary/${termId}`);
 };
+
+export interface GlossaryTermCreatePayload {
+  term: string;
+  definition: string;
+  company_usage?: string | null;
+  department?: string | null;
+}
+
+export const createGlossaryTerm = async (
+  payload: GlossaryTermCreatePayload
+): Promise<GlossaryTerm> => {
+  const { data } = await apiClient.post<GlossaryTerm>('/references/glossary', {
+    ...payload,
+    source: 'manual',
+  });
+  return data;
+};
