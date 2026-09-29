@@ -19,13 +19,15 @@ class EmployeeProfile(Base):
     department: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     phone: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     hire_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
-    skills: Mapped[list] = mapped_column(JSON, default=list)
-    certifications: Mapped[list] = mapped_column(JSON, default=list)
+    # nullable=True — соответствует схеме БД (легаси-миграции создали колонки nullable)
+    skills: Mapped[Optional[list]] = mapped_column(JSON, nullable=True, default=list)
+    certifications: Mapped[Optional[list]] = mapped_column(JSON, nullable=True, default=list)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=datetime.utcnow
+        DateTime(timezone=True), default=datetime.utcnow, nullable=True
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow
+        DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow,
+        nullable=True,
     )

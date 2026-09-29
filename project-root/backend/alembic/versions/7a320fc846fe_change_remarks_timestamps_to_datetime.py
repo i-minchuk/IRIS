@@ -25,8 +25,9 @@ def upgrade() -> None:
     dialect = conn.dialect.name
 
     if dialect == 'postgresql':
-        op.execute("ALTER TABLE remarks ALTER COLUMN created_at TYPE TIMESTAMP USING created_at::TIMESTAMP")
-        op.execute("ALTER TABLE remarks ALTER COLUMN updated_at TYPE TIMESTAMP USING updated_at::TIMESTAMP")
+        # TIMESTAMP WITH TIME ZONE — соответствует модели (DateTime(timezone=True))
+        op.execute("ALTER TABLE remarks ALTER COLUMN created_at TYPE TIMESTAMP WITH TIME ZONE USING created_at::TIMESTAMP WITH TIME ZONE")
+        op.execute("ALTER TABLE remarks ALTER COLUMN updated_at TYPE TIMESTAMP WITH TIME ZONE USING updated_at::TIMESTAMP WITH TIME ZONE")
     else:
         # SQLite: recreate table with correct types
         op.execute("""

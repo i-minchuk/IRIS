@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Optional, TYPE_CHECKING
 
-from sqlalchemy import String, Text, ForeignKey, DateTime, Boolean
+from sqlalchemy import String, Text, ForeignKey, DateTime, Boolean, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -39,6 +39,10 @@ class CalendarEventModel(Base):
     )
 
     user: Mapped[Optional["User"]] = relationship()
+
+    __table_args__ = (
+        Index("ix_calendar_events_date", "date"),
+    )
 
     def __repr__(self) -> str:
         return f"<CalendarEvent(id={self.id}, title='{self.title}', date={self.date})>"

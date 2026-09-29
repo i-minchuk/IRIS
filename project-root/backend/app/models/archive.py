@@ -7,7 +7,7 @@ from enum import Enum as PyEnum
 
 from sqlalchemy import (
     String, Text, DateTime, Date, Float, Boolean, Integer,
-    ForeignKey, Numeric, event, JSON, Uuid
+    ForeignKey, Numeric, event, JSON, Uuid, Index
 )
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.sql import func
@@ -96,6 +96,10 @@ class ArchiveEntry(Base):
     constructions = relationship("ArchiveConstruction", backref="construction_entry", lazy="joined")
     search_index = relationship("ArchiveSearchIndex", backref="search_entry", uselist=False)
 
+    __table_args__ = (
+        Index("idx_archive_entries_author_id", "author_id"),
+    )
+
     def __repr__(self) -> str:
         return f"<ArchiveEntry(id={self.id}, type={self.entry_type}, title='{self.title}')>"
 
@@ -158,6 +162,10 @@ class ArchiveMaterial(Base):
 
     # Relationships
     project = relationship("Project", backref="archive_materials")
+
+    __table_args__ = (
+        Index("idx_archive_materials_entry_id", "entry_id"),
+    )
 
     def __repr__(self) -> str:
         return f"<ArchiveMaterial(id={self.id}, type={self.material_type}, name='{self.name}')>"
@@ -227,6 +235,10 @@ class ArchiveConstruction(Base):
 
     # Relationships
     project = relationship("Project", backref="archive_constructions")
+
+    __table_args__ = (
+        Index("idx_archive_constructions_entry_id", "entry_id"),
+    )
 
     def __repr__(self) -> str:
         return f"<ArchiveConstruction(id={self.id}, type={self.construction_type}, name='{self.name}')>"

@@ -20,7 +20,7 @@ class Document(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     project_id: Mapped[int] = mapped_column(
-        ForeignKey("projects.id"),
+        ForeignKey("projects.id", ondelete="CASCADE"),
         nullable=False,
     )
     stage_id: Mapped[Optional[int]] = mapped_column(
@@ -146,6 +146,9 @@ class Document(Base):
         Index("ix_doc_section", "section_id"),
         Index("ix_doc_status", "status"),
         Index("ix_documents_number", "number"),
+        # Легаси-индексы из старых миграций — объявлены для совпадения схемы и моделей
+        Index("ix_documents_project_id", "project_id"),
+        Index("ix_documents_status", "status"),
     )
 
     def __repr__(self) -> str:
@@ -199,6 +202,8 @@ class Revision(Base):
 
     __table_args__ = (
         Index("ix_rev_document_created", "document_id", "created_at"),
+        Index("idx_revisions_created_by", "created_by_id"),
+        Index("idx_revisions_approved_by", "approved_by_id"),
     )
 
 
@@ -236,6 +241,10 @@ class ApprovalWorkflow(Base):
     )
     completed_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
+    )
+
+    __table_args__ = (
+        Index("idx_approval_workflows_document_id", "document_id"),
     )
 
     document: Mapped["Document"] = relationship(back_populates="approval_workflows")

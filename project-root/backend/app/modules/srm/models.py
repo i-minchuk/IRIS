@@ -2,7 +2,7 @@
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import String, Text, ForeignKey, DateTime, Integer, Numeric, Boolean
+from sqlalchemy import String, Text, ForeignKey, DateTime, Integer, Numeric, Boolean, Index
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -33,6 +33,11 @@ class Supplier(Base):
         DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow
     )
 
+    __table_args__ = (
+        Index("ix_srm_suppliers_category", "category"),
+        Index("ix_srm_suppliers_status", "status"),
+    )
+
 
 class Customer(Base):
     """Заказчик (контрагент по договорам). Отдельное хранилище от поставщиков."""
@@ -60,6 +65,10 @@ class Customer(Base):
         DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow
     )
 
+    __table_args__ = (
+        Index("ix_srm_customers_status", "status"),
+    )
+
 
 class PurchaseRequest(Base):
     __tablename__ = "srm_purchase_requests"
@@ -80,6 +89,11 @@ class PurchaseRequest(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+    __table_args__ = (
+        Index("ix_srm_purchase_requests_project_id", "project_id"),
+        Index("ix_srm_purchase_requests_status", "status"),
     )
 
 
@@ -107,6 +121,11 @@ class Contract(Base):
         DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow
     )
 
+    __table_args__ = (
+        Index("ix_srm_contracts_supplier_id", "supplier_id"),
+        Index("ix_srm_contracts_status", "status"),
+    )
+
 
 class PurchaseOrder(Base):
     __tablename__ = "srm_orders"
@@ -128,6 +147,11 @@ class PurchaseOrder(Base):
         DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow
     )
 
+    __table_args__ = (
+        Index("ix_srm_orders_contract_id", "contract_id"),
+        Index("ix_srm_orders_status", "status"),
+    )
+
 
 class Invoice(Base):
     __tablename__ = "srm_invoices"
@@ -147,4 +171,9 @@ class Invoice(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+    __table_args__ = (
+        Index("ix_srm_invoices_contract_id", "contract_id"),
+        Index("ix_srm_invoices_status", "status"),
     )

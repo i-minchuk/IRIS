@@ -19,6 +19,7 @@ from sqlalchemy import (
     select,
     event,
     func,
+    Index,
 )
 from sqlalchemy.dialects.postgresql import UUID, ARRAY, JSONB
 from sqlalchemy.orm import relationship, Mapped, mapped_column
@@ -198,6 +199,13 @@ class Remark(Base):
     parent = relationship('Remark', remote_side=[id], backref='children')
     comments = relationship('RemarkComment', back_populates='remark', lazy='dynamic', order_by='RemarkComment.created_at')
     tags = relationship('RemarkTag', secondary='remark_tag_links', backref='remarks')
+
+    __table_args__ = (
+        Index('idx_remarks_author_id', 'author_id'),
+        Index('idx_remarks_document_id', 'document_id'),
+        Index('idx_remarks_project_id', 'project_id'),
+        Index('ix_remarks_document_status', 'document_id', 'status'),
+    )
 
     def __repr__(self):
         return f"<Remark(id={self.id}, title='{self.title}', status={self.status.value}, priority={self.priority.value})>"

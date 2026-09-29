@@ -66,6 +66,11 @@ class Task(Base):
         Index("idx_tasks_type_status", "type", "status"),
         Index("idx_tasks_priority", "priority"),
         Index("idx_tasks_due_date_status", "due_date", "status"),
+        # Легаси-индексы из старых миграций — объявлены для совпадения схемы и моделей
+        Index("idx_tasks_project_id", "project_id"),
+        Index("idx_tasks_assignee_id", "assignee_id"),
+        Index("idx_tasks_creator_id", "creator_id"),
+        Index("ix_tasks_project_status_assignee", "project_id", "status", "assignee_id"),
         # Note: partial index with CURRENT_TIMESTAMP removed — PostgreSQL requires IMMUTABLE expressions
     )
 

@@ -15,6 +15,7 @@ from sqlalchemy import (
     Enum as SQLEnum,
     Table,
     select,
+    Index,
 )
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.dialects.postgresql import JSONB
@@ -145,7 +146,9 @@ class WorkflowInstance(Base):
     project_id: Mapped[Optional[int]] = mapped_column(ForeignKey('projects.id'), nullable=True)
     
     # Привязка к замечанию (опционально)
-    remark_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey('remarks.id'), nullable=True)
+    remark_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey('remarks.id', ondelete='SET NULL'), nullable=True
+    )
     
     status: Mapped[WorkflowStatus] = mapped_column(SQLEnum(WorkflowStatus), default=WorkflowStatus.DRAFT, nullable=False)
     
@@ -175,6 +178,11 @@ class WorkflowInstance(Base):
     completed_by_user = relationship('User', foreign_keys=[completed_by], backref='completed_workflows')
     project = relationship('Project', backref='workflow_instances')
     steps = relationship('WorkflowStep', back_populates='instance', lazy='dynamic', order_by='WorkflowStep.order_index')
+
+    __table_args__ = (
+        Index('idx_wf_instances_document_id', 'document_id'),
+        Index('idx_wf_instances_template_id', 'template_id'),
+    )
 
 
 class WorkflowStep(Base):
@@ -244,6 +252,10 @@ class WorkflowStep(Base):
     audit_logs = relationship('WorkflowAuditLog', back_populates='step', lazy='dynamic')
     signatures = relationship('WorkflowSignature', back_populates='step', lazy='dynamic', order_by='WorkflowSignature.signed_at')
 
+    __table_args__ = (
+        Index('idx_workflow_steps_instance_id', 'instance_id'),
+    )
+
 
 class WorkflowComment(Base):
     """Комментарии согласующих с привязкой к документу."""
@@ -270,6 +282,11 @@ class WorkflowComment(Base):
     # Relationships
     step = relationship('WorkflowStep', back_populates='comments')
     user = relationship('User', backref='workflow_comments')
+
+    __table_args__ = (
+        Index('idx_workflow_comments_step_id', 'step_id'),
+        Index('idx_workflow_comments_author_id', 'user_id'),
+    )
 
 
 class WorkflowAuditLog(Base):
@@ -302,3 +319,7 @@ class WorkflowAuditLog(Base):
     step = relationship('WorkflowStep', back_populates='audit_logs')
     instance = relationship('WorkflowInstance', backref='audit_logs')
     user = relationship('User', backref='workflow_audit_logs')
+
+    __table_args__ = (
+        Index('idx_workflow_audit_log_instance_id', 'instance_id'),
+    )

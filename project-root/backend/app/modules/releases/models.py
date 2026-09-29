@@ -29,8 +29,9 @@ class Release(Base):
     status: Mapped[str] = mapped_column(String(50), default="planning")
     # planning, development, testing, staging, ready, deployed, rolled_back
     description: Mapped[Optional[str]] = mapped_column(Text, default="")
-    checklist: Mapped[list] = mapped_column(JSON, default=list)
-    approved_by: Mapped[list] = mapped_column(JSON, default=list)
+    # nullable=True — соответствует схеме БД (легаси-миграции создали колонки nullable)
+    checklist: Mapped[Optional[list]] = mapped_column(JSON, nullable=True, default=list)
+    approved_by: Mapped[Optional[list]] = mapped_column(JSON, nullable=True, default=list)
     deployed_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
