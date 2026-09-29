@@ -273,7 +273,10 @@ export const analyticsApi = {
   getSparklines: () => client.get<SparklinesData>('/analytics/sparklines'),
   getTrend: (period?: AnalyticsPeriod) =>
     client.get<TrendData>('/analytics/trend', { params: period ? { period } : undefined }),
-  getFinanceSummary: () => client.get<FinanceSummary>('/analytics/finance-summary'),
+  getFinanceSummary: (period?: AnalyticsPeriod) =>
+    client.get<FinanceSummary>('/analytics/finance-summary', {
+      params: period ? { period } : undefined,
+    }),
   getActionItems: () => client.get<ActionItemsData>('/analytics/action-items'),
   getDepartmentLoad: () => client.get<DepartmentLoadData>('/analytics/department-load'),
   getTeamTimeTracking: (period?: TeamTimePeriod) =>

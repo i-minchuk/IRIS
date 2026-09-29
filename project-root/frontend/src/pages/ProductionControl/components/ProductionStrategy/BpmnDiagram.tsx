@@ -38,18 +38,43 @@ export const BpmnDiagram: React.FC<BpmnDiagramProps> = ({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [tooltip, setTooltip] = useState<{ x: number; y: number; node: BpmnNode } | null>(null);
 
-  // Тёмная тема: ThemeProvider ставит класс .dark на <html> (dark/midnight/contrast)
-  const [isDark, setIsDark] = useState(
-    () => typeof document !== 'undefined' && document.documentElement.classList.contains('dark')
-  );
+  // Перерисовка диаграммы при смене темы: ThemeProvider меняет класс/data-theme
+  // на <html>, MutationObserver ловит это и перечитывает CSS-переменные.
+  const [themeTick, setThemeTick] = useState(0);
   useEffect(() => {
     const root = document.documentElement;
     const observer = new MutationObserver(() => {
-      setIsDark(root.classList.contains('dark'));
+      setThemeTick((t) => t + 1);
     });
-    observer.observe(root, { attributes: true, attributeFilter: ['class'] });
+    observer.observe(root, { attributes: true, attributeFilter: ['class', 'data-theme'] });
     return () => observer.disconnect();
   }, []);
+
+  const readVar = (name: string, fallback: string): string => {
+    if (typeof document === 'undefined') return fallback;
+    const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return value || fallback;
+  };
+
+  const ui = useMemo(
+    () => ({
+      nodeFill: readVar('--iris-bg-card', '#ffffff'),
+      nodeStroke: readVar('--iris-border-strong', '#334155'),
+      laneZoneFill: readVar('--iris-bg-app', '#f8fafc'),
+      grid: readVar('--iris-border-subtle', '#e2e8f0'),
+      edgeDefault: readVar('--iris-text-muted', '#64748b'),
+      edgeConditional: readVar('--iris-accent-blue', '#0ea5e9'),
+      edgeMessage: readVar('--iris-accent-cyan', '#10b981'),
+      labelText: readVar('--iris-text-secondary', '#334155'),
+      edgeLabel: readVar('--iris-text-muted', '#475569'),
+      bottleneckFill: readVar('--iris-status-bg-amber', '#fff7ed'),
+      bottleneckStroke: readVar('--iris-accent-amber', '#f97316'),
+      duplicateFill: readVar('--iris-status-bg-purple', '#fdf4ff'),
+      duplicateStroke: readVar('--iris-accent-purple', '#a855f7'),
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [themeTick]
+  );
 
   const fit = (size = container) => {
     const scale = Math.min(
@@ -95,15 +120,15 @@ export const BpmnDiagram: React.FC<BpmnDiagramProps> = ({
   };
 
   const issueFill = (issue: IssueType) => {
-    if (issue === 'bottleneck') return isDark ? '#3a2410' : '#fff7ed';
-    if (issue === 'duplicate') return isDark ? '#2c1e3e' : '#fdf4ff';
-    return isDark ? '#1e2438' : '#ffffff';
+    if (issue === 'bottleneck') return ui.bottleneckFill;
+    if (issue === 'duplicate') return ui.duplicateFill;
+    return ui.nodeFill;
   };
 
   const issueStroke = (issue: IssueType) => {
-    if (issue === 'bottleneck') return isDark ? '#fb923c' : '#f97316';
-    if (issue === 'duplicate') return isDark ? '#c084fc' : '#a855f7';
-    return isDark ? '#8b95ac' : '#334155';
+    if (issue === 'bottleneck') return ui.bottleneckStroke;
+    if (issue === 'duplicate') return ui.duplicateStroke;
+    return ui.nodeStroke;
   };
 
   const issueIcon = (issue: IssueType) => {
@@ -246,21 +271,21 @@ export const BpmnDiagram: React.FC<BpmnDiagramProps> = ({
       >
         <defs>
           <marker id="arrow-seq" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
-            <path d="M0,0 L0,6 L9,3 z" fill={isDark ? '#94a3b8' : '#64748b'} />
+            <path d="M0,0 L0,6 L9,3 z" fill={ui.edgeDefault} />
           </marker>
           <marker id="arrow-cond" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
-            <path d="M0,0 L0,6 L9,3 z" fill={isDark ? '#38bdf8' : '#0ea5e9'} />
+            <path d="M0,0 L0,6 L9,3 z" fill={ui.edgeConditional} />
           </marker>
           <marker id="arrow-msg" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
-            <path d="M0,0 L0,6 L9,3 z" fill={isDark ? '#34d399' : '#10b981'} />
+            <path d="M0,0 L0,6 L9,3 z" fill={ui.edgeMessage} />
           </marker>
           <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-            <path d="M 40 0 L 0 0 0 40" fill="none" stroke={isDark ? '#3a4158' : '#e2e8f0'} strokeWidth="0.5" />
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke={ui.grid} strokeWidth="0.5" />
           </pattern>
         </defs>
         <g transform={`translate(${transform.x}, ${transform.y}) scale(${transform.scale})`}>
           {/* Grid */}
-          <rect x={0} y={0} width={TOTAL_W} height={BD} fill="url(#grid)" opacity={isDark ? 0.25 : 0.4} />
+          <rect x={0} y={0} width={TOTAL_W} height={BD} fill="url(#grid)" opacity={0.4} />
 
           {/* Lanes */}
           {departments.map((d) => (
@@ -270,10 +295,10 @@ export const BpmnDiagram: React.FC<BpmnDiagramProps> = ({
                 y={d.laneY}
                 width={OE}
                 height={d.laneH}
-                fill={isDark ? d.color : d.bg}
-                fillOpacity={isDark ? 0.14 : 1}
-                stroke={isDark ? d.color : d.border}
-                strokeOpacity={isDark ? 0.4 : 1}
+                fill={d.color}
+                fillOpacity={0.14}
+                stroke={d.color}
+                strokeOpacity={0.4}
                 strokeWidth={1}
               />
               {(() => {
@@ -312,10 +337,10 @@ export const BpmnDiagram: React.FC<BpmnDiagramProps> = ({
                 y={d.laneY}
                 width={GS}
                 height={d.laneH}
-                fill="#ffffff"
-                fillOpacity={isDark ? 0.04 : 0.6}
-                stroke={isDark ? d.color : d.border}
-                strokeOpacity={isDark ? 0.3 : 1}
+                fill={ui.laneZoneFill}
+                fillOpacity={0.5}
+                stroke={d.color}
+                strokeOpacity={0.3}
                 strokeDasharray="4 4"
               />
             </g>
@@ -329,16 +354,16 @@ export const BpmnDiagram: React.FC<BpmnDiagramProps> = ({
             const path = buildPath(from, to);
             const color =
               edge.type === 'conditional'
-                ? isDark ? '#38bdf8' : '#0ea5e9'
+                ? ui.edgeConditional
                 : edge.type === 'message'
-                  ? isDark ? '#34d399' : '#10b981'
-                  : isDark ? '#94a3b8' : '#64748b';
+                  ? ui.edgeMessage
+                  : ui.edgeDefault;
             const marker = edge.type === 'conditional' ? 'url(#arrow-cond)' : edge.type === 'message' ? 'url(#arrow-msg)' : 'url(#arrow-seq)';
             return (
               <g key={edge.id}>
                 <path d={path} fill="none" stroke={color} strokeWidth={2} markerEnd={marker} />
                 {edge.label && (
-                  <text fontSize={10} fill={isDark ? '#aab4c8' : '#475569'}>
+                  <text fontSize={10} fill={ui.edgeLabel}>
                     <textPath href={`#${edge.id}-path`} startOffset="50%" textAnchor="middle">
                       {edge.label}
                     </textPath>
@@ -376,7 +401,7 @@ export const BpmnDiagram: React.FC<BpmnDiagramProps> = ({
                 >
                   <circle cx={node.w / 2} cy={node.h / 2} r={node.w / 2} fill={fill} stroke={stroke} strokeWidth={2} />
                   {node.id === 'end' && <circle cx={node.w / 2} cy={node.h / 2} r={node.w / 2 - 4} fill="none" stroke={stroke} strokeWidth={2} />}
-                  <text x={node.w / 2} y={node.h + 16} textAnchor="middle" fontSize={10} fill={isDark ? '#c7cddd' : '#334155'}>
+                  <text x={node.w / 2} y={node.h + 16} textAnchor="middle" fontSize={10} fill={ui.labelText}>
                     {node.label}
                   </text>
                 </g>
@@ -406,7 +431,7 @@ export const BpmnDiagram: React.FC<BpmnDiagramProps> = ({
                     stroke={stroke}
                     strokeWidth={2}
                   />
-                  <text x={s / 2} y={s + 16} textAnchor="middle" fontSize={9} fill={isDark ? '#c7cddd' : '#334155'}>
+                  <text x={s / 2} y={s + 16} textAnchor="middle" fontSize={9} fill={ui.labelText}>
                     {node.label}
                   </text>
                 </g>
