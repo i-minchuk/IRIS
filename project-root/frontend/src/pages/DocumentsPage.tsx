@@ -11,7 +11,7 @@ import {
   Briefcase, UserCheck, X, FilePlus, FileSpreadsheet,
   AlertCircle, ArrowRight, FileCheck, Archive, Filter,
   GitBranch, Paperclip, Maximize2, Minimize2,
-  Copy, Trash2, FolderInput, PenLine, ClipboardPaste,
+  Copy, Trash2, FolderInput, PenLine, ClipboardPaste, Scissors,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getSessions, type TimeSession } from '@/features/time_tracking/api/sessions';
@@ -624,7 +624,7 @@ function RegistryView() {
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
-    kind: 'project' | 'document';
+    kind: 'project' | 'document' | 'background';
     projectName: string;
     doc?: Document;
   } | null>(null);
@@ -633,7 +633,7 @@ function RegistryView() {
 
   const openContextMenu = (
     e: React.MouseEvent,
-    kind: 'project' | 'document',
+    kind: 'project' | 'document' | 'background',
     projectName: string,
     doc?: Document,
   ) => {
@@ -654,16 +654,18 @@ function RegistryView() {
     return () => document.removeEventListener('keydown', onKey);
   }, [contextMenu]);
 
-  // ── Буфер обмена документами (копировать → вставить в проект) ──
+  // ── Буфер обмена документами (копировать/вырезать → вставить в проект) ──
   // Хранится в localStorage, чтобы переживать перезагрузку страницы.
+  // В режиме «вырезать» исходный документ исключается из работы после вставки.
   const CLIPBOARD_KEY = 'iris_clipboard_doc';
-  const [clipboardDoc, setClipboardDocState] = useState<Document | null>(() => {
+  type ClipboardEntry = Document & { isCut?: boolean };
+  const [clipboardDoc, setClipboardDocState] = useState<ClipboardEntry | null>(() => {
     try {
       const raw = localStorage.getItem(CLIPBOARD_KEY);
       if (!raw) return null;
-      const d = JSON.parse(raw) as Partial<Document> | null;
+      const d = JSON.parse(raw) as Partial<ClipboardEntry> | null;
       if (d && typeof d.id === 'string' && typeof d.code === 'string') {
-        return d as Document;
+        return d as ClipboardEntry;
       }
       return null;
     } catch {
@@ -671,13 +673,17 @@ function RegistryView() {
     }
   });
 
-  const setClipboardDoc = (doc: Document) => {
+  const writeClipboard = (doc: ClipboardEntry | null) => {
     setClipboardDocState(doc);
     try {
-      localStorage.setItem(
-        CLIPBOARD_KEY,
-        JSON.stringify({ id: doc.id, code: doc.code, name: doc.name, project: doc.project }),
-      );
+      if (doc) {
+        localStorage.setItem(
+          CLIPBOARD_KEY,
+          JSON.stringify({ id: doc.id, code: doc.code, name: doc.name, project: doc.project, isCut: !!doc.isCut }),
+        );
+      } else {
+        localStorage.removeItem(CLIPBOARD_KEY);
+      }
     } catch {
       // localStorage недоступен — буфер останется только в памяти
     }
@@ -685,8 +691,14 @@ function RegistryView() {
 
   const handleCopyDoc = (doc: Document) => {
     closeContextMenu();
-    setClipboardDoc(doc);
+    writeClipboard({ ...doc, isCut: false });
     toast.success(`Скопировано: «${doc.code}». Вставьте в нужный проект через правый клик или Ctrl+V.`);
+  };
+
+  const handleCutDoc = (doc: Document) => {
+    closeContextMenu();
+    writeClipboard({ ...doc, isCut: true });
+    toast.success(`Вырезано: «${doc.code}». Вставьте в нужный проект — исходный документ будет исключён из работы.`);
   };
 
   const handlePasteDoc = async (targetProjectName: string) => {
@@ -695,13 +707,26 @@ function RegistryView() {
     const numericId = Number.parseInt(clipboardDoc.id, 10);
     const targetProj = allProjects.find(p => p.name === targetProjectName);
     if (!numericId || !targetProj) return;
+    if (clipboardDoc.isCut && clipboardDoc.project === targetProjectName) {
+      writeClipboard(null);
+      toast.info('Документ уже находится в этом проекте — вырезание отменено');
+      return;
+    }
     try {
       // Копируем документ, затем переносим копию в целевой проект
       const copy = await copyDocument(numericId);
       if (copy?.id) {
         await updateDocument(copy.id, { project_id: targetProj.id });
       }
-      toast.success(`Документ вставлен в «${targetProjectName}»`);
+      if (clipboardDoc.isCut) {
+        // Вырезание: исключаем исходный документ из работы (восстановим через архив при необходимости)
+        await deleteDocument(numericId);
+        writeClipboard(null);
+        toast.success(`Документ перемещён в «${targetProjectName}»`);
+      } else {
+        toast.success(`Документ вставлен в «${targetProjectName}»`);
+      }
+      if (selectedDocId === clipboardDoc.id) setSelectedDocId(null);
       await loadData();
     } catch {
       // ошибку показал интерцептор
@@ -716,7 +741,7 @@ function RegistryView() {
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
       if (e.key.toLowerCase() === 'c' && selectedDoc) {
         e.preventDefault();
-        setClipboardDoc(selectedDoc);
+        writeClipboard({ ...selectedDoc, isCut: false });
         toast.success(`Скопировано: «${selectedDoc.code}». Вставьте через правый клик по проекту или Ctrl+V.`);
       }
       if (e.key.toLowerCase() === 'v' && clipboardDoc && selectedProject) {
@@ -1064,7 +1089,14 @@ function RegistryView() {
           <div className="flex-1 min-h-0 overflow-y-auto">
             {!selectedDoc ? (
               /* Document list for selected project */
-              <div className="p-3 space-y-1">
+              <div
+                className="p-3 space-y-1"
+                onContextMenu={(e) => {
+                  // ПКМ по пустому месту списка — вставка в выбранный проект без открытия карточки
+                  if (!clipboardDoc || !selectedProject) return;
+                  openContextMenu(e, 'background', selectedProject);
+                }}
+              >
                 {docsForProject.length === 0 && (
                   <div className="text-center py-8 text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>
                     {docsLoading ? 'Загрузка документов…' : 'Документы не найдены.'}
@@ -1555,6 +1587,11 @@ function RegistryView() {
                   onClick={() => void handleCopyDoc(contextMenu.doc!)}
                 />
                 <ContextMenuItem
+                  icon={<Scissors size={13} />}
+                  label="Вырезать"
+                  onClick={() => void handleCutDoc(contextMenu.doc!)}
+                />
+                <ContextMenuItem
                   icon={<FolderInput size={13} />}
                   label="Переместить в проект…"
                   onClick={() => {
@@ -1570,6 +1607,14 @@ function RegistryView() {
                   onClick={() => void handleDeleteDoc(contextMenu.doc!)}
                 />
               </>
+            ) : contextMenu.kind === 'background' ? (
+              clipboardDoc && (
+                <ContextMenuItem
+                  icon={<ClipboardPaste size={13} />}
+                  label={`Вставить «${clipboardDoc.code}» в «${contextMenu.projectName}»`}
+                  onClick={() => void handlePasteDoc(contextMenu.projectName)}
+                />
+              )
             ) : null}
           </div>
         </>
