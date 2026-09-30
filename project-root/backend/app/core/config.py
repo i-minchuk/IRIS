@@ -108,6 +108,8 @@ class Settings(BaseSettings):
     GIGACHAT_BASE_URL: str = "https://api.giga.chat"
     GIGACHAT_AUTH_URL: str = "https://ngw.devices.sberbank.ru:9443/api/v2/oauth"
     GIGACHAT_DEFAULT_MODEL: str = "GigaChat-2"
+    # Для эмбеддингов у GigaChat отдельные модели — чат-модель тут не подходит
+    GIGACHAT_DEFAULT_EMBEDDING_MODEL: str = "Embeddings"
     
     QDRANT_HOST: str = "localhost"
     QDRANT_PORT: int = 6333

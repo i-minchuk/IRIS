@@ -91,7 +91,7 @@ async def set_openai_api_key(db: AsyncSession, key: str) -> str:
         except Exception:
             object.__setattr__(settings, "LLM_MODEL", settings.GIGACHAT_DEFAULT_MODEL)
         try:
-            settings.EMBEDDING_MODEL = settings.GIGACHAT_DEFAULT_MODEL
+            settings.EMBEDDING_MODEL = settings.GIGACHAT_DEFAULT_EMBEDDING_MODEL
         except Exception:
             object.__setattr__(settings, "EMBEDDING_MODEL", settings.GIGACHAT_DEFAULT_MODEL)
 
@@ -107,7 +107,7 @@ def _configure_model_for_key(key: str) -> None:
         except Exception:
             object.__setattr__(settings, "LLM_MODEL", settings.GIGACHAT_DEFAULT_MODEL)
         try:
-            settings.EMBEDDING_MODEL = settings.GIGACHAT_DEFAULT_MODEL
+            settings.EMBEDDING_MODEL = settings.GIGACHAT_DEFAULT_EMBEDDING_MODEL
         except Exception:
             object.__setattr__(settings, "EMBEDDING_MODEL", settings.GIGACHAT_DEFAULT_MODEL)
 
@@ -167,7 +167,7 @@ async def load_openai_api_key_into_settings(db: AsyncSession) -> None:
             except Exception:
                 object.__setattr__(settings, "LLM_MODEL", settings.GIGACHAT_DEFAULT_MODEL)
             try:
-                settings.EMBEDDING_MODEL = settings.GIGACHAT_DEFAULT_MODEL
+                settings.EMBEDDING_MODEL = settings.GIGACHAT_DEFAULT_EMBEDDING_MODEL
             except Exception:
                 object.__setattr__(settings, "EMBEDDING_MODEL", settings.GIGACHAT_DEFAULT_MODEL)
         logger.info("OpenAI API key loaded from DB into runtime settings")
