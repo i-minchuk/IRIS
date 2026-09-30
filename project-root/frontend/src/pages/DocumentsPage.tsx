@@ -789,21 +789,34 @@ function RegistryView() {
     }
   };
 
-  const handleDeleteProject = async (projectName: string) => {
+  // ── Диалог удаления проекта ──
+  const [deleteProjectName, setDeleteProjectName] = useState<string | null>(null);
+  const [deleteProjectLoading, setDeleteProjectLoading] = useState(false);
+
+  const handleDeleteProject = (projectName: string) => {
     closeContextMenu();
-    const proj = allProjects.find(p => p.name === projectName);
+    setDeleteProjectName(projectName);
+  };
+
+  const handleConfirmDeleteProject = async () => {
+    if (!deleteProjectName) return;
+    const proj = allProjects.find(p => p.name === deleteProjectName);
     if (!proj) {
       toast.error('Проект не найден');
+      setDeleteProjectName(null);
       return;
     }
-    if (!window.confirm(`Удалить проект «${projectName}»? Действие необратимо.`)) return;
+    setDeleteProjectLoading(true);
     try {
       await deleteProject(proj.id);
       toast.success('Проект удалён');
-      if (selectedProject === projectName) setSelectedProject(null);
+      if (selectedProject === deleteProjectName) setSelectedProject(null);
+      setDeleteProjectName(null);
       await loadData();
     } catch {
-      // ошибку показал интерцептор
+      // ошибку показал интерцептор (например, 409 при наличии документов)
+    } finally {
+      setDeleteProjectLoading(false);
     }
   };
 
@@ -1755,6 +1768,69 @@ function RegistryView() {
                 style={{ background: '#DC2626', opacity: deleteLoading ? 0.6 : 1 }}
               >
                 {deleteLoading ? 'Исключение…' : 'Исключить из работы'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Диалоговое окно удаления проекта */}
+      {deleteProjectName && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.5)' }}
+          onClick={() => setDeleteProjectName(null)}
+        >
+          <div
+            className="rounded-xl p-4 w-full max-w-sm space-y-3"
+            style={{ background: 'var(--card-bg)', border: '1px solid var(--border-default)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-2.5">
+              <div
+                className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+                style={{ background: 'rgba(248,113,113,0.15)', color: '#F87171' }}
+              >
+                <FolderKanban size={18} />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+                  Удалить проект?
+                </h3>
+                <p className="text-xs mt-0.5 truncate" style={{ color: 'var(--text-secondary)' }} title={deleteProjectName}>
+                  {deleteProjectName}
+                </p>
+              </div>
+            </div>
+            <div className="text-xs leading-relaxed space-y-1.5" style={{ color: 'var(--text-secondary)' }}>
+              <p>
+                Действие <b style={{ color: 'var(--text-primary)' }}>необратимо</b>: проект, его структура
+                (этапы, комплекты, разделы) и исключённые из работы документы будут удалены безвозвратно.
+              </p>
+              <p>
+                Документов в работе:{' '}
+                <b style={{ color: 'var(--text-primary)' }}>
+                  {(projects.get(deleteProjectName) || []).length}
+                </b>
+                . Если в проекте есть документы, удаление будет заблокировано — сначала исключите,
+                удалите или переместите их.
+              </p>
+            </div>
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <button
+                onClick={() => setDeleteProjectName(null)}
+                className="px-3 py-1.5 rounded-md text-xs font-medium transition-opacity hover:opacity-80"
+                style={{ color: 'var(--text-secondary)', background: 'var(--bg-surface-2)', border: '1px solid var(--border-default)' }}
+              >
+                Отмена
+              </button>
+              <button
+                onClick={() => void handleConfirmDeleteProject()}
+                disabled={deleteProjectLoading}
+                className="px-3 py-1.5 rounded-md text-xs font-medium text-white transition-opacity"
+                style={{ background: '#DC2626', opacity: deleteProjectLoading ? 0.6 : 1 }}
+              >
+                {deleteProjectLoading ? 'Удаление…' : 'Удалить проект'}
               </button>
             </div>
           </div>
