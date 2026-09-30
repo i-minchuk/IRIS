@@ -11,7 +11,7 @@ import {
   Briefcase, UserCheck, X, FilePlus, FileSpreadsheet,
   AlertCircle, ArrowRight, FileCheck, Archive, Filter,
   GitBranch, Paperclip, Maximize2, Minimize2,
-  Copy, Trash2, FolderInput, PenLine,
+  Copy, Trash2, FolderInput, PenLine, ClipboardPaste,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getSessions, type TimeSession } from '@/features/time_tracking/api/sessions';
@@ -654,18 +654,55 @@ function RegistryView() {
     return () => document.removeEventListener('keydown', onKey);
   }, [contextMenu]);
 
-  const handleCopyDoc = async (doc: Document) => {
+  // ── Буфер обмена документами (копировать → вставить в проект) ──
+  const [clipboardDoc, setClipboardDoc] = useState<Document | null>(null);
+
+  const handleCopyDoc = (doc: Document) => {
     closeContextMenu();
-    const numericId = Number.parseInt(doc.id, 10);
-    if (!numericId) return;
+    setClipboardDoc(doc);
+    toast.success(`Скопировано: «${doc.code}». Вставьте в нужный проект через правый клик или Ctrl+V.`);
+  };
+
+  const handlePasteDoc = async (targetProjectName: string) => {
+    closeContextMenu();
+    if (!clipboardDoc) return;
+    const numericId = Number.parseInt(clipboardDoc.id, 10);
+    const targetProj = allProjects.find(p => p.name === targetProjectName);
+    if (!numericId || !targetProj) return;
     try {
-      await copyDocument(numericId);
-      toast.success('Документ скопирован');
+      // Копируем документ, затем переносим копию в целевой проект
+      const copy = await copyDocument(numericId);
+      if (copy?.id) {
+        await updateDocument(copy.id, { project_id: targetProj.id });
+      }
+      toast.success(`Документ вставлен в «${targetProjectName}»`);
       await loadData();
     } catch {
       // ошибку показал интерцептор
     }
   };
+
+  // Горячие клавиши: Ctrl+C — скопировать выбранный документ, Ctrl+V — вставить в выбранный проект
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+      if (e.key.toLowerCase() === 'c' && selectedDoc) {
+        e.preventDefault();
+        setClipboardDoc(selectedDoc);
+        toast.success(`Скопировано: «${selectedDoc.code}». Вставьте через правый клик по проекту или Ctrl+V.`);
+      }
+      if (e.key.toLowerCase() === 'v' && clipboardDoc && selectedProject) {
+        e.preventDefault();
+        void handlePasteDoc(selectedProject);
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDoc, selectedProject, clipboardDoc, allProjects]);
+
 
   const handleDeleteDoc = async (doc: Document) => {
     closeContextMenu();
@@ -1462,6 +1499,13 @@ function RegistryView() {
                     startProjectRename(contextMenu.projectName);
                   }}
                 />
+                {clipboardDoc && (
+                  <ContextMenuItem
+                    icon={<ClipboardPaste size={13} />}
+                    label={`Вставить «${clipboardDoc.code}»`}
+                    onClick={() => void handlePasteDoc(contextMenu.projectName)}
+                  />
+                )}
                 <ContextMenuItem
                   icon={<Trash2 size={13} />}
                   label="Удалить"
