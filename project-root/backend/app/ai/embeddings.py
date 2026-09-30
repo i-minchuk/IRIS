@@ -1,34 +1,27 @@
-from openai import AsyncOpenAI
-from app.core.config import settings
 from typing import List
+
+from app.core.ai_key import get_ai_client_from_settings
+from app.core.config import settings
 
 
 class EmbeddingService:
     def __init__(self):
-        self._client: AsyncOpenAI | None = None
+        self._client = None
         self.model = settings.EMBEDDING_MODEL
 
-    @property
-    def client(self) -> AsyncOpenAI:
+    async def _async_client(self):
         if self._client is None:
-            if not settings.OPENAI_API_KEY:
-                raise RuntimeError(
-                    "OPENAI_API_KEY не задан. "
-                    "Установите переменную окружения или сохраните ключ в настройках."
-                )
-            self._client = AsyncOpenAI(
-                api_key=settings.OPENAI_API_KEY,
-                base_url=settings.OPENAI_BASE_URL
-            )
+            self._client = await get_ai_client_from_settings()
         return self._client
 
     async def embed(self, texts: List[str], batch_size: int = 100) -> List[List[float]]:
         """Генерирует эмбеддинги батчами"""
         all_embeddings = []
+        client = await self._async_client()
 
         for i in range(0, len(texts), batch_size):
             batch = texts[i:i + batch_size]
-            response = await self.client.embeddings.create(
+            response = await client.embeddings.create(
                 model=self.model,
                 input=batch
             )

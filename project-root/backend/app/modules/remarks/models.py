@@ -127,6 +127,7 @@ class Remark(Base):
         String(255),
         nullable=True
     )
+    process_task_id: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
 
     # Авторы и исполнители
     author_id: Mapped[int] = mapped_column(

@@ -193,22 +193,38 @@ export const BpmnDiagram: React.FC<BpmnDiagramProps> = ({
     const dx = Math.abs(x2 - x1);
     const dy = Math.abs(y2 - y1);
 
-    // cross-lane orthogonal routing
-    if (fromIdx !== toIdx) {
-      const top = Math.min(fromIdx, toIdx);
-      const bottom = Math.max(fromIdx, toIdx);
-      const upperLane = departments[top];
-      const lowerLane = departments[bottom];
-      const midY = (upperLane.laneY + upperLane.laneH + lowerLane.laneY) / 2;
-      return `M ${x1} ${y1} V ${midY} H ${x2} V ${y2}`;
+    if (fromIdx === toIdx) {
+      // Same lane: degenerate/touching nodes get a tiny visible arrow
+      if (dx < 1 && dy < 1) {
+        const y = from.y + from.h / 2;
+        return `M ${from.x + from.w - 4} ${y} L ${to.x + 4} ${y}`;
+      }
+      if (dx > dy) {
+        const midX = (x1 + x2) / 2;
+        return `M ${x1} ${y1} C ${midX} ${y1}, ${midX} ${y2}, ${x2} ${y2}`;
+      }
+      const midY = (y1 + y2) / 2;
+      return `M ${x1} ${y1} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2}`;
     }
 
-    if (dx > dy) {
-      const midX = (x1 + x2) / 2;
-      return `M ${x1} ${y1} C ${midX} ${y1}, ${midX} ${y2}, ${x2} ${y2}`;
+    // Cross-lane routing: shared left bus aligned with the left edge of nodes
+    // (Start circle), arrows enter/exit the left-center of rectangles.
+    const busX = OE + 20;
+    const fromCy = from.y + from.h / 2;
+    const toCy = to.y + to.h / 2;
+    const corridorOffset = 14;
+
+    if (fromIdx < toIdx) {
+      // Descending: exit source left-center, drop to corridor below source lane,
+      // run left to the shared bus, drop/rise to target center, enter target left-center.
+      const corridorY = departments[fromIdx].laneY + departments[fromIdx].laneH + corridorOffset;
+      return `M ${from.x} ${fromCy} V ${corridorY} H ${busX} V ${toCy} H ${to.x}`;
     }
-    const midY = (y1 + y2) / 2;
-    return `M ${x1} ${y1} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2}`;
+
+    // Ascending: exit source left-center, rise to corridor above source lane,
+    // run left to the shared bus, rise/drop to target center, enter target left-center.
+    const corridorY = departments[fromIdx].laneY - corridorOffset;
+    return `M ${from.x} ${fromCy} V ${corridorY} H ${busX} V ${toCy} H ${to.x}`;
   };
 
   const nodeById = useMemo(() => {

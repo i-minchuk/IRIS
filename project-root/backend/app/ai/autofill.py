@@ -1,4 +1,4 @@
-from openai import AsyncOpenAI
+from app.core.ai_key import get_ai_client_from_settings, supports_json_response_format
 from app.core.config import settings
 import json
 
@@ -9,12 +9,14 @@ async def suggest_document_fields(template_type: str, project_name: str) -> dict
 
     prompt = f"Предложи поля для документа типа {template_type} в проекте {project_name}. Ответь JSON: {{code, name, discipline}}"
 
-    client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
-    response = await client.chat.completions.create(
-        model=settings.LLM_MODEL,
-        messages=[{"role": "user", "content": prompt}],
-        response_format={"type": "json_object"},
-        max_tokens=200,
-    )
+    client = await get_ai_client_from_settings()
+    request_kwargs = {
+        "model": settings.LLM_MODEL,
+        "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": 200,
+    }
+    if supports_json_response_format():
+        request_kwargs["response_format"] = {"type": "json_object"}
+    response = await client.chat.completions.create(**request_kwargs)
 
     return json.loads(response.choices[0].message.content)

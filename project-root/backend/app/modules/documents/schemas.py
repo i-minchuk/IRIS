@@ -19,6 +19,7 @@ class DocumentCreate(DocumentBase):
     crs_code: Optional[str] = None
     content: Optional[dict] = None
     variables_snapshot: Optional[dict] = None
+    process_task_id: Optional[str] = None
 
 
 class DocumentUpdate(BaseModel):
@@ -32,6 +33,7 @@ class DocumentUpdate(BaseModel):
     section_id: Optional[int] = None
     kit_id: Optional[int] = None
     stage_id: Optional[int] = None
+    process_task_id: Optional[str] = None
 
 
 class DocumentResponse(DocumentBase):
@@ -54,6 +56,7 @@ class DocumentResponse(DocumentBase):
     ai_classified_type: Optional[str] = None
     ai_confidence: Optional[float] = None
     standard_ids: Optional[list] = None
+    process_task_id: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
@@ -229,6 +232,7 @@ class DocumentCreateInput(BaseModel):
     standard_template_id: Optional[int] = None
     standard_ids: Optional[list[int]] = None
     assignee_ids: Optional[list[int]] = None
+    process_task_id: Optional[str] = None
 
 
 class DocumentUpdateInput(BaseModel):
@@ -247,6 +251,7 @@ class DocumentUpdateInput(BaseModel):
     standard_ids: Optional[list[int]] = None
     assignee_ids: Optional[list[int]] = None
     content: Optional[dict] = None
+    process_task_id: Optional[str] = None
 
 
 class RevisionCreateInput(BaseModel):
@@ -271,6 +276,7 @@ class DocumentBulkImportItem(BaseModel):
     crs_code: Optional[str] = Field(None, max_length=50)
     project_id: Optional[int] = None
     section_id: Optional[int] = None
+    process_task_id: Optional[str] = None
 
 
 class DocumentBulkImportResponse(BaseModel):

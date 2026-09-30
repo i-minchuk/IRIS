@@ -20,7 +20,7 @@ from app.ai.classification import classify_document
 from app.ai.autofill import suggest_document_fields
 from app.parser.factory import ParserFactory
 from app.parser.indexer import DocumentIndexer
-from app.core.ai_key import get_openai_api_key, is_openai_configured
+from app.core.ai_key import get_ai_client, get_openai_api_key, is_openai_configured, supports_json_response_format
 from app.core.config import settings
 from app.core.mode import require_integrations
 
@@ -195,7 +195,7 @@ async def analyze_document_endpoint(
         if not document_text:
             document_text = f"{doc.number} {doc.name}".strip()
 
-        ai = AIService()
+        ai = AIService(db)
         result = await ai.analyze_document(document_id, document_text=document_text)
 
         # Сохраняем результат в document.content
@@ -242,7 +242,7 @@ async def chat_endpoint(
         raise HTTPException(status_code=503, detail="AI недоступен: OPENAI_API_KEY не настроен")
 
     try:
-        ai = AIService()
+        ai = AIService(db)
         from app.ai.models import ChatRequest as AIChatRequest
 
         doc_id = UUID(request.document_id) if request.document_id else None
@@ -308,13 +308,11 @@ async def extract_requirements_endpoint(
         full_text = "\n\n".join(c["text"] for c in chunks)
 
         # 2. LLM extraction
-        from openai import AsyncOpenAI
-        api_key = await get_openai_api_key(db)
-        client = AsyncOpenAI(api_key=api_key, base_url=settings.OPENAI_BASE_URL)
+        client = await get_ai_client(db)
 
-        response = await client.chat.completions.create(
-            model=settings.LLM_MODEL,
-            messages=[
+        request_kwargs = {
+            "model": settings.LLM_MODEL,
+            "messages": [
                 {
                     "role": "system",
                     "content": (
@@ -325,10 +323,12 @@ async def extract_requirements_endpoint(
                 },
                 {"role": "user", "content": full_text[:12000]},
             ],
-            response_format={"type": "json_object"},
-            max_tokens=2000,
-            temperature=0.1,
-        )
+            "max_tokens": 2000,
+            "temperature": 0.1,
+        }
+        if supports_json_response_format():
+            request_kwargs["response_format"] = {"type": "json_object"}
+        response = await client.chat.completions.create(**request_kwargs)
 
         result = json.loads(response.choices[0].message.content)
         requirements = result.get("requirements", [])
@@ -430,13 +430,11 @@ async def check_compliance_endpoint(
         raise HTTPException(status_code=400, detail="Требования не могут быть пустыми")
 
     try:
-        from openai import AsyncOpenAI
-        api_key = await get_openai_api_key(db)
-        client = AsyncOpenAI(api_key=api_key, base_url=settings.OPENAI_BASE_URL)
+        client = await get_ai_client(db)
 
-        response = await client.chat.completions.create(
-            model=settings.LLM_MODEL,
-            messages=[
+        request_kwargs = {
+            "model": settings.LLM_MODEL,
+            "messages": [
                 {
                     "role": "system",
                     "content": (
@@ -451,10 +449,12 @@ async def check_compliance_endpoint(
                     "content": f"Документ:\n{document_text[:8000]}\n\nТребования:\n{requirements[:4000]}",
                 },
             ],
-            response_format={"type": "json_object"},
-            max_tokens=2000,
-            temperature=0.1,
-        )
+            "max_tokens": 2000,
+            "temperature": 0.1,
+        }
+        if supports_json_response_format():
+            request_kwargs["response_format"] = {"type": "json_object"}
+        response = await client.chat.completions.create(**request_kwargs)
 
         result = json.loads(response.choices[0].message.content)
         findings = result.get("findings", [])
@@ -485,7 +485,7 @@ async def inline_suggest_endpoint(
         return {"suggestions": [], "request_id": "", "model": "disabled"}
 
     try:
-        ai = AIService()
+        ai = AIService(db)
         from app.ai.models import InlineSuggestionRequest
         req = InlineSuggestionRequest(**request)
         result = await ai.get_inline_suggestions(req)

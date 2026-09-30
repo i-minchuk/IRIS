@@ -23,6 +23,7 @@ class RemarkCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=255)
     description: str = Field(..., min_length=1)
     location_ref: Optional[str] = Field(None, max_length=255)
+    process_task_id: Optional[str] = Field(None, max_length=50)
     
     assignee_id: Optional[int] = Field(None, gt=0)
     due_date: Optional[date] = None
@@ -43,6 +44,7 @@ class RemarkUpdate(BaseModel):
     title: Optional[str] = Field(None, min_length=1, max_length=255)
     description: Optional[str] = None
     location_ref: Optional[str] = Field(None, max_length=255)
+    process_task_id: Optional[str] = Field(None, max_length=50)
     
     assignee_id: Optional[int] = Field(None, gt=0)
     due_date: Optional[date] = None
@@ -109,6 +111,7 @@ class RemarkResponse(BaseModel):
     title: str
     description: str
     location_ref: Optional[str]
+    process_task_id: Optional[str] = None
     
     author_id: int
     author_name: str
@@ -156,6 +159,7 @@ class RemarkListItem(BaseModel):
     project_name: Optional[str] = None
     document_id: Optional[int]
     document_name: Optional[str] = None
+    process_task_id: Optional[str] = None
     
     author_id: int
     author_name: Optional[str] = None

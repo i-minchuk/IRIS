@@ -266,7 +266,8 @@ export const analyticsApi = {
   getPortfolio: (period?: AnalyticsPeriod) =>
     client.get<PortfolioChartData>('/analytics/portfolio', { params: period ? { period } : undefined }),
   getAlerts: () => client.get<AlertsData>('/analytics/alerts'),
-  getTenderPipeline: () => client.get<TenderPipelineData>('/analytics/tender-pipeline'),
+  getTenderPipeline: (period?: AnalyticsPeriod) =>
+    client.get<TenderPipelineData>('/analytics/tender-pipeline', { params: period ? { period } : undefined }),
   getDocumentsByProject: () => client.get<DocumentsByProjectData>('/analytics/documents-by-project'),
   getProductionSqcdp: () => client.get<SqcdpData>('/analytics/production-sqcdp'),
   getShipmentsCalendar: () => client.get<ShipmentCalendarData>('/analytics/shipments/calendar'),

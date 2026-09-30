@@ -4,8 +4,7 @@ from __future__ import annotations
 import json
 import logging
 
-from openai import AsyncOpenAI
-
+from app.core.ai_key import get_ai_client_from_settings, supports_json_response_format
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -20,15 +19,12 @@ async def classify_document(content: str) -> dict:
     if not settings.OPENAI_API_KEY:
         return {"type": "unknown", "confidence": 0.0, "keywords": []}
 
-    client = AsyncOpenAI(
-        api_key=settings.OPENAI_API_KEY,
-        base_url=settings.OPENAI_BASE_URL,
-    )
+    client = await get_ai_client_from_settings()
 
     try:
-        response = await client.chat.completions.create(
-            model=settings.LLM_MODEL,
-            messages=[
+        request_kwargs = {
+            "model": settings.LLM_MODEL,
+            "messages": [
                 {
                     "role": "system",
                     "content": (
@@ -42,9 +38,11 @@ async def classify_document(content: str) -> dict:
                     "content": content[:4000],  # Первые 4000 символов
                 },
             ],
-            response_format={"type": "json_object"},
-            max_tokens=150,
-        )
+            "max_tokens": 150,
+        }
+        if supports_json_response_format():
+            request_kwargs["response_format"] = {"type": "json_object"}
+        response = await client.chat.completions.create(**request_kwargs)
         result = json.loads(response.choices[0].message.content)
         # Normalize defaults
         return {

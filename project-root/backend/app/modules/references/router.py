@@ -7,14 +7,14 @@ import shutil
 import uuid
 from datetime import datetime, timezone
 from io import BytesIO
+from pathlib import Path
 from typing import Any, Optional
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
-from openai import AsyncOpenAI
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.ai_key import get_openai_api_key
+from app.core.ai_key import get_ai_client, get_openai_api_key, supports_json_response_format
 from app.core.config import settings
 from app.db.session import get_db
 from app.modules.auth.deps import get_current_active_user
@@ -98,10 +98,7 @@ async def _call_llm_for_glossary(text: str, db: AsyncSession) -> list[dict[str, 
             detail="OPENAI_API_KEY не настроен: автоматическая генерация глоссария недоступна",
         )
 
-    client = AsyncOpenAI(
-        api_key=api_key,
-        base_url=settings.OPENAI_BASE_URL,
-    )
+    client = await get_ai_client(db)
 
     messages = [
         {"role": "system", "content": GLOSSARY_SYSTEM_PROMPT},
@@ -109,13 +106,15 @@ async def _call_llm_for_glossary(text: str, db: AsyncSession) -> list[dict[str, 
     ]
 
     try:
-        response = await client.chat.completions.create(
-            model=settings.LLM_MODEL,
-            messages=messages,
-            temperature=0.2,
-            response_format={"type": "json_object"},
-            max_tokens=3000,
-        )
+        request_kwargs = {
+            "model": settings.LLM_MODEL,
+            "messages": messages,
+            "temperature": 0.2,
+            "max_tokens": 3000,
+        }
+        if supports_json_response_format():
+            request_kwargs["response_format"] = {"type": "json_object"}
+        response = await client.chat.completions.create(**request_kwargs)
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
@@ -291,21 +290,20 @@ async def _extract_standards_requirements(text: str, db: AsyncSession) -> list[d
             detail="OPENAI_API_KEY не настроен: автоматическое извлечение требований недоступно",
         )
 
-    client = AsyncOpenAI(
-        api_key=api_key,
-        base_url=settings.OPENAI_BASE_URL,
-    )
+    client = await get_ai_client(db)
 
-    response = await client.chat.completions.create(
-        model=settings.LLM_MODEL,
-        messages=[
+    request_kwargs = {
+        "model": settings.LLM_MODEL,
+        "messages": [
             {"role": "system", "content": STANDARDS_PROMPT},
             {"role": "user", "content": text[:20000]},
         ],
-        temperature=0.2,
-        response_format={"type": "json_object"},
-        max_tokens=3000,
-    )
+        "temperature": 0.2,
+        "max_tokens": 3000,
+    }
+    if supports_json_response_format():
+        request_kwargs["response_format"] = {"type": "json_object"}
+    response = await client.chat.completions.create(**request_kwargs)
 
     content = response.choices[0].message.content or "{}"
     parsed = json.loads(content)
@@ -314,6 +312,52 @@ async def _extract_standards_requirements(text: str, db: AsyncSession) -> list[d
     if isinstance(parsed, dict):
         return parsed.get("requirements", []) or parsed.get("items", []) or []
     return []
+
+
+async def _generate_glossary_for_standard(
+    text: str,
+    standard: Standard,
+    db: AsyncSession,
+    current_user: User,
+) -> list[GlossaryTerm]:
+    """Генерирует термины глоссария из текста загруженного норматива."""
+    context = f"Норматив: {standard.name}\nКод: {standard.code or '—'}\n\n{text[:12000]}"
+    raw_terms = await _call_llm_for_glossary(context, db)
+
+    generated_terms: list[GlossaryTerm] = []
+    for item in raw_terms:
+        term_text = str(item.get("term") or "").strip()
+        definition = str(item.get("definition") or "").strip()
+        if not term_text or not definition:
+            continue
+
+        existing = await db.execute(
+            select(GlossaryTerm).where(GlossaryTerm.term.ilike(term_text))
+        )
+        if existing.scalar_one_or_none():
+            continue
+
+        source_name = f"{standard.name} ({standard.code})" if standard.code else standard.name
+        term = GlossaryTerm(
+            term=term_text,
+            definition=definition,
+            company_usage=str(item.get("companyUsage") or "").strip() or None,
+            where_found=source_name,
+            department=str(item.get("department") or "").strip() or None,
+            source="ai",
+            created_by_id=current_user.id,
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
+        )
+        db.add(term)
+        generated_terms.append(term)
+
+    if generated_terms:
+        await db.commit()
+        for term in generated_terms:
+            await db.refresh(term)
+
+    return generated_terms
 
 
 def _save_standard_file(file: UploadFile) -> tuple[str, str]:
@@ -374,14 +418,15 @@ async def create_standard(
 @router.post("/standards/upload", response_model=StandardRead)
 async def upload_standard(
     file: UploadFile = File(...),
-    name: Optional[str] = None,
-    code: Optional[str] = None,
-    description: Optional[str] = None,
-    extract_ai: bool = True,
+    name: Optional[str] = Form(None),
+    code: Optional[str] = Form(None),
+    description: Optional[str] = Form(None),
+    extract_ai: bool = Form(True),
+    generate_glossary: bool = Form(True),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    """Загрузить файл норматива и автоматически извлечь требования с помощью AI."""
+    """Загрузить файл норматива и автоматически извлечь требования и термины глоссария с помощью AI."""
     allowed_exts = {".docx", ".pdf"}
     file_name = file.filename or ""
     ext = f".{file_name.lower().split('.')[-1]}" if "." in file_name else ""
@@ -413,6 +458,7 @@ async def upload_standard(
     standard_name = name or file_name
     standard_code = code or file_name
 
+    await file.seek(0)
     file_path, _ = _save_standard_file(file)
 
     standard = Standard(
@@ -429,6 +475,14 @@ async def upload_standard(
     db.add(standard)
     await db.commit()
     await db.refresh(standard)
+
+    if generate_glossary and text.strip():
+        try:
+            await _generate_glossary_for_standard(text, standard, db, current_user)
+        except Exception:
+            # Генерация глоссария — дополнительная функция, не должна ломать загрузку норматива.
+            await db.rollback()
+
     return standard
 
 

@@ -213,6 +213,15 @@ async def create_node(
     return obj
 
 
+@router.get("/nodes", response_model=list[NodeResponse])
+async def list_nodes(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Список узлов производственного процесса для привязки документов/операций/замечаний."""
+    return list((await db.execute(select(ProdProcessNode).order_by(ProdProcessNode.position))).scalars().all())
+
+
 @router.patch("/nodes/{node_id}", response_model=NodeResponse)
 async def update_node(
     node_id: str,

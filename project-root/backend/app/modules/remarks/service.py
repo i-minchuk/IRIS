@@ -69,6 +69,7 @@ class RemarkService:
                 title=remark_data.title,
                 description=remark_data.description,
                 location_ref=remark_data.location_ref,
+                process_task_id=remark_data.process_task_id,
                 author_id=author_id,
                 assignee_id=remark_data.assignee_id,
                 due_date=remark_data.due_date,

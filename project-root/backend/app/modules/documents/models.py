@@ -97,6 +97,7 @@ class Document(Base):
     ai_classified_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     ai_confidence: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     standard_ids: Mapped[Optional[list]] = mapped_column(JSON, default=list)
+    process_task_id: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     # Soft delete: исключён из работы (подсветка чёрной заливкой, можно вернуть)
     is_deleted: Mapped[bool] = mapped_column(
         nullable=False, default=False, server_default="0"
@@ -146,6 +147,7 @@ class Document(Base):
         Index("ix_doc_section", "section_id"),
         Index("ix_doc_status", "status"),
         Index("ix_documents_number", "number"),
+        Index("ix_documents_process_task", "process_task_id"),
         # Легаси-индексы из старых миграций — объявлены для совпадения схемы и моделей
         Index("ix_documents_project_id", "project_id"),
         Index("ix_documents_status", "status"),

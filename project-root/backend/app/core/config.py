@@ -103,6 +103,11 @@ class Settings(BaseSettings):
     OPENAI_BASE_URL: str = "https://api.openai.com/v1"
     LLM_MODEL: str = "gpt-4o"
     EMBEDDING_MODEL: str = "text-embedding-3-large"
+
+    # GigaChat (Sber) настройки
+    GIGACHAT_BASE_URL: str = "https://api.giga.chat"
+    GIGACHAT_AUTH_URL: str = "https://ngw.devices.sberbank.ru:9443/api/v2/oauth"
+    GIGACHAT_DEFAULT_MODEL: str = "GigaChat-2"
     
     QDRANT_HOST: str = "localhost"
     QDRANT_PORT: int = 6333

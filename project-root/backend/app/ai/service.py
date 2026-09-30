@@ -1,5 +1,7 @@
 from functools import lru_cache
 from openai import AsyncOpenAI
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.ai_key import get_ai_client, supports_json_response_format
 from app.core.config import settings
 from app.parser.indexer import DocumentIndexer
 from app.ai.prompts import RAG_SYSTEM_PROMPT, ANALYSIS_SYSTEM_PROMPT, INLINE_SUGGESTION_PROMPT
@@ -10,19 +12,16 @@ import json
 import tiktoken
 
 class AIService:
-    def __init__(self):
+    def __init__(self, db: AsyncSession):
+        self.db = db
         self._client: AsyncOpenAI | None = None
         self._indexer = None
         self.model = settings.LLM_MODEL
         self.max_tokens = settings.MAX_CONTEXT_TOKENS
 
-    @property
-    def client(self) -> AsyncOpenAI:
+    async def _async_client(self) -> AsyncOpenAI:
         if self._client is None:
-            self._client = AsyncOpenAI(
-                api_key=settings.OPENAI_API_KEY,
-                base_url=settings.OPENAI_BASE_URL
-            )
+            self._client = await get_ai_client(self.db)
         return self._client
 
     @property
@@ -80,7 +79,8 @@ class AIService:
         ]
         
         # 4. Запрос к LLM
-        response = await self.client.chat.completions.create(
+        client = await self._async_client()
+        response = await client.chat.completions.create(
             model=self.model,
             messages=messages,
             temperature=0.2,
@@ -170,7 +170,8 @@ class AIService:
         
         # 3. Запрос к LLM
         try:
-            response = await self.client.chat.completions.create(
+            client = await self._async_client()
+            response = await client.chat.completions.create(
                 model=self.model,
                 messages=messages,
                 temperature=0.15,
@@ -308,13 +309,16 @@ class AIService:
             {"role": "user", "content": f"Проанализируй документ:\n\n{full_text[:10000]}"}
         ]
         
-        response = await self.client.chat.completions.create(
-            model=self.model,
-            messages=messages,
-            temperature=0.1,
-            response_format={"type": "json_object"},
-            max_tokens=3000
-        )
+        client = await self._async_client()
+        request_kwargs = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": 0.1,
+            "max_tokens": 3000,
+        }
+        if supports_json_response_format():
+            request_kwargs["response_format"] = {"type": "json_object"}
+        response = await client.chat.completions.create(**request_kwargs)
         
         # 4. Парсим JSON
         try:

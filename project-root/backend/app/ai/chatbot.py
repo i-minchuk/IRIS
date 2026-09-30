@@ -1,4 +1,4 @@
-from openai import AsyncOpenAI
+from app.core.ai_key import get_ai_client_from_settings
 from app.core.config import settings
 
 
@@ -6,7 +6,7 @@ async def chat_with_ai(query: str) -> dict:
     if not settings.OPENAI_API_KEY:
         return {"answer": "AI недоступен без API ключа", "sources": []}
 
-    client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+    client = await get_ai_client_from_settings()
     response = await client.chat.completions.create(
         model=settings.LLM_MODEL,
         messages=[

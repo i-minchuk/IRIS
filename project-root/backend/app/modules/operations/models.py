@@ -33,6 +33,7 @@ class Operation(Base):
     actual_hours: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     percent_complete: Mapped[int] = mapped_column(Integer, default=0)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    process_task_id: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)

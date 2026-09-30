@@ -386,19 +386,23 @@ _PORTFOLIO_COLORS = ["#3B82F6", "#0C7205", "#D4AF37", "#8B5CF6", "#0EA5E9", "#DC
 @router.get("/portfolio", response_model=dict)
 @cache_response(expire_seconds=300)
 async def get_portfolio(
+    period: Optional[str] = Query(None),
     db: AsyncSession = Depends(_get_db),
     current_user: User = Depends(get_current_active_user),
 ):
     """Структура портфеля по типам объектов: доля и выручка по тендерам."""
 
-    result = await db.execute(
-        select(
-            Tender.project_type,
-            Tender.calculated_cost,
-            Tender.our_price,
-            Tender.nmc,
-        ).where(~Tender.status.in_(["cancelled", "archived"]))
-    )
+    start_date = _parse_period_start(period)
+    query = select(
+        Tender.project_type,
+        Tender.calculated_cost,
+        Tender.our_price,
+        Tender.nmc,
+    ).where(~Tender.status.in_(["cancelled", "archived"]))
+    if start_date is not None:
+        query = query.where(Tender.created_at >= start_date)
+
+    result = await db.execute(query)
     rows = result.all()
 
     revenue_by_type: dict[str, float] = {}
@@ -427,6 +431,62 @@ async def get_portfolio(
     }
 
 
+def _trend_intervals(period: str, now: datetime) -> list[tuple[datetime, datetime, str]]:
+    """Return list of (start, end, label) intervals for the requested period."""
+    months = [
+        "Янв", "Фев", "Мар", "Апр", "Май", "Июн",
+        "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек",
+    ]
+
+    if period == "today":
+        start = (now - timedelta(days=1)).replace(minute=0, second=0, microsecond=0)
+        return [
+            (start + timedelta(hours=i), start + timedelta(hours=i + 1), f"{(start + timedelta(hours=i)).hour:02d}:00")
+            for i in range(24)
+        ]
+
+    if period == "week":
+        start = (now - timedelta(days=7)).replace(hour=0, minute=0, second=0, microsecond=0)
+        return [
+            (start + timedelta(days=i), start + timedelta(days=i + 1), (start + timedelta(days=i)).strftime("%d.%m"))
+            for i in range(7)
+        ]
+
+    if period == "month":
+        start = (now - timedelta(days=30)).replace(hour=0, minute=0, second=0, microsecond=0)
+        return [
+            (start + timedelta(days=i), start + timedelta(days=i + 1), (start + timedelta(days=i)).strftime("%d.%m"))
+            for i in range(30)
+        ]
+
+    if period == "quarter":
+        start = (now - timedelta(days=90)).replace(hour=0, minute=0, second=0, microsecond=0)
+        return [
+            (start + timedelta(weeks=i), start + timedelta(weeks=i + 1), f"Нед{i + 1}")
+            for i in range(13)
+        ]
+
+    # year / default — 12 months
+    year, month = now.year, now.month - 11
+    if month <= 0:
+        year -= 1
+        month += 12
+    start = datetime(year, month, 1, tzinfo=timezone.utc)
+    intervals = []
+    for i in range(12):
+        y, m = start.year, start.month + i
+        if m > 12:
+            y += 1
+            m -= 12
+        month_start = datetime(y, m, 1, tzinfo=timezone.utc)
+        if m == 12:
+            month_end = datetime(y + 1, 1, 1, tzinfo=timezone.utc)
+        else:
+            month_end = datetime(y, m + 1, 1, tzinfo=timezone.utc)
+        intervals.append((month_start, month_end, months[m - 1]))
+    return intervals
+
+
 @router.get("/trend", response_model=dict)
 @cache_response(expire_seconds=600)
 async def get_trend(
@@ -434,18 +494,10 @@ async def get_trend(
     db: AsyncSession = Depends(_get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    """Динамика выручки за 12 месяцев: сумма выигранных тендеров по месяцам."""
-    months = [
-        "Янв", "Фев", "Мар", "Апр", "Май", "Июн",
-        "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек",
-    ]
-
+    """Динамика выручки: сумма выигранных тендеров по периоду."""
     now = datetime.now(timezone.utc)
-    year, month = now.year, now.month - 11
-    if month <= 0:
-        year -= 1
-        month += 12
-    window_start = datetime(year, month, 1, tzinfo=timezone.utc)
+    intervals = _trend_intervals(period, now)
+    window_start = intervals[0][0]
 
     result = await db.execute(
         select(Tender.our_price, Tender.nmc, Tender.created_at).where(
@@ -455,25 +507,20 @@ async def get_trend(
             )
         )
     )
-    revenue_by_month: dict[tuple[int, int], float] = {}
+
+    revenue_by_interval: dict[int, float] = {}
     for our_price, nmc, created_at in result.all():
         if created_at is None:
             continue
-        key = (created_at.year, created_at.month)
-        revenue_by_month[key] = revenue_by_month.get(key, 0.0) + (our_price or nmc or 0.0)
+        for idx, (istart, iend, _label) in enumerate(intervals):
+            if istart <= created_at < iend:
+                revenue_by_interval[idx] = revenue_by_interval.get(idx, 0.0) + (our_price or nmc or 0.0)
+                break
 
-    points = []
-    for i in range(12):
-        y, m = window_start.year, window_start.month + i
-        if m > 12:
-            y += 1
-            m -= 12
-        points.append(
-            {
-                "label": months[m - 1],
-                "value": round(revenue_by_month.get((y, m), 0.0) / 1_000_000, 1),
-            }
-        )
+    points = [
+        {"label": label, "value": round(revenue_by_interval.get(idx, 0.0) / 1_000_000, 1)}
+        for idx, (_start, _end, label) in enumerate(intervals)
+    ]
 
     return {
         "points": points,
@@ -485,6 +532,7 @@ async def get_trend(
 @router.get("/finance-summary", response_model=dict)
 @cache_response(expire_seconds=300)
 async def get_finance_summary(
+    period: Optional[str] = Query(None),
     db: AsyncSession = Depends(_get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -493,9 +541,12 @@ async def get_finance_summary(
     Источник — карточки тендеров (our_price, margin_pct, nmc). Дебиторской
     задолженности источника данных нет — receivables возвращается null.
     """
-    result = await db.execute(
-        select(Tender.status, Tender.our_price, Tender.nmc, Tender.margin_pct)
-    )
+    start_date = _parse_period_start(period)
+    query = select(Tender.status, Tender.our_price, Tender.nmc, Tender.margin_pct)
+    if start_date is not None:
+        query = query.where(Tender.created_at >= start_date)
+
+    result = await db.execute(query)
     rows = result.all()
 
     pipeline_statuses = {"draft", "review", "approved", "sent"}
@@ -740,10 +791,13 @@ async def get_alerts(
 
 @router.get("/tender-pipeline", response_model=dict)
 async def get_tender_pipeline(
+    period: Optional[str] = Query(None),
     db: AsyncSession = Depends(_get_db),
     current_user: User = Depends(get_current_active_user),
 ):
     """Return tender pipeline funnel with real stage aggregates."""
+
+    start_date = _parse_period_start(period)
 
     # Map funnel stages to Tender.status values
     stage_defs = [
@@ -757,6 +811,8 @@ async def get_tender_pipeline(
         {"key": "cancelled", "label": "Отменено", "statuses": ["cancelled"]},
     ]
 
+    period_filter = [] if start_date is None else [Tender.created_at >= start_date]
+
     pipeline = []
     total_max = 0
     for stage in stage_defs:
@@ -764,7 +820,7 @@ async def get_tender_pipeline(
             select(
                 func.count().label("count"),
                 func.coalesce(func.sum(Tender.calculated_cost), 0).label("sum_cost"),
-            ).where(Tender.status.in_(stage["statuses"]))
+            ).where(Tender.status.in_(stage["statuses"]), *period_filter)
         )
         row = result.mappings().one()
         count = row.count or 0
@@ -778,9 +834,9 @@ async def get_tender_pipeline(
         })
 
     # Real counts for won / lost / cancelled
-    won_result = await db.execute(select(func.count()).where(Tender.status == "won"))
-    lost_result = await db.execute(select(func.count()).where(Tender.status == "lost"))
-    cancelled_result = await db.execute(select(func.count()).where(Tender.status == "cancelled"))
+    won_result = await db.execute(select(func.count()).where(Tender.status == "won", *period_filter))
+    lost_result = await db.execute(select(func.count()).where(Tender.status == "lost", *period_filter))
+    cancelled_result = await db.execute(select(func.count()).where(Tender.status == "cancelled", *period_filter))
     won_count = won_result.scalar() or 0
     lost_count = lost_result.scalar() or 0
     cancelled_count = cancelled_result.scalar() or 0
@@ -788,7 +844,7 @@ async def get_tender_pipeline(
 
     # Average preparation days for sent tenders — считаем в Python (кросс-БД)
     sent_result = await db.execute(
-        select(Tender.created_at).where(Tender.status == "sent")
+        select(Tender.created_at).where(Tender.status == "sent", *period_filter)
     )
     now = datetime.now(timezone.utc)
     sent_days = []
@@ -807,7 +863,8 @@ async def get_tender_pipeline(
                 Tender.deadline.isnot(None),
                 Tender.deadline < datetime.now(timezone.utc),
                 ~Tender.status.in_(["won", "lost", "cancelled", "archived"]),
-            )
+            ),
+            *period_filter,
         )
     )
     overdue_count = overdue_result.scalar() or 0

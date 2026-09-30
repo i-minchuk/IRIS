@@ -25,7 +25,8 @@ import {
   TrendingUp, TrendingDown, AlertTriangle,
   Award, DollarSign, Briefcase, Users, Clock,
   ChevronRight, Zap, ArrowDown, Loader2,
-  Gavel, BarChart3, Calendar as CalendarIcon
+  Gavel, BarChart3, Calendar as CalendarIcon,
+  RefreshCw,
 } from 'lucide-react';
 import { DepartmentLoad } from '@/components/DepartmentLoad';
 import {
@@ -127,6 +128,7 @@ export default function Dashboard() {
   const [teamTimeData, setTeamTimeData] = useState<TeamTimeAnalytics[]>([]);
   const [teamTimeLoading, setTeamTimeLoading] = useState(true);
   const [financeSummary, setFinanceSummary] = useState<FinanceSummary | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   // Derived flags — no mock fallback, show empty states instead
   const hasData = scorecard.length > 0 || alerts.length > 0 || tenderPipeline !== null || teamTimeData.length > 0;
@@ -157,13 +159,13 @@ export default function Dashboard() {
     Promise.allSettled([
       analyticsApi.getDashboard(),
       analyticsApi.getAlerts(),
-      analyticsApi.getTenderPipeline(),
+      analyticsApi.getTenderPipeline(period),
       analyticsApi.getSparklines(),
       analyticsApi.getTrend(period),
       analyticsApi.getPortfolio(period),
       analyticsApi.getActionItems(),
       analyticsApi.getTeamTimeTracking(period as TeamTimePeriod),
-      analyticsApi.getFinanceSummary(),
+      analyticsApi.getFinanceSummary(period),
     ]).then(([dashboardRes, alertsRes, tenderRes, sparkRes, trendRes, portfolioRes, actionItemsRes, teamTimeRes, financeRes]) => {
       if (cancelled) return;
 
@@ -206,6 +208,7 @@ export default function Dashboard() {
         setLoading(false);
         setChartsLoading(false);
         setTeamTimeLoading(false);
+        setLastUpdated(new Date());
       }
     });
 
@@ -438,6 +441,12 @@ export default function Dashboard() {
               <div>
                 <h1 className="sr-only" style={{ color: 'var(--text-primary)' }}>Панель аналитики</h1>
                 <h2 className="text-lg md:text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Стратегическая сводка по финансам, тендерам и проектам</h2>
+                {lastUpdated && (
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                    Обновлено: {lastUpdated.toLocaleTimeString('ru-RU')}
+                    <span className="hidden sm:inline"> · автообновление каждые 30 сек</span>
+                  </p>
+                )}
               </div>
               <div className="flex items-center gap-3">
                 <div className="flex items-center rounded-lg p-0.5" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
@@ -455,6 +464,19 @@ export default function Dashboard() {
                     </button>
                   ))}
                 </div>
+
+                <button
+                  onClick={() => loadDashboardData()}
+                  disabled={loading}
+                  title="Обновить данные"
+                  className="flex items-center justify-center w-9 h-9 rounded-lg transition-colors disabled:opacity-50"
+                  style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--iris-bg-hover)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--card-bg)'; }}
+                >
+                  <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+                </button>
+
                 <LiveClock className="text-lg md:text-2xl font-medium leading-relaxed mt-1 hidden sm:inline tabular-nums" style={{ color: 'var(--text-secondary)' }} />
               </div>
             </div>
@@ -710,6 +732,94 @@ export default function Dashboard() {
             </div>
           </div>
 
+          {/* Trend + Top projects */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-base md:text-xl font-medium" style={{ color: 'var(--text-secondary)' }}>
+                  {{
+                    today: 'Динамика выручки (24 ч)',
+                    week: 'Динамика выручки (7 дней)',
+                    month: 'Динамика выручки (30 дней)',
+                    quarter: 'Динамика выручки (90 дней)',
+                  }[period]}
+                </p>
+                <span className="text-xs md:text-sm font-medium" style={{ color: 'var(--text-muted)' }}>—</span>
+              </div>
+              {chartsLoading && (
+                <div className="flex items-center justify-center gap-2 py-8">
+                  <Loader2 size={16} className="animate-spin" style={{ color: 'var(--text-muted)' }} />
+                  <span className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Загрузка графиков…</span>
+                </div>
+              )}
+              <div className="h-56" style={{ opacity: chartsLoading ? 0.4 : 1, transition: 'opacity 0.2s' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={trendData} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={isDark ? '#60A5FA' : '#3B82F6'} stopOpacity={0.35} />
+                        <stop offset="95%" stopColor={isDark ? '#60A5FA' : '#3B82F6'} stopOpacity={0.02} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} />
+                    <XAxis dataKey="label" tick={{ fill: chartTextColor, fontSize: 11 }} axisLine={{ stroke: chartGridColor }} tickLine={false} />
+                    <YAxis tick={{ fill: chartTextColor, fontSize: 11 }} axisLine={{ stroke: chartGridColor }} tickLine={false} />
+                    <Tooltip
+                      contentStyle={tooltipStyle(isDark)}
+                      formatter={(value) => [`${value} млн ₽`, 'Выручка']}
+                    />
+                    <Legend wrapperStyle={{ fontSize: '12px', color: chartTextColor }} />
+                    <Area
+                      type="monotone"
+                      dataKey="value"
+                      name="Выручка (млн ₽)"
+                      stroke={isDark ? '#60A5FA' : '#3B82F6'}
+                      strokeWidth={2}
+                      fill="url(#colorRevenue)"
+                      dot={{ r: 3, strokeWidth: 2, fill: isDark ? '#1E2230' : '#FFFFFF' }}
+                      activeDot={{ r: 5 }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-base md:text-xl font-medium" style={{ color: 'var(--text-secondary)' }}>
+                  Топ проекты по выручке
+                </p>
+                <button onClick={() => navigate('/projects')} className="text-base md:text-lg font-medium leading-relaxed mt-1 flex items-center gap-1 transition-colors" style={{ color: 'var(--text-secondary)' }}>
+                  Все <ChevronRight size={14} />
+                </button>
+              </div>
+              <div className="flex flex-col gap-2">
+                {topProjects.map((proj, i) => {
+                  const color = proj.status === 'active' ? '#2563EB' : proj.status === 'review' ? '#D4AF37' : '#0C7205';
+                  return (
+                    <div key={i} onClick={() => navigate('/projects')} className="flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors"
+                      style={{ background: 'transparent' }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="w-1 h-8 rounded-full" style={{ background: color }} />
+                        <div>
+                          <div className="text-base md:text-lg font-medium" style={{ color: 'var(--text-primary)' }}>{proj.name}</div>
+                          <div className="text-xs md:text-sm" style={{ color: 'var(--text-muted)' }}>Дедлайн: {proj.deadline}</div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-base md:text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{proj.revenue}</div>
+                        <div className="text-xs md:text-sm" style={{ color: color }}>{proj.percent}%</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
           {/* Учёт времени и качество работы */}
           <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
             <div className="flex items-center justify-between mb-3">
@@ -798,89 +908,6 @@ export default function Dashboard() {
                     </div>
                   </div>
                 ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Trend + Top projects */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-base md:text-xl font-medium" style={{ color: 'var(--text-secondary)' }}>
-                  Динамика выручки (12 мес)
-                </p>
-                <span className="text-xs md:text-sm font-medium" style={{ color: 'var(--text-muted)' }}>—</span>
-              </div>
-              {chartsLoading && (
-                <div className="flex items-center justify-center gap-2 py-8">
-                  <Loader2 size={16} className="animate-spin" style={{ color: 'var(--text-muted)' }} />
-                  <span className="text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>Загрузка графиков…</span>
-                </div>
-              )}
-              <div className="h-56" style={{ opacity: chartsLoading ? 0.4 : 1, transition: 'opacity 0.2s' }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={trendData} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={isDark ? '#60A5FA' : '#3B82F6'} stopOpacity={0.35} />
-                        <stop offset="95%" stopColor={isDark ? '#60A5FA' : '#3B82F6'} stopOpacity={0.02} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} />
-                    <XAxis dataKey="label" tick={{ fill: chartTextColor, fontSize: 11 }} axisLine={{ stroke: chartGridColor }} tickLine={false} />
-                    <YAxis tick={{ fill: chartTextColor, fontSize: 11 }} axisLine={{ stroke: chartGridColor }} tickLine={false} />
-                    <Tooltip
-                      contentStyle={tooltipStyle(isDark)}
-                      formatter={(value) => [`${value} млн ₽`, 'Выручка']}
-                    />
-                    <Legend wrapperStyle={{ fontSize: '12px', color: chartTextColor }} />
-                    <Area
-                      type="monotone"
-                      dataKey="value"
-                      name="Выручка (млн ₽)"
-                      stroke={isDark ? '#60A5FA' : '#3B82F6'}
-                      strokeWidth={2}
-                      fill="url(#colorRevenue)"
-                      dot={{ r: 3, strokeWidth: 2, fill: isDark ? '#1E2230' : '#FFFFFF' }}
-                      activeDot={{ r: 5 }}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-base md:text-xl font-medium" style={{ color: 'var(--text-secondary)' }}>
-                  Топ проекты по выручке
-                </p>
-                <button onClick={() => navigate('/projects')} className="text-base md:text-lg font-medium leading-relaxed mt-1 flex items-center gap-1 transition-colors" style={{ color: 'var(--text-secondary)' }}>
-                  Все <ChevronRight size={14} />
-                </button>
-              </div>
-              <div className="flex flex-col gap-2">
-                {topProjects.map((proj, i) => {
-                  const color = proj.status === 'active' ? '#2563EB' : proj.status === 'review' ? '#D4AF37' : '#0C7205';
-                  return (
-                    <div key={i} onClick={() => navigate('/projects')} className="flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors"
-                      style={{ background: 'transparent' }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className="w-1 h-8 rounded-full" style={{ background: color }} />
-                        <div>
-                          <div className="text-base md:text-lg font-medium" style={{ color: 'var(--text-primary)' }}>{proj.name}</div>
-                          <div className="text-xs md:text-sm" style={{ color: 'var(--text-muted)' }}>Дедлайн: {proj.deadline}</div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-base md:text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{proj.revenue}</div>
-                        <div className="text-xs md:text-sm" style={{ color: color }}>{proj.percent}%</div>
-                      </div>
-                    </div>
-                  );
-                })}
               </div>
             </div>
           </div>

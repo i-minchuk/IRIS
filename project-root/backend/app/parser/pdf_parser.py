@@ -11,32 +11,41 @@ class PDFParser(BaseParser):
     
     def parse(self, file_stream: BinaryIO, file_name: str) -> ParsedDocument:
         doc = fitz.open(stream=file_stream.read(), filetype="pdf")
-        
+
         full_text = []
         sections = []
         current_section = None
-        
+
         for page_num, page in enumerate(doc):
+            # Основной текст извлекаем через 'text' — корректная UTF-8 кодировка
+            # даже для PDF со старыми шрифтами без ToUnicode.
+            page_text = page.get_text("text")
+            if page_text:
+                full_text.append(page_text)
+
+            # Структуру и заголовки извлекаем через 'dict'.
+            # Заголовки/разделы здесь нужны только для оглавления; основной
+            # текст документа уже собран корректно через get_text("text").
             blocks = page.get_text("dict")["blocks"]
-            
+
             for block in blocks:
                 if block.get("type") != 0:  # Не текстовый блок
                     continue
-                
+
                 for line in block.get("lines", []):
                     line_text = " ".join(
                         span["text"] for span in line.get("spans", [])
                     ).strip()
-                    
+
                     if not line_text:
                         continue
-                    
+
                     # Определяем уровень заголовка по шрифту
                     font_size = line["spans"][0]["size"] if line["spans"] else 12
                     is_bold = line["spans"][0].get("flags", 0) & 2 ** 4 != 0
-                    
+
                     level = self._detect_heading_level(font_size, is_bold, line_text)
-                    
+
                     if level > 0:
                         # Это заголовок — новый раздел
                         section = {
@@ -48,16 +57,13 @@ class PDFParser(BaseParser):
                         }
                         sections.append(section)
                         current_section = section
-                    else:
-                        # Обычный текст
-                        full_text.append(line_text)
-                        if current_section:
-                            current_section["text"].append(line_text)
-        
+                    elif current_section:
+                        current_section["text"].append(line_text)
+
         # Преобразуем текст разделов в строки
         for section in sections:
             section["text"] = "\n".join(section["text"])
-        
+
         content = "\n".join(full_text)
         entities = self._extract_entities(content)
         

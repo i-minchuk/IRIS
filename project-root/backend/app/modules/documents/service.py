@@ -51,6 +51,7 @@ class DocumentService:
                 "author_id": d.author_id,
                 "project_id": d.project_id,
                 "section_id": d.section_id,
+                "process_task_id": d.process_task_id,
                 "created_at": d.created_at.isoformat() if d.created_at else None,
             }
             for d in docs
@@ -88,6 +89,7 @@ class DocumentService:
             "ai_classified_type": doc.ai_classified_type,
             "ai_confidence": doc.ai_confidence,
             "standard_ids": doc.standard_ids or [],
+            "process_task_id": doc.process_task_id,
             "has_file": any(r.file_path for r in doc.revisions),
             "created_at": doc.created_at.isoformat() if doc.created_at else None,
             "revisions": [
@@ -124,6 +126,7 @@ class DocumentService:
             "variables_snapshot": data.get("variables_snapshot", {}),
             "assignee_ids": data.get("assignee_ids") or [],
             "standard_ids": data.get("standard_ids") or [],
+            "process_task_id": data.get("process_task_id"),
         }
         
         doc = await self.doc_repo.create(doc_data)
@@ -151,6 +154,7 @@ class DocumentService:
             "status": doc.status,
             "ai_classified_type": doc.ai_classified_type,
             "ai_confidence": doc.ai_confidence,
+            "process_task_id": doc.process_task_id,
         }
     
     async def update_document(

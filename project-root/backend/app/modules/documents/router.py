@@ -93,6 +93,7 @@ async def list_documents(
             "author_id": d.author_id,
             "project_id": d.project_id,
             "section_id": d.section_id,
+            "process_task_id": d.process_task_id,
             "is_deleted": d.is_deleted,
             "deleted_at": d.deleted_at.isoformat() if d.deleted_at else None,
             "delete_reason": d.delete_reason,
