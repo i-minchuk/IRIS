@@ -118,6 +118,53 @@ async def update_project(
     )
 
 
+@router.delete("/{project_id}", response_model=dict)
+async def delete_project(
+    project_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Удалить проект. Запрещено, если в проекте есть документы."""
+    from sqlalchemy import text
+    from sqlalchemy.exc import IntegrityError
+
+    result = await db.execute(select(Project).where(Project.id == project_id))
+    project = result.scalar_one_or_none()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    docs_count = (
+        await db.execute(
+            text("SELECT COUNT(*) FROM documents WHERE project_id = :pid AND is_deleted = false"),
+            {"pid": project_id},
+        )
+    ).scalar()
+    if docs_count:
+        raise HTTPException(
+            status_code=409,
+            detail=f"В проекте есть документы ({docs_count}). Удалите или переместите их сначала.",
+        )
+    # Исключённые из работы документы удаляем вместе с проектом необратимо:
+    # raw SQL, чтобы ORM-отношения не пытались обнулить project_id (NOT NULL).
+    await db.execute(
+        text("DELETE FROM documents WHERE project_id = :pid AND is_deleted = true"),
+        {"pid": project_id},
+    )
+    db.expunge(project)
+    try:
+        await db.execute(text("DELETE FROM projects WHERE id = :pid"), {"pid": project_id})
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="Не удалось удалить проект: в нём остались связанные данные "
+            "(задачи, маршруты, учёт времени и т.п.). Удалите их сначала.",
+        )
+    await invalidate_cache("cache:*portfolio*")
+    await invalidate_cache("cache:*dashboard*")
+    return {"id": project_id, "deleted": True}
+
+
 @router.get("/{project_id}", response_model=ProjectDetailResponse)
 async def get_project(
     project_id: int,

@@ -172,6 +172,17 @@ class DocumentService:
         
         # Remember whether the document was already approved to avoid duplicate awards.
         was_already_approved = doc.status == 'approved'
+        # При смене проекта привязка к этапу/комплекту/разделу старого проекта
+        # теряет смысл — сбрасываем, чтобы документ не висел в чужой структуре.
+        if (
+            "project_id" in data
+            and data["project_id"] is not None
+            and data["project_id"] != doc.project_id
+        ):
+            data = dict(data)
+            data["stage_id"] = None
+            data["kit_id"] = None
+            data["section_id"] = None
         doc = await self.doc_repo.update(doc, data)
         
         # Gamification: award XP/points when document is approved.
@@ -227,6 +238,46 @@ class DocumentService:
             "name": doc.name,
             "status": doc.status,
             "content": doc.content,
+        }
+
+    async def copy_document(
+        self,
+        document_id: int,
+        user_id: int,
+    ) -> Dict[str, Any]:
+        """Создать копию документа (метаданные + содержимое, без файлов ревизий)."""
+        doc = await self.doc_repo.get_by_id(document_id)
+        if not doc:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Document not found"
+            )
+        if doc.is_deleted:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Cannot copy an excluded document"
+            )
+        new_doc = await self.doc_repo.create({
+            "project_id": doc.project_id,
+            "stage_id": doc.stage_id,
+            "kit_id": doc.kit_id,
+            "section_id": doc.section_id,
+            "number": doc.number,
+            "name": f"{doc.name} (копия)",
+            "doc_type": doc.doc_type,
+            "status": "draft",
+            "author_id": user_id,
+            "content": doc.content,
+            "variables_snapshot": doc.variables_snapshot,
+            "assignee_ids": doc.assignee_ids or [],
+            "standard_ids": doc.standard_ids or [],
+            "process_task_id": None,
+        })
+        return {
+            "id": new_doc.id,
+            "number": new_doc.number,
+            "name": new_doc.name,
+            "status": new_doc.status,
         }
 
     async def soft_delete_document(

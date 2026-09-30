@@ -126,6 +126,15 @@ export const updateDocument = async (id: number, body: Partial<DocumentItem> & {
   return data;
 };
 
+export const copyDocument = async (id: number): Promise<DocumentItem> => {
+  const { data } = await client.post(`/documents/${id}/copy`);
+  return data;
+};
+
+export const deleteDocument = async (id: number, reason?: string): Promise<void> => {
+  await client.delete(`/documents/${id}`, { params: reason ? { reason } : undefined });
+};
+
 export const createRevision = async (documentId: number, body: Partial<Revision>): Promise<Revision> => {
   const { data } = await client.post(`/documents/${documentId}/revisions`, body);
   return data;

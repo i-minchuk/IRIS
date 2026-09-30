@@ -11,6 +11,7 @@ import {
   Briefcase, UserCheck, X, FilePlus, FileSpreadsheet,
   AlertCircle, ArrowRight, FileCheck, Archive, Filter,
   GitBranch, Paperclip, Maximize2, Minimize2,
+  Copy, Trash2, FolderInput, PenLine,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getSessions, type TimeSession } from '@/features/time_tracking/api/sessions';
@@ -18,9 +19,9 @@ import { useAutoTimeTracker } from '@/features/time_tracking/hooks/useAutoTimeTr
 import apiClient from '@/shared/api/client';
 import { getLeaderboard } from '@/features/gamification/api/gamification';
 import { getRemarks, createRemark } from '@/features/remarks/api/remarks';
-import { getDocuments, getDocument, uploadDocumentFile, downloadRevisionFile, approveDocument, getApprovalFeed, getActionTaskStatuses, setActionTaskStatus, updateDocument, type ApprovalFeedItem, type DocumentItem, type ActionTaskStatus } from '@/features/documents/api/documents';
+import { getDocuments, getDocument, uploadDocumentFile, downloadRevisionFile, approveDocument, getApprovalFeed, getActionTaskStatuses, setActionTaskStatus, updateDocument, copyDocument, deleteDocument, type ApprovalFeedItem, type DocumentItem, type ActionTaskStatus } from '@/features/documents/api/documents';
 import ViewerContainer from '@/components/viewers/ViewerContainer';
-import { getProjects, updateProject } from '@/features/projects/api/projects';
+import { getProjects, updateProject, deleteProject } from '@/features/projects/api/projects';
 import { toast } from 'sonner';
 import type { LeaderboardEntry } from '@/types';
 import type { RemarkListItem } from '@/types/remarks';
@@ -256,6 +257,34 @@ function InlineRename({
 }
 
 
+
+/* ── Пункт контекстного меню (правый клик) ── */
+function ContextMenuItem({
+  icon,
+  label,
+  danger,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  danger?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      onClick={onClick}
+      className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors"
+      style={{ color: danger ? '#F87171' : 'var(--text-primary)' }}
+      onMouseEnter={e => { e.currentTarget.style.background = 'var(--iris-bg-hover)'; }}
+      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+    >
+      {icon}
+      {label}
+    </button>
+  );
+}
 
 /* ═══════════════════════════════════════════
    REGISTRY VIEW — VS Code three-panel layout
@@ -591,6 +620,115 @@ function RegistryView() {
     setEditingDocId(doc.id);
   };
 
+  // ── Контекстное меню (правый клик) ──
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    kind: 'project' | 'document';
+    projectName: string;
+    doc?: Document;
+  } | null>(null);
+
+  const closeContextMenu = () => setContextMenu(null);
+
+  const openContextMenu = (
+    e: React.MouseEvent,
+    kind: 'project' | 'document',
+    projectName: string,
+    doc?: Document,
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({ x: e.clientX, y: e.clientY, kind, projectName, doc });
+    // Выделяем объект под курсором
+    setSelectedProject(projectName);
+    if (doc) setSelectedDocId(doc.id);
+  };
+
+  useEffect(() => {
+    if (!contextMenu) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setContextMenu(null);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [contextMenu]);
+
+  const handleCopyDoc = async (doc: Document) => {
+    closeContextMenu();
+    const numericId = Number.parseInt(doc.id, 10);
+    if (!numericId) return;
+    try {
+      await copyDocument(numericId);
+      toast.success('Документ скопирован');
+      await loadData();
+    } catch {
+      // ошибку показал интерцептор
+    }
+  };
+
+  const handleDeleteDoc = async (doc: Document) => {
+    closeContextMenu();
+    if (!window.confirm(`Исключить документ «${doc.code} — ${doc.name}» из работы?\nЕго можно будет вернуть через архив.`)) return;
+    const numericId = Number.parseInt(doc.id, 10);
+    if (!numericId) return;
+    try {
+      await deleteDocument(numericId);
+      toast.success('Документ исключён из работы');
+      if (selectedDocId === doc.id) setSelectedDocId(null);
+      await loadData();
+    } catch {
+      // ошибку показал интерцептор
+    }
+  };
+
+  const handleDeleteProject = async (projectName: string) => {
+    closeContextMenu();
+    const proj = allProjects.find(p => p.name === projectName);
+    if (!proj) {
+      toast.error('Проект не найден');
+      return;
+    }
+    if (!window.confirm(`Удалить проект «${projectName}»? Действие необратимо.`)) return;
+    try {
+      await deleteProject(proj.id);
+      toast.success('Проект удалён');
+      if (selectedProject === projectName) setSelectedProject(null);
+      await loadData();
+    } catch {
+      // ошибку показал интерцептор
+    }
+  };
+
+  // ── Перемещение документа в другой проект ──
+  const [moveDoc, setMoveDoc] = useState<Document | null>(null);
+  const [moveTarget, setMoveTarget] = useState('');
+  const [moveLoading, setMoveLoading] = useState(false);
+
+  const moveTargets = useMemo(
+    () => allProjects.filter(p => p.name !== moveDoc?.project),
+    [allProjects, moveDoc],
+  );
+
+  const handleMoveDoc = async () => {
+    if (!moveDoc || !moveTarget) return;
+    const numericId = Number.parseInt(moveDoc.id, 10);
+    const targetProj = allProjects.find(p => p.name === moveTarget);
+    if (!numericId || !targetProj) return;
+    setMoveLoading(true);
+    try {
+      await updateDocument(numericId, { project_id: targetProj.id });
+      toast.success(`Документ перемещён в «${moveTarget}»`);
+      setMoveDoc(null);
+      setMoveTarget('');
+      await loadData();
+    } catch {
+      // ошибку показал интерцептор
+    } finally {
+      setMoveLoading(false);
+    }
+  };
+
   const handleDocClick = async (doc: Document) => {
     setSelectedDocId(doc.id);
     setSelectedProject(doc.project);
@@ -765,7 +903,8 @@ function RegistryView() {
                   <button
                     onClick={() => toggleProject(project)}
                     onDoubleClick={() => startProjectRename(project)}
-                    title="Двойной клик — переименовать проект"
+                    onContextMenu={(e) => openContextMenu(e, 'project', project)}
+                    title="Двойной клик — переименовать, правый клик — меню"
                     className="w-full flex items-center gap-1.5 px-2 py-1.5 text-left text-xs transition-colors"
                     style={{
                       color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)',
@@ -799,7 +938,8 @@ function RegistryView() {
                             key={doc.id}
                             onClick={() => handleDocClick(doc)}
                             onDoubleClick={() => setEditingDocId(doc.id)}
-                            title="Двойной клик — переименовать документ"
+                            onContextMenu={(e) => openContextMenu(e, 'document', doc.project, doc)}
+                            title="Двойной клик — переименовать, правый клик — меню"
                             className="w-full flex items-center gap-1.5 pl-7 pr-2 py-1 text-left transition-colors"
                             style={{
                               color: isDocSelected ? 'var(--text-primary)' : 'var(--text-muted)',
@@ -874,6 +1014,7 @@ function RegistryView() {
                     tabIndex={0}
                     onClick={() => handleDocClickDelayed(doc)}
                     onDoubleClick={() => handleDocDoubleClick(doc)}
+                    onContextMenu={(e) => openContextMenu(e, 'document', doc.project, doc)}
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleDocClick(doc); }}
                     className="w-full flex items-center gap-2 p-2 rounded-md text-left transition-colors cursor-pointer"
                     style={{ background: 'transparent', border: '1px solid transparent' }}
@@ -1289,6 +1430,134 @@ function RegistryView() {
               ) : modalFile ? (
                 <ViewerContainer fileUrl={modalFile.url} fileName={modalFile.name} />
               ) : null}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Контекстное меню (правый клик) */}
+      {contextMenu && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={closeContextMenu}
+            onContextMenu={(e) => { e.preventDefault(); closeContextMenu(); }}
+          />
+          <div
+            className="fixed z-50 min-w-[180px] rounded-lg py-1 shadow-xl"
+            style={{
+              top: Math.min(contextMenu.y, window.innerHeight - 180),
+              left: Math.min(contextMenu.x, window.innerWidth - 200),
+              background: 'var(--card-bg)',
+              border: '1px solid var(--border-default)',
+            }}
+          >
+            {contextMenu.kind === 'project' ? (
+              <>
+                <ContextMenuItem
+                  icon={<PenLine size={13} />}
+                  label="Переименовать"
+                  onClick={() => {
+                    closeContextMenu();
+                    startProjectRename(contextMenu.projectName);
+                  }}
+                />
+                <ContextMenuItem
+                  icon={<Trash2 size={13} />}
+                  label="Удалить"
+                  danger
+                  onClick={() => void handleDeleteProject(contextMenu.projectName)}
+                />
+              </>
+            ) : contextMenu.doc ? (
+              <>
+                <ContextMenuItem
+                  icon={<PenLine size={13} />}
+                  label="Переименовать"
+                  onClick={() => {
+                    closeContextMenu();
+                    setEditingDocId(contextMenu.doc!.id);
+                  }}
+                />
+                <ContextMenuItem
+                  icon={<Copy size={13} />}
+                  label="Копировать"
+                  onClick={() => void handleCopyDoc(contextMenu.doc!)}
+                />
+                <ContextMenuItem
+                  icon={<FolderInput size={13} />}
+                  label="Переместить в проект…"
+                  onClick={() => {
+                    closeContextMenu();
+                    setMoveDoc(contextMenu.doc!);
+                    setMoveTarget('');
+                  }}
+                />
+                <ContextMenuItem
+                  icon={<Trash2 size={13} />}
+                  label="Исключить из работы"
+                  danger
+                  onClick={() => void handleDeleteDoc(contextMenu.doc!)}
+                />
+              </>
+            ) : null}
+          </div>
+        </>
+      )}
+
+      {/* Модальное окно перемещения документа в другой проект */}
+      {moveDoc && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.5)' }}
+          onClick={() => setMoveDoc(null)}
+        >
+          <div
+            className="rounded-xl p-4 w-full max-w-sm space-y-3"
+            style={{ background: 'var(--card-bg)', border: '1px solid var(--border-default)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+              Переместить документ
+            </h3>
+            <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+              «{moveDoc.code} — {moveDoc.name}» будет перемещён из проекта «{moveDoc.project}».
+              Привязка к этапу, комплекту и разделу будет сброшена.
+            </p>
+            {moveTargets.length === 0 ? (
+              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                Других проектов нет — сначала создайте проект.
+              </p>
+            ) : (
+              <select
+                value={moveTarget}
+                onChange={e => setMoveTarget(e.target.value)}
+                className="w-full text-sm rounded-md px-2 py-1.5"
+                style={{ background: 'var(--bg-surface-2)', border: '1px solid var(--border-default)', color: 'var(--text-primary)' }}
+                autoFocus
+              >
+                <option value="">— Выберите проект —</option>
+                {moveTargets.map(p => (
+                  <option key={p.id} value={p.name}>{p.name}</option>
+                ))}
+              </select>
+            )}
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <button
+                onClick={() => { setMoveDoc(null); setMoveTarget(''); }}
+                className="px-3 py-1.5 rounded-md text-xs font-medium transition-opacity hover:opacity-80"
+                style={{ color: 'var(--text-secondary)', background: 'var(--bg-surface-2)', border: '1px solid var(--border-default)' }}
+              >
+                Отмена
+              </button>
+              <button
+                onClick={() => void handleMoveDoc()}
+                disabled={!moveTarget || moveLoading || moveTargets.length === 0}
+                className="px-3 py-1.5 rounded-md text-xs font-medium text-white transition-opacity"
+                style={{ background: TAB_COLOR, opacity: (!moveTarget || moveLoading || moveTargets.length === 0) ? 0.5 : 1 }}
+              >
+                {moveLoading ? 'Перемещение…' : 'Переместить'}
+              </button>
             </div>
           </div>
         </div>

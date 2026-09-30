@@ -166,6 +166,16 @@ async def update_document(
     return await service.update_document(document_id, data.model_dump(exclude_unset=True))
 
 
+@router.post("/{document_id}/copy", response_model=dict)
+async def copy_document(
+    document_id: int,
+    current_user: User = Depends(get_current_active_user),
+    service: DocumentService = Depends(get_document_service),
+):
+    """Создать копию документа в том же проекте."""
+    return await service.copy_document(document_id, current_user.id)
+
+
 @router.delete("/{document_id}", response_model=dict)
 async def exclude_document(
     document_id: int,
