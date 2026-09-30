@@ -759,18 +759,33 @@ function RegistryView() {
   }, [selectedDoc, selectedProject, clipboardDoc, allProjects]);
 
 
-  const handleDeleteDoc = async (doc: Document) => {
+  // ── Диалог исключения документа из работы ──
+  const [deleteDoc, setDeleteDoc] = useState<Document | null>(null);
+  const [deleteReason, setDeleteReason] = useState('');
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  const handleDeleteDoc = (doc: Document) => {
     closeContextMenu();
-    if (!window.confirm(`Исключить документ «${doc.code} — ${doc.name}» из работы?\nЕго можно будет вернуть через архив.`)) return;
-    const numericId = Number.parseInt(doc.id, 10);
+    setDeleteDoc(doc);
+    setDeleteReason('');
+  };
+
+  const handleConfirmDeleteDoc = async () => {
+    if (!deleteDoc) return;
+    const numericId = Number.parseInt(deleteDoc.id, 10);
     if (!numericId) return;
+    setDeleteLoading(true);
     try {
-      await deleteDocument(numericId);
+      await deleteDocument(numericId, deleteReason.trim() || undefined);
       toast.success('Документ исключён из работы');
-      if (selectedDocId === doc.id) setSelectedDocId(null);
+      if (selectedDocId === deleteDoc.id) setSelectedDocId(null);
+      setDeleteDoc(null);
+      setDeleteReason('');
       await loadData();
     } catch {
       // ошибку показал интерцептор
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -1677,6 +1692,69 @@ function RegistryView() {
                 style={{ background: TAB_COLOR, opacity: (!moveTarget || moveLoading || moveTargets.length === 0) ? 0.5 : 1 }}
               >
                 {moveLoading ? 'Перемещение…' : 'Переместить'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Диалоговое окно исключения документа из работы */}
+      {deleteDoc && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.5)' }}
+          onClick={() => setDeleteDoc(null)}
+        >
+          <div
+            className="rounded-xl p-4 w-full max-w-sm space-y-3"
+            style={{ background: 'var(--card-bg)', border: '1px solid var(--border-default)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-2.5">
+              <div
+                className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+                style={{ background: 'rgba(248,113,113,0.15)', color: '#F87171' }}
+              >
+                <Trash2 size={18} />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+                  Исключить документ из работы?
+                </h3>
+                <p className="text-xs font-mono mt-0.5 truncate" style={{ color: 'var(--text-secondary)' }} title={`${deleteDoc.code} — ${deleteDoc.name}`}>
+                  {deleteDoc.code} — {deleteDoc.name}
+                </p>
+              </div>
+            </div>
+            <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+              Документ будет подсвечен чёрной заливкой как удалённый и скрыт из основных списков.
+              Его можно будет вернуть через архив.
+            </p>
+            <input
+              type="text"
+              value={deleteReason}
+              onChange={e => setDeleteReason(e.target.value)}
+              placeholder="Причина исключения (необязательно)"
+              className="w-full text-sm rounded-md px-2 py-1.5"
+              style={{ background: 'var(--bg-surface-2)', border: '1px solid var(--border-default)', color: 'var(--text-primary)' }}
+              autoFocus
+              onKeyDown={(e) => { if (e.key === 'Enter') void handleConfirmDeleteDoc(); }}
+            />
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <button
+                onClick={() => setDeleteDoc(null)}
+                className="px-3 py-1.5 rounded-md text-xs font-medium transition-opacity hover:opacity-80"
+                style={{ color: 'var(--text-secondary)', background: 'var(--bg-surface-2)', border: '1px solid var(--border-default)' }}
+              >
+                Отмена
+              </button>
+              <button
+                onClick={() => void handleConfirmDeleteDoc()}
+                disabled={deleteLoading}
+                className="px-3 py-1.5 rounded-md text-xs font-medium text-white transition-opacity"
+                style={{ background: '#DC2626', opacity: deleteLoading ? 0.6 : 1 }}
+              >
+                {deleteLoading ? 'Исключение…' : 'Исключить из работы'}
               </button>
             </div>
           </div>
