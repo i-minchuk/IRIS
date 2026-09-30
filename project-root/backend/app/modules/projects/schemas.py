@@ -29,6 +29,18 @@ class ProjectCreateResponse(BaseModel):
     status: str
 
 
+class ProjectUpdate(BaseModel):
+    """Partial project update (все поля опциональны)."""
+    model_config = ConfigDict(from_attributes=True)
+
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
+    code: Optional[str] = Field(None, max_length=50)
+    customer_name: Optional[str] = Field(None, max_length=255)
+    contract_number: Optional[str] = Field(None, max_length=100)
+    stage: Optional[str] = Field(None, max_length=50)
+    status: Optional[str] = Field(None, max_length=50)
+
+
 class StageCreate(BaseModel):
     """Schema for creating a stage."""
     model_config = ConfigDict(from_attributes=True)

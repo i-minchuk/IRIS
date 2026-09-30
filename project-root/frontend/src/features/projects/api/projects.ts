@@ -107,6 +107,11 @@ export const createProject = async (body: Partial<Project>): Promise<Project> =>
   return data;
 };
 
+export const updateProject = async (id: number, body: Partial<Project>): Promise<Project> => {
+  const { data } = await client.patch(`/projects/${id}`, body);
+  return data;
+};
+
 export const createStage = async (projectId: number, body: Partial<Stage>): Promise<Stage> => {
   const { data } = await client.post(`/projects/${projectId}/stages`, body);
   return data;

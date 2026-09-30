@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useTabState } from '@/shared/hooks/useTabState';
 import { PageHeader } from '@/shared/components/PageHeader';
 import { PageTabs } from '@/shared/components/PageTabs';
@@ -18,9 +18,9 @@ import { useAutoTimeTracker } from '@/features/time_tracking/hooks/useAutoTimeTr
 import apiClient from '@/shared/api/client';
 import { getLeaderboard } from '@/features/gamification/api/gamification';
 import { getRemarks, createRemark } from '@/features/remarks/api/remarks';
-import { getDocuments, getDocument, uploadDocumentFile, downloadRevisionFile, approveDocument, getApprovalFeed, getActionTaskStatuses, setActionTaskStatus, type ApprovalFeedItem, type DocumentItem, type ActionTaskStatus } from '@/features/documents/api/documents';
+import { getDocuments, getDocument, uploadDocumentFile, downloadRevisionFile, approveDocument, getApprovalFeed, getActionTaskStatuses, setActionTaskStatus, updateDocument, type ApprovalFeedItem, type DocumentItem, type ActionTaskStatus } from '@/features/documents/api/documents';
 import ViewerContainer from '@/components/viewers/ViewerContainer';
-import { getProjects } from '@/features/projects/api/projects';
+import { getProjects, updateProject } from '@/features/projects/api/projects';
 import { toast } from 'sonner';
 import type { LeaderboardEntry } from '@/types';
 import type { RemarkListItem } from '@/types/remarks';
@@ -208,6 +208,53 @@ function FileIcon({ type }: { type: DocType }) {
   return <FileText size={14} style={{ color: cfg.color }} />;
 }
 
+/* ── Inline-редактор переименования (двойной клик) ── */
+function InlineRename({
+  initialValue,
+  onSave,
+  onCancel,
+  className = '',
+  style,
+}: {
+  initialValue: string;
+  onSave: (value: string) => void;
+  onCancel: () => void;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
+  const [text, setText] = useState(initialValue);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const doneRef = useRef(false);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+    inputRef.current?.select();
+  }, []);
+
+  const commit = () => {
+    if (doneRef.current) return;
+    doneRef.current = true;
+    onSave(text.trim());
+  };
+
+  return (
+    <input
+      ref={inputRef}
+      value={text}
+      className={`bg-transparent outline-none min-w-0 ${className}`}
+      style={{ color: 'var(--text-primary)', ...style }}
+      onChange={e => setText(e.target.value)}
+      onClick={e => e.stopPropagation()}
+      onDoubleClick={e => e.stopPropagation()}
+      onKeyDown={e => {
+        if (e.key === 'Enter') commit();
+        if (e.key === 'Escape') { doneRef.current = true; onCancel(); }
+      }}
+      onBlur={commit}
+    />
+  );
+}
+
 
 
 /* ═══════════════════════════════════════════
@@ -366,19 +413,18 @@ function RegistryView() {
     }
   };
 
-  useEffect(() => {
-    let cancelled = false;
+  const loadData = useCallback(async () => {
     setDocsLoading(true);
-    Promise.all([
-      getDocuments().catch(() => [] as DocumentItem[]),
-      getProjects().catch(() => [] as { id: number; name: string; status?: string }[]),
-      getLeaderboard().catch(() => [] as LeaderboardEntry[]),
-    ]).then(([apiDocs, projectsData, leaderboard]) => {
-      if (cancelled) return;
+    try {
+      const [apiDocs, projectsData, leaderboard] = await Promise.all([
+        getDocuments().catch(() => [] as DocumentItem[]),
+        getProjects().catch(() => [] as { id: number; name: string; status?: string }[]),
+        getLeaderboard().catch(() => [] as LeaderboardEntry[]),
+      ]);
       const projectsList = extractItems<{ id: number; name: string; status?: string }>(projectsData);
-      const projectNames = new Map(projectsList.map(p => [p.id, p.name]));
+      const projectNamesMap = new Map(projectsList.map(p => [p.id, p.name]));
       setAllProjects(projectsList);
-      setDocs(extractItems<DocumentItem>(apiDocs).map(d => mapApiDocument(d, projectNames.get(d.project_id) || `Проект #${d.project_id}`)));
+      setDocs(extractItems<DocumentItem>(apiDocs).map(d => mapApiDocument(d, projectNamesMap.get(d.project_id) || `Проект #${d.project_id}`)));
       setEmployees(extractItems<LeaderboardEntry>(leaderboard).map((l, i) => ({
         id: String(l.user_id),
         name: l.full_name,
@@ -386,10 +432,14 @@ function RegistryView() {
         initials: getInitials(l.full_name),
         color: PALETTE[i % PALETTE.length],
       })));
+    } finally {
       setDocsLoading(false);
-    });
-    return () => { cancelled = true; };
+    }
   }, []);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
 
   const projects = useMemo(() => {
     const map = new Map<string, Document[]>();
@@ -474,6 +524,71 @@ function RegistryView() {
       return next;
     });
     setSelectedProject(project);
+  };
+
+  // ── Переименование по двойному клику: проекты и документы ──
+  const [editingProject, setEditingProject] = useState<string | null>(null);
+  const [editingDocId, setEditingDocId] = useState<string | null>(null);
+
+  const startProjectRename = (project: string) => {
+    // Разворачиваем проект, чтобы при двойном клике (два click) он остался раскрытым
+    setExpandedProjects(prev => new Set(prev).add(project));
+    setEditingProject(project);
+  };
+
+  const handleRenameProject = async (oldName: string, newName: string) => {
+    setEditingProject(null);
+    if (!newName || newName === oldName) return;
+    const proj = allProjects.find(p => p.name === oldName);
+    if (!proj) {
+      toast.error('Проект не найден');
+      return;
+    }
+    try {
+      await updateProject(proj.id, { name: newName });
+      toast.success('Проект переименован');
+      await loadData();
+    } catch {
+      // ошибку показал интерцептор
+    }
+  };
+
+  const handleRenameDoc = async (doc: Document, newName: string) => {
+    setEditingDocId(null);
+    if (!newName || newName === doc.name) return;
+    const numericId = Number.parseInt(doc.id, 10);
+    if (!numericId) return;
+    try {
+      await updateDocument(numericId, { name: newName });
+      toast.success('Документ переименован');
+      setDocs(prev => prev.map(d => (d.id === doc.id ? { ...d, name: newName } : d)));
+    } catch {
+      // ошибку показал интерцептор
+    }
+  };
+
+  // В центральном списке одиночный клик открывает просмотр и размонтирует
+  // список — чтобы отличить его от двойного клика, открытие откладываем.
+  // Дерево слева не размонтируется, там клик остаётся мгновенным.
+  const clickTimerRef = useRef<number | null>(null);
+  useEffect(() => () => {
+    if (clickTimerRef.current) window.clearTimeout(clickTimerRef.current);
+  }, []);
+
+  const handleDocClickDelayed = (doc: Document) => {
+    if (clickTimerRef.current) window.clearTimeout(clickTimerRef.current);
+    clickTimerRef.current = window.setTimeout(() => {
+      clickTimerRef.current = null;
+      void handleDocClick(doc);
+    }, 250);
+  };
+
+  const handleDocDoubleClick = (doc: Document) => {
+    if (clickTimerRef.current) {
+      window.clearTimeout(clickTimerRef.current);
+      clickTimerRef.current = null;
+    }
+    setEditingDocId(doc.id);
   };
 
   const handleDocClick = async (doc: Document) => {
@@ -649,6 +764,8 @@ function RegistryView() {
                 <div key={project}>
                   <button
                     onClick={() => toggleProject(project)}
+                    onDoubleClick={() => startProjectRename(project)}
+                    title="Двойной клик — переименовать проект"
                     className="w-full flex items-center gap-1.5 px-2 py-1.5 text-left text-xs transition-colors"
                     style={{
                       color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)',
@@ -659,7 +776,16 @@ function RegistryView() {
                   >
                     {isExpanded ? <ChevronDown size={12} style={{ color: 'var(--text-muted)' }} /> : <ChevronRight size={12} style={{ color: 'var(--text-muted)' }} />}
                     <FolderKanban size={13} style={{ color: isSelected ? TAB_COLOR : 'var(--text-muted)' }} />
-                    <span className="flex-1 truncate">{project}</span>
+                    {editingProject === project ? (
+                      <InlineRename
+                        className="flex-1 truncate"
+                        initialValue={project}
+                        onSave={(v) => void handleRenameProject(project, v)}
+                        onCancel={() => setEditingProject(null)}
+                      />
+                    ) : (
+                      <span className="flex-1 truncate">{project}</span>
+                    )}
                     <span className="text-xs px-1 py-0 rounded" style={{ background: 'var(--bg-surface)', color: 'var(--text-muted)' }}>{docs.length}</span>
                   </button>
                   {isExpanded && (
@@ -672,6 +798,8 @@ function RegistryView() {
                           <button
                             key={doc.id}
                             onClick={() => handleDocClick(doc)}
+                            onDoubleClick={() => setEditingDocId(doc.id)}
+                            title="Двойной клик — переименовать документ"
                             className="w-full flex items-center gap-1.5 pl-7 pr-2 py-1 text-left transition-colors"
                             style={{
                               color: isDocSelected ? 'var(--text-primary)' : 'var(--text-muted)',
@@ -681,7 +809,16 @@ function RegistryView() {
                             onMouseLeave={e => { if (!isDocSelected) e.currentTarget.style.background = 'transparent'; }}
                           >
                             <FileIcon type={doc.type} />
-                            <span className="text-sm truncate flex-1 font-mono">{doc.code}</span>
+                            {editingDocId === doc.id ? (
+                              <InlineRename
+                                className="text-sm truncate flex-1 font-mono"
+                                initialValue={doc.name}
+                                onSave={(v) => void handleRenameDoc(doc, v)}
+                                onCancel={() => setEditingDocId(null)}
+                              />
+                            ) : (
+                              <span className="text-sm truncate flex-1 font-mono">{doc.code}</span>
+                            )}
                             {doc.remarks.length > 0 && (
                               <span className="text-xs px-1 rounded-full" style={{ background: 'rgba(255,107,107,0.2)', color: '#FF6B6B' }}>{doc.remarks.length}</span>
                             )}
@@ -735,7 +872,8 @@ function RegistryView() {
                     key={doc.id}
                     role="button"
                     tabIndex={0}
-                    onClick={() => handleDocClick(doc)}
+                    onClick={() => handleDocClickDelayed(doc)}
+                    onDoubleClick={() => handleDocDoubleClick(doc)}
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleDocClick(doc); }}
                     className="w-full flex items-center gap-2 p-2 rounded-md text-left transition-colors cursor-pointer"
                     style={{ background: 'transparent', border: '1px solid transparent' }}
@@ -745,7 +883,16 @@ function RegistryView() {
                     <FileIcon type={doc.type} />
                     <div className="flex-1 min-w-0">
                       <div className="text-xs font-medium font-mono truncate" style={{ color: 'var(--text-primary)' }}>{doc.code}</div>
-                      <div className="text-sm truncate" style={{ color: 'var(--text-secondary)' }}>{doc.name}</div>
+                      {editingDocId === doc.id ? (
+                        <InlineRename
+                          className="text-sm truncate w-full"
+                          initialValue={doc.name}
+                          onSave={(v) => void handleRenameDoc(doc, v)}
+                          onCancel={() => setEditingDocId(null)}
+                        />
+                      ) : (
+                        <div className="text-sm truncate" style={{ color: 'var(--text-secondary)' }}>{doc.name}</div>
+                      )}
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
                       <TypeBadge type={doc.type} />

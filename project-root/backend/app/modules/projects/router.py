@@ -13,6 +13,7 @@ from app.modules.projects.models import Project, Stage, Kit, Section
 from app.modules.projects.schemas import (
     ProjectCreate,
     ProjectCreateResponse,
+    ProjectUpdate,
     ProjectDetailResponse,
     StageCreate,
     StageResponse,
@@ -80,6 +81,31 @@ async def create_project(
         created_by_id=current_user.id,
     )
     db.add(project)
+    await db.commit()
+    await db.refresh(project)
+    await invalidate_cache("cache:*portfolio*")
+    await invalidate_cache("cache:*dashboard*")
+    return ProjectCreateResponse(
+        id=project.id,
+        name=project.name,
+        code=project.code,
+        status=project.status,
+    )
+
+
+@router.patch("/{project_id}", response_model=ProjectCreateResponse)
+async def update_project(
+    project_id: int,
+    data: ProjectUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    result = await db.execute(select(Project).where(Project.id == project_id))
+    project = result.scalar_one_or_none()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    for field, value in data.model_dump(exclude_unset=True).items():
+        setattr(project, field, value)
     await db.commit()
     await db.refresh(project)
     await invalidate_cache("cache:*portfolio*")
