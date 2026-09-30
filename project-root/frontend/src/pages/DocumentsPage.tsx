@@ -655,7 +655,33 @@ function RegistryView() {
   }, [contextMenu]);
 
   // ── Буфер обмена документами (копировать → вставить в проект) ──
-  const [clipboardDoc, setClipboardDoc] = useState<Document | null>(null);
+  // Хранится в localStorage, чтобы переживать перезагрузку страницы.
+  const CLIPBOARD_KEY = 'iris_clipboard_doc';
+  const [clipboardDoc, setClipboardDocState] = useState<Document | null>(() => {
+    try {
+      const raw = localStorage.getItem(CLIPBOARD_KEY);
+      if (!raw) return null;
+      const d = JSON.parse(raw) as Partial<Document> | null;
+      if (d && typeof d.id === 'string' && typeof d.code === 'string') {
+        return d as Document;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  });
+
+  const setClipboardDoc = (doc: Document) => {
+    setClipboardDocState(doc);
+    try {
+      localStorage.setItem(
+        CLIPBOARD_KEY,
+        JSON.stringify({ id: doc.id, code: doc.code, name: doc.name, project: doc.project }),
+      );
+    } catch {
+      // localStorage недоступен — буфер останется только в памяти
+    }
+  };
 
   const handleCopyDoc = (doc: Document) => {
     closeContextMenu();
