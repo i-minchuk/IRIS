@@ -1,4 +1,5 @@
 """Projects API router."""
+from datetime import datetime, timezone
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -14,6 +15,7 @@ from app.modules.projects.schemas import (
     ProjectCreate,
     ProjectCreateResponse,
     ProjectUpdate,
+    ProjectArchiveRequest,
     ProjectDetailResponse,
     StageCreate,
     StageResponse,
@@ -163,6 +165,47 @@ async def delete_project(
     await invalidate_cache("cache:*portfolio*")
     await invalidate_cache("cache:*dashboard*")
     return {"id": project_id, "deleted": True}
+
+
+@router.post("/{project_id}/archive", response_model=dict)
+async def archive_project(
+    project_id: int,
+    data: ProjectArchiveRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Переместить проект в архив: исключён из работы, скрыт из списков, данные сохранены."""
+    result = await db.execute(select(Project).where(Project.id == project_id))
+    project = result.scalar_one_or_none()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    project.status = "archived"
+    project.archived_at = datetime.now(timezone.utc)
+    project.archive_reason = data.reason
+    await db.commit()
+    await invalidate_cache("cache:*portfolio*")
+    await invalidate_cache("cache:*dashboard*")
+    return {"id": project_id, "status": "archived"}
+
+
+@router.post("/{project_id}/unarchive", response_model=dict)
+async def unarchive_project(
+    project_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Вернуть архивный проект в работу."""
+    result = await db.execute(select(Project).where(Project.id == project_id))
+    project = result.scalar_one_or_none()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    project.status = "active"
+    project.archived_at = None
+    project.archive_reason = None
+    await db.commit()
+    await invalidate_cache("cache:*portfolio*")
+    await invalidate_cache("cache:*dashboard*")
+    return {"id": project_id, "status": "active"}
 
 
 @router.get("/{project_id}", response_model=ProjectDetailResponse)

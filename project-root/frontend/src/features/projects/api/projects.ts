@@ -116,6 +116,14 @@ export const deleteProject = async (id: number): Promise<void> => {
   await client.delete(`/projects/${id}`);
 };
 
+export const archiveProject = async (id: number, reason?: string): Promise<void> => {
+  await client.post(`/projects/${id}/archive`, reason ? { reason } : {});
+};
+
+export const unarchiveProject = async (id: number): Promise<void> => {
+  await client.post(`/projects/${id}/unarchive`);
+};
+
 export const createStage = async (projectId: number, body: Partial<Stage>): Promise<Stage> => {
   const { data } = await client.post(`/projects/${projectId}/stages`, body);
   return data;

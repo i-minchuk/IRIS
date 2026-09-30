@@ -19,6 +19,9 @@ class Project(Base):
     contract_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     stage: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # Эскизный, Технический, Рабочий
     status: Mapped[str] = mapped_column(String(50), default="draft")  # draft, active, completed, archived
+    # Архивация: проект не доведён до конца и исключён из работы (скрыт из списков, данные сохранены)
+    archived_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    archive_reason: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     standard_template_id: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     variables: Mapped[Optional[dict]] = mapped_column(JSON, default=dict)
     

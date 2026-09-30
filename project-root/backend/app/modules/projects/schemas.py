@@ -41,6 +41,13 @@ class ProjectUpdate(BaseModel):
     status: Optional[str] = Field(None, max_length=50)
 
 
+class ProjectArchiveRequest(BaseModel):
+    """Перемещение проекта в архив (не доведён до конца, исключён из работы)."""
+    model_config = ConfigDict(from_attributes=True)
+
+    reason: Optional[str] = Field(None, max_length=500)
+
+
 class StageCreate(BaseModel):
     """Schema for creating a stage."""
     model_config = ConfigDict(from_attributes=True)

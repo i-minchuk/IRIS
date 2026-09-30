@@ -21,7 +21,7 @@ import { getLeaderboard } from '@/features/gamification/api/gamification';
 import { getRemarks, createRemark } from '@/features/remarks/api/remarks';
 import { getDocuments, getDocument, uploadDocumentFile, downloadRevisionFile, approveDocument, getApprovalFeed, getActionTaskStatuses, setActionTaskStatus, updateDocument, copyDocument, deleteDocument, type ApprovalFeedItem, type DocumentItem, type ActionTaskStatus } from '@/features/documents/api/documents';
 import ViewerContainer from '@/components/viewers/ViewerContainer';
-import { getProjects, updateProject, deleteProject } from '@/features/projects/api/projects';
+import { getProjects, updateProject, deleteProject, archiveProject } from '@/features/projects/api/projects';
 import { toast } from 'sonner';
 import type { LeaderboardEntry } from '@/types';
 import type { RemarkListItem } from '@/types/remarks';
@@ -820,6 +820,40 @@ function RegistryView() {
     }
   };
 
+  // ── Диалог перемещения проекта в архив ──
+  const [archiveProjectName, setArchiveProjectName] = useState<string | null>(null);
+  const [archiveReason, setArchiveReason] = useState('');
+  const [archiveProjectLoading, setArchiveProjectLoading] = useState(false);
+
+  const handleArchiveProject = (projectName: string) => {
+    closeContextMenu();
+    setArchiveProjectName(projectName);
+    setArchiveReason('');
+  };
+
+  const handleConfirmArchiveProject = async () => {
+    if (!archiveProjectName) return;
+    const proj = allProjects.find(p => p.name === archiveProjectName);
+    if (!proj) {
+      toast.error('Проект не найден');
+      setArchiveProjectName(null);
+      return;
+    }
+    setArchiveProjectLoading(true);
+    try {
+      await archiveProject(proj.id, archiveReason.trim() || undefined);
+      toast.success(`Проект «${archiveProjectName}» перемещён в архив`);
+      if (selectedProject === archiveProjectName) setSelectedProject(null);
+      setArchiveProjectName(null);
+      setArchiveReason('');
+      await loadData();
+    } catch {
+      // ошибку показал интерцептор
+    } finally {
+      setArchiveProjectLoading(false);
+    }
+  };
+
   // ── Перемещение документа в другой проект ──
   const [moveDoc, setMoveDoc] = useState<Document | null>(null);
   const [moveTarget, setMoveTarget] = useState('');
@@ -1598,6 +1632,11 @@ function RegistryView() {
                   />
                 )}
                 <ContextMenuItem
+                  icon={<Archive size={13} />}
+                  label="Переместить в архив"
+                  onClick={() => handleArchiveProject(contextMenu.projectName)}
+                />
+                <ContextMenuItem
                   icon={<Trash2 size={13} />}
                   label="Удалить"
                   danger
@@ -1831,6 +1870,70 @@ function RegistryView() {
                 style={{ background: '#DC2626', opacity: deleteProjectLoading ? 0.6 : 1 }}
               >
                 {deleteProjectLoading ? 'Удаление…' : 'Удалить проект'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Диалоговое окно перемещения проекта в архив */}
+      {archiveProjectName && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.5)' }}
+          onClick={() => setArchiveProjectName(null)}
+        >
+          <div
+            className="rounded-xl p-4 w-full max-w-sm space-y-3"
+            style={{ background: 'var(--card-bg)', border: '1px solid var(--border-default)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-2.5">
+              <div
+                className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+                style={{ background: 'rgba(139,92,246,0.15)', color: '#8B5CF6' }}
+              >
+                <Archive size={18} />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+                  Переместить проект в архив?
+                </h3>
+                <p className="text-xs mt-0.5 truncate" style={{ color: 'var(--text-secondary)' }} title={archiveProjectName}>
+                  {archiveProjectName}
+                </p>
+              </div>
+            </div>
+            <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+              Проект будет исключён из работы и скроется из списков вместе со своими документами.
+              Все данные сохранятся — при необходимости проект можно вернуть из архива в работу.
+              Удаление необратимо и не требуется.
+            </p>
+            <input
+              type="text"
+              value={archiveReason}
+              onChange={e => setArchiveReason(e.target.value)}
+              placeholder="Причина архивации (необязательно)"
+              className="w-full text-sm rounded-md px-2 py-1.5"
+              style={{ background: 'var(--bg-surface-2)', border: '1px solid var(--border-default)', color: 'var(--text-primary)' }}
+              autoFocus
+              onKeyDown={(e) => { if (e.key === 'Enter') void handleConfirmArchiveProject(); }}
+            />
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <button
+                onClick={() => setArchiveProjectName(null)}
+                className="px-3 py-1.5 rounded-md text-xs font-medium transition-opacity hover:opacity-80"
+                style={{ color: 'var(--text-secondary)', background: 'var(--bg-surface-2)', border: '1px solid var(--border-default)' }}
+              >
+                Отмена
+              </button>
+              <button
+                onClick={() => void handleConfirmArchiveProject()}
+                disabled={archiveProjectLoading}
+                className="px-3 py-1.5 rounded-md text-xs font-medium text-white transition-opacity"
+                style={{ background: '#8B5CF6', opacity: archiveProjectLoading ? 0.6 : 1 }}
+              >
+                {archiveProjectLoading ? 'Архивация…' : 'Переместить в архив'}
               </button>
             </div>
           </div>
