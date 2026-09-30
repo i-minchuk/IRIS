@@ -1580,7 +1580,7 @@ function RegistryView() {
                 {clipboardDoc && (
                   <ContextMenuItem
                     icon={<ClipboardPaste size={13} />}
-                    label={`Вставить «${clipboardDoc.code}»`}
+                    label="Вставить документ"
                     onClick={() => void handlePasteDoc(contextMenu.projectName)}
                   />
                 )}
