@@ -695,6 +695,10 @@ function RegistryView() {
     toast.success(`Скопировано: «${doc.code}». Вставьте в нужный проект через правый клик или Ctrl+V.`);
   };
 
+  // Стиль «вырезанного» документа: полупрозрачность, как в проводнике Windows
+  const cutDocStyle = (doc: Document): React.CSSProperties | undefined =>
+    clipboardDoc?.isCut && clipboardDoc.id === doc.id ? { opacity: 0.45 } : undefined;
+
   const handleCutDoc = (doc: Document) => {
     closeContextMenu();
     writeClipboard({ ...doc, isCut: true });
@@ -1032,6 +1036,7 @@ function RegistryView() {
                             style={{
                               color: isDocSelected ? 'var(--text-primary)' : 'var(--text-muted)',
                               background: isDocSelected ? 'var(--bg-surface-3)' : 'transparent',
+                              ...cutDocStyle(doc),
                             }}
                             onMouseEnter={e => { if (!isDocSelected) e.currentTarget.style.background = 'var(--bg-surface-3)'; }}
                             onMouseLeave={e => { if (!isDocSelected) e.currentTarget.style.background = 'transparent'; }}
@@ -1112,7 +1117,7 @@ function RegistryView() {
                     onContextMenu={(e) => openContextMenu(e, 'document', doc.project, doc)}
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleDocClick(doc); }}
                     className="w-full flex items-center gap-2 p-2 rounded-md text-left transition-colors cursor-pointer"
-                    style={{ background: 'transparent', border: '1px solid transparent' }}
+                    style={{ background: 'transparent', border: '1px solid transparent', ...cutDocStyle(doc) }}
                     onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-surface-2)'; e.currentTarget.style.borderColor = 'var(--border-default)'; }}
                     onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'transparent'; }}
                   >
