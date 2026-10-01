@@ -301,16 +301,72 @@ async def get_kpi_tiles(
     doc_status = "red" if overdue_docs > 0 else "green"
 
     # --- Tile 5: FPY OTK ---
-    # TODO: no data source yet — returning empty
-    fpy = 0.0
-    fpy_status = "green" if fpy > 95 else "yellow" if fpy >= 90 else "red"
+    # Доля утверждённых документов без замечаний (первый проход без правок)
+    approved_result = await db.execute(
+        select(func.count()).where(
+            and_(
+                Document.status == "approved",
+                Document.is_deleted == False,  # noqa: E712
+            )
+        )
+    )
+    approved_total = approved_result.scalar() or 0
+
+    with_remarks_result = await db.execute(
+        select(func.count(func.distinct(Document.id)))
+        .select_from(Document)
+        .join(Remark, Remark.document_id == Document.id)
+        .where(
+            and_(
+                Document.status == "approved",
+                Document.is_deleted == False,  # noqa: E712
+            )
+        )
+    )
+    approved_with_remarks = with_remarks_result.scalar() or 0
+    approved_clean = approved_total - approved_with_remarks
+
+    fpy_known = approved_total > 0
+    fpy = round(approved_clean / approved_total * 100, 1) if fpy_known else 0.0
+    fpy_status = (
+        "green" if fpy > 95 else "yellow" if fpy >= 90 else "red"
+    ) if fpy_known else "yellow"
 
     # --- Tile 6: Shipments Week ---
-    # TODO: no data source yet — returning empty
-    shipments_done = 0
-    shipments_plan = 0
+    # Выпуск документов за текущую неделю: факт (actual_ready) / план (planned_ready)
+    today_d = datetime.now(timezone.utc).date()
+    monday = today_d - timedelta(days=today_d.weekday())
+    week_start = datetime(monday.year, monday.month, monday.day, tzinfo=timezone.utc)
+    week_end = week_start + timedelta(days=7)
+
+    plan_result = await db.execute(
+        select(func.count()).where(
+            and_(
+                Document.planned_ready >= week_start,
+                Document.planned_ready < week_end,
+                Document.is_deleted == False,  # noqa: E712
+            )
+        )
+    )
+    shipments_plan = plan_result.scalar() or 0
+
+    done_result = await db.execute(
+        select(func.count()).where(
+            and_(
+                Document.actual_ready >= week_start,
+                Document.actual_ready < week_end,
+                Document.is_deleted == False,  # noqa: E712
+            )
+        )
+    )
+    shipments_done = done_result.scalar() or 0
     ship_pct = (shipments_done / shipments_plan * 100) if shipments_plan > 0 else 0
-    ship_status = "green" if ship_pct >= 80 else "yellow" if ship_pct >= 50 else "red"
+    if shipments_plan > 0:
+        ship_status = (
+            "green" if ship_pct >= 80 else "yellow" if ship_pct >= 50 else "red"
+        )
+    else:
+        ship_status = "green" if shipments_done > 0 else "yellow"
 
     return {
         "tiles": [
@@ -354,20 +410,35 @@ async def get_kpi_tiles(
             {
                 "id": "fpy_otk",
                 "label": "FPY ОТК (первый проход)",
-                "value": f"{fpy}%",
+                "value": f"{fpy}%" if fpy_known else "н/д",
                 "trend": None,
                 "trend_direction": None,
                 "status": fpy_status,
-                "subtext": "Цель: >95% | Брак: 0% | Повторная приёмка: 0",
+                "subtext": (
+                    (
+                        f"Без замечаний: {approved_clean}"
+                        f" | С замечаниями: {approved_with_remarks} | Цель: >95%"
+                    )
+                    if fpy_known
+                    else "Нет утверждённых документов"
+                ),
             },
             {
                 "id": "shipments_week",
-                "label": "Отгрузок неделя",
-                "value": f"{shipments_done}/{shipments_plan}",
+                "label": "Выпуск документов (неделя)",
+                "value": (
+                    f"{shipments_done}/{shipments_plan}"
+                    if shipments_plan > 0
+                    else str(shipments_done)
+                ),
                 "trend": None,
                 "trend_direction": None,
                 "status": ship_status,
-                "subtext": "Готово: 0 | В пути: 0 | Задержка: 0",
+                "subtext": (
+                    f"План: {shipments_plan} | Факт: {shipments_done}"
+                    if shipments_plan > 0
+                    else "План на неделю не задан"
+                ),
             },
         ]
     }
@@ -653,12 +724,107 @@ async def get_sparklines(
         eff = eff_by_day.get(day)
         workload.append(round(eff * 100, 1) if eff is not None else 0)
 
-    # TODO: no data source yet — returning empty
-    schedule_dev = [0] * 30
-    # TODO: no data source yet — returning empty
-    fpy = [0] * 30
-    # TODO: no data source yet — returning empty
-    shipments = [0] * 30
+    # Schedule deviation: avg (actual_end - planned_end) in days for documents
+    # finished that day (positive = finished late). Aggregated in Python to
+    # stay cross-DB (Postgres + SQLite).
+    dev_rows = await db.execute(
+        select(
+            func.date(Document.actual_end).label("day"),
+            Document.planned_end,
+            Document.actual_end,
+        ).where(
+            and_(
+                Document.actual_end.isnot(None),
+                Document.planned_end.isnot(None),
+                Document.actual_end >= start,
+                Document.is_deleted == False,  # noqa: E712
+            )
+        )
+    )
+    dev_accum: dict[str, list[float]] = {}
+    for row in dev_rows.mappings().all():
+        if row.planned_end and row.actual_end:
+            delta_days = (row.actual_end - row.planned_end).total_seconds() / 86400.0
+            dev_accum.setdefault(str(row.day), []).append(delta_days)
+    dev_by_day = {day: sum(vals) / len(vals) for day, vals in dev_accum.items()}
+
+    schedule_dev = []
+    last_dev = 0.0
+    for i in range(30):
+        day = (start + timedelta(days=i)).date().isoformat()
+        if day in dev_by_day:
+            last_dev = round(dev_by_day[day], 1)
+        schedule_dev.append(last_dev)
+
+    # FPY (first pass yield): daily share of finished documents (actual_end)
+    # without linked remarks. Days with no finished documents carry the last
+    # known value (100% before any data — defects not observed).
+    finished_result = await db.execute(
+        select(func.date(Document.actual_end).label("day"), func.count())
+        .where(
+            and_(
+                Document.actual_end.isnot(None),
+                Document.actual_end >= start,
+                Document.is_deleted == False,  # noqa: E712
+            )
+        )
+        .group_by(func.date(Document.actual_end))
+    )
+    finished_by_day = {
+        str(row.day): row.count for row in finished_result.mappings().all()
+    }
+
+    with_remarks_result = await db.execute(
+        select(
+            func.date(Document.actual_end).label("day"),
+            func.count(func.distinct(Document.id)),
+        )
+        .select_from(Document)
+        .join(Remark, Remark.document_id == Document.id)
+        .where(
+            and_(
+                Document.actual_end.isnot(None),
+                Document.actual_end >= start,
+                Document.is_deleted == False,  # noqa: E712
+            )
+        )
+        .group_by(func.date(Document.actual_end))
+    )
+    remarks_by_day = {
+        str(row.day): row.count for row in with_remarks_result.mappings().all()
+    }
+
+    fpy = []
+    last_fpy = 100.0
+    for i in range(30):
+        day = (start + timedelta(days=i)).date().isoformat()
+        finished_cnt = finished_by_day.get(day)
+        if finished_cnt:
+            bad_cnt = remarks_by_day.get(day, 0)
+            last_fpy = round((finished_cnt - bad_cnt) / finished_cnt * 100, 1)
+        fpy.append(last_fpy)
+
+    # Shipments: daily count of documents released (actual_ready).
+    # No shipment tables exist yet — documents' release dates are the real
+    # source of "what left production" we have today.
+    ready_result = await db.execute(
+        select(func.date(Document.actual_ready).label("day"), func.count())
+        .where(
+            and_(
+                Document.actual_ready.isnot(None),
+                Document.actual_ready >= start,
+                Document.is_deleted == False,  # noqa: E712
+            )
+        )
+        .group_by(func.date(Document.actual_ready))
+    )
+    ready_by_day = {
+        str(row.day): row.count for row in ready_result.mappings().all()
+    }
+    shipments = [
+        ready_by_day.get((start + timedelta(days=i)).date().isoformat(), 0)
+        for i in range(30)
+    ]
 
     return {
         "charts": [
@@ -688,11 +854,11 @@ async def get_sparklines(
             },
             {
                 "id": "shipments",
-                "label": "Отгрузки",
-                "unit": "тонн/нед",
+                "label": "Выпуск документов",
+                "unit": "шт/день",
                 "current": shipments[-1],
                 "trend": shipments,
-                "status": "green" if shipments[-1] >= 25 else "yellow" if shipments[-1] >= 15 else "red",
+                "status": "green" if shipments[-1] >= 3 else "yellow" if shipments[-1] >= 1 else "red",
             },
         ],
         "updated_at": datetime.now(timezone.utc).isoformat(),
