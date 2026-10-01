@@ -1,17 +1,41 @@
-from telegram import Bot
+"""Отправка уведомлений через Telegram Bot API.
+
+Реализация на httpx — без внешней зависимости python-telegram-bot
+(в проекте её нет, а модуль `telegram` не установлен).
+Пока TELEGRAM_BOT_TOKEN не задан, сообщения пишутся в лог.
+"""
+import logging
+
+import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.modules.auth.repository import UserRepository
 
-bot = Bot(token=settings.TELEGRAM_BOT_TOKEN) if settings.TELEGRAM_BOT_TOKEN else None
+logger = logging.getLogger(__name__)
+
+_BOT_API_URL = "https://api.telegram.org/bot{token}/sendMessage"
 
 
-async def send_telegram_message(chat_id: str, text: str) -> None:
-    if not bot:
-        print(f"[TELEGRAM MOCK] Chat: {chat_id}, Text: {text}")
-        return
-    await bot.send_message(chat_id=chat_id, text=text, parse_mode="HTML")
+def telegram_configured() -> bool:
+    """True, если задан токен бота."""
+    return bool(settings.TELEGRAM_BOT_TOKEN)
+
+
+async def send_telegram_message(chat_id: str, text: str) -> dict | None:
+    """Отправить сообщение в Telegram. Возвращает ответ API или None, если бот не настроен."""
+    if not telegram_configured():
+        logger.warning("[TELEGRAM MOCK] Chat: %s, Text: %s", chat_id, text)
+        return None
+
+    url = _BOT_API_URL.format(token=settings.TELEGRAM_BOT_TOKEN)
+    async with httpx.AsyncClient(timeout=15) as client:
+        response = await client.post(
+            url,
+            json={"chat_id": chat_id, "text": text, "parse_mode": "HTML"},
+        )
+        response.raise_for_status()
+        return response.json()
 
 
 async def notify_user_telegram(
