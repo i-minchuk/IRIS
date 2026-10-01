@@ -61,6 +61,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
     const restore = async () => {
+      // Без токена запрос /auth/me заведомо вернёт 401 — сразу считаем неавторизованным
+      if (!localStorage.getItem('access_token')) {
+        if (mounted) setLoading(false);
+        return;
+      }
       try {
         const currentUser = await authApi.getCurrentUser();
         if (!mounted) return;

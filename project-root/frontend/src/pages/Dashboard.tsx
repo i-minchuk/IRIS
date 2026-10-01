@@ -26,7 +26,7 @@ import {
   Award, DollarSign, Briefcase, Users, Clock,
   ChevronRight, Zap, ArrowDown, Loader2,
   Gavel, BarChart3, Calendar as CalendarIcon,
-  RefreshCw,
+  RefreshCw, Timer, Check,
 } from 'lucide-react';
 import { DepartmentLoad } from '@/components/DepartmentLoad';
 import {
@@ -75,6 +75,17 @@ function useCountUp(target: number, duration = 1500, decimals = 1) {
 
 /* ── Мини sparkline ── */
 function MiniSparkline({ data, color }: { data: number[]; color: string }) {
+  // Меньше двух точек — линию не построить (x вышел бы NaN); показываем одиночную точку
+  if (!data || data.length < 2) {
+    const v = data && data.length === 1 ? data[0] : null;
+    return (
+      <svg width={48} height={18} viewBox="0 0 48 18" className="overflow-visible">
+        {v !== null && Number.isFinite(v) && (
+          <circle cx={24} cy={9} r={2} fill={color} opacity={0.6} />
+        )}
+      </svg>
+    );
+  }
   const min = Math.min(...data);
   const max = Math.max(...data);
   const range = max - min || 1;
@@ -82,7 +93,8 @@ function MiniSparkline({ data, color }: { data: number[]; color: string }) {
   const height = 18;
   const points = data.map((v, i) => {
     const x = (i / (data.length - 1)) * width;
-    const y = height - ((v - min) / range) * height;
+    const nv = Number.isFinite(v) ? v : min;
+    const y = height - ((nv - min) / range) * height;
     return `${x},${y}`;
   }).join(' ');
 
@@ -129,19 +141,61 @@ export default function Dashboard() {
   const [teamTimeLoading, setTeamTimeLoading] = useState(true);
   const [financeSummary, setFinanceSummary] = useState<FinanceSummary | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('dashboard:autoRefresh') !== 'false';
+    } catch {
+      return true;
+    }
+  });
+  const [refreshIntervalMs, setRefreshIntervalMs] = useState<number>(() => {
+    try {
+      return Number(localStorage.getItem('dashboard:refreshInterval') || '30000');
+    } catch {
+      return 30000;
+    }
+  });
+  const [autoRefreshFired, setAutoRefreshFired] = useState(false);
+  const [showRefreshMenu, setShowRefreshMenu] = useState(false);
 
   // Derived flags — no mock fallback, show empty states instead
   const hasData = scorecard.length > 0 || alerts.length > 0 || tenderPipeline !== null || teamTimeData.length > 0;
 
-  // Auto-refresh data every 30 seconds (silent — no loaders)
+  // Auto-refresh data on a chosen interval (silent — no loaders)
   useEffect(() => {
+    if (!autoRefreshEnabled || refreshIntervalMs < 5000) return;
     const refreshTimer = setInterval(() => {
       if (document.visibilityState === 'visible') {
+        setAutoRefreshFired(true);
         loadDashboardData({ silent: true });
+        setTimeout(() => setAutoRefreshFired(false), 800);
       }
-    }, 30000);
+    }, refreshIntervalMs);
     return () => clearInterval(refreshTimer);
-  }, [period]);
+  }, [period, autoRefreshEnabled, refreshIntervalMs]);
+
+  // Persist auto-refresh preferences
+  useEffect(() => {
+    try {
+      localStorage.setItem('dashboard:autoRefresh', String(autoRefreshEnabled));
+      localStorage.setItem('dashboard:refreshInterval', String(refreshIntervalMs));
+    } catch {
+      // ignore
+    }
+  }, [autoRefreshEnabled, refreshIntervalMs]);
+
+  // Close refresh interval menu on click outside
+  useEffect(() => {
+    if (!showRefreshMenu) return;
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('[data-refresh-menu]')) {
+        setShowRefreshMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [showRefreshMenu]);
 
   // Initial data load
   useEffect(() => {
@@ -149,7 +203,6 @@ export default function Dashboard() {
   }, [period]);
 
   function loadDashboardData({ silent = false }: { silent?: boolean } = {}) {
-    let cancelled = false;
     if (!silent) {
       setLoading(true);
       setChartsLoading(true);
@@ -167,8 +220,6 @@ export default function Dashboard() {
       analyticsApi.getTeamTimeTracking(period as TeamTimePeriod),
       analyticsApi.getFinanceSummary(period),
     ]).then(([dashboardRes, alertsRes, tenderRes, sparkRes, trendRes, portfolioRes, actionItemsRes, teamTimeRes, financeRes]) => {
-      if (cancelled) return;
-
       if (dashboardRes.status === 'fulfilled') {
         setScorecard(dashboardRes.value.data.scorecard ?? []);
       }
@@ -202,14 +253,12 @@ export default function Dashboard() {
         setError(true);
       }
     }).catch(() => {
-      if (!cancelled) setError(true);
+      setError(true);
     }).finally(() => {
-      if (!cancelled) {
-        setLoading(false);
-        setChartsLoading(false);
-        setTeamTimeLoading(false);
-        setLastUpdated(new Date());
-      }
+      setLoading(false);
+      setChartsLoading(false);
+      setTeamTimeLoading(false);
+      setLastUpdated(new Date());
     });
 
   }
@@ -444,7 +493,12 @@ export default function Dashboard() {
                 {lastUpdated && (
                   <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
                     Обновлено: {lastUpdated.toLocaleTimeString('ru-RU')}
-                    <span className="hidden sm:inline"> · автообновление каждые 30 сек</span>
+                    <span className="hidden sm:inline">
+                      {' · '}
+                      {autoRefreshEnabled
+                        ? `автообновление каждые ${refreshIntervalMs >= 60000 ? `${refreshIntervalMs / 60000} мин` : `${refreshIntervalMs / 1000} сек`}`
+                        : 'автообновление выключено'}
+                    </span>
                   </p>
                 )}
               </div>
@@ -465,17 +519,76 @@ export default function Dashboard() {
                   ))}
                 </div>
 
-                <button
-                  onClick={() => loadDashboardData()}
-                  disabled={loading}
-                  title="Обновить данные"
-                  className="flex items-center justify-center w-9 h-9 rounded-lg transition-colors disabled:opacity-50"
-                  style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--iris-bg-hover)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--card-bg)'; }}
-                >
-                  <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-                </button>
+                <div className="relative flex items-center">
+                  <button
+                    onClick={() => loadDashboardData()}
+                    disabled={loading}
+                    title="Обновить данные"
+                    className="flex items-center justify-center w-9 h-9 rounded-l-lg transition-colors disabled:opacity-50"
+                    style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRight: 'none', color: 'var(--text-secondary)' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--iris-bg-hover)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--card-bg)'; }}
+                  >
+                    <RefreshCw
+                      size={16}
+                      className={(loading || autoRefreshFired) ? 'animate-spin' : ''}
+                    />
+                  </button>
+                  <button
+                    onClick={() => setAutoRefreshEnabled((v) => !v)}
+                    title={autoRefreshEnabled ? 'Автообновление включено' : 'Автообновление выключено'}
+                    className="flex items-center justify-center w-9 h-9 rounded-r-lg transition-colors"
+                    style={{
+                      background: autoRefreshEnabled ? 'rgba(59,130,246,0.12)' : 'var(--card-bg)',
+                      border: '1px solid var(--border-color)',
+                      color: autoRefreshEnabled ? '#3B82F6' : 'var(--text-secondary)',
+                    }}
+                    onMouseEnter={(e) => { if (!autoRefreshEnabled) e.currentTarget.style.background = 'var(--iris-bg-hover)'; }}
+                    onMouseLeave={(e) => { if (!autoRefreshEnabled) e.currentTarget.style.background = 'var(--card-bg)'; }}
+                  >
+                    <Timer size={16} />
+                  </button>
+
+                  {autoRefreshEnabled && (
+                    <button
+                      onClick={() => setShowRefreshMenu((v) => !v)}
+                      title="Интервал автообновления"
+                      data-refresh-menu
+                      className="ml-1 flex items-center justify-center px-2 h-9 rounded-lg text-xs font-medium transition-colors"
+                      style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}
+                    >
+                      {refreshIntervalMs >= 60000 ? `${refreshIntervalMs / 60000} м` : `${refreshIntervalMs / 1000} с`}
+                    </button>
+                  )}
+
+                  {showRefreshMenu && (
+                    <div
+                      data-refresh-menu
+                      className="absolute right-0 top-10 z-20 rounded-lg border py-1 min-w-[140px]"
+                      style={{ background: 'var(--card-bg)', borderColor: 'var(--border-color)', boxShadow: 'var(--shadow-lg)' }}
+                    >
+                      {[30000, 60000, 300000].map((ms) => (
+                        <button
+                          key={ms}
+                          type="button"
+                          onClick={() => {
+                            setRefreshIntervalMs(ms);
+                            setShowRefreshMenu(false);
+                          }}
+                          className="w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-colors hover:bg-white/5"
+                          style={{ color: 'var(--text-primary)' }}
+                        >
+                          <span>
+                            {ms === 30000 && '30 секунд'}
+                            {ms === 60000 && '1 минута'}
+                            {ms === 300000 && '5 минут'}
+                          </span>
+                          {refreshIntervalMs === ms && <Check size={14} style={{ color: '#3B82F6' }} />}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 <LiveClock className="text-lg md:text-2xl font-medium leading-relaxed mt-1 hidden sm:inline tabular-nums" style={{ color: 'var(--text-secondary)' }} />
               </div>
