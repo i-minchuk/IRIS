@@ -21,6 +21,8 @@ export interface Project {
     [key: string]: unknown;
   };
   created_at?: string;
+  archived_at?: string | null;
+  archive_reason?: string | null;
 }
 
 export interface ProjectTreeStage {

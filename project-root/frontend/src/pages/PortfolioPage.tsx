@@ -1,7 +1,7 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useEffect } from 'react';
 import {
-  ArrowLeft, Gavel, ShoppingCart, FolderKanban, FileSignature,
+  ArrowLeft, Gavel, ShoppingCart, FolderKanban, FileSignature, Archive,
 } from 'lucide-react';
 import { useTabState } from '@/shared/hooks/useTabState';
 import { PageHeader } from '@/shared/components/PageHeader';
@@ -16,6 +16,7 @@ import InvoicesPage from '@/pages/srm/Invoices';
 import ProcessFlowPage from '@/pages/srm/ProcessFlow';
 import TenderDetailPage from '@/features/tenders/pages/TenderDetailPage';
 import { ProjectsView, SolutionsView, TemplatesView } from '@/pages/ProjectsPage';
+import ProjectsArchiveView from '@/pages/PortfolioPage/ProjectsArchiveView';
 
 /* ─── Tender Sub-tabs ─── */
 const TENDER_TABS = [
@@ -46,9 +47,10 @@ const MAIN_TABS = [
   { id: 'contracts' as const, label: 'Договоры', shortLabel: 'Договоры', icon: <FileSignature size={16} /> },
   { id: 'projects' as const, label: 'Проекты', shortLabel: 'Проекты', icon: <FolderKanban size={16} /> },
   { id: 'srm' as const, label: 'Закупка/МТО', shortLabel: 'Закупка', icon: <ShoppingCart size={16} /> },
+  { id: 'archive' as const, label: 'Архив', shortLabel: 'Архив', icon: <Archive size={16} /> },
 ];
 
-type MainTab = 'tenders' | 'contracts' | 'projects' | 'srm';
+type MainTab = 'tenders' | 'contracts' | 'projects' | 'srm' | 'archive';
 type TenderTab = 'tenders' | 'customers' | 'solutions' | 'templates';
 type SRMTab = 'suppliers' | 'purchase-requests' | 'orders' | 'invoices' | 'process';
 
@@ -200,6 +202,7 @@ export default function PortfolioPage() {
       )}
       {currentTab === 'contracts' && <ContractsPage />}
       {currentTab === 'projects' && <ProjectsView />}
+      {currentTab === 'archive' && <ProjectsArchiveView />}
 
       {currentTab === 'srm' && (
         <div className="space-y-4">
