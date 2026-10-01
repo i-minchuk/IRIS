@@ -1,5 +1,7 @@
 # ДокПоток IRIS v4.7.0 MVP
 
+[![Regression UI](https://github.com/i-minchuk/IRIS/actions/workflows/regression.yml/badge.svg)](https://github.com/i-minchuk/IRIS/actions/workflows/regression.yml)
+
 ## Быстрый старт (SQLite)
 
 ```bash
