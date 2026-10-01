@@ -126,6 +126,14 @@ class Settings(BaseSettings):
     # Email
     SENDGRID_API_KEY: Optional[str] = Field(default=None)
     FROM_EMAIL: str = "noreply@dokpotok.ru"
+    # SMTP-отправка (если задан SMTP_HOST — используется вместо SendGrid)
+    SMTP_HOST: Optional[str] = Field(default=None)
+    SMTP_PORT: int = 587
+    SMTP_USER: Optional[str] = Field(default=None)
+    SMTP_PASSWORD: Optional[str] = Field(default=None)
+    SMTP_USE_TLS: bool = True
+    # Публичный URL фронтенда (для ссылок в письмах, напр. сброс пароля)
+    FRONTEND_URL: str = "http://localhost:5173"
 
     # SAML / SSO
     BASE_URL: str = "http://localhost:8000"

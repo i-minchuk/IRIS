@@ -126,6 +126,8 @@ class ResetPasswordRequest(BaseModel):
 
 class PasswordResetResponse(BaseModel):
     message: str
+    # Заполняется только когда письмо не удалось отправить (почта не настроена)
+    reset_link: Optional[str] = None
 
 
 # ---------------------------------------------------------------------------

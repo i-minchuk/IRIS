@@ -20,6 +20,8 @@ export default function ForgotPasswordPage() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [resetLink, setResetLink] = useState('');
+  const [copied, setCopied] = useState(false);
 
   const validate = (): boolean => {
     setError('');
@@ -40,12 +42,23 @@ export default function ForgotPasswordPage() {
 
     setIsLoading(true);
     try {
-      await authApi.forgotPassword(email.trim());
+      const result = await authApi.forgotPassword(email.trim());
+      setResetLink(result.reset_link || '');
       setSuccess(true);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Ошибка отправки. Попробуйте позже.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(resetLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setError('Не удалось скопировать ссылку. Скопируйте её вручную.');
     }
   };
 
@@ -100,8 +113,34 @@ export default function ForgotPasswordPage() {
           {success ? (
             <div className="flex flex-col items-center gap-3 py-4">
               <CheckCircle size={48} style={{ color: '#27AE60' }} />
-              <p className="text-sm text-center font-medium" style={{ color: textMain }}>Проверьте email</p>
-              <p className="text-[13px] text-center" style={{ color: textMuted }}>Мы отправили инструкции по восстановлению пароля на указанный адрес.</p>
+              {resetLink ? (
+                <>
+                  <p className="text-sm text-center font-medium" style={{ color: textMain }}>Почта не настроена</p>
+                  <p className="text-[13px] text-center" style={{ color: textMuted }}>
+                    Письмо отправить не удалось, поэтому используйте эту ссылку для сброса пароля (действует 30 минут):
+                  </p>
+                  <div className="w-full px-3 py-2 rounded-md text-xs break-all text-left" style={{ background: inputBg, border: `1px solid ${inputBorder}`, color: textMuted }}>
+                    {resetLink}
+                  </div>
+                  <div className="flex gap-2 mt-1">
+                    <button type="button" onClick={handleCopyLink}
+                      className="px-4 h-9 rounded-lg text-[13px] font-semibold"
+                      style={{ background: inputBg, border: `1px solid ${inputBorder}`, color: textMain, cursor: 'pointer' }}>
+                      {copied ? 'Скопировано ✓' : 'Копировать'}
+                    </button>
+                    <a href={resetLink}
+                      className="px-4 h-9 rounded-lg text-[13px] font-semibold text-white flex items-center"
+                      style={{ background: accent, cursor: 'pointer' }}>
+                      Открыть
+                    </a>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-center font-medium" style={{ color: textMain }}>Проверьте email</p>
+                  <p className="text-[13px] text-center" style={{ color: textMuted }}>Мы отправили инструкции по восстановлению пароля на указанный адрес.</p>
+                </>
+              )}
               <Link to="/login" className="mt-2 text-sm font-semibold hover:underline" style={{ color: accent }}>Вернуться ко входу</Link>
             </div>
           ) : (

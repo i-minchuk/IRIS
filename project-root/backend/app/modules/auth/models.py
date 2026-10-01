@@ -19,7 +19,7 @@ class User(Base):
     is_superuser: Mapped[bool] = mapped_column(Boolean, default=False)
     email_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     email_notifications_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
-    reset_token: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    reset_token: Mapped[str | None] = mapped_column(String(512), nullable=True)
     reset_token_expires: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     telegram_chat_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     totp_secret: Mapped[str | None] = mapped_column(String(255), nullable=True)

@@ -26,7 +26,7 @@ export const authApi = {
     await apiClient.post('/auth/logout', {}, { withCredentials: true });
   },
 
-  async forgotPassword(email: string): Promise<{ message: string; reset_token?: string }> {
+  async forgotPassword(email: string): Promise<{ message: string; reset_link?: string }> {
     const response = await apiClient.post('/auth/forgot-password', { email });
     return response.data;
   },

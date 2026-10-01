@@ -10,6 +10,7 @@ from datetime import datetime, timedelta, timezone
 from pydantic import BaseModel
 
 from app.core import security
+from app.core.email import email_configured, send_password_reset_email
 from app.core.ai_key import (
     get_openai_api_key,
     is_openai_configured,
@@ -643,7 +644,18 @@ async def forgot_password(
     user.reset_token_expires = datetime.now(timezone.utc) + timedelta(minutes=30)
     await db.commit()
 
-    # TODO: отправить email с токеном через SMTP
+    reset_link = f"{settings.FRONTEND_URL}/reset-password?token={reset_token}"
+    sent_status = await send_password_reset_email(user.email, reset_link)
+
+    if sent_status is None:
+        # Почта не настроена — отдаём ссылку прямо в ответе, чтобы пользователь
+        # мог завершить восстановление. Как только задан SMTP/SendGrid, ссылка
+        # уходит только письмом и в ответе не возвращается.
+        return PasswordResetResponse(
+            message="Email не настроен: используйте ссылку ниже для сброса пароля",
+            reset_link=reset_link,
+        )
+
     return PasswordResetResponse(
         message="If the email exists, a reset link has been sent",
     )
