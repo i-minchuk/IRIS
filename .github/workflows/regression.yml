@@ -1,0 +1,90 @@
+name: Regression UI
+
+# Ежедневный регрессионный прогон разделов в headless-браузере (Playwright).
+# Логика: backend в MODE=demo (SQLite + автосид), vite dev-сервер,
+# обход маршрутов со сбором ошибок консоли (frontend/e2e/regression.cjs).
+# Падает, если на любой странице есть console/pageerror или она пустая.
+
+on:
+  schedule:
+    - cron: '17 6 * * *'   # 06:17 UTC — вне пиковых часов
+  workflow_dispatch:
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      MODE: demo
+      DATABASE_URL: sqlite+aiosqlite:///./demo.db
+      SECRET_KEY: ci-regression-secret-key-0123456789abcdef
+      IRIS_STORAGE_ROOT: /tmp/iris-storage
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Backend — Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: project-root/backend/requirements.txt
+
+      - name: Backend — зависимости
+        working-directory: project-root/backend
+        run: pip install -r requirements.txt
+
+      - name: Backend — миграции и запуск
+        working-directory: project-root/backend
+        run: |
+          python -m alembic upgrade head
+          mkdir -p "$IRIS_STORAGE_ROOT"
+          nohup python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 > backend.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -sf http://127.0.0.1:8000/health > /dev/null 2>&1; then
+              echo "backend up after ${i}s"; break
+            fi
+            sleep 1
+          done
+          curl -sf http://127.0.0.1:8000/health || (tail -100 backend.log && exit 1)
+
+      - name: Frontend — Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: project-root/frontend/package-lock.json
+
+      - name: Frontend — зависимости и Chromium
+        working-directory: project-root/frontend
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Frontend — dev-сервер
+        working-directory: project-root/frontend
+        run: |
+          nohup npm run dev > vite.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -sf http://127.0.0.1:5173 > /dev/null 2>&1; then
+              echo "frontend up after ${i}s"; break
+            fi
+            sleep 1
+          done
+          curl -sf http://127.0.0.1:5173 || (tail -100 vite.log && exit 1)
+
+      - name: Регрессионный прогон
+        working-directory: project-root/frontend
+        run: node e2e/regression.cjs
+
+      - name: Артефакты при падении
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: regression-screenshots
+          path: |
+            project-root/frontend/regression-*.png
+            project-root/backend/backend.log
+            project-root/frontend/vite.log
+          if-no-files-found: ignore
