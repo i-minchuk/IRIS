@@ -46,9 +46,13 @@ function StandardCard({ standard, onDelete }: StandardCardProps) {
         border: '1px solid var(--border-default)',
       }}
     >
-      <button
+      {/* role=button вместо <button>, чтобы не нарушать HTML (внутри — кнопка «Удалить») */}
+      <div
+        role="button"
+        tabIndex={0}
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-4 py-3 text-left"
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen((v) => !v); } }}
+        className="w-full flex items-center justify-between px-4 py-3 text-left cursor-pointer"
       >
         <div className="flex items-center gap-3 min-w-0">
           <FileCheck size={18} style={{ color: '#14B8A6' }} />
@@ -83,7 +87,7 @@ function StandardCard({ standard, onDelete }: StandardCardProps) {
           </button>
           {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </div>
-      </button>
+      </div>
       {open && (
         <div className="px-4 pb-4">
           {standard.description && (
