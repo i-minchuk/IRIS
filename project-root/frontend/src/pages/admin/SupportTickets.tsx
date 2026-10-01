@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Card } from '@/components/ui';
 import { Badge } from '@/components/ui';
 import { useSupportStore } from '@/stores/supportStore';
@@ -9,12 +9,27 @@ export default function SupportTicketsPage() {
   const tickets = useSupportStore(s => s.tickets);
   const updateTicketStatus = useSupportStore(s => s.updateTicketStatus);
   const fetchTickets = useSupportStore(s => s.fetchTickets);
-  const openTickets = useSupportStore(s => s.getOpenTickets());
-  const slaCompliance = useSupportStore(s => s.getSLACompliance());
 
   useEffect(() => {
     fetchTickets();
   }, [fetchTickets]);
+
+  // Производные считаем из tickets, а не селекторами-вызовами методов:
+  // метод возвращает новый массив при каждом снапшоте → бесконечный перерендер.
+  const openTickets = useMemo(
+    () => tickets.filter(t => ['new', 'open', 'in_progress'].includes(t.status)),
+    [tickets],
+  );
+  const slaCompliance = useMemo(() => {
+    const resolved = tickets.filter((t): t is typeof t & { resolved_at: string } => !!t.resolved_at);
+    if (resolved.length === 0) return 100;
+    const compliant = resolved.filter(t => {
+      const resolvedAt = new Date(t.resolved_at).getTime();
+      const deadline = new Date(t.sla_deadline).getTime();
+      return resolvedAt <= deadline;
+    }).length;
+    return Math.round((compliant / resolved.length) * 100);
+  }, [tickets]);
 
   const resolvedCount = tickets.filter(t => t.status === 'resolved' || t.status === 'closed').length;
   const criticalCount = tickets.filter(t => t.priority === 'critical' && t.status !== 'resolved' && t.status !== 'closed').length;
