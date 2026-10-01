@@ -8,10 +8,14 @@
 GET /production/strategy, поэтому появление новых данных в системе
 автоматически отражается в ответе. Если источника нет или данных
 пока недостаточно, поле остаётся пустым.
+
+Связь сущностей с задачей процесса выполняется через process_task_id
+(документы, замечания, операции). Для тендеров пока используется
+глобальная статистика (тендерная модель не содержит process_task_id).
 """
 from datetime import datetime, timezone
 
-from sqlalchemy import func, select
+from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.auth.models import User
@@ -119,45 +123,139 @@ async def _tender_stats(db: AsyncSession, now: datetime):
     return won, lost, month_count
 
 
-async def _remark_stats(db: AsyncSession):
-    """Статистика замечаний: доля несоответствий и проекты с открытыми замечаниями."""
-    total = await db.scalar(select(func.count()).select_from(Remark)) or 0
-    discrepancy = (
-        await db.scalar(
-            select(func.count())
-            .select_from(Remark)
-            .where(Remark.category == "discrepancy")
-        )
-        or 0
-    )
-    open_projects = await db.scalar(
-        select(func.count(func.distinct(Remark.project_id))).where(
-            Remark.project_id.is_not(None),
-            Remark.status.in_(["new", "in_progress"]),
-        )
-    ) or 0
-    total_projects = await db.scalar(select(func.count()).select_from(Project)) or 0
-    return total, discrepancy, open_projects, total_projects
+async def _remark_stats_by_task(db: AsyncSession) -> dict[str, dict[str, int]]:
+    """Статистика замечаний, сгруппированная по process_task_id.
 
-
-async def _operation_deviation(db: AsyncSession) -> float | None:
-    """Среднее отклонение фактического завершения операций от плана, дней."""
+    Возвращает для каждой задачи:
+      - total: всего замечаний
+      - discrepancy: замечания-категории discrepancy (брак/несоответствие)
+      - open_projects: проекты с открытыми замечаниями
+    """
     rows = (
         await db.execute(
-            select(Operation.planned_finish, Operation.actual_finish).where(
+            select(
+                Remark.process_task_id,
+                func.count().label("total"),
+                func.sum(case((Remark.category == "discrepancy", 1), else_=0)).label(
+                    "discrepancy"
+                ),
+                func.count(func.distinct(Remark.project_id)).label("open_projects"),
+            )
+            .where(Remark.process_task_id.is_not(None))
+            .group_by(Remark.process_task_id)
+        )
+    ).all()
+
+    stats: dict[str, dict[str, int]] = {}
+    for task_id, total, discrepancy, open_projects in rows:
+        stats[task_id] = {
+            "total": total or 0,
+            "discrepancy": discrepancy or 0,
+            "open_projects": open_projects or 0,
+        }
+    return stats
+
+
+async def _operation_deviation_by_task(
+    db: AsyncSession,
+) -> dict[str, float]:
+    """Среднее отклонение фактического завершения операций от плана, дней.
+
+    Группировка по process_task_id. Вычисление производится в Python,
+    чтобы работать и с SQLite, и с PostgreSQL.
+    """
+    rows = (
+        await db.execute(
+            select(Operation.process_task_id, Operation.planned_finish, Operation.actual_finish)
+            .where(
+                Operation.process_task_id.is_not(None),
                 Operation.planned_finish.is_not(None),
                 Operation.actual_finish.is_not(None),
             )
         )
     ).all()
-    deviations = [
-        (actual - planned).total_seconds() / 86400
-        for planned, actual in rows
-        if planned and actual
+
+    grouped: dict[str, list[float]] = {}
+    for task_id, planned, actual in rows:
+        if not task_id or not planned or not actual:
+            continue
+        deviation = (actual - planned).total_seconds() / 86400
+        grouped.setdefault(task_id, []).append(deviation)
+
+    return {
+        task_id: round(sum(values) / len(values), 1)
+        for task_id, values in grouped.items()
+        if values
+    }
+
+
+async def _operation_stats_by_task(
+    db: AsyncSession,
+) -> dict[str, dict[str, float]]:
+    """Статистика операций, сгруппированная по process_task_id.
+
+    Для каждой задачи:
+      - avg_duration: средняя фактическая длительность операций, дней
+      - on_time_pct: доля операций, завершённых не позже плана, %
+      - count: число операций с фактическим завершением
+    """
+    rows = (
+        await db.execute(
+            select(
+                Operation.process_task_id,
+                Operation.actual_start,
+                Operation.actual_finish,
+                Operation.planned_finish,
+            ).where(
+                Operation.process_task_id.is_not(None),
+                Operation.actual_finish.is_not(None),
+            )
+        )
+    ).all()
+
+    durations: dict[str, list[float]] = {}
+    on_time: dict[str, list[int]] = {}
+    for task_id, actual_start, actual_finish, planned_finish in rows:
+        if not task_id or not actual_finish:
+            continue
+        if actual_start:
+            duration = (actual_finish - actual_start).total_seconds() / 86400
+            durations.setdefault(task_id, []).append(duration)
+        if planned_finish:
+            ok = 1 if actual_finish <= planned_finish else 0
+            on_time.setdefault(task_id, []).append(ok)
+
+    stats: dict[str, dict[str, float]] = {}
+    for task_id in set(durations) | set(on_time):
+        durs = durations.get(task_id, [])
+        oks = on_time.get(task_id, [])
+        entry: dict[str, float] = {"count": len(durs) or len(oks)}
+        if durs:
+            entry["avg_duration"] = sum(durs) / len(durs)
+        if oks:
+            entry["on_time_pct"] = sum(oks) / len(oks) * 100
+        stats[task_id] = entry
+    return stats
+
+
+async def _tender_prep_avg_days(db: AsyncSession) -> float | None:
+    """Средний срок подготовки тендерного предложения, дней (created_at → deadline)."""
+    rows = (
+        await db.execute(
+            select(Tender.created_at, Tender.deadline).where(
+                Tender.created_at.is_not(None),
+                Tender.deadline.is_not(None),
+            )
+        )
+    ).all()
+    prep_days = [
+        (deadline - created).total_seconds() / 86400
+        for created, deadline in rows
+        if created and deadline and deadline >= created
     ]
-    if not deviations:
+    if not prep_days:
         return None
-    return sum(deviations) / len(deviations)
+    return sum(prep_days) / len(prep_days)
 
 
 # ---------- Resolver'ы: (node_id, label) -> значение ----------
@@ -166,37 +264,90 @@ async def _operation_deviation(db: AsyncSession) -> float | None:
 def _build_resolvers(
     now: datetime,
     emp_loads: dict[str, int],
+    node_employee_tasks: dict[str, list[str]],
     won: int,
     lost: int,
     month_tenders: int,
-    remarks_total: int,
-    remarks_discrepancy: int,
-    open_remark_projects: int,
-    total_projects: int,
-    op_deviation: float | None,
+    remark_stats: dict[str, dict[str, int]],
+    op_deviation: dict[str, float],
+    op_stats: dict[str, dict[str, float]],
+    tender_prep_days: float | None,
 ) -> dict[tuple[str, str], str]:
     resolvers: dict[tuple[str, str], str] = {}
 
+    # task_tender — глобальная статистика тендеров
     if won + lost > 0:
         resolvers[("task_tender", "Выигранные тендеры")] = f"{won / (won + lost) * 100:.0f}%"
     if month_tenders > 0:
         resolvers[("task_tender", "Кол-во тендеров/мес")] = str(month_tenders)
+    if tender_prep_days is not None:
+        resolvers[("task_tender", "Время подготовки КП")] = f"{tender_prep_days:.0f} дн."
 
-    max_load = max(emp_loads.values()) if emp_loads else 0
-    if max_load > 0:
-        resolvers[("task_tz", "Загрузка инженера")] = f"{max_load}%"
+    # task_tz — загрузка инженеров, назначенных на эту задачу
+    tz_emp_ids = node_employee_tasks.get("task_tz", [])
+    tz_loads = [emp_loads.get(emp_id, 0) for emp_id in tz_emp_ids]
+    max_tz_load = max(tz_loads) if tz_loads else 0
+    if max_tz_load > 0:
+        resolvers[("task_tz", "Загрузка инженера")] = f"{max_tz_load}%"
 
-    if remarks_total > 0:
+    # task_incoming — % брака/несоответствий среди замечаний, привязанных к задаче
+    incoming_stats = remark_stats.get("task_incoming", {})
+    incoming_total = incoming_stats.get("total", 0)
+    if incoming_total > 0:
         resolvers[("task_incoming", "% брака при поставке")] = (
-            f"{remarks_discrepancy / remarks_total * 100:.1f}%"
-        )
-    if total_projects > 0:
-        resolvers[("task_otk", "% изделий с замечаниями")] = (
-            f"{open_remark_projects / total_projects * 100:.0f}%"
+            f"{incoming_stats.get('discrepancy', 0) / incoming_total * 100:.1f}%"
         )
 
-    if op_deviation is not None:
-        resolvers[("task_montage", "Отклонение от плана")] = f"{op_deviation:+.0f} дн."
+    # task_otk — % проектов с открытыми замечаниями, привязанными к ОТК
+    otk_stats = remark_stats.get("task_otk", {})
+    otk_open_projects = otk_stats.get("open_projects", 0)
+    otk_total = otk_stats.get("total", 0)
+    if otk_total > 0:
+        resolvers[("task_otk", "% изделий с замечаниями")] = (
+            f"{otk_open_projects / otk_total * 100:.0f}%"
+        )
+
+    # task_montage — отклонение от плана по операциям, привязанным к задаче
+    montage_dev = op_deviation.get("task_montage")
+    if montage_dev is not None:
+        resolvers[("task_montage", "Отклонение от плана")] = f"{montage_dev:+.0f} дн."
+
+    # Замечания по этапам: количество ошибок/замечаний, привязанных к задаче
+    def _remark_count(task_id: str, key: str = "total") -> int:
+        return remark_stats.get(task_id, {}).get(key, 0)
+
+    remark_labels: dict[tuple[str, str], tuple[str, str, str]] = {
+        # (node_id, label) -> (process_task_id, поле статистики, формат)
+        ("task_schema", "Ошибки в ревизии"): ("task_schema", "discrepancy", "{n} шт."),
+        ("task_spec", "Точность BOM"): ("task_spec", "total", "{n} зам."),
+        ("task_bom", "Число замен позиций"): ("task_bom", "total", "{n} шт."),
+        ("task_wiring", "Ошибки разводки"): ("task_wiring", "discrepancy", "{n} шт."),
+        ("task_wiring", "Переделки"): ("task_wiring", "total", "{n} шт."),
+        ("task_shipping", "Рекламации"): ("task_shipping", "total", "{n} шт."),
+    }
+    for (node_id, label), (task_id, key, fmt) in remark_labels.items():
+        n = _remark_count(task_id, key)
+        if n > 0:
+            resolvers[(node_id, label)] = fmt.format(n=n)
+
+    # Длительность операций по этапам
+    duration_labels: dict[tuple[str, str], tuple[str, str]] = {
+        # (node_id, label) -> (process_task_id, формат)
+        ("task_purchase", "Срок поставки (ср.)"): ("task_purchase", "{d:.0f} дн."),
+        ("task_test", "Среднее время наладки"): ("task_test", "{d:.1f} дн."),
+        ("task_warehouse", "Время выдачи"): ("task_warehouse", "{d:.1f} дн."),
+    }
+    for (node_id, label), (task_id, fmt) in duration_labels.items():
+        avg_duration = op_stats.get(task_id, {}).get("avg_duration")
+        if avg_duration is not None:
+            resolvers[(node_id, label)] = fmt.format(d=avg_duration)
+
+    # Своевременность завершения операций этапа
+    shipping_on_time = op_stats.get("task_shipping", {}).get("on_time_pct")
+    if shipping_on_time is not None:
+        resolvers[("task_shipping", "Своевременность отгрузки")] = (
+            f"{shipping_on_time:.0f}%"
+        )
 
     return resolvers
 
@@ -223,24 +374,30 @@ async def enrich_strategy(
         if user_id in loads_by_user
     }
 
+    # Соответствие задач -> сотрудники процесса (для расчёта загрузки по узлу)
+    node_employee_tasks: dict[str, list[str]] = {}
+    for emp in employees:
+        for task_id in emp.tasks or []:
+            node_employee_tasks.setdefault(task_id, []).append(emp.id)
+
     # KPI узлов из тендеров, замечаний, операций
     won, lost, month_tenders = await _tender_stats(db, now)
-    remarks_total, remarks_discrepancy, open_projects, total_projects = (
-        await _remark_stats(db)
-    )
-    op_deviation = await _operation_deviation(db)
+    remark_stats = await _remark_stats_by_task(db)
+    op_deviation = await _operation_deviation_by_task(db)
+    op_stats = await _operation_stats_by_task(db)
+    tender_prep_days = await _tender_prep_avg_days(db)
 
     resolvers = _build_resolvers(
         now,
         emp_loads,
+        node_employee_tasks,
         won,
         lost,
         month_tenders,
-        remarks_total,
-        remarks_discrepancy,
-        open_projects,
-        total_projects,
+        remark_stats,
         op_deviation,
+        op_stats,
+        tender_prep_days,
     )
 
     # Сотрудники: реальная загрузка вместо сохранённого значения (>0)

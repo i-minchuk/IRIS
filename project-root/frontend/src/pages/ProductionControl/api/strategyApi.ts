@@ -26,6 +26,12 @@ export const seedStrategy = async (): Promise<StrategyData> => {
   return data;
 };
 
+/** Список узлов производственного процесса для привязки документов/замечаний. */
+export const getProductionNodes = async (): Promise<BpmnNode[]> => {
+  const { data } = await client.get('/production/nodes');
+  return data;
+};
+
 /** Привязывает/отвязывает сотрудника процесса к учётной записи пользователя. */
 export const updateEmployee = async (
   empId: string,
