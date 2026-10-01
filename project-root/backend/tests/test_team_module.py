@@ -40,20 +40,33 @@ class TestTeamEndpoints:
 class TestCalendarBirthdays:
     """Tests for calendar birthday endpoint."""
 
-    def test_calendar_birthdays_returns_data(self, client_with_auth):
+    def test_calendar_birthdays_returns_data(self, client_with_auth, mock_db):
         """Calendar birthdays API returns a list."""
+        from datetime import date as date_type
+        from unittest.mock import MagicMock
+
+        user = MagicMock()
+        user.id = 7
+        user.full_name = "Иван Иванов"
+        user.username = "ivanov"
+        user.email = "ivanov@example.com"
+        user.role = "engineer"
+        user.birthdate = date_type(1990, 5, 15)
+
+        mock_result = MagicMock()
+        mock_result.scalars.return_value.all.return_value = [user]
+        mock_db.execute.return_value = mock_result
+
         with client_with_auth as client:
             response = client.get("/api/v1/calendar/birthdays")
             assert response.status_code == 200
             data = response.json()
             assert isinstance(data, list)
-            # Validate schema for each item when present
-            for item in data:
-                assert isinstance(item, dict)
-                assert "id" in item
-                assert "name" in item
-                assert "date" in item
-                assert "role" in item
+            assert len(data) == 1
+            assert data[0]["id"] == "user-7"
+            assert data[0]["name"] == "Иван Иванов"
+            assert data[0]["date"] == "05-15"
+            assert data[0]["role"] == "engineer"
 
     def test_calendar_birthdays_requires_auth(self, client):
         """Calendar birthdays API should require authentication."""

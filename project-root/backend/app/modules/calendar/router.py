@@ -2,12 +2,13 @@ from datetime import date, datetime, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select
+from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
 from app.modules.auth.deps import get_current_active_user
 from app.modules.auth.models import User
+from app.modules.auth.models import User as UserModel
 from app.modules.calendar.schemas import (
     BirthdayEvent,
     CalendarEventCreate,
@@ -255,8 +256,25 @@ async def delete_calendar_event(
 
 @router.get("/birthdays", response_model=list[BirthdayEvent])
 async def get_calendar_birthdays(
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ) -> list[BirthdayEvent]:
     """Get employee birthdays for calendar display."""
-    # TODO: no birthdate field on User yet — returning empty list
-    return []
+    result = await db.execute(
+        select(UserModel).where(
+            and_(
+                UserModel.birthdate.isnot(None),
+                UserModel.is_active == True,  # noqa: E712
+            )
+        )
+    )
+    users = result.scalars().all()
+    return [
+        BirthdayEvent(
+            id=f"user-{user.id}",
+            name=user.full_name or user.username or user.email,
+            date=user.birthdate.strftime("%m-%d"),
+            role=user.role or "",
+        )
+        for user in users
+    ]

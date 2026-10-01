@@ -40,6 +40,7 @@ def mock_user():
     user.totp_enabled = False
     user.totp_secret = None
     user.telegram_chat_id = None
+    user.birthdate = None
     user.created_at = None
     return user
 

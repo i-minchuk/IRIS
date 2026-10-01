@@ -21,6 +21,7 @@ interface ProfileForm {
   full_name: string;
   email: string;
   phone: string;
+  birthdate: string;
   position: string;
   department: string;
   location: string;
@@ -104,6 +105,7 @@ export default function ProfileSettingsPage() {
     const savedFullName = localStorage.getItem('iris_profile_full_name');
     const savedEmail = localStorage.getItem('iris_profile_email');
     const savedPhone = localStorage.getItem('iris_profile_phone');
+    const savedBirthdate = localStorage.getItem('iris_profile_birthdate');
     const savedPosition = localStorage.getItem('iris_profile_position');
     const savedDepartment = localStorage.getItem('iris_profile_department');
     const savedLocation = localStorage.getItem('iris_profile_location');
@@ -111,6 +113,7 @@ export default function ProfileSettingsPage() {
     if (savedFullName) setProfile((p) => ({ ...p, full_name: savedFullName }));
     if (savedEmail) setProfile((p) => ({ ...p, email: savedEmail }));
     if (savedPhone) setProfile((p) => ({ ...p, phone: savedPhone }));
+    if (savedBirthdate) setProfile((p) => ({ ...p, birthdate: savedBirthdate }));
     if (savedPosition) setProfile((p) => ({ ...p, position: savedPosition }));
     if (savedDepartment) setProfile((p) => ({ ...p, department: savedDepartment }));
     if (savedLocation) setProfile((p) => ({ ...p, location: savedLocation }));
@@ -122,6 +125,7 @@ export default function ProfileSettingsPage() {
     full_name: user?.full_name || '',
     email: user?.email || '',
     phone: '',
+    birthdate: (user as { birthdate?: string | null } | null)?.birthdate || '',
     position: '',
     department: '',
     location: '',
@@ -196,6 +200,7 @@ export default function ProfileSettingsPage() {
         localStorage.setItem('iris_profile_full_name', profile.full_name);
         localStorage.setItem('iris_profile_email', profile.email);
         localStorage.setItem('iris_profile_phone', profile.phone);
+        localStorage.setItem('iris_profile_birthdate', profile.birthdate);
         localStorage.setItem('iris_profile_position', profile.position);
         localStorage.setItem('iris_profile_department', profile.department);
         localStorage.setItem('iris_profile_location', profile.location);
@@ -211,12 +216,14 @@ export default function ProfileSettingsPage() {
           full_name: profile.full_name,
           email: profile.email,
           phone: profile.phone,
+          birthdate: profile.birthdate || null,
           ...(changingPassword
             ? { current_password: password.current_password, new_password: password.new_password }
             : {}),
         });
         // Поля, которых нет в серверной модели, храним локально
         localStorage.setItem('iris_profile_phone', profile.phone);
+        localStorage.setItem('iris_profile_birthdate', profile.birthdate);
         localStorage.setItem('iris_profile_position', profile.position);
         localStorage.setItem('iris_profile_department', profile.department);
         localStorage.setItem('iris_profile_location', profile.location);
@@ -411,6 +418,7 @@ export default function ProfileSettingsPage() {
                   <Input label="Полное имя" value={profile.full_name} onChange={(e) => setProfile((p) => ({ ...p, full_name: e.target.value }))} error={errors.full_name} />
                   <Input label="Email" type="email" value={profile.email} onChange={(e) => setProfile((p) => ({ ...p, email: e.target.value }))} error={errors.email} />
                   <Input label="Телефон" value={profile.phone} onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))} />
+                  <Input label="Дата рождения" type="date" value={profile.birthdate} onChange={(e) => setProfile((p) => ({ ...p, birthdate: e.target.value }))} />
                   <Input label="Должность" value={profile.position} onChange={(e) => setProfile((p) => ({ ...p, position: e.target.value }))} />
                   <Input label="Отдел" value={profile.department} onChange={(e) => setProfile((p) => ({ ...p, department: e.target.value }))} />
                   <Input label="Локация" value={profile.location} onChange={(e) => setProfile((p) => ({ ...p, location: e.target.value }))} />

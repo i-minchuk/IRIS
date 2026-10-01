@@ -1,7 +1,7 @@
 # app/modules/auth/schemas.py
 from pydantic import BaseModel, ConfigDict, field_validator
 from typing import Optional
-from datetime import datetime
+from datetime import date, datetime
 
 
 class UserBase(BaseModel):
@@ -29,6 +29,7 @@ class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     username: Optional[str] = None
     password: Optional[str] = None
+    birthdate: Optional[date] = None
     is_active: Optional[bool] = None
     is_superuser: Optional[bool] = None
 
@@ -38,6 +39,7 @@ class UserMeUpdate(BaseModel):
     email: Optional[str] = None
     full_name: Optional[str] = None
     phone: Optional[str] = None
+    birthdate: Optional[date] = None
     current_password: Optional[str] = None
     new_password: Optional[str] = None
 
@@ -57,6 +59,7 @@ class UserResponse(UserBase):
     is_active: bool
     role: str
     telegram_chat_id: Optional[str] = None
+    birthdate: Optional[date] = None
     totp_enabled: bool = False
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)
@@ -67,6 +70,7 @@ class User(UserBase):
     is_active: bool
     role: str
     telegram_chat_id: Optional[str] = None
+    birthdate: Optional[date] = None
     totp_enabled: bool = False
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)

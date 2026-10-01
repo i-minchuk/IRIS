@@ -1,7 +1,7 @@
 # app/modules/auth/models.py
-from sqlalchemy import String, Boolean, DateTime
+from sqlalchemy import String, Boolean, DateTime, Date
 from sqlalchemy.orm import Mapped, mapped_column
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from app.db.base import Base
 from app.core.encryption import encrypt, decrypt
 
@@ -22,6 +22,7 @@ class User(Base):
     reset_token: Mapped[str | None] = mapped_column(String(512), nullable=True)
     reset_token_expires: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     telegram_chat_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    birthdate: Mapped[date | None] = mapped_column(Date, nullable=True)
     totp_secret: Mapped[str | None] = mapped_column(String(255), nullable=True)
     totp_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     recovery_codes: Mapped[str | None] = mapped_column(String(500), nullable=True)
