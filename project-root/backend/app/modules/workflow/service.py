@@ -1392,9 +1392,46 @@ class WorkflowService:
                 r["deadline"],
             )
         )
+        # Пунктуальность исполнителей: сколько согласований/отправок в срок
+        # и с просрочкой у каждого назначенного пользователя
+        punctuality: Dict[str, Dict[str, int]] = {}
+        assignee_ids = {a["id"] for r in rows for a in r["assignees"]}
+        if assignee_ids:
+            from app.modules.gamification.models import GamificationEvent
+
+            agg = await self.db.execute(
+                select(
+                    GamificationEvent.user_id,
+                    GamificationEvent.event_type,
+                    func.count(GamificationEvent.id),
+                ).where(
+                    GamificationEvent.user_id.in_(assignee_ids),
+                    GamificationEvent.event_type.in_(
+                        [
+                            "workflow_step_approved_on_time",
+                            "workflow_step_approved_late",
+                            "document_sent_on_time",
+                            "document_sent_late",
+                        ]
+                    ),
+                ).group_by(
+                    GamificationEvent.user_id, GamificationEvent.event_type
+                )
+            )
+            by_user: Dict[int, Dict[str, int]] = {}
+            for uid, event_type, cnt in agg.all():
+                by_user.setdefault(uid, {})[event_type] = int(cnt)
+            for uid, counts in by_user.items():
+                punctuality[str(uid)] = {
+                    "on_time": counts.get("workflow_step_approved_on_time", 0),
+                    "late": counts.get("workflow_step_approved_late", 0),
+                    "sent_on_time": counts.get("document_sent_on_time", 0),
+                    "sent_late": counts.get("document_sent_late", 0),
+                }
         return {
             "total": len(rows),
             "overdue": sum(1 for r in rows if r["overdue_hours"] is not None),
             "rows": rows,
+            "punctuality": punctuality,
         }
 

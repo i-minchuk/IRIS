@@ -106,7 +106,35 @@ export function WorkflowDeadlineWidget({ isDark }: Props) {
                     <div className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
                       {r.step_name}
                       {r.assignees.length > 0 && (
-                        <> · {r.assignees.map((a) => a.full_name).join(', ')}</>
+                        <>
+                          {' · '}
+                          {r.assignees.map((a, idx) => {
+                            const p = data.punctuality?.[String(a.id)];
+                            return (
+                              <span key={a.id}>
+                                {idx > 0 && ', '}
+                                {a.full_name}
+                                {p && (p.on_time > 0 || p.late > 0) && (
+                                  <span
+                                    className="ml-1 inline-flex items-center gap-1 align-middle"
+                                    title={`Согласовано в срок: ${p.on_time}, с просрочкой: ${p.late}, отправлено в срок: ${p.sent_on_time}`}
+                                  >
+                                    <span style={{ color: '#10B981' }}>
+                                      <CheckCircle size={10} />
+                                      {p.on_time}
+                                    </span>
+                                    {p.late > 0 && (
+                                      <span style={{ color: '#DC2626' }}>
+                                        <AlertTriangle size={10} />
+                                        {p.late}
+                                      </span>
+                                    )}
+                                  </span>
+                                )}
+                              </span>
+                            );
+                          })}
+                        </>
                       )}
                       {r.assignees.length === 0 && <> · исполнители не назначены</>}
                     </div>

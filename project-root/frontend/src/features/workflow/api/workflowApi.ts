@@ -134,6 +134,11 @@ export interface DeadlineOverview {
   total: number;
   overdue: number;
   rows: DeadlineOverviewRow[];
+  /** Пунктуальность исполнителей по ключу user_id (строкой) */
+  punctuality?: Record<
+    string,
+    { on_time: number; late: number; sent_on_time: number; sent_late: number }
+  >;
 }
 
 export const workflowApi = {
