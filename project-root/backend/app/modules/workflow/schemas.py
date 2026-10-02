@@ -453,3 +453,73 @@ PREDEFINED_TEMPLATES = [
         ]
     }
 ]
+
+
+# ============== Routing Rule Schemas (сценарии маршрутизации) ==============
+
+class RoutingRuleCreate(BaseModel):
+    """Create a routing rule (сценарий: условия по документу -> маршрут)."""
+    name: str = Field(..., min_length=1, max_length=255)
+    project_id: Optional[int] = Field(None, gt=0)
+    doc_type: Optional[str] = Field(None, max_length=50)
+    discipline: Optional[str] = Field(None, max_length=10)
+    template_id: int = Field(..., gt=0)
+    priority: int = Field(0, ge=0, le=1000)
+    is_active: bool = True
+
+
+class RoutingRuleUpdate(BaseModel):
+    """Update a routing rule (все поля необязательны)."""
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
+    project_id: Optional[int] = Field(None, gt=0)
+    doc_type: Optional[str] = Field(None, max_length=50)
+    discipline: Optional[str] = Field(None, max_length=10)
+    template_id: Optional[int] = Field(None, gt=0)
+    priority: Optional[int] = Field(None, ge=0, le=1000)
+    is_active: Optional[bool] = None
+
+
+class RoutingRuleResponse(BaseModel):
+    """Response for a routing rule."""
+    id: int
+    name: str
+    project_id: Optional[int]
+    project_name: Optional[str] = None
+    doc_type: Optional[str]
+    discipline: Optional[str]
+    template_id: int
+    template_name: Optional[str] = None
+    priority: int
+    is_active: bool
+    created_at: datetime
+
+    @model_validator(mode="before")
+    @classmethod
+    def _extract_names(cls, data):
+        # ORM-объект: подставляем имена шаблона и проекта
+        if hasattr(data, "template"):
+            return {
+                "id": data.id,
+                "name": data.name,
+                "project_id": data.project_id,
+                "project_name": data.project.name if data.project else None,
+                "doc_type": data.doc_type,
+                "discipline": data.discipline,
+                "template_id": data.template_id,
+                "template_name": data.template.name if data.template else None,
+                "priority": data.priority,
+                "is_active": data.is_active,
+                "created_at": data.created_at,
+            }
+        return data
+
+    class Config:
+        from_attributes = True
+
+
+class RoutingRuleMatchResponse(BaseModel):
+    """Result of matching a document against routing rules."""
+    matched: bool
+    rule: Optional[RoutingRuleResponse] = None
+    template_id: Optional[int] = None
+    template_name: Optional[str] = None

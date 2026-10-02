@@ -39,12 +39,16 @@ interface Props {
   documentId: number;
   documentName?: string;
   projectId?: number;
+  docType?: string;
+  discipline?: string;
 }
 
 export const DocumentWorkflowPanel: React.FC<Props> = ({
   documentId,
   documentName,
   projectId,
+  docType,
+  discipline,
 }) => {
   const [instances, setInstances] = useState<WorkflowInstance[]>([]);
   const [templates, setTemplates] = useState<WorkflowTemplate[]>([]);
@@ -60,6 +64,7 @@ export const DocumentWorkflowPanel: React.FC<Props> = ({
   const [returnToAuthor, setReturnToAuthor] = useState(true);
   const [comments, setComments] = useState<any[]>([]);
   const [busy, setBusy] = useState(false);
+  const [matchedRuleName, setMatchedRuleName] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -87,6 +92,36 @@ export const DocumentWorkflowPanel: React.FC<Props> = ({
       getUsers().then(setUsers).catch(() => setUsers([]));
     }
   }, [startOpen, users.length]);
+
+  // Автоподбор маршрута по сценариям при открытии диалога запуска
+  useEffect(() => {
+    if (!startOpen) {
+      setMatchedRuleName(null);
+      return;
+    }
+    let cancelled = false;
+    workflowApi
+      .matchRoutingRule({
+        project_id: projectId,
+        doc_type: docType,
+        discipline: discipline,
+      })
+      .then((m) => {
+        if (cancelled) return;
+        if (m.matched && m.template_id) {
+          setTemplateId(m.template_id);
+          setMatchedRuleName(m.rule?.name ?? null);
+        } else {
+          setMatchedRuleName(null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setMatchedRuleName(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [startOpen, projectId, docType, discipline]);
 
   useEffect(() => {
     if (actionKind === 'delegate' && users.length === 0) {
@@ -225,6 +260,12 @@ export const DocumentWorkflowPanel: React.FC<Props> = ({
 
           {startOpen && (
             <div className="mt-4 space-y-3 border-t pt-3" style={{ borderColor: 'var(--border-default)' }}>
+              {matchedRuleName && (
+                <p className="text-xs flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
+                  <GitBranch size={12} style={{ color: 'var(--brand-iris)' }} />
+                  Маршрут подобран автоматически по сценарию «{matchedRuleName}»
+                </p>
+              )}
               <div>
                 <label className="block text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>Маршрут согласования</label>
                 <select

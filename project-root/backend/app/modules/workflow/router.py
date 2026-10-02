@@ -7,7 +7,7 @@ from app.db.session import get_db
 from app.modules.auth.deps import get_current_active_user
 from app.modules.auth.models import User
 from app.modules.workflow.models import WorkflowStatus
-from app.modules.workflow.service import WorkflowService
+from app.modules.workflow.service import WorkflowService, WorkflowServiceError
 from app.modules.workflow.schemas import (
     WorkflowTemplateCreate,
     WorkflowTemplateUpdate,
@@ -30,7 +30,11 @@ from app.modules.workflow.schemas import (
     WorkflowAuditLogListResponse,
     WorkflowSignatureResponse,
     WorkflowSignatureListResponse,
-    PREDEFINED_TEMPLATES
+    PREDEFINED_TEMPLATES,
+    RoutingRuleCreate,
+    RoutingRuleUpdate,
+    RoutingRuleResponse,
+    RoutingRuleMatchResponse
 )
 
 router = APIRouter(tags=["workflows"])
@@ -458,4 +462,92 @@ async def get_audit_log(
     return WorkflowAuditLogListResponse(
         logs=[WorkflowAuditLogResponse.model_validate(log) for log in logs],
         total=len(logs)
+    )
+
+
+# ==================== Routing Rule Endpoints (сценарии маршрутизации) ====================
+
+@router.get("/routing-rules", response_model=list)
+async def list_routing_rules(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """List routing rules (сценарии: условия по документу -> маршрут)."""
+    service = get_service(db)
+    rules = await service.list_routing_rules()
+    return [RoutingRuleResponse.model_validate(r) for r in rules]
+
+
+@router.post("/routing-rules", response_model=RoutingRuleResponse, status_code=status.HTTP_201_CREATED)
+async def create_routing_rule(
+    data: RoutingRuleCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Create a routing rule."""
+    service = get_service(db)
+    try:
+        rule = await service.create_routing_rule(data)
+        return RoutingRuleResponse.model_validate(rule)
+    except WorkflowServiceError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.patch("/routing-rules/{rule_id}", response_model=RoutingRuleResponse)
+async def update_routing_rule(
+    rule_id: int,
+    data: RoutingRuleUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Update a routing rule."""
+    service = get_service(db)
+    try:
+        rule = await service.update_routing_rule(rule_id, data)
+    except WorkflowServiceError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    if not rule:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rule not found")
+    return RoutingRuleResponse.model_validate(rule)
+
+
+@router.delete("/routing-rules/{rule_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_routing_rule(
+    rule_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Delete a routing rule."""
+    service = get_service(db)
+    try:
+        deleted = await service.delete_routing_rule(rule_id)
+    except WorkflowServiceError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    if not deleted:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rule not found")
+
+
+@router.get("/routing-rules/match", response_model=RoutingRuleMatchResponse)
+async def match_routing_rule(
+    project_id: Optional[int] = Query(None),
+    doc_type: Optional[str] = Query(None),
+    discipline: Optional[str] = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Подобрать сценарий маршрутизации для документа с заданными полями."""
+    service = get_service(db)
+    rule = await service.match_routing_rule(
+        project_id=project_id,
+        doc_type=doc_type,
+        discipline=discipline,
+    )
+    if not rule:
+        return RoutingRuleMatchResponse(matched=False)
+    rule_data = RoutingRuleResponse.model_validate(rule).model_dump()
+    return RoutingRuleMatchResponse(
+        matched=True,
+        rule=rule_data,
+        template_id=rule.template_id,
+        template_name=rule.template.name if rule.template else None,
     )

@@ -58,7 +58,7 @@ class DocumentRepository:
         allowed = {
             "name", "number", "status", "crs_code", "content",
             "variables_snapshot", "section_id", "kit_id", "stage_id",
-            "project_id",
+            "project_id", "discipline",
             "standard_ids", "assignee_ids",
         }
         for key, value in data.items():

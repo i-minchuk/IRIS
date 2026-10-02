@@ -261,6 +261,7 @@ export default function DocumentCreate() {
         assignee_ids: assigneeIds,
         standard_ids: selectedStandardIds,
         process_task_id: selectedProcessTaskId || undefined,
+        discipline: formData.discipline || undefined,
       });
       if (file) {
         try {

@@ -77,6 +77,7 @@ from app.modules.workflow.models import (  # noqa
     WorkflowStep,
     WorkflowComment,
     WorkflowAuditLog,
+    WorkflowRoutingRule,
 )
 
 # 12. Gamification — ссылается на User

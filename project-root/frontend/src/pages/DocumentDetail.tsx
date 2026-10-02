@@ -665,6 +665,8 @@ export default function DocumentDetailPage() {
               documentId={Number(id)}
               documentName={doc?.name || doc?.title}
               projectId={doc?.project_id}
+              docType={doc?.doc_type}
+              discipline={doc?.discipline}
             />
           </Card>
         )}

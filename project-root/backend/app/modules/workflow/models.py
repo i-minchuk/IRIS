@@ -323,3 +323,43 @@ class WorkflowAuditLog(Base):
     __table_args__ = (
         Index('idx_workflow_audit_log_instance_id', 'instance_id'),
     )
+
+
+class WorkflowRoutingRule(Base):
+    """Сценарии маршрутизации: условия по документу -> шаблон согласования.
+
+    Правило срабатывает, когда все заданные в нём условия совпадают с документом.
+    Пустое условие не проверяется. При нескольких подходящих правилах выбирается
+    самое специфичное (больше заполненных условий), при равенстве — больший приоритет.
+    """
+    __tablename__ = 'workflow_routing_rules'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+
+    # Условия (None = не проверяется)
+    project_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey('projects.id', ondelete='CASCADE'), nullable=True
+    )
+    doc_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    discipline: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
+
+    # Какой маршрут запускать
+    template_id: Mapped[int] = mapped_column(
+        ForeignKey('workflow_templates.id', ondelete='CASCADE'), nullable=False
+    )
+
+    priority: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=datetime.utcnow, nullable=False
+    )
+
+    # Relationships
+    template = relationship('WorkflowTemplate', backref='routing_rules')
+    project = relationship('Project', backref='workflow_routing_rules')
+
+    __table_args__ = (
+        Index('idx_workflow_routing_rules_template', 'template_id'),
+    )

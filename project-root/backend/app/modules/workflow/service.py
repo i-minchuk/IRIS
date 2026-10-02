@@ -89,6 +89,13 @@ class WorkflowService:
         )
         return result.scalar_one_or_none()
 
+    async def get_template_by_code(self, code: str) -> Optional[WorkflowTemplate]:
+        """Get workflow template by code."""
+        result = await self.db.execute(
+            select(WorkflowTemplate).where(WorkflowTemplate.code == code)
+        )
+        return result.scalar_one_or_none()
+
     async def get_templates(
         self,
         active_only: bool = True,
@@ -800,3 +807,139 @@ class WorkflowService:
             .order_by(WorkflowAuditLog.timestamp.asc())
         )
         return result.scalars().all()
+
+    # ==================== Routing Rule Methods ====================
+
+    async def list_routing_rules(self, active_only: bool = False) -> List["WorkflowRoutingRule"]:
+        """List routing rules ordered by specificity (priority desc)."""
+        from app.modules.workflow.models import WorkflowRoutingRule
+        from sqlalchemy.orm import selectinload
+
+        query = select(WorkflowRoutingRule).options(
+            selectinload(WorkflowRoutingRule.template),
+            selectinload(WorkflowRoutingRule.project),
+        )
+        if active_only:
+            query = query.where(WorkflowRoutingRule.is_active.is_(True))
+        result = await self.db.execute(
+            query.order_by(WorkflowRoutingRule.priority.desc(), WorkflowRoutingRule.id.asc())
+        )
+        return result.scalars().all()
+
+    async def create_routing_rule(self, data) -> "WorkflowRoutingRule":
+        """Create a routing rule."""
+        from app.modules.workflow.models import WorkflowRoutingRule
+
+        template = await self.get_template(data.template_id)
+        if not template:
+            raise WorkflowNotFoundError(f"Template {data.template_id} not found")
+
+        rule = WorkflowRoutingRule(
+            name=data.name,
+            project_id=data.project_id,
+            doc_type=data.doc_type,
+            discipline=data.discipline,
+            template_id=data.template_id,
+            priority=data.priority,
+            is_active=data.is_active,
+        )
+        self.db.add(rule)
+        try:
+            await self.db.commit()
+            # Перечитываем с eager-подгрузкой связей — иначе сериализация
+            # RoutingRuleResponse упадёт на ленивой загрузке вне greenlet
+            return await self._get_routing_rule_eager(rule.id)
+        except SQLAlchemyError as e:
+            await self.db.rollback()
+            raise WorkflowServiceError(f"Failed to create routing rule: {e}")
+
+    async def update_routing_rule(self, rule_id: int, data) -> Optional["WorkflowRoutingRule"]:
+        """Update a routing rule."""
+        from app.modules.workflow.models import WorkflowRoutingRule
+
+        rule = await self.db.get(WorkflowRoutingRule, rule_id)
+        if not rule:
+            return None
+
+        updates = data.model_dump(exclude_unset=True)
+        if "template_id" in updates and updates["template_id"] is not None:
+            template = await self.get_template(updates["template_id"])
+            if not template:
+                raise WorkflowNotFoundError(
+                    f"Template {updates['template_id']} not found"
+                )
+        for key, value in updates.items():
+            setattr(rule, key, value)
+
+        try:
+            await self.db.commit()
+            # Перечитываем с eager-подгрузкой связей — см. create_routing_rule
+            return await self._get_routing_rule_eager(rule_id)
+        except SQLAlchemyError as e:
+            await self.db.rollback()
+            raise WorkflowServiceError(f"Failed to update routing rule: {e}")
+
+    async def _get_routing_rule_eager(self, rule_id: int) -> Optional["WorkflowRoutingRule"]:
+        """Загрузить правило маршрутизации с подгруженными template/project."""
+        from app.modules.workflow.models import WorkflowRoutingRule
+        from sqlalchemy.orm import selectinload
+
+        result = await self.db.execute(
+            select(WorkflowRoutingRule)
+            .where(WorkflowRoutingRule.id == rule_id)
+            .options(
+                selectinload(WorkflowRoutingRule.template),
+                selectinload(WorkflowRoutingRule.project),
+            )
+        )
+        return result.scalar_one_or_none()
+
+    async def delete_routing_rule(self, rule_id: int) -> bool:
+        """Delete a routing rule."""
+        from app.modules.workflow.models import WorkflowRoutingRule
+
+        rule = await self.db.get(WorkflowRoutingRule, rule_id)
+        if not rule:
+            return False
+        try:
+            await self.db.delete(rule)
+            await self.db.commit()
+            return True
+        except SQLAlchemyError as e:
+            await self.db.rollback()
+            raise WorkflowServiceError(f"Failed to delete routing rule: {e}")
+
+    async def match_routing_rule(
+        self,
+        project_id: Optional[int] = None,
+        doc_type: Optional[str] = None,
+        discipline: Optional[str] = None,
+    ) -> Optional["WorkflowRoutingRule"]:
+        """Подобрать сценарий для документа: самое специфичное совпадение.
+
+        Правило подходит, если все его заполненные условия совпадают.
+        Из подходящих выбирается правило с наибольшим числом условий,
+        при равенстве — с большим priority.
+        """
+        rules = await self.list_routing_rules(active_only=True)
+        best: Optional["WorkflowRoutingRule"] = None
+        best_score = -1
+        for rule in rules:
+            if rule.project_id and rule.project_id != project_id:
+                continue
+            if rule.doc_type and rule.doc_type != doc_type:
+                continue
+            if rule.discipline and rule.discipline != discipline:
+                continue
+            score = (
+                int(rule.project_id is not None)
+                + int(rule.doc_type is not None)
+                + int(rule.discipline is not None)
+            )
+            if (
+                score > best_score
+                or (best is not None and score == best_score and rule.priority > best.priority)
+            ):
+                best = rule
+                best_score = score
+        return best

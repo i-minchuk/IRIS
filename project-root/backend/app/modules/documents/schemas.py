@@ -225,6 +225,7 @@ class DocumentCreateInput(BaseModel):
     number: Optional[str] = Field(None, max_length=100)
     doc_type: Optional[str] = Field(None, max_length=50)
     status: Optional[str] = Field(default="draft", max_length=50)
+    discipline: Optional[str] = Field(None, max_length=10)
     crs_code: Optional[str] = Field(None, max_length=50)
     project_id: Optional[int] = None
     section_id: Optional[int] = None
@@ -243,6 +244,7 @@ class DocumentUpdateInput(BaseModel):
     number: Optional[str] = Field(None, max_length=100)
     doc_type: Optional[str] = Field(None, max_length=50)
     status: Optional[str] = Field(None, max_length=50)
+    discipline: Optional[str] = Field(None, max_length=10)
     crs_code: Optional[str] = Field(None, max_length=50)
     project_id: Optional[int] = None
     section_id: Optional[int] = None

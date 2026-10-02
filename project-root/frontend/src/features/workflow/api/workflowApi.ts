@@ -79,6 +79,27 @@ export interface WorkflowAuditLog {
   timestamp: string;
 }
 
+export interface RoutingRule {
+  id: number;
+  name: string;
+  project_id: number | null;
+  project_name: string | null;
+  doc_type: string | null;
+  discipline: string | null;
+  template_id: number;
+  template_name: string | null;
+  priority: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface RoutingRuleMatch {
+  matched: boolean;
+  rule: RoutingRule | null;
+  template_id: number | null;
+  template_name: string | null;
+}
+
 export const workflowApi = {
   // Templates
   getTemplates: () => apiClient.get('/workflows/templates').then((r: any) => r.data.templates as WorkflowTemplate[]),
@@ -115,4 +136,37 @@ export const workflowApi = {
   // Audit
   getAuditLog: (instanceId: number) =>
     apiClient.get(`/workflows/audit/${instanceId}`).then((r: any) => r.data.logs || []),
+
+  // Routing rules (сценарии маршрутизации)
+  getRoutingRules: () =>
+    apiClient.get('/workflows/routing-rules').then((r: any) => r.data.rules as RoutingRule[]),
+  createRoutingRule: (data: {
+    name: string;
+    project_id?: number | null;
+    doc_type?: string | null;
+    discipline?: string | null;
+    template_id: number;
+    priority?: number;
+    is_active?: boolean;
+  }) => apiClient.post('/workflows/routing-rules', data).then((r: any) => r.data as RoutingRule),
+  updateRoutingRule: (id: number, data: Partial<{
+    name: string;
+    project_id: number | null;
+    doc_type: string | null;
+    discipline: string | null;
+    template_id: number;
+    priority: number;
+    is_active: boolean;
+  }>) => apiClient.patch(`/workflows/routing-rules/${id}`, data).then((r: any) => r.data as RoutingRule),
+  deleteRoutingRule: (id: number) => apiClient.delete(`/workflows/routing-rules/${id}`),
+  matchRoutingRule: (params: { project_id?: number; doc_type?: string; discipline?: string }) =>
+    apiClient.get('/workflows/routing-rules/match', { params }).then((r: any) => r.data as RoutingRuleMatch),
+
+  // Template creation (конструктор маршрутов)
+  createTemplate: (data: {
+    name: string;
+    code: string;
+    description?: string;
+    steps_schema: WorkflowStepSchema[];
+  }) => apiClient.post('/workflows/templates', data).then((r: any) => r.data),
 };

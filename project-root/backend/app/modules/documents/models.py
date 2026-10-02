@@ -39,6 +39,8 @@ class Document(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     doc_type: Mapped[str] = mapped_column(String(50), nullable=False)
     status: Mapped[str] = mapped_column(String(50), nullable=False)
+    # Дисциплина (код из справочника: 08, 11, 37, 65, 70, 94, 96)
+    discipline: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
     crs_code: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
     crs_approved_date: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True

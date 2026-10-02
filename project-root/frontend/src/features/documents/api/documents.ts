@@ -10,6 +10,7 @@ export interface DocumentItem {
   title?: string;
   doc_type: string;
   status: string;
+  discipline?: string;
   crs_code?: string;
   author_id?: number;
   project_id: number;

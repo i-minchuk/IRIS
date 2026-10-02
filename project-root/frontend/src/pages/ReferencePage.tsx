@@ -2,17 +2,19 @@ import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTabState } from '@/shared/hooks/useTabState';
 import { PageTabs } from '@/shared/components/PageTabs';
-import { FileCheck, Library, Phone } from 'lucide-react';
+import { FileCheck, GitBranch, Library, Phone } from 'lucide-react';
 import GlossaryPanel from './ReferencePage/GlossaryPanel';
 import StandardsPanel from './ReferencePage/StandardsPanel';
+import WorkflowRoutingPanel from './ReferencePage/WorkflowRoutingPanel';
 import ContactsPage from '@/pages/ContactsPage';
 
-type TabKey = 'standards' | 'glossary' | 'contacts';
+type TabKey = 'standards' | 'glossary' | 'contacts' | 'workflow';
 
 const TABS = [
   { key: 'contacts' as TabKey, label: 'Контакты', icon: <Phone size={16} />, color: '#14B8A6' },
   { key: 'standards' as TabKey, label: 'Нормативы', icon: <FileCheck size={16} />, color: '#14B8A6' },
   { key: 'glossary' as TabKey, label: 'Глоссарий терминов', icon: <Library size={16} />, color: '#14B8A6' },
+  { key: 'workflow' as TabKey, label: 'Документооборот', icon: <GitBranch size={16} />, color: '#14B8A6' },
 ];
 
 export default function ReferencePage() {
@@ -48,6 +50,7 @@ export default function ReferencePage() {
       {activeTab === 'contacts' && <ContactsPage />}
       {activeTab === 'glossary' && <GlossaryPanel />}
       {activeTab === 'standards' && <StandardsPanel />}
+      {activeTab === 'workflow' && <WorkflowRoutingPanel />}
     </div>
   );
 }
