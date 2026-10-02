@@ -1,5 +1,6 @@
 import logging
 import time
+import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, WebSocket, Query, Depends, HTTPException
@@ -94,6 +95,30 @@ def add_middlewares(app: FastAPI) -> None:
         )
 
 
+_ESCALATION_INTERVAL_SECONDS = 15 * 60
+
+
+async def _escalation_loop() -> None:
+    """Раз в 15 минут проверяет просроченные шаги согласования.
+
+    Напоминает исполнителям и эскалирует руководителям (админам + инициатору).
+    """
+    await asyncio.sleep(30)  # дать серверу полностью подняться
+    while True:
+        try:
+            from app.modules.workflow.service import WorkflowService
+
+            async with AsyncSessionLocal() as session:
+                result = await WorkflowService(session).check_overdue_steps()
+            if result.get("escalated"):
+                logger.info(
+                    "Escalation check: %s step(s) escalated", result["escalated"]
+                )
+        except Exception as exc:  # noqa: BLE001 — фоновая задача не должна падать
+            logger.warning("Escalation check failed: %s", exc)
+        await asyncio.sleep(_ESCALATION_INTERVAL_SECONDS)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     mode_config = get_mode_config()
@@ -122,7 +147,11 @@ async def lifespan(app: FastAPI):
         from app.db.demo_seed import seed_demo_data
 
         await seed_demo_data()
+
+    # Фоновая проверка просроченных шагов согласования (дедлайны + эскалация)
+    escalation_task = asyncio.create_task(_escalation_loop())
     yield
+    escalation_task.cancel()
     logger.info("Shutting down %s", settings.PROJECT_NAME)
 
 

@@ -229,6 +229,9 @@ class WorkflowStep(Base):
     assigned_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # Эскалация (уведомление о просрочке отправлено один раз)
+    escalated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     
     # Кто выполнил (последний)
     completed_by: Mapped[Optional[int]] = mapped_column(ForeignKey('users.id'), nullable=True)

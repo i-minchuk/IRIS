@@ -551,3 +551,24 @@ async def match_routing_rule(
         template_id=rule.template_id,
         template_name=rule.template.name if rule.template else None,
     )
+
+
+@router.post("/escalation/run")
+async def run_escalation_check(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Проверить просроченные шагы и отправить напоминания/эскалации (админ)."""
+    from app.modules.auth.deps import is_admin
+
+    if not is_admin(current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Только администратор может запускать проверку вручную",
+        )
+    service = get_service(db)
+    try:
+        result = await service.check_overdue_steps()
+    except WorkflowServiceError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    return result

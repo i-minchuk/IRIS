@@ -943,3 +943,82 @@ class WorkflowService:
                 best = rule
                 best_score = score
         return best
+
+    # ==================== Дедлайны и эскалация ====================
+
+    async def check_overdue_steps(self) -> Dict[str, int]:
+        """Найти просроченные шаги и отправить уведомления (один раз на шаг).
+
+        Просрочен — шаг в статусе in_progress, у которого
+        assigned_at + deadline_hours < now. Исполнители получают напоминание,
+        руководители (админы + инициатор маршрута) — эскалацию.
+        """
+        from sqlalchemy.orm import selectinload
+        from app.modules.workflow.notifications import (
+            notify_step_overdue,
+            notify_step_escalated,
+        )
+
+        now = datetime.now(timezone.utc)
+        result = await self.db.execute(
+            select(WorkflowStep)
+            .join(WorkflowInstance, WorkflowStep.instance_id == WorkflowInstance.id)
+            .where(
+                WorkflowStep.status == WorkflowStepStatus.IN_PROGRESS,
+                WorkflowStep.deadline_hours.is_not(None),
+                WorkflowStep.assigned_at.is_not(None),
+                WorkflowStep.escalated_at.is_(None),
+                WorkflowInstance.status == WorkflowStatus.RUNNING,
+            )
+            .options(
+                selectinload(WorkflowStep.assignees),
+                selectinload(WorkflowStep.instance),
+            )
+        )
+        steps = result.scalars().all()
+
+        escalated = 0
+        for step in steps:
+            deadline = step.assigned_at + timedelta(hours=step.deadline_hours)
+            if deadline >= now:
+                continue
+            overdue_hours = max(1, int((now - deadline).total_seconds() // 3600))
+
+            step.escalated_at = now
+            try:
+                await self.db.commit()
+            except SQLAlchemyError as e:
+                await self.db.rollback()
+                logger.warning("Failed to mark step %s escalated: %s", step.id, e)
+                continue
+
+            instance = step.instance
+            try:
+                await notify_step_overdue(self.db, step, instance, overdue_hours)
+            except Exception as e:
+                logger.warning("Overdue notify failed for step %s: %s", step.id, e)
+
+            # Эскалация: админы + инициатор маршрута
+            manager_ids: set = set()
+            admins = await self.db.execute(
+                select(User.id).where(
+                    User.is_active.is_(True),
+                    (User.is_superuser.is_(True)) | (User.role == "admin"),
+                )
+            )
+            manager_ids.update(r[0] for r in admins.all())
+            if instance.started_by:
+                manager_ids.add(instance.started_by)
+            assignee_ids = {u.id for u in step.assignees}
+            manager_ids -= assignee_ids
+            try:
+                await notify_step_escalated(
+                    self.db, step, instance, sorted(manager_ids), overdue_hours
+                )
+            except Exception as e:
+                logger.warning("Escalation notify failed for step %s: %s", step.id, e)
+
+            escalated += 1
+
+        return {"checked": len(steps), "escalated": escalated}
+

@@ -407,6 +407,16 @@ export const DocumentWorkflowPanel: React.FC<Props> = ({
                         до {new Date(step.deadline).toLocaleString('ru-RU')}
                       </span>
                     )}
+                    {step.deadline && step.status === 'in_progress' && new Date(step.deadline) < new Date() && (
+                      <span
+                        className="text-xs px-1.5 py-0.5 rounded-full font-medium inline-flex items-center gap-1"
+                        style={{ color: '#DC2626', background: 'rgba(220,38,38,0.12)', border: '1px solid rgba(220,38,38,0.4)' }}
+                        title="Исполнители и руководители уведомлены"
+                      >
+                        <AlertTriangle size={11} />
+                        Просрочено на {Math.max(1, Math.floor((Date.now() - new Date(step.deadline).getTime()) / 3600000))} ч
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                     {step.assigned_users.length > 0 ? (

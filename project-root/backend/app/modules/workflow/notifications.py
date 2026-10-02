@@ -235,3 +235,54 @@ async def notify_step_delegated(
         f"Документ «{doc_name}» делегирован вам. Причина: {reason or '—'}.",
         document_id=instance.document_id,
     )
+
+
+async def notify_step_overdue(
+    db: AsyncSession,
+    step: WorkflowStep,
+    instance: WorkflowInstance,
+    overdue_hours: int,
+) -> None:
+    """Напоминание исполнителям просроченного шага."""
+    data = {
+        "workflow_id": instance.id,
+        "document_name": instance.document_name or "—",
+        "step_name": step.step_name,
+        "deadline_hours": step.deadline_hours,
+        "overdue_hours": overdue_hours,
+    }
+    await _notify_assignees(db, step, "step_overdue", data)
+    doc_name = instance.document_name or "—"
+    await _notify_in_app(
+        db,
+        await _get_step_assignee_ids(step),
+        "workflow_overdue",
+        f"Просрочен шаг: {step.step_name}",
+        f"Документ «{doc_name}» ожидает согласования более {overdue_hours} ч "
+        f"(лимит {step.deadline_hours} ч).",
+        document_id=instance.document_id,
+    )
+
+
+async def notify_step_escalated(
+    db: AsyncSession,
+    step: WorkflowStep,
+    instance: WorkflowInstance,
+    manager_ids: List[int],
+    overdue_hours: int,
+) -> None:
+    """Эскалация руководителю: шаг просрочен и требует вмешательства."""
+    if not manager_ids:
+        return
+    doc_name = instance.document_name or "—"
+    await _notify_in_app(
+        db,
+        manager_ids,
+        "workflow_escalation",
+        f"Эскалация: {step.step_name} просрочен",
+        f"Документ «{doc_name}» завис на этапе «{step.step_name}» "
+        f"более чем на {overdue_hours} ч (лимит {step.deadline_hours} ч). "
+        "Требуется вмешательство руководителя.",
+        document_id=instance.document_id,
+    )
+
