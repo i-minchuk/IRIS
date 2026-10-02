@@ -1,7 +1,10 @@
 # app/modules/gamification/service.py
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from typing import Optional
 from datetime import datetime, timezone
+
+from app.modules.gamification.models import GamificationEvent
 
 from app.modules.gamification.repository import (
     EngineerMetricRepository,
@@ -53,6 +56,40 @@ class GamificationService:
             "level_title": level_title,
             "next_level_at": next_level_at,
             "badges": [b.badge_id for b in badges],
+            "workflow_stats": await self.get_workflow_stats(user_id),
+        }
+
+    async def get_workflow_stats(self, user_id: int) -> dict:
+        """Статистика согласований документооборота: в срок / с просрочкой + серия."""
+        on_time_type = "workflow_step_approved_on_time"
+        late_type = "workflow_step_approved_late"
+        result = await self.db.execute(
+            select(
+                GamificationEvent.event_type,
+                GamificationEvent.created_at,
+            ).where(
+                GamificationEvent.user_id == user_id,
+                GamificationEvent.event_type.in_([on_time_type, late_type]),
+            ).order_by(GamificationEvent.created_at.asc())
+        )
+        rows = result.all()
+        on_time = sum(1 for r in rows if r.event_type == on_time_type)
+        late = sum(1 for r in rows if r.event_type == late_type)
+        # Текущая серия: сколько согласований в срок подряд без просрочки
+        streak = 0
+        for r in reversed(rows):
+            if r.event_type == on_time_type:
+                streak += 1
+            else:
+                break
+        return {
+            "on_time_approvals": on_time,
+            "late_approvals": late,
+            "current_streak": streak,
+            "on_time_badge": any(
+                b.badge_id == "on_time_approver"
+                for b in await self.badge_repo.get_user_badges(user_id)
+            ),
         }
 
     async def get_leaderboard(self, exclude_roles: list[str] = None) -> list[dict]:
@@ -63,7 +100,6 @@ class GamificationService:
         return entries
 
     async def award_event(self, user_id: int, event_type: str, points: int = 0, xp: int = 0, **kwargs):
-        from app.modules.gamification.models import GamificationEvent
         event = GamificationEvent(
             user_id=user_id,
             event_type=event_type,

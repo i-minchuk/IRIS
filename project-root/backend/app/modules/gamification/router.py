@@ -22,6 +22,7 @@ BADGE_DEFINITIONS = [
     {"id": "speedster", "name": "Скоростной", "description": "3 документа за день"},
     {"id": "quality", "name": "Качество", "description": "10 документов без замечаний"},
     {"id": "marathon", "name": "Марафонец", "description": "50 дней активной работы"},
+    {"id": "on_time_approver", "name": "Точный в срок", "description": "10 согласований документооборота в пределах дедлайна"},
 ]
 
 

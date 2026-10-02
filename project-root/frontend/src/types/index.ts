@@ -112,6 +112,12 @@ export interface GamificationProfile {
   level_title: string;
   badges: string[];
   next_level_at: number | null;
+  workflow_stats?: {
+    on_time_approvals: number;
+    late_approvals: number;
+    current_streak: number;
+    on_time_badge: boolean;
+  };
 }
 
 export interface Badge {

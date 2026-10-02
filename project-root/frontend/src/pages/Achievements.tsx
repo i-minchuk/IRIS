@@ -124,6 +124,12 @@ export default function Achievements() {
           current = Math.min(50, Math.floor(profileData.score / 2));
           target = 50;
           break;
+        case 'on_time_approver': {
+          const stats = profileData.workflow_stats;
+          current = Math.min(10, stats?.on_time_approvals ?? 0);
+          target = 10;
+          break;
+        }
         default:
           current = hasBadge ? 1 : 0;
           target = 1;
@@ -236,6 +242,93 @@ export default function Achievements() {
           desc="оставшиеся очки"
         />
       </div>
+
+      {/* Согласовано в срок (документооборот) */}
+      {profile.workflow_stats && (
+        <section className="space-y-4">
+          <div className="flex items-center gap-2">
+            <CheckCircle className="text-emerald-600" size={24} />
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+              Согласовано в срок
+            </h2>
+          </div>
+          {(() => {
+            const stats = profile.workflow_stats!;
+            const badgeCurrent = Math.min(10, stats.on_time_approvals);
+            const badgePct = Math.min(100, (badgeCurrent / 10) * 100);
+            return (
+              <Card className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                      В пределах дедлайна
+                    </p>
+                    <p className="text-3xl font-black text-emerald-600">
+                      {stats.on_time_approvals}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      по 10 XP за каждое
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                      Текущая серия
+                    </p>
+                    <p className="text-3xl font-black text-blue-600">
+                      {stats.current_streak}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      согласований в срок подряд
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                      С просрочкой
+                    </p>
+                    <p className="text-3xl font-black text-red-500">
+                      {stats.late_approvals}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      без начисления XP
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-6 space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="flex items-center gap-1.5 font-medium text-gray-700 dark:text-gray-300">
+                      <Award
+                        className={
+                          stats.on_time_badge
+                            ? 'text-green-600'
+                            : 'text-gray-400'
+                        }
+                        size={16}
+                      />
+                      Бейдж «Точный в срок»
+                    </span>
+                    <span className="font-medium text-gray-800 dark:text-gray-200">
+                      {badgeCurrent}/10
+                      {stats.on_time_badge && (
+                        <span className="ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 border border-green-200">
+                          Получен
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                    <div
+                      className={`h-2 rounded-full transition-all duration-300 ${
+                        stats.on_time_badge ? 'bg-green-500' : 'bg-blue-600'
+                      }`}
+                      style={{ width: `${badgePct}%` }}
+                    />
+                  </div>
+                </div>
+              </Card>
+            );
+          })()}
+        </section>
+      )}
 
       {/* Daily quests */}
       <section className="space-y-4">

@@ -711,13 +711,23 @@ class WorkflowService:
 
         completed_at = _aware(step.completed_at)
         assigned_at = _aware(step.assigned_at)
-        if completed_at > assigned_at + timedelta(hours=step.deadline_hours):
-            return  # просрочка — без бонуса
 
         from app.modules.gamification.service import GamificationService
         from app.modules.gamification.models import GamificationEvent
 
         gam = GamificationService(self.db)
+
+        if completed_at > assigned_at + timedelta(hours=step.deadline_hours):
+            # Просрочка — бонуса нет, но фиксируем факт для статистики (0 очков)
+            await gam.award_event(
+                user_id,
+                "workflow_step_approved_late",
+                points=0,
+                xp=0,
+                comment=f"Согласование с просрочкой: {step.step_name}",
+            )
+            return
+
         event_type = "workflow_step_approved_on_time"
         await gam.award_event(
             user_id,
