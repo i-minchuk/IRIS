@@ -442,7 +442,13 @@ class WorkflowService:
                 await notify_step_approved(self.db, step, next_step, instance)
             except Exception as e:
                 logger.warning(f"Failed to send approval notification: {e}")
-            
+
+            # Геймификация: XP за согласование в срок
+            try:
+                await self._award_on_time_bonus(step, user_id)
+            except Exception as e:
+                logger.warning(f"Failed to award on-time bonus: {e}")
+
             return step, next_step
         except SQLAlchemyError as e:
             await self.db.rollback()
@@ -663,7 +669,13 @@ class WorkflowService:
                 await notify_step_approved(self.db, step, next_step, instance)
             except Exception as e:
                 logger.warning(f"Failed to send approval notification: {e}")
-            
+
+            # Геймификация: XP за согласование в срок
+            try:
+                await self._award_on_time_bonus(step, user_id)
+            except Exception as e:
+                logger.warning(f"Failed to award on-time bonus: {e}")
+
             return step, next_step, signature_hash
         except SQLAlchemyError as e:
             await self.db.rollback()
@@ -680,6 +692,77 @@ class WorkflowService:
         return result.scalars().all()
 
     # ==================== Helper Methods ====================
+
+    async def _award_on_time_bonus(self, step: WorkflowStep, user_id: int) -> None:
+        """Начислить XP за согласование шага в срок (геймификация).
+
+        Бонус даётся только если у шага есть дедлайн (deadline_hours) и шаг
+        завершён не позже assigned_at + deadline_hours. Просроченные шаги
+        бонуса не получают. За каждые 10 согласований в срок — бейдж
+        «Точный в срок» (однократно).
+        """
+        if not step.deadline_hours or not step.assigned_at or not step.completed_at:
+            return
+
+        def _aware(dt: datetime) -> datetime:
+            if dt.tzinfo is None:
+                return dt.replace(tzinfo=timezone.utc)
+            return dt
+
+        completed_at = _aware(step.completed_at)
+        assigned_at = _aware(step.assigned_at)
+        if completed_at > assigned_at + timedelta(hours=step.deadline_hours):
+            return  # просрочка — без бонуса
+
+        from app.modules.gamification.service import GamificationService
+        from app.modules.gamification.models import GamificationEvent
+
+        gam = GamificationService(self.db)
+        event_type = "workflow_step_approved_on_time"
+        await gam.award_event(
+            user_id,
+            event_type,
+            points=10,
+            xp=10,
+            comment=f"Согласование в срок: {step.step_name}",
+        )
+        await gam.notif_repo.create(
+            user_id,
+            type="gamification",
+            title="+10 XP за согласование в срок",
+            message=(
+                f"Шаг «{step.step_name}» согласован в пределах дедлайна. "
+                "Начислено 10 XP."
+            ),
+        )
+
+        # Бейдж за серию: каждые 10 согласований в срок
+        result = await self.db.execute(
+            select(func.count(GamificationEvent.id)).where(
+                GamificationEvent.user_id == user_id,
+                GamificationEvent.event_type == event_type,
+            )
+        )
+        on_time_count = result.scalar_one() or 0
+        if on_time_count >= 10:
+            existing = {b.badge_id for b in await gam.badge_repo.get_user_badges(user_id)}
+            badge_id = "on_time_approver"
+            if badge_id not in existing:
+                await gam.badge_repo.award_badge(
+                    user_id,
+                    badge_id,
+                    "Точный в срок",
+                    "10 согласований документооборота в пределах дедлайна",
+                )
+                await gam.notif_repo.create(
+                    user_id,
+                    type="gamification",
+                    title="Новый бейдж: Точный в срок",
+                    message=(
+                        "Вы согласовали 10 шагов документооборота в пределах "
+                        "дедлайна."
+                    ),
+                )
 
     async def serialize_instance(self, instance: WorkflowInstance):
         """Собрать WorkflowInstanceResponse: шаги, исполнители, дедлайны, комментарии."""
