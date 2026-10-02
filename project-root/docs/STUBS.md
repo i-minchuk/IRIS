@@ -43,15 +43,15 @@
 - **Сделано:** `GET /tenders/{id}/procurement-status` при наличии `project_id` у тендера берёт реальные заявки на закупку (`PurchaseRequest`) и заказы (`PurchaseOrder`) из SRM по этому проекту: суммы, статусы (не заказано / заказано / на складе), поставщики и сроки поставки. Если проекта нет или в SRM пусто — возвращается оценочная номенклатура с пометкой `source: "estimate"` (реальные данные помечены `source: "srm"`; бейдж есть во вкладке «Закупки»). Плюс реализован импорт тендеров из Excel (клиентский разбор SheetJS → `POST /tenders/import`, автомаппинг колонок, предпросмотр, ответственный ищется по ФИО) и экспорт всех тендеров в `.xlsx` (`GET /tenders/export`). Добавлена пропущенная зависимость `openpyxl` (без неё падал и экспорт архива).
 - **Осталось:** позиций (line-items) в SRM пока нет — статус закупки строится по шапкам заявок/заказов; при появлении позиций можно детализировать состав.
 
-### 7. Отчёты: генерация возвращает фиктивный URL
-- **Где:** `backend/app/tasks/reports.py:8` (Celery)
-- **Что:** задача возвращает `url: /reports/123.pdf`, файла нет.
-- **Чинить:** реализовать генерацию (reportlab/weasyprint) и складывать в storage; до этого — возвращать честную ошибку, а не фиктивный URL.
+### 7. Отчёты: генерация возвращает фиктивный URL — ✅ ИСПРАВЛЕНО 2026-10-02
+- **Где:** `backend/app/tasks/reports.py` (Celery); `backend/app/modules/reports/exporters.py` (новый); `backend/app/modules/reports/router.py` (`POST /export`, `GET /files/{name}`)
+- **Было:** задача возвращала `url: /reports/123.pdf`, файла не существовало; отдельной отдачи файлов в приложении не было.
+- **Сделано:** общий рендер отчётов `exporters.py` — `.xlsx` (openpyxl) и `.pdf` (PyMuPDF, A4 альбомная, таблица с переносом страниц; кириллица через bundled `app/assets/fonts/DejaVuSans.ttf` — встроенные шрифты PyMuPDF кириллицу не содержат). `POST /api/v1/reports/export?format=xlsx|pdf` — синхронная генерация файла прямо в ответ (кнопка «Скачать PDF» на странице Отчёты). Celery-задача `generate_report` генерирует настоящий файл в `IRIS_STORAGE_ROOT/reports/` и возвращает реальный URL `GET /api/v1/reports/files/{name}` (валидация имён, отдача через FileResponse). Синтаксис задач проверен py_compile; локальный прогон невозможен — Celery не установлен в dev-venv (в deploy-окружениях по requirements.txt есть).
 
-### 8. Экспорт данных (Celery) не реализован
-- **Где:** `backend/app/tasks/reports.py:22`
-- **Что:** задача-заглушка, ничего не экспортирует.
-- **Чинить:** реализовать выгрузку моделей в csv/xlsx (pandas/openpyxl уже есть в окружении).
+### 8. Экспорт данных (Celery) не реализован — ✅ ИСПРАВЛЕНО 2026-10-02
+- **Где:** `backend/app/tasks/reports.py` (`export_data`)
+- **Было:** задача-заглушка, ничего не экспортировала.
+- **Сделано:** реальная выгрузка моделей из whitelist (projects, tenders, tasks, documents, remarks, users) в csv (utf-8-sig) / xlsx (openpyxl) / json с опциональным фильтром `project_id`; файлы складываются в `IRIS_STORAGE_ROOT/exports/` и отдаются через `GET /api/v1/reports/files/{name}`. Неизвестные модели и форматы возвращают честный `status: "failed"` с описанием, а не фиктивный URL.
 
 ### 9. Уведомления: email/push не отправляются — ✅ ИСПРАВЛЕНО 2026-10-01
 - **Где:** `backend/app/tasks/notifications.py`; `backend/app/core/telegram.py`

@@ -73,6 +73,31 @@ export default function ReportsPage() {
     window.print();
   };
 
+  const handleDownloadPdf = async () => {
+    try {
+      const response = await apiClient.post(
+        '/reports/export?format=pdf',
+        {
+          template,
+          from_date: startDate || null,
+          to_date: endDate || null,
+        },
+        { responseType: 'blob' }
+      );
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `report_${template}_${new Date().toISOString().slice(0, 10)}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Failed to download PDF:', err);
+      toast.error('Не удалось сформировать PDF');
+    }
+  };
+
   const resetReport = () => setReport(null);
 
   return (
@@ -174,6 +199,15 @@ export default function ReportsPage() {
               {TEMPLATE_LABELS[template]} — {report.rows.length} записей
             </span>
             <div className="flex items-center gap-2">
+              <button
+                onClick={handleDownloadPdf}
+                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
+                style={{ background: 'var(--iris-bg-hover)', color: 'var(--text-primary)', border: '1px solid var(--iris-border-subtle)' }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--iris-border-subtle)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--iris-bg-hover)'; }}
+              >
+                <FileText size={14} /> Скачать PDF
+              </button>
               <button
                 onClick={handleExportExcel}
                 disabled={report.rows.length === 0}

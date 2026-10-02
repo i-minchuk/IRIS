@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select, func, and_
@@ -467,13 +467,11 @@ async def _generate_remarks_report(
 # Endpoint
 # ---------------------------------------------------------------------------
 
-@router.post("/generate", response_model=ReportResponse)
-async def generate_report(
+async def build_report_response(
     request: ReportRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession,
 ) -> ReportResponse:
-    """Generate a report based on the requested template and filters."""
+    """Собрать отчёт (используется эндпоинтом /generate и Celery-задачами)."""
     from_date = None
     to_date = None
     if request.from_date:
@@ -510,3 +508,78 @@ async def generate_report(
         status_code=status.HTTP_400_BAD_REQUEST,
         detail=f"Unknown report template: {request.template}",
     )
+
+
+@router.post("/generate", response_model=ReportResponse)
+async def generate_report(
+    request: ReportRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+) -> ReportResponse:
+    """Generate a report based on the requested template and filters."""
+    return await build_report_response(request, db)
+
+
+@router.post("/export")
+async def export_report(
+    request: ReportRequest,
+    format: Literal["xlsx", "pdf"] = "xlsx",
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Сгенерировать отчёт файлом (xlsx или pdf) и отдать на скачивание."""
+    import io
+
+    from fastapi.responses import StreamingResponse
+
+    from app.modules.reports.exporters import report_to_pdf_bytes, report_to_xlsx_bytes
+
+    report = await build_report_response(request, db)
+    stamp = datetime.now().strftime("%Y%m%d_%H%M")
+    base = f"report_{report.template}_{stamp}"
+
+    if format == "pdf":
+        payload = report_to_pdf_bytes(report)
+        media_type = "application/pdf"
+        filename = f"{base}.pdf"
+    else:
+        payload = report_to_xlsx_bytes(report)
+        media_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        filename = f"{base}.xlsx"
+
+    return StreamingResponse(
+        io.BytesIO(payload),
+        media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/files/{stored_name}")
+async def download_report_file(
+    stored_name: str,
+    current_user: User = Depends(get_current_active_user),
+):
+    """Отдача файлов отчётов/экспортов, сохранённых Celery-задачами в storage."""
+    import os
+
+    from fastapi.responses import FileResponse
+
+    from app.core.config import settings
+
+    if (
+        not stored_name
+        or "/" in stored_name
+        or "\\" in stored_name
+        or ".." in stored_name
+        or "." not in stored_name
+    ):
+        raise HTTPException(status_code=400, detail="Некорректное имя файла")
+    stem, ext = stored_name.rsplit(".", 1)
+    if not stem.isalnum() or ext.lower() not in ("xlsx", "pdf", "csv", "json"):
+        raise HTTPException(status_code=400, detail="Некорректное имя файла")
+
+    for subdir in ("reports", "exports"):
+        file_path = os.path.join(settings.IRIS_STORAGE_ROOT, subdir, stored_name)
+        if os.path.isfile(file_path):
+            return FileResponse(file_path, filename=stored_name)
+    raise HTTPException(status_code=404, detail="Файл не найден")

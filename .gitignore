@@ -190,7 +190,7 @@ tests_full_output*.txt
 test_full_output*.txt
 preview-zoom.png
 structure.txt
-reports/
+/reports/
 
 # Служебные документы
 scripts/*.docx
