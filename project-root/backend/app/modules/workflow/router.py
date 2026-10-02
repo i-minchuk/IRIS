@@ -605,3 +605,26 @@ async def deadline_overview(
         )
     service = get_service(db)
     return await service.get_deadline_overview()
+
+
+@router.post("/instances/{instance_id}/cancel")
+async def cancel_workflow(
+    instance_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Отменить запущенный/приостановленный маршрут (инициатор или админ)."""
+    from app.modules.auth.deps import is_admin
+
+    service = get_service(db)
+    try:
+        cancelled = await service.cancel_instance(
+            instance_id, current_user.id, is_admin(current_user)
+        )
+    except WorkflowServiceError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    if not cancelled:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Маршрут не найден"
+        )
+    return {"status": "cancelled"}

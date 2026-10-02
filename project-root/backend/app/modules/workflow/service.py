@@ -169,7 +169,23 @@ class WorkflowService:
         template = await self.get_template(instance_data.template_id)
         if not template:
             raise WorkflowNotFoundError(f"Template {instance_data.template_id} not found")
-        
+
+        # Защита от двух одновременно запущенных маршрутов на один документ
+        if instance_data.document_id is not None:
+            active = await self.db.execute(
+                select(WorkflowInstance.id).where(
+                    WorkflowInstance.document_id == instance_data.document_id,
+                    WorkflowInstance.status.in_(
+                        [WorkflowStatus.RUNNING, WorkflowStatus.PAUSED]
+                    ),
+                )
+            )
+            if active.first():
+                raise WorkflowServiceError(
+                    "Для этого документа уже запущен маршрут согласования. "
+                    "Дождитесь завершения или отмените его."
+                )
+
         instance = WorkflowInstance(
             template_id=template.id,
             document_id=instance_data.document_id,
@@ -332,6 +348,33 @@ class WorkflowService:
         instances = result.scalars().all()
 
         return list(instances), total
+
+    async def cancel_instance(
+        self,
+        instance_id: int,
+        user_id: int,
+        is_admin: bool = False,
+    ) -> bool:
+        """Отменить запущенный/приостановленный маршрут."""
+        instance = await self.db.get(WorkflowInstance, instance_id)
+        if not instance:
+            return False
+        if instance.status not in (WorkflowStatus.RUNNING, WorkflowStatus.PAUSED):
+            raise WorkflowServiceError(
+                "Маршрут уже завершён — отменить его нельзя"
+            )
+        if instance.started_by != user_id and not is_admin:
+            raise WorkflowServiceError(
+                "Отменить маршрут может только его инициатор или администратор"
+            )
+        instance.status = WorkflowStatus.CANCELLED
+        instance.completed_at = datetime.now(timezone.utc)
+        try:
+            await self.db.commit()
+            return True
+        except SQLAlchemyError as e:
+            await self.db.rollback()
+            raise WorkflowServiceError(f"Failed to cancel instance: {e}")
 
     async def get_instances_by_document(
         self,

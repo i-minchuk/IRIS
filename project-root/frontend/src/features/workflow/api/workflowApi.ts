@@ -154,6 +154,8 @@ export const workflowApi = {
     project_id?: number;
     launch_comment?: string;
   }) => apiClient.post('/workflows/start', data).then((r: any) => r.data as WorkflowInstance),
+  cancelInstance: (id: number) =>
+    apiClient.post(`/workflows/instances/${id}/cancel`).then((r: any) => r.data),
 
   // Actions
   approveStep: (stepId: number, comment?: string) =>

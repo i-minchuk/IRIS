@@ -136,6 +136,10 @@ export const DocumentWorkflowPanel: React.FC<Props> = ({
     if (!templateId) return;
     setBusy(true);
     try {
+      // Повторный запуск: сначала отменяем приостановленный маршрут
+      if (instance && instance.status === 'paused') {
+        await workflowApi.cancelInstance(instance.id);
+      }
       await workflowApi.startWorkflow({
         template_id: Number(templateId),
         document_id: documentId,
@@ -222,6 +226,86 @@ export const DocumentWorkflowPanel: React.FC<Props> = ({
     setReturnToAuthor(true);
   };
 
+  // Диалог запуска/перезапуска маршрута (используется в обеих ветках)
+  const startDialog = startOpen ? (
+    <div className="mt-4 space-y-3 border-t pt-3" style={{ borderColor: 'var(--border-default)' }}>
+      {matchedRuleName && (
+        <p className="text-xs flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
+          <GitBranch size={12} style={{ color: 'var(--brand-iris)' }} />
+          Маршрут подобран автоматически по сценарию «{matchedRuleName}»
+        </p>
+      )}
+      <div>
+        <label className="block text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>Маршрут согласования</label>
+        <select
+          value={templateId}
+          onChange={(e) => setTemplateId(e.target.value ? Number(e.target.value) : '')}
+          className="w-full px-3 py-2 rounded-md border text-sm"
+          style={{ borderColor: 'var(--border-default)', background: 'var(--bg-surface)', color: 'var(--text-primary)' }}
+        >
+          <option value="">— выберите маршрут —</option>
+          {templates.map((t) => (
+            <option key={t.id} value={t.id}>{t.name}</option>
+          ))}
+        </select>
+      </div>
+
+      {selectedTemplate && (
+        <div className="space-y-1.5">
+          {selectedTemplate.description && (
+            <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{selectedTemplate.description}</p>
+          )}
+          {selectedTemplate.steps_schema.map((s, i) => (
+            <div key={s.id ?? i} className="flex items-center gap-2 text-xs">
+              <span
+                className="w-5 h-5 rounded-full flex items-center justify-center font-bold shrink-0"
+                style={{ background: 'var(--bg-surface-2)', color: 'var(--text-secondary)' }}
+              >
+                {i + 1}
+              </span>
+              <span style={{ color: 'var(--text-primary)' }}>{s.name}</span>
+              <span style={{ color: 'var(--text-tertiary)' }}>
+                · {APPROVAL_TYPE[s.approval_type] ?? s.approval_type}
+                {s.deadline_hours ? ` · до ${s.deadline_hours} ч` : ''}
+              </span>
+            </div>
+          ))}
+          {selectedTemplate.steps_schema.some((s) => !s.role && !(s.user_ids?.length)) && (
+            <p className="text-xs flex items-center gap-1" style={{ color: '#D97706' }}>
+              <AlertTriangle size={12} />
+              Для некоторых шагов не заданы исполнители — согласовать их сможет любой пользователь.
+            </p>
+          )}
+        </div>
+      )}
+
+      <div>
+        <label className="block text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>Комментарий к запуску (необязательно)</label>
+        <textarea
+          value={launchComment}
+          onChange={(e) => setLaunchComment(e.target.value)}
+          rows={2}
+          className="w-full px-3 py-2 rounded-md border text-sm resize-none"
+          style={{ borderColor: 'var(--border-default)', background: 'var(--bg-surface)', color: 'var(--text-primary)' }}
+          placeholder="Например: прошу согласовать компоновку до пятницы"
+        />
+      </div>
+
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={start}
+          disabled={!templateId || busy}
+          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border transition-colors cursor-pointer disabled:opacity-50"
+          style={{ color: '#fff', borderColor: 'var(--brand-iris)', background: 'var(--brand-iris)' }}
+        >
+          <Play size={12} />
+          {instance && instance.status === 'paused' ? 'Повторно запустить согласование' : 'Запустить согласование'}
+        </button>
+      </div>
+    </div>
+  ) : null;
+
   if (loading) {
     return (
       <div className="flex items-center gap-2 text-sm py-6" style={{ color: 'var(--text-tertiary)' }}>
@@ -258,84 +342,7 @@ export const DocumentWorkflowPanel: React.FC<Props> = ({
             </button>
           </div>
 
-          {startOpen && (
-            <div className="mt-4 space-y-3 border-t pt-3" style={{ borderColor: 'var(--border-default)' }}>
-              {matchedRuleName && (
-                <p className="text-xs flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
-                  <GitBranch size={12} style={{ color: 'var(--brand-iris)' }} />
-                  Маршрут подобран автоматически по сценарию «{matchedRuleName}»
-                </p>
-              )}
-              <div>
-                <label className="block text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>Маршрут согласования</label>
-                <select
-                  value={templateId}
-                  onChange={(e) => setTemplateId(e.target.value ? Number(e.target.value) : '')}
-                  className="w-full px-3 py-2 rounded-md border text-sm"
-                  style={{ borderColor: 'var(--border-default)', background: 'var(--bg-surface)', color: 'var(--text-primary)' }}
-                >
-                  <option value="">— выберите маршрут —</option>
-                  {templates.map((t) => (
-                    <option key={t.id} value={t.id}>{t.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              {selectedTemplate && (
-                <div className="space-y-1.5">
-                  {selectedTemplate.description && (
-                    <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{selectedTemplate.description}</p>
-                  )}
-                  {selectedTemplate.steps_schema.map((s, i) => (
-                    <div key={s.id ?? i} className="flex items-center gap-2 text-xs">
-                      <span
-                        className="w-5 h-5 rounded-full flex items-center justify-center font-bold shrink-0"
-                        style={{ background: 'var(--bg-surface-2)', color: 'var(--text-secondary)' }}
-                      >
-                        {i + 1}
-                      </span>
-                      <span style={{ color: 'var(--text-primary)' }}>{s.name}</span>
-                      <span style={{ color: 'var(--text-tertiary)' }}>
-                        · {APPROVAL_TYPE[s.approval_type] ?? s.approval_type}
-                        {s.deadline_hours ? ` · до ${s.deadline_hours} ч` : ''}
-                      </span>
-                    </div>
-                  ))}
-                  {selectedTemplate.steps_schema.some((s) => !s.role && !(s.user_ids?.length)) && (
-                    <p className="text-xs flex items-center gap-1" style={{ color: '#D97706' }}>
-                      <AlertTriangle size={12} />
-                      Для некоторых шагов не заданы исполнители — согласовать их сможет любой пользователь.
-                    </p>
-                  )}
-                </div>
-              )}
-
-              <div>
-                <label className="block text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>Комментарий к запуску (необязательно)</label>
-                <textarea
-                  value={launchComment}
-                  onChange={(e) => setLaunchComment(e.target.value)}
-                  rows={2}
-                  className="w-full px-3 py-2 rounded-md border text-sm resize-none"
-                  style={{ borderColor: 'var(--border-default)', background: 'var(--bg-surface)', color: 'var(--text-primary)' }}
-                  placeholder="Например: прошу согласовать компоновку до пятницы"
-                />
-              </div>
-
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  onClick={start}
-                  disabled={!templateId || busy}
-                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border transition-colors cursor-pointer disabled:opacity-50"
-                  style={{ color: '#fff', borderColor: 'var(--brand-iris)', background: 'var(--brand-iris)' }}
-                >
-                  <Play size={12} />
-                  Запустить согласование
-                </button>
-              </div>
-            </div>
-          )}
+          {startDialog}
         </div>
       </div>
     );
@@ -589,6 +596,32 @@ export const DocumentWorkflowPanel: React.FC<Props> = ({
       {instance.status === 'completed' && (
         <div className="p-2.5 rounded-lg text-sm font-medium" style={{ background: 'rgba(79,122,76,0.12)', color: '#4F7A4C' }}>
           Маршрут пройден — все этапы согласованы.
+        </div>
+      )}
+
+      {instance.status === 'paused' && (
+        <div className="p-3 rounded-lg border" style={{ borderColor: 'rgba(217,119,6,0.4)', background: 'rgba(217,119,6,0.08)' }}>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="text-sm font-medium" style={{ color: '#D97706' }}>
+                Маршрут на доработке
+              </div>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                После исправления замечаний отправьте документ на повторное согласование —
+                прежний маршрут будет автоматически отменён.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setStartOpen((v) => !v)}
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border transition-colors cursor-pointer shrink-0"
+              style={{ color: '#fff', borderColor: '#D97706', background: '#D97706' }}
+            >
+              <Play size={12} />
+              {startOpen ? 'Скрыть' : 'Повторно запустить'}
+            </button>
+          </div>
+          {startDialog}
         </div>
       )}
     </div>

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import {
-  GitBranch, Plus, Trash2, Loader2, AlertTriangle, ChevronDown, ChevronUp,
+  GitBranch, Plus, Trash2, Loader2, AlertTriangle, ChevronDown, ChevronUp, Pencil, X,
 } from 'lucide-react';
 import {
   workflowApi,
@@ -47,6 +47,7 @@ function RoutingRulesSection() {
   const [discipline, setDiscipline] = useState('');
   const [templateId, setTemplateId] = useState<number | ''>('');
   const [priority, setPriority] = useState(0);
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -70,6 +71,16 @@ function RoutingRulesSection() {
     load();
   }, [load]);
 
+  const resetForm = () => {
+    setEditingId(null);
+    setName('');
+    setProjectId('');
+    setDocType('');
+    setDiscipline('');
+    setTemplateId('');
+    setPriority(0);
+  };
+
   const addRule = async () => {
     if (!name.trim() || !templateId) {
       toast.error('Укажите название сценария и маршрут');
@@ -77,28 +88,39 @@ function RoutingRulesSection() {
     }
     setBusy(true);
     try {
-      await workflowApi.createRoutingRule({
+      const payload = {
         name: name.trim(),
         project_id: projectId === '' ? null : Number(projectId),
         doc_type: docType.trim() || null,
         discipline: discipline || null,
         template_id: Number(templateId),
         priority,
-        is_active: true,
-      });
-      toast.success('Сценарий добавлен');
-      setName('');
-      setProjectId('');
-      setDocType('');
-      setDiscipline('');
-      setTemplateId('');
-      setPriority(0);
+      };
+      if (editingId !== null) {
+        await workflowApi.updateRoutingRule(editingId, payload);
+        toast.success('Сценарий обновлён');
+      } else {
+        await workflowApi.createRoutingRule({ ...payload, is_active: true });
+        toast.success('Сценарий добавлен');
+      }
+      resetForm();
       await load();
     } catch {
       /* toast об ошибке показал интерцептор */
     } finally {
       setBusy(false);
     }
+  };
+
+  const startEdit = (rule: RoutingRule) => {
+    setEditingId(rule.id);
+    setName(rule.name);
+    setProjectId(rule.project_id ?? '');
+    setDocType(rule.doc_type ?? '');
+    setDiscipline(rule.discipline ?? '');
+    setTemplateId(rule.template_id);
+    setPriority(rule.priority);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const toggleActive = async (rule: RoutingRule) => {
@@ -230,7 +252,18 @@ function RoutingRulesSection() {
             </div>
           </div>
         </div>
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
+          {editingId !== null && (
+            <button
+              type="button"
+              onClick={resetForm}
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border cursor-pointer"
+              style={{ color: 'var(--text-secondary)', borderColor: 'var(--border-default)', background: 'var(--bg-surface-2)' }}
+            >
+              <X size={12} />
+              Отмена
+            </button>
+          )}
           <button
             type="button"
             onClick={addRule}
@@ -239,7 +272,7 @@ function RoutingRulesSection() {
             style={{ color: '#fff', background: 'var(--brand-iris)', border: '1px solid var(--brand-iris)' }}
           >
             <Plus size={12} />
-            Добавить сценарий
+            {editingId !== null ? 'Сохранить изменения' : 'Добавить сценарий'}
           </button>
         </div>
       </div>
@@ -287,7 +320,16 @@ function RoutingRulesSection() {
                       className="cursor-pointer"
                     />
                   </td>
-                  <td className="px-3 py-2 text-right">
+                  <td className="px-3 py-2 text-right whitespace-nowrap">
+                    <button
+                      type="button"
+                      onClick={() => startEdit(r)}
+                      className="p-1 rounded cursor-pointer mr-1"
+                      style={{ color: 'var(--text-muted)' }}
+                      title="Редактировать сценарий"
+                    >
+                      <Pencil size={14} />
+                    </button>
                     <button
                       type="button"
                       onClick={() => removeRule(r.id)}
