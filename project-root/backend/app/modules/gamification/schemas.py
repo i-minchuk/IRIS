@@ -26,6 +26,10 @@ class LeaderboardEntry(BaseModel):
     full_name: str
     score: int
     rank: int
+    on_time_approvals: int = 0
+    late_approvals: int = 0
+    sent_on_time: int = 0
+    sent_late: int = 0
 
 
 class QuestResponse(BaseModel):

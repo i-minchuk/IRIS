@@ -46,6 +46,10 @@ export interface LeaderboardEntry {
   level: number;
   badges: number;
   streak: number;
+  onTimeApprovals?: number;
+  lateApprovals?: number;
+  sentOnTime?: number;
+  sentLate?: number;
   isMe?: boolean;
 }
 
@@ -184,6 +188,10 @@ export const useGamificationStore = create<GamificationState>((set, get) => ({
           badges: e.badges_count ?? 0,
           // streak в backend отсутствует
           streak: 0,
+          onTimeApprovals: e.on_time_approvals ?? 0,
+          lateApprovals: e.late_approvals ?? 0,
+          sentOnTime: e.sent_on_time ?? 0,
+          sentLate: e.sent_late ?? 0,
         })),
       });
     } catch (err) {

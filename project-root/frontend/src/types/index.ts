@@ -101,6 +101,10 @@ export interface LeaderboardEntry {
   level: number;
   level_title: string;
   badges_count: number;
+  on_time_approvals?: number;
+  late_approvals?: number;
+  sent_on_time?: number;
+  sent_late?: number;
 }
 
 export interface GamificationProfile {

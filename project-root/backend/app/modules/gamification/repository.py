@@ -1,6 +1,6 @@
 # app/modules/gamification/repository.py
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, case
 from typing import Optional
 from datetime import datetime, timezone, date
 
@@ -59,6 +59,30 @@ class GamificationEventRepository:
                 User.full_name,
                 User.role,
                 func.coalesce(func.sum(GamificationEvent.points_delta), 0).label("score"),
+                func.coalesce(
+                    func.sum(case(
+                        (GamificationEvent.event_type == "workflow_step_approved_on_time", 1),
+                        else_=0,
+                    )), 0,
+                ).label("on_time_approvals"),
+                func.coalesce(
+                    func.sum(case(
+                        (GamificationEvent.event_type == "workflow_step_approved_late", 1),
+                        else_=0,
+                    )), 0,
+                ).label("late_approvals"),
+                func.coalesce(
+                    func.sum(case(
+                        (GamificationEvent.event_type == "document_sent_on_time", 1),
+                        else_=0,
+                    )), 0,
+                ).label("sent_on_time"),
+                func.coalesce(
+                    func.sum(case(
+                        (GamificationEvent.event_type == "document_sent_late", 1),
+                        else_=0,
+                    )), 0,
+                ).label("sent_late"),
             )
             .outerjoin(GamificationEvent, User.id == GamificationEvent.user_id)
             .group_by(User.id)
@@ -75,6 +99,10 @@ class GamificationEventRepository:
                 "full_name": row.full_name or row.email,
                 "role": row.role,
                 "score": int(row.score),
+                "on_time_approvals": int(row.on_time_approvals),
+                "late_approvals": int(row.late_approvals),
+                "sent_on_time": int(row.sent_on_time),
+                "sent_late": int(row.sent_late),
             }
             for row in rows
         ]

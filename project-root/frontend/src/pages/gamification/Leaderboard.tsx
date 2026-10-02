@@ -1,6 +1,6 @@
 import { Card } from '@/components/ui';
 import { useGamificationStore } from '@/stores/gamificationStore';
-import { Trophy, Medal, Award, Star } from 'lucide-react';
+import { Trophy, Medal, Award, Star, CheckCircle, Send } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 export default function LeaderboardPage() {
@@ -97,6 +97,20 @@ export default function LeaderboardPage() {
               <div className="flex items-center gap-4 text-xs">
                 <span className="flex items-center gap-1" style={{ color: 'var(--text-secondary)' }}>
                   <Star size={12} /> {entry.xp.toLocaleString()}
+                </span>
+                <span
+                  className="flex items-center gap-1"
+                  style={{ color: 'var(--text-secondary)' }}
+                  title="Согласовано в срок"
+                >
+                  <CheckCircle size={12} style={{ color: '#10B981' }} /> {entry.onTimeApprovals ?? 0}
+                </span>
+                <span
+                  className="flex items-center gap-1"
+                  style={{ color: 'var(--text-secondary)' }}
+                  title="Отправлено в срок"
+                >
+                  <Send size={12} style={{ color: '#0EA5E9' }} /> {entry.sentOnTime ?? 0}
                 </span>
                 <span className="flex items-center gap-1" style={{ color: 'var(--text-secondary)' }}>
                   <Award size={12} /> {entry.badges}
