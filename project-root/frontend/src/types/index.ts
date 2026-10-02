@@ -117,6 +117,8 @@ export interface GamificationProfile {
     late_approvals: number;
     current_streak: number;
     on_time_badge: boolean;
+    sent_on_time: number;
+    sent_late: number;
   };
 }
 

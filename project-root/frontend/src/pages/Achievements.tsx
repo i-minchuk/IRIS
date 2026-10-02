@@ -22,6 +22,7 @@ import {
   Trophy,
   Zap,
   Info,
+  Send,
 } from 'lucide-react';
 import { Card, Button } from '../components/ui';
 
@@ -322,6 +323,59 @@ export default function Achievements() {
                       }`}
                       style={{ width: `${badgePct}%` }}
                     />
+                  </div>
+                </div>
+              </Card>
+            );
+          })()}
+        </section>
+      )}
+
+      {/* Отправлено в срок (завершение маршрута) */}
+      {profile.workflow_stats && (
+        <section className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Send className="text-sky-600" size={24} />
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+              Отправлено в срок
+            </h2>
+          </div>
+          {(() => {
+            const stats = profile.workflow_stats!;
+            return (
+              <Card className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                      Маршрутов завершено в срок
+                    </p>
+                    <p className="text-3xl font-black text-emerald-600">
+                      {stats.sent_on_time}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      по 25 XP за каждый
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                      С просрочкой
+                    </p>
+                    <p className="text-3xl font-black text-red-500">
+                      {stats.sent_late}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      без начисления XP
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                      Что это значит
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Весь документооборот — от старта до последнего
+                      согласования — завершён в пределах суммарного дедлайна.
+                      Документ готов к отправке заказчику.
+                    </p>
                   </div>
                 </div>
               </Card>

@@ -449,6 +449,13 @@ class WorkflowService:
             except Exception as e:
                 logger.warning(f"Failed to award on-time bonus: {e}")
 
+            # Геймификация: маршрут завершён — XP за отправку в срок
+            if next_step is None:
+                try:
+                    await self._award_sent_on_time(instance, user_id)
+                except Exception as e:
+                    logger.warning(f"Failed to award sent-on-time bonus: {e}")
+
             return step, next_step
         except SQLAlchemyError as e:
             await self.db.rollback()
@@ -676,6 +683,13 @@ class WorkflowService:
             except Exception as e:
                 logger.warning(f"Failed to award on-time bonus: {e}")
 
+            # Геймификация: маршрут завершён — XP за отправку в срок
+            if next_step is None:
+                try:
+                    await self._award_sent_on_time(instance, user_id)
+                except Exception as e:
+                    logger.warning(f"Failed to award sent-on-time bonus: {e}")
+
             return step, next_step, signature_hash
         except SQLAlchemyError as e:
             await self.db.rollback()
@@ -773,6 +787,70 @@ class WorkflowService:
                         "дедлайна."
                     ),
                 )
+
+    async def _award_sent_on_time(
+        self, instance: WorkflowInstance, user_id: int
+    ) -> None:
+        """Начислить XP за завершение всего маршрута (отправку) в срок.
+
+        Дедлайн маршрута = started_at + сумма deadline_hours всех шагов.
+        Если ни у одного шага дедлайн не задан — статистика не ведётся.
+        Начисление идёт инициатору маршрута (ответственному за отправку
+        заказчику); если инициатор неизвестен — тому, кто завершил маршрут.
+        """
+        if instance.status != WorkflowStatus.COMPLETED:
+            return
+        if not instance.started_at or not instance.completed_at:
+            return
+
+        result = await self.db.execute(
+            select(WorkflowStep.deadline_hours).where(
+                WorkflowStep.instance_id == instance.id
+            )
+        )
+        total_hours = sum(h for (h,) in result.all() if h)
+        if not total_hours:
+            return
+
+        def _aware(dt: datetime) -> datetime:
+            if dt.tzinfo is None:
+                return dt.replace(tzinfo=timezone.utc)
+            return dt
+
+        completed_at = _aware(instance.completed_at)
+        started_at = _aware(instance.started_at)
+        awarded_user_id = instance.started_by or user_id
+
+        from app.modules.gamification.service import GamificationService
+
+        gam = GamificationService(self.db)
+        if completed_at > started_at + timedelta(hours=total_hours):
+            # Просрочка — фиксируем факт для статистики (0 очков)
+            await gam.award_event(
+                awarded_user_id,
+                "document_sent_late",
+                points=0,
+                xp=0,
+                comment=f"Отправка с просрочкой: маршрут #{instance.id}",
+            )
+            return
+
+        await gam.award_event(
+            awarded_user_id,
+            "document_sent_on_time",
+            points=25,
+            xp=25,
+            comment=f"Отправка в срок: маршрут #{instance.id}",
+        )
+        await gam.notif_repo.create(
+            awarded_user_id,
+            type="gamification",
+            title="+25 XP за отправку в срок",
+            message=(
+                f"Маршрут документооборота #{instance.id} завершён в пределах "
+                "дедлайна. Документ готов к отправке заказчику. Начислено 25 XP."
+            ),
+        )
 
     async def serialize_instance(self, instance: WorkflowInstance):
         """Собрать WorkflowInstanceResponse: шаги, исполнители, дедлайны, комментарии."""

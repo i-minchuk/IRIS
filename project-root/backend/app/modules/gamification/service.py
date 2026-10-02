@@ -63,24 +63,30 @@ class GamificationService:
         """Статистика согласований документооборота: в срок / с просрочкой + серия."""
         on_time_type = "workflow_step_approved_on_time"
         late_type = "workflow_step_approved_late"
+        sent_on_time_type = "document_sent_on_time"
+        sent_late_type = "document_sent_late"
         result = await self.db.execute(
             select(
                 GamificationEvent.event_type,
                 GamificationEvent.created_at,
             ).where(
                 GamificationEvent.user_id == user_id,
-                GamificationEvent.event_type.in_([on_time_type, late_type]),
+                GamificationEvent.event_type.in_(
+                    [on_time_type, late_type, sent_on_time_type, sent_late_type]
+                ),
             ).order_by(GamificationEvent.created_at.asc())
         )
         rows = result.all()
         on_time = sum(1 for r in rows if r.event_type == on_time_type)
         late = sum(1 for r in rows if r.event_type == late_type)
+        sent_on_time = sum(1 for r in rows if r.event_type == sent_on_time_type)
+        sent_late = sum(1 for r in rows if r.event_type == sent_late_type)
         # Текущая серия: сколько согласований в срок подряд без просрочки
         streak = 0
         for r in reversed(rows):
             if r.event_type == on_time_type:
                 streak += 1
-            else:
+            elif r.event_type == late_type:
                 break
         return {
             "on_time_approvals": on_time,
@@ -90,6 +96,8 @@ class GamificationService:
                 b.badge_id == "on_time_approver"
                 for b in await self.badge_repo.get_user_badges(user_id)
             ),
+            "sent_on_time": sent_on_time,
+            "sent_late": sent_late,
         }
 
     async def get_leaderboard(self, exclude_roles: list[str] = None) -> list[dict]:
