@@ -5,6 +5,8 @@ import { createDocument, uploadDocumentFile } from '../features/documents/api/do
 import { getProjects, type Project } from '../features/projects/api/projects';
 import { getUsers } from '../features/users/api/users';
 import { fetchStandards, type Standard } from './ReferencePage/standardsApi';
+import { getProductionNodes } from './ProductionControl/api/strategyApi';
+import type { BpmnNode } from './ProductionControl/components/ProductionStrategy/types';
 import type { User } from '../types';
 import { Button, Input, Select, Card } from '../components/ui';
 import { toast } from 'sonner';
@@ -119,6 +121,10 @@ export default function DocumentCreate() {
   });
   const [file, setFile] = useState<File | null>(null);
 
+  // ── Задача производственного процесса ──
+  const [productionNodes, setProductionNodes] = useState<BpmnNode[]>([]);
+  const [selectedProcessTaskId, setSelectedProcessTaskId] = useState<string>('');
+
   // ── Исполнители (один ответственный или совместное редактирование) ──
   const [users, setUsers] = useState<User[]>([]);
   const [assigneeIds, setAssigneeIds] = useState<number[]>([]);
@@ -146,6 +152,9 @@ export default function DocumentCreate() {
     fetchStandards()
       .then((list) => setStandards(list))
       .catch(() => setStandards([]));
+    getProductionNodes()
+      .then((list) => setProductionNodes(list.filter((n) => n.type === 'task')))
+      .catch(() => setProductionNodes([]));
   }, []);
 
   // Закрытие списка исполнителей по клику вне
@@ -251,6 +260,7 @@ export default function DocumentCreate() {
           : 'Документ',
         assignee_ids: assigneeIds,
         standard_ids: selectedStandardIds,
+        process_task_id: selectedProcessTaskId || undefined,
       });
       if (file) {
         try {
@@ -467,6 +477,19 @@ export default function DocumentCreate() {
                 }}
               />
               {errors.project_id && <span className="text-red-500 text-sm">{errors.project_id}</span>}
+            </div>
+
+            <div>
+              <Select
+                label="Задача процесса"
+                placeholder="— выберите задачу производства —"
+                options={productionNodes.map((n) => ({ value: n.id, label: n.label }))}
+                value={selectedProcessTaskId}
+                onChange={(e) => setSelectedProcessTaskId(e.target.value)}
+              />
+              <p className="mt-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                Привязка документа к конкретной задаче производственного процесса
+              </p>
             </div>
 
             <div>

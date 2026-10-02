@@ -176,6 +176,7 @@ export interface RemarkCreateInput {
   revision_id?: number;
   workflow_step_id?: number;
   workflow_instance_id?: number;
+  process_task_id?: string;
   
   source: RemarkSource;
   priority: RemarkPriority;

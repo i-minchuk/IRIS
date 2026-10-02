@@ -3,6 +3,8 @@ import { toast } from 'sonner';
 import { X } from 'lucide-react';
 import { RemarkCreateInput, RemarkPriority, RemarkCategory, RemarkSource, RemarkTag } from '@/types/remarks';
 import { getProjects } from '@/features/projects/api/projects';
+import { getProductionNodes } from '@/pages/ProductionControl/api/strategyApi';
+import type { BpmnNode } from '@/pages/ProductionControl/components/ProductionStrategy/types';
 
 interface RemarkModalProps {
   isOpen: boolean;
@@ -19,6 +21,8 @@ export const RemarkModal: React.FC<RemarkModalProps> = ({
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [projects, setProjects] = useState<Array<{ id: number; name: string }>>([]);
+  const [productionNodes, setProductionNodes] = useState<BpmnNode[]>([]);
+  const [selectedProcessTaskId, setSelectedProcessTaskId] = useState<string>('');
   const [formData, setFormData] = useState<RemarkCreateInput>({
     source: 'manual',
     priority: 'medium',
@@ -33,6 +37,9 @@ export const RemarkModal: React.FC<RemarkModalProps> = ({
     getProjects()
       .then((data) => setProjects(data.map((p) => ({ id: p.id, name: p.name || p.code }))))
       .catch(() => setProjects([]));
+    getProductionNodes()
+      .then((data) => setProductionNodes(data.filter((n) => n.type === 'task')))
+      .catch(() => setProductionNodes([]));
   }, [isOpen]);
 
   const priorityOptions: { value: RemarkPriority; label: string }[] = [
@@ -66,7 +73,10 @@ export const RemarkModal: React.FC<RemarkModalProps> = ({
 
     setIsLoading(true);
     try {
-      await onSubmit(formData);
+      await onSubmit({
+        ...formData,
+        process_task_id: selectedProcessTaskId || undefined,
+      });
       setFormData({
         source: 'manual',
         priority: 'medium',
@@ -75,6 +85,7 @@ export const RemarkModal: React.FC<RemarkModalProps> = ({
         description: '',
         tag_ids: [],
       });
+      setSelectedProcessTaskId('');
     } catch (error: any) {
       const status = error?.response?.status;
       let message = 'Не удалось создать замечание';
@@ -135,6 +146,24 @@ export const RemarkModal: React.FC<RemarkModalProps> = ({
             >
               <option value="">Не выбрано</option>
             </select>
+          </div>
+
+          {/* Process task (optional) */}
+          <div>
+            <label className="block text-xs text-[#94a3b8] mb-1">Задача процесса</label>
+            <select
+              value={selectedProcessTaskId}
+              onChange={(e) => setSelectedProcessTaskId(e.target.value)}
+              className="w-full px-3 py-2 bg-[#0f172a] border border-[#334155] rounded text-sm text-[#e2e8f0] focus:border-[#FF4D6D] focus:outline-none"
+            >
+              <option value="">— выберите задачу производства —</option>
+              {productionNodes.map((n) => (
+                <option key={n.id} value={n.id}>{n.label}</option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-[#64748b]">
+              Привязка замечания к конкретной задаче производственного процесса
+            </p>
           </div>
 
           {/* Source, Priority, Category */}
