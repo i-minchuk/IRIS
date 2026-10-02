@@ -57,6 +57,23 @@ export default function TenderProcurementTab({ tenderId }: { tenderId: number })
         <div className="flex items-center gap-2 mb-3">
           <Package size={14} style={{ color: '#2563EB' }} />
           <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Материалы и оборудование</h3>
+          {data.source === 'srm' ? (
+            <span
+              className="text-[10px] px-1.5 py-0.5 rounded font-medium"
+              style={{ background: 'rgba(46,139,87,0.12)', color: '#2E8B57' }}
+              title="Позиции из модуля «Закупка/МТО» (заявки и заказы проекта)"
+            >
+              данные SRM
+            </span>
+          ) : (
+            <span
+              className="text-[10px] px-1.5 py-0.5 rounded font-medium"
+              style={{ background: 'rgba(212,175,55,0.12)', color: '#D4AF37' }}
+              title="Тендер не связан с проектом или в SRM нет данных — показана оценка по типу проекта"
+            >
+              оценка
+            </span>
+          )}
         </div>
         <div className="space-y-2">
           {materials.map(mat => {
@@ -115,9 +132,18 @@ export default function TenderProcurementTab({ tenderId }: { tenderId: number })
           <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>График поставок</h3>
         </div>
         <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
-          График поставок будет доступен после создания заказов на закупку.
-          <br />
-          Используйте раздел <strong style={{ color: 'var(--text-primary)' }}>Закупка/МТО</strong> для управления поставками.
+          {data.source === 'srm' ? (
+            <>
+              Даты поставки по заказам показаны в списке позиций выше.
+              Управление поставками — в разделе <strong style={{ color: 'var(--text-primary)' }}>Закупка/МТО</strong>.
+            </>
+          ) : (
+            <>
+              График поставок будет доступен после создания заказов на закупку.
+              <br />
+              Используйте раздел <strong style={{ color: 'var(--text-primary)' }}>Закупка/МТО</strong> для управления поставками.
+            </>
+          )}
         </div>
       </Card>
     </div>

@@ -2,7 +2,7 @@
 import os
 import uuid
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, date
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from fastapi.responses import FileResponse
@@ -30,6 +30,8 @@ from app.modules.tenders.schemas import (
     TenderTaskItem,
     PaginatedTenderList,
     PaginationParams,
+    TenderBulkImportItem,
+    TenderBulkImportResponse,
 )
 from app.modules.tenders.calculator import calculate_tender
 from app.modules.projects.models import Project
@@ -258,6 +260,8 @@ def _parse_date(value):
         return None
     if isinstance(value, datetime):
         return value
+    if isinstance(value, date):
+        return datetime(value.year, value.month, value.day)
     if isinstance(value, str):
         # HTML date input: '2025-08-01' или ISO: '2025-08-01T00:00:00'
         if len(value) == 10:
@@ -314,6 +318,123 @@ async def create_tender(
         status=tender.status,
         stage=tender.stage,
         calculated_cost=tender.calculated_cost,
+    )
+
+
+@router.post("/import", response_model=TenderBulkImportResponse, status_code=201)
+async def import_tenders(
+    items: list[TenderBulkImportItem],
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Массовый импорт тендеров (Excel разбирается на клиенте, сюда — JSON).
+
+    Строки без названия пропускаются. Ответственный ищется по ФИО или логину.
+    """
+    created_items = []
+    skipped = 0
+
+    # Карта пользователей для responsible_name
+    users = (await db.execute(select(User))).scalars().all()
+    users_by_name = {}
+    for u in users:
+        if u.full_name:
+            users_by_name[u.full_name.strip().lower()] = u.id
+        if u.username:
+            users_by_name[u.username.strip().lower()] = u.id
+
+    for item in items:
+        if not item.name or not item.name.strip():
+            skipped += 1
+            continue
+        responsible_id = None
+        if item.responsible_name:
+            responsible_id = users_by_name.get(item.responsible_name.strip().lower())
+
+        tender = Tender(
+            kp_number=await _next_kp_number(db),
+            name=item.name.strip(),
+            customer_name=(item.customer_name or "").strip() or "—",
+            project_type=(item.project_type or "KM").strip(),
+            volume=item.volume,
+            volume_unit=item.volume_unit,
+            deadline=_parse_date(item.deadline),
+            nmc=item.nmc,
+            our_price=item.our_price,
+            stage=item.stage or "new",
+            platform=item.platform,
+            region=item.region,
+            responsible_id=responsible_id,
+            status="draft",
+            created_by_id=current_user.id,
+        )
+        db.add(tender)
+        await db.flush()
+        created_items.append({
+            "id": tender.id,
+            "kp_number": tender.kp_number,
+            "name": tender.name,
+        })
+
+    await db.commit()
+    await invalidate_cache("cache:*trend*")
+    await invalidate_cache("cache:*dashboard*")
+    return TenderBulkImportResponse(
+        created=len(created_items),
+        skipped=skipped,
+        items=created_items,
+    )
+
+
+@router.get("/export")
+async def export_tenders(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Экспорт всех тендеров в Excel (openpyxl)."""
+    import io
+
+    from openpyxl import Workbook
+    from fastapi.responses import StreamingResponse
+
+    result = await db.execute(select(Tender).order_by(Tender.id.desc()))
+    tenders = result.scalars().all()
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Тендеры"
+    ws.append([
+        "ID", "№ КП", "Название", "Заказчик", "Тип проекта",
+        "Объём", "Ед. изм.", "Стадия", "Статус", "НМЦ", "Наша цена",
+        "Дедлайн", "Регион", "Площадка", "Дата создания",
+    ])
+    for t in tenders:
+        ws.append([
+            t.id,
+            t.kp_number,
+            t.name,
+            t.customer_name,
+            t.project_type,
+            t.volume,
+            t.volume_unit,
+            t.stage,
+            t.status,
+            float(t.nmc) if t.nmc is not None else None,
+            float(t.our_price) if t.our_price is not None else None,
+            t.deadline.date().isoformat() if t.deadline else None,
+            t.region,
+            t.platform,
+            t.created_at.date().isoformat() if t.created_at else None,
+        ])
+
+    buffer = io.BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    filename = f"tenders_export_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+    return StreamingResponse(
+        buffer,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
 
 

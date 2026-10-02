@@ -156,6 +156,8 @@ export interface DocumentChecklist {
 export interface ProcurementStatus {
   tender_id: number;
   tender_name: string;
+  /** srm — реальные заявки/заказы из модуля Закупка; estimate — оценочная номенклатура */
+  source?: 'srm' | 'estimate';
   materials: {
     id: string;
     name: string;

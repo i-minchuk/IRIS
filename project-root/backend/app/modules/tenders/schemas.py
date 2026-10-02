@@ -1,8 +1,42 @@
 """Tender Pydantic schemas."""
-from datetime import datetime
+from datetime import datetime, date
 from typing import Optional, Literal
 
 from pydantic import BaseModel, Field, ConfigDict, field_validator
+
+
+class TenderBulkImportItem(BaseModel):
+    """Одна строка импорта тендеров из Excel (клиент сам маппит колонки)."""
+    # Пустые названия допускаются на входе — сервер их пропускает (skipped)
+    name: str = Field("", max_length=255)
+    customer_name: Optional[str] = Field(None, max_length=255)
+    project_type: Optional[str] = Field("KM", max_length=100)
+    volume: Optional[float] = None
+    volume_unit: Optional[str] = Field(None, max_length=20)
+    nmc: Optional[float] = None
+    our_price: Optional[float] = None
+    stage: Optional[str] = "new"
+    deadline: Optional[date] = None
+    region: Optional[str] = Field(None, max_length=100)
+    platform: Optional[str] = Field(None, max_length=100)
+    responsible_name: Optional[str] = Field(
+        None, max_length=255
+    )  # ФИО/логин — поиск пользователя
+
+    @field_validator("stage")
+    @classmethod
+    def validate_stage(cls, v: Optional[str]) -> str:
+        allowed = {"new", "qualification", "preparation", "approval", "submitted", "auction", "waiting", "won", "lost", "contract"}
+        if v and v not in allowed:
+            raise ValueError(f"stage must be one of {allowed}")
+        return v or "new"
+
+
+class TenderBulkImportResponse(BaseModel):
+    """Результат массового импорта тендеров."""
+    created: int
+    skipped: int
+    items: list[dict]
 
 
 class TenderBase(BaseModel):

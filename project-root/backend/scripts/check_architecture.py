@@ -202,10 +202,10 @@ class ImportChecker:
             "documents": {"auth", "gamification", "operations", "projects", "references", "variables"},  # Documents relate to projects, use variables, gamification, operations, references
             "projects": {"auth"},  # Projects are independent
             "tasks": {"auth", "documents", "gamification", "operations", "projects", "routes", "time_tracking"},  # Tasks sync with production, time tracking
-            "tenders": {"auth", "documents", "projects", "tasks", "operations", "workflow"},  # Tenders detail view needs work centers and workflows
+            "tenders": {"auth", "documents", "projects", "srm", "tasks", "operations", "workflow"},  # Tenders detail view needs work centers and workflows; procurement status from SRM
             "variables": {"auth"},  # Variables are independent
             "remarks": {"auth", "gamification", "workflow"},  # Issue tracking with gamification, workflow
-            "workflow": {"auth"},  # Approval workflows
+            "workflow": {"auth", "gamification"},  # Approval workflows + in-app notifications about step results
             
             # Level 2 (overlays)
             "collaboration": {"auth", "documents"},  # Collaboration on documents

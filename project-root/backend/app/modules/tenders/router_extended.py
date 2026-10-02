@@ -481,20 +481,99 @@ async def get_procurement_status(
     current_user: User = Depends(get_current_active_user),
 ):
     """Get procurement status for tender — materials, equipment, delivery dates.
-    
-    Returns mock data structure for now (SRM integration placeholder).
+
+    Реальные данные берутся из SRM (заявки на закупку и заказы проекта,
+    созданного из тендера). Если проекта нет или в SRM пусто —
+    возвращается оценочная номенклатура по типу проекта (source: "estimate").
     """
     tender = await _get_tender_or_404(db, tender_id)
 
-    # In real implementation, this would query SRM/purchase orders
-    # For now, return structured placeholder that frontend can render
+    materials: List[Dict[str, Any]] = []
+    source = "estimate"
 
-    # Estimate materials from project type and volume
-    materials = _estimate_materials(tender.project_type or "KM", tender.volume or 0)
+    if tender.project_id:
+        from app.modules.srm.models import PurchaseOrder, PurchaseRequest
+
+        orders = (
+            await db.execute(
+                select(PurchaseOrder).where(
+                    PurchaseOrder.project_id == tender.project_id
+                )
+            )
+        ).scalars().all()
+        requests = (
+            await db.execute(
+                select(PurchaseRequest).where(
+                    PurchaseRequest.project_id == tender.project_id
+                )
+            )
+        ).scalars().all()
+
+        if orders or requests:
+            source = "srm"
+
+            # Заказы поставщикам — основной источник позиций
+            po_status_map = {
+                "draft": "pending",
+                "submitted": "ordered",
+                "confirmed": "ordered",
+                "in_production": "ordered",
+                "shipped": "ordered",
+                "in_transit": "ordered",
+                "customs": "ordered",
+                "delivered": "delivered",
+                "inspection": "delivered",
+                "accepted": "delivered",
+                "rejected": "pending",
+                "completed": "delivered",
+            }
+            for po in orders:
+                materials.append({
+                    "id": f"po-{po.id}",
+                    "name": f"Заказ {po.number}" + (f" — {po.supplier_name}" if po.supplier_name else ""),
+                    "unit": "заказ",
+                    "quantity": 1,
+                    "status": po_status_map.get(po.status, "pending"),
+                    "estimated_cost": float(po.amount or 0),
+                    "supplier": po.supplier_name,
+                    "delivery_date": po.delivery_date.date().isoformat() if po.delivery_date else None,
+                    "warehouse_location": None,
+                })
+
+            # Заявки на закупку, по которым ещё нет заказа
+            pr_status_map = {
+                "draft": "pending",
+                "submitted": "pending",
+                "manager_review": "pending",
+                "director_review": "pending",
+                "approved": "pending",
+                "rejected": "pending",
+                "rfq_sent": "pending",
+                "quotation_received": "pending",
+                "comparison": "pending",
+                "po_issued": "ordered",
+                "completed": "delivered",
+            }
+            for pr in requests:
+                materials.append({
+                    "id": f"pr-{pr.id}",
+                    "name": f"Заявка {pr.number or pr.id}: {pr.title}",
+                    "unit": "заявка",
+                    "quantity": 1,
+                    "status": pr_status_map.get(pr.status, "pending"),
+                    "estimated_cost": float(pr.amount or 0),
+                    "supplier": None,
+                    "delivery_date": pr.deadline.date().isoformat() if pr.deadline else None,
+                    "warehouse_location": None,
+                })
+
+    if not materials:
+        materials = _estimate_materials(tender.project_type or "KM", tender.volume or 0)
 
     return {
         "tender_id": tender_id,
         "tender_name": tender.name,
+        "source": source,
         "materials": materials,
         "summary": {
             "total_items": len(materials),

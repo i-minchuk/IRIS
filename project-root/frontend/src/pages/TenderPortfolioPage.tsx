@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { FileSpreadsheet, Plus, Upload } from 'lucide-react';
 import type { Tender, TenderStage, TenderSummary, TenderTask } from '@/features/tenders/types/tender';
-import { getTenders, getTenderSummary } from '@/features/tenders/api/tenders';
+import { exportTenders, getTenders, getTenderSummary } from '@/features/tenders/api/tenders';
 import { TenderKPIHeader } from '@/features/tenders/components/TenderKPIHeader';
 import { TenderPipeline } from '@/features/tenders/components/TenderPipeline';
 import { TenderAuctionPanel } from '@/features/tenders/components/TenderAuctionPanel';
 import { TenderRegistry } from '@/features/tenders/components/TenderRegistry';
 import { TenderTaskPanel } from '@/features/tenders/components/TenderTaskPanel';
 import { TenderAnalytics } from '@/features/tenders/components/TenderAnalytics';
+import ImportTendersModal from '@/features/tenders/components/ImportTendersModal';
 
 export default function TenderPortfolioPage() {
   const [tenders, setTenders] = useState<Tender[]>([]);
@@ -16,6 +17,7 @@ export default function TenderPortfolioPage() {
   const [loading, setLoading] = useState(true);
   const [selectedStage, setSelectedStage] = useState<TenderStage | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -44,6 +46,19 @@ export default function TenderPortfolioPage() {
     load();
   }, []);
 
+  const refresh = async () => {
+    try {
+      const [tendersData, summaryData] = await Promise.all([
+        getTenders(),
+        getTenderSummary(),
+      ]);
+      setTenders(tendersData);
+      setSummary(summaryData);
+    } catch {
+      // молча оставляем текущее состояние
+    }
+  };
+
   const handleStageClick = (stage: TenderStage) => {
     setSelectedStage((prev) => (prev === stage ? null : stage));
   };
@@ -60,17 +75,45 @@ export default function TenderPortfolioPage() {
             Управление воронкой заказов, аукционами и подготовкой заявок
           </p>
         </div>
-        <button
-          className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-all duration-200 hover:brightness-110"
-          style={{
-            background: 'var(--iris-accent-cyan)',
-            color: 'var(--iris-text-inverse)',
-            boxShadow: '0 0 12px var(--iris-glow-cyan)',
-          }}
-        >
-          <Plus className="h-3.5 w-3.5" />
-          Новый заказ
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowImportModal(true)}
+            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-all duration-200 hover:brightness-110 cursor-pointer"
+            style={{
+              background: 'var(--iris-bg-subtle)',
+              color: 'var(--text-secondary)',
+              border: '1px solid var(--iris-border-subtle)',
+            }}
+            title="Загрузить тендеры из Excel-файла"
+          >
+            <Upload className="h-3.5 w-3.5" />
+            Импорт Excel
+          </button>
+          <button
+            onClick={() => exportTenders().catch(() => setError('Экспорт не удался'))}
+            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-all duration-200 hover:brightness-110 cursor-pointer"
+            style={{
+              background: 'var(--iris-bg-subtle)',
+              color: 'var(--text-secondary)',
+              border: '1px solid var(--iris-border-subtle)',
+            }}
+            title="Скачать все тендеры в Excel"
+          >
+            <FileSpreadsheet className="h-3.5 w-3.5" />
+            Экспорт
+          </button>
+          <button
+            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-all duration-200 hover:brightness-110"
+            style={{
+              background: 'var(--iris-accent-cyan)',
+              color: 'var(--iris-text-inverse)',
+              boxShadow: '0 0 12px var(--iris-glow-cyan)',
+            }}
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Новый заказ
+          </button>
+        </div>
       </div>
 
       {/* Error State */}
@@ -105,6 +148,8 @@ export default function TenderPortfolioPage() {
           <TenderAnalytics summary={summary} tenders={tenders} />
         </div>
       </div>
+
+      <ImportTendersModal isOpen={showImportModal} onClose={() => setShowImportModal(false)} onDone={refresh} />
     </div>
   );
 }

@@ -88,3 +88,41 @@ export const getTenderTasks = async (tenderId: number): Promise<TenderTask[]> =>
   const { data } = await client.get(`/tenders/${tenderId}/tasks`);
   return data;
 };
+
+/** Поля одной строки импорта тендеров (клиент маппит колонки Excel). */
+export interface TenderImportRow {
+  name: string;
+  customer_name?: string;
+  project_type?: string;
+  volume?: number | null;
+  volume_unit?: string;
+  nmc?: number | null;
+  our_price?: number | null;
+  stage?: string;
+  deadline?: string | null;
+  region?: string;
+  platform?: string;
+  responsible_name?: string;
+}
+
+export const importTenders = async (
+  items: TenderImportRow[],
+): Promise<{ created: number; skipped: number; items: { id: number; kp_number: string; name: string }[] }> => {
+  const { data } = await client.post('/tenders/import', items);
+  return data;
+};
+
+/** Скачать все тендеры Excel-файлом (через axios, чтобы подставился токен). */
+export const exportTenders = async (): Promise<void> => {
+  const response = await client.get('/tenders/export', { responseType: 'blob' });
+  const url = window.URL.createObjectURL(new Blob([response.data]));
+  const link = document.createElement('a');
+  link.href = url;
+  const disposition: string = response.headers?.['content-disposition'] ?? '';
+  const match = disposition.match(/filename=([^;]+)/);
+  link.download = match ? match[1].trim() : 'tenders_export.xlsx';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+};
