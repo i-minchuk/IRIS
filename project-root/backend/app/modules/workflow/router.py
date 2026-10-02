@@ -33,7 +33,7 @@ from app.modules.workflow.schemas import (
     PREDEFINED_TEMPLATES
 )
 
-router = APIRouter(prefix="/workflows", tags=["workflows"])
+router = APIRouter(tags=["workflows"])
 
 
 def get_service(db: AsyncSession) -> WorkflowService:
@@ -175,7 +175,7 @@ async def start_workflow(
     
     try:
         instance = await service.create_instance(instance_data, current_user.id)
-        return WorkflowInstanceResponse.model_validate(instance)
+        return await service.serialize_instance(instance)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -206,8 +206,9 @@ async def list_instances(
         page_size=page_size,
     )
     
+    serialized = [await service.serialize_instance(i) for i in instances]
     return WorkflowInstanceListResponse(
-        instances=[WorkflowInstanceResponse.model_validate(i) for i in instances],
+        instances=serialized,
         total=total,
         page=page,
         page_size=page_size
@@ -230,7 +231,7 @@ async def get_instance(
             detail="Instance not found"
         )
     
-    return WorkflowInstanceResponse.model_validate(instance)
+    return await service.serialize_instance(instance)
 
 
 @router.get("/instances/document/{document_id}", response_model=list)
@@ -242,7 +243,7 @@ async def get_document_instances(
     """Get workflow instances for a document."""
     service = get_service(db)
     instances = await service.get_instances_by_document(document_id)
-    return [WorkflowInstanceResponse.model_validate(i) for i in instances]
+    return [await service.serialize_instance(i) for i in instances]
 
 
 @router.post("/steps/{step_id}/sign", response_model=SignResponse)

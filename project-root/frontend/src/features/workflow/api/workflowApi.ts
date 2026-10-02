@@ -47,11 +47,13 @@ export interface WorkflowStep {
   deadline_hours: number | null;
   order_index: number;
   status: string;
+  deadline?: string | null;
   is_delegated: boolean;
   signed_by: number | null;
   signed_at: string | null;
   signature_hash: string | null;
   assigned_users: { id: number; full_name: string }[];
+  comments_count?: number;
 }
 
 export interface WorkflowSignature {

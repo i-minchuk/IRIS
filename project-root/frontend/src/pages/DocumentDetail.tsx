@@ -7,7 +7,8 @@ import { DocumentStatusBadge } from '@/components/documents/DocumentStatusBadge'
 import { DocumentAnalysisPanel } from '@/features/ai/components/DocumentAnalysisPanel';
 import { AIChatPanel } from '@/features/ai/components/AIChatPanel';
 import { RequirementsPanel } from '@/features/ai/components/RequirementsPanel';
-import { FileText, MessageSquare, History, Users, ArrowLeft, Sparkles, Wrench, Bot, Upload, PencilLine, Maximize2, Minimize2, Clock, CheckCircle, Paperclip } from 'lucide-react';
+import { DocumentWorkflowPanel } from '@/features/workflow/components/DocumentWorkflowPanel';
+import { FileText, MessageSquare, History, Users, ArrowLeft, Sparkles, Wrench, Bot, Upload, PencilLine, Maximize2, Minimize2, Clock, CheckCircle, Paperclip, GitBranch } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getDocument, downloadRevisionFile, downloadTitleSheet, uploadDocumentFile, updateDocument, approveDocument, getApprovalFeed, type ApprovalRecord, type DocumentDetail, type Revision } from '@/features/documents/api/documents';
 import { getRemarks, updateRemark } from '@/features/remarks/api/remarks';
@@ -21,7 +22,7 @@ import { toast } from 'sonner';
 import { getProject } from '@/features/projects/api/projects';
 import type { DocumentStatus } from '@/lib/documentStatusMachine';
 
-type Tab = 'info' | 'editor' | 'files' | 'approval' | 'remarks' | 'history' | 'ai-analysis' | 'ai-requirements' | 'ai-chat';
+type Tab = 'info' | 'editor' | 'files' | 'approval' | 'workflow' | 'remarks' | 'history' | 'ai-analysis' | 'ai-requirements' | 'ai-chat';
 
 const DOC_STATUSES: DocumentStatus[] = [
   'draft', 'in_review', 'review_ok', 'approval', 'approved', 'release', 'archived', 'cancelled',
@@ -362,6 +363,7 @@ export default function DocumentDetailPage() {
     { key: 'editor', label: 'Редактор', icon: <PencilLine size={14} /> },
     { key: 'files', label: 'Файлы', icon: <FileText size={14} /> },
     { key: 'approval', label: 'Согласование', icon: <Users size={14} /> },
+    { key: 'workflow', label: 'Документооборот', icon: <GitBranch size={14} /> },
     { key: 'remarks', label: `Замечания (${documentRemarks.length})`, icon: <MessageSquare size={14} /> },
     { key: 'history', label: 'История', icon: <History size={14} /> },
     { key: 'ai-analysis', label: 'AI Анализ', icon: <Sparkles size={14} /> },
@@ -655,6 +657,17 @@ export default function DocumentDetailPage() {
             </Card>
           );
         })()}
+
+        {activeTab === 'workflow' && id && (
+          <Card padding="md">
+            <h3 className="text-sm font-medium mb-4" style={{ color: 'var(--text-primary)' }}>Документооборот (маршрут согласования)</h3>
+            <DocumentWorkflowPanel
+              documentId={Number(id)}
+              documentName={doc?.name || doc?.title}
+              projectId={doc?.project_id}
+            />
+          </Card>
+        )}
 
         {activeTab === 'remarks' && (
           <Card padding="md">

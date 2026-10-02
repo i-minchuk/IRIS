@@ -1,7 +1,7 @@
 """Pydantic schemas for Workflow API."""
 from typing import Optional, List, Dict, Any
 from datetime import datetime
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, model_validator
 from sqlalchemy.orm import Session
 
 from app.modules.workflow.models import (
@@ -217,6 +217,12 @@ class WorkflowCommentCreate(BaseModel):
     coordinates: Optional[Dict[str, Any]] = None
 
 
+def _user_name(user) -> str:
+    if user is None:
+        return ""
+    return user.full_name or user.username or user.email or f"#{user.id}"
+
+
 class WorkflowCommentResponse(BaseModel):
     """Response for workflow comment."""
     id: int
@@ -227,6 +233,23 @@ class WorkflowCommentResponse(BaseModel):
     user_name: str
     created_at: datetime
     updated_at: datetime
+
+    @model_validator(mode="before")
+    @classmethod
+    def _extract_user_name(cls, data):
+        # ORM-объект: user_name берём из связанного пользователя
+        if hasattr(data, "user"):
+            data = {
+                "id": data.id,
+                "text": data.text,
+                "page_number": data.page_number,
+                "coordinates": data.coordinates,
+                "user_id": data.user_id,
+                "user_name": _user_name(data.user),
+                "created_at": data.created_at,
+                "updated_at": data.updated_at,
+            }
+        return data
 
     class Config:
         from_attributes = True
@@ -245,6 +268,24 @@ class WorkflowAuditLogResponse(BaseModel):
     user_id: int
     user_name: str
     timestamp: datetime
+
+    @model_validator(mode="before")
+    @classmethod
+    def _extract_user_name(cls, data):
+        # ORM-объект: user_name из связанного пользователя, metadata из audit_metadata
+        if hasattr(data, "user"):
+            data = {
+                "id": data.id,
+                "action": data.action,
+                "old_status": data.old_status,
+                "new_status": data.new_status,
+                "comment": data.comment,
+                "metadata": data.audit_metadata,
+                "user_id": data.user_id,
+                "user_name": _user_name(data.user),
+                "timestamp": data.timestamp,
+            }
+        return data
 
     class Config:
         from_attributes = True
@@ -268,6 +309,23 @@ class WorkflowSignatureResponse(BaseModel):
     ip_address: Optional[str]
     user_agent: Optional[str]
     signed_at: datetime
+
+    @model_validator(mode="before")
+    @classmethod
+    def _extract_user_name(cls, data):
+        # ORM-объект: user_name берём из связанного пользователя
+        if hasattr(data, "user"):
+            data = {
+                "id": data.id,
+                "step_id": data.step_id,
+                "user_id": data.user_id,
+                "user_name": _user_name(data.user),
+                "signature_hash": data.signature_hash,
+                "ip_address": data.ip_address,
+                "user_agent": data.user_agent,
+                "signed_at": data.signed_at,
+            }
+        return data
 
     class Config:
         from_attributes = True

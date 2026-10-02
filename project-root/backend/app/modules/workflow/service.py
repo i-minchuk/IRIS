@@ -180,8 +180,8 @@ class WorkflowService:
         
         # Create steps from template schema
         steps_data = template.steps_schema or []
-        prev_step_id = None
-        
+        first_step = None
+
         for idx, step_schema in enumerate(steps_data):
             step = WorkflowStep(
                 instance_id=instance.id,
@@ -193,19 +193,35 @@ class WorkflowService:
                 deadline_hours=step_schema.get('deadline_hours'),
                 order_index=idx,
                 auto_transition=step_schema.get('auto_transition'),
-                status=WorkflowStepStatus.PENDING if idx == 0 else WorkflowStepStatus.PENDING
+                # Первый шаг активен сразу — иначе согласование встанет (approve требует in_progress)
+                status=WorkflowStepStatus.IN_PROGRESS if idx == 0 else WorkflowStepStatus.PENDING,
+                assigned_at=datetime.now(timezone.utc) if idx == 0 else None,
             )
-            
-            if step_schema.get('user_ids'):
-                for user_id in step_schema['user_ids']:
+
+            # Исполнители: явный список user_ids, иначе — все активные пользователи с ролью шага
+            user_ids = step_schema.get('user_ids') or []
+            if not user_ids and step_schema.get('role'):
+                role_result = await self.db.execute(
+                    select(User).where(
+                        User.role == step_schema['role'],
+                        User.is_active.is_(True),
+                    )
+                )
+                for role_user in role_result.scalars().all():
+                    step.assignees.append(role_user)
+            else:
+                for user_id in user_ids:
                     assignee = await self.db.get(User, user_id)
                     if assignee:
                         step.assignees.append(assignee)
-            
+
             self.db.add(step)
-            
+            await self.db.flush()  # чтобы получить step.id
             if idx == 0:
-                instance.current_step_id = step.id
+                first_step = step
+
+        if first_step:
+            instance.current_step_id = first_step.id
         
         try:
             await self.db.commit()
@@ -363,7 +379,7 @@ class WorkflowService:
         self.db.add(audit)
         
         # Determine next step
-        next_step = await self._determine_next_step(step, instance)
+        next_step = await self._determine_next_step(step, instance, user_id)
         
         try:
             await self.db.commit()
@@ -427,9 +443,21 @@ class WorkflowService:
             return_step = steps_result.scalar_one_or_none()
         else:
             return_step = step  # Stay at current step
-        
+
+        # Шаг, к которому возвращаемся, должен стать активным — иначе согласовать его нельзя
+        if return_step:
+            return_step.status = WorkflowStepStatus.IN_PROGRESS
+            return_step.assigned_at = datetime.now(timezone.utc)
+            return_step.completed_by = None
+            return_step.completed_at = None
+            if return_step.id == step.id:
+                # Переоткрываем отклонённый шаг для доработки
+                step.status = WorkflowStepStatus.IN_PROGRESS
+                step.completed_by = None
+                step.completed_at = None
+
         # Update instance status
-        instance.status = WorkflowStatus.PAUSED
+        instance.status = WorkflowStatus.RUNNING if return_step else WorkflowStatus.PAUSED
         instance.current_step_id = return_step.id if return_step else None
         
         try:
@@ -463,9 +491,11 @@ class WorkflowService:
         if not delegatee:
             raise WorkflowServiceError(f"User {action.delegate_to} not found")
         
-        # Update step
+        old_status = step.status
+
+        # Update step: делегат добавляется к исполнителям, шаг остаётся активным —
+        # иначе делегат не сможет его согласовать (approve требует in_progress)
         step.is_delegated = True
-        step.status = WorkflowStepStatus.DELEGATED
         
         # Create audit log
         audit = WorkflowAuditLog(
@@ -473,17 +503,20 @@ class WorkflowService:
             instance_id=step.instance_id,
             user_id=user_id,
             action='delegated',
-            old_status=step.status.value,
-            new_status=WorkflowStepStatus.DELEGATED.value,
+            old_status=old_status.value,
+            new_status=old_status.value,
             comment=action.reason,
             audit_metadata={"delegated_to": action.delegate_to},
             timestamp=datetime.now(timezone.utc)
         )
         self.db.add(audit)
         
-        # Add delegatee to assignees
+        # Add delegatee to assignees (явная async-загрузка связи)
+        await self.db.refresh(step, ["assignees"])
         if delegatee not in step.assignees:
             step.assignees.append(delegatee)
+
+        instance = await self.db.get(WorkflowInstance, step.instance_id)
         
         try:
             await self.db.commit()
@@ -567,7 +600,7 @@ class WorkflowService:
         self.db.add(audit)
         
         # Determine next step
-        next_step = await self._determine_next_step(step, instance)
+        next_step = await self._determine_next_step(step, instance, user_id)
         
         try:
             await self.db.commit()
@@ -598,10 +631,91 @@ class WorkflowService:
 
     # ==================== Helper Methods ====================
 
+    async def serialize_instance(self, instance: WorkflowInstance):
+        """Собрать WorkflowInstanceResponse: шаги, исполнители, дедлайны, комментарии."""
+        from app.modules.workflow.schemas import (
+            WorkflowInstanceResponse,
+            WorkflowStepInstanceResponse,
+        )
+        from sqlalchemy.orm import selectinload
+
+        template = await self.db.get(WorkflowTemplate, instance.template_id)
+
+        steps_result = await self.db.execute(
+            select(WorkflowStep)
+            .where(WorkflowStep.instance_id == instance.id)
+            .order_by(WorkflowStep.order_index.asc())
+            .options(selectinload(WorkflowStep.assignees))
+        )
+        steps = steps_result.scalars().all()
+
+        step_ids = [s.id for s in steps]
+        comment_counts: Dict[int, int] = {}
+        if step_ids:
+            counts_result = await self.db.execute(
+                select(WorkflowComment.step_id, func.count(WorkflowComment.id))
+                .where(WorkflowComment.step_id.in_(step_ids))
+                .group_by(WorkflowComment.step_id)
+            )
+            comment_counts = {row[0]: row[1] for row in counts_result.all()}
+
+        step_responses = []
+        for s in steps:
+            deadline = None
+            if s.assigned_at and s.deadline_hours:
+                deadline = s.assigned_at + timedelta(hours=s.deadline_hours)
+            step_responses.append(
+                WorkflowStepInstanceResponse(
+                    id=s.id,
+                    step_key=s.step_key,
+                    step_name=s.step_name,
+                    role=s.role,
+                    assignment_type=s.assignment_type,
+                    approval_type=s.approval_type,
+                    deadline_hours=s.deadline_hours,
+                    order_index=s.order_index,
+                    status=s.status,
+                    deadline=deadline,
+                    assigned_users=[
+                        {
+                            "id": u.id,
+                            "full_name": u.full_name or u.username or u.email or f"#{u.id}",
+                        }
+                        for u in s.assignees
+                    ],
+                    comments_count=comment_counts.get(s.id, 0),
+                    is_delegated=s.is_delegated,
+                    signed_by=s.signed_by,
+                    signed_at=s.signed_at,
+                    signature_hash=None,
+                )
+            )
+
+        return WorkflowInstanceResponse(
+            id=instance.id,
+            template_id=instance.template_id,
+            template_name=template.name if template else "",
+            document_id=instance.document_id,
+            document_revision=instance.document_revision,
+            document_name=instance.document_name,
+            project_id=instance.project_id,
+            status=instance.status,
+            current_step_id=instance.current_step_id,
+            started_by=instance.started_by,
+            started_at=instance.started_at,
+            completed_at=instance.completed_at,
+            launch_comment=instance.launch_comment,
+            document_changed=instance.document_changed,
+            created_at=instance.created_at,
+            updated_at=instance.updated_at,
+            steps=step_responses,
+        )
+
     async def _determine_next_step(
         self,
         current_step: WorkflowStep,
-        instance: WorkflowInstance
+        instance: WorkflowInstance,
+        user_id: Optional[int] = None
     ) -> Optional[WorkflowStep]:
         """Determine the next step based on auto_transition rules."""
         auto_transition = current_step.auto_transition or {}
@@ -633,7 +747,7 @@ class WorkflowService:
             audit = WorkflowAuditLog(
                 step_id=next_step.id,
                 instance_id=instance.id,
-                user_id=None,
+                user_id=user_id if user_id is not None else (instance.started_by or 0),
                 action='auto_assigned',
                 old_status=None,
                 new_status=WorkflowStepStatus.IN_PROGRESS.value,
