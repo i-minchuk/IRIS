@@ -558,7 +558,7 @@ async def run_escalation_check(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    """Проверить просроченные шагы и отправить напоминания/эскалации (админ)."""
+    """Проверить дедлайны: мягкие напоминания (за 24 ч) и эскалации (админ)."""
     from app.modules.auth.deps import is_admin
 
     if not is_admin(current_user):
@@ -568,7 +568,22 @@ async def run_escalation_check(
         )
     service = get_service(db)
     try:
-        result = await service.check_overdue_steps()
+        overdue = await service.check_overdue_steps()
+        upcoming = await service.check_upcoming_deadlines()
     except WorkflowServiceError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-    return result
+    return {
+        "checked": overdue["checked"] + upcoming["checked"],
+        "escalated": overdue["escalated"],
+        "reminded": upcoming["reminded"],
+    }
+
+
+@router.get("/my-tasks")
+async def my_tasks(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Мои шаги «на согласовании» с дедлайнами и признаком просрочки."""
+    service = get_service(db)
+    return {"tasks": await service.get_my_tasks(current_user.id)}

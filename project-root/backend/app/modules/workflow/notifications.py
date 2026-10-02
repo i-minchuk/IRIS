@@ -286,3 +286,31 @@ async def notify_step_escalated(
         document_id=instance.document_id,
     )
 
+
+async def notify_step_deadline_soon(
+    db: AsyncSession,
+    step: WorkflowStep,
+    instance: WorkflowInstance,
+    hours_left: int,
+) -> None:
+    """Мягкое напоминание исполнителям за 24 ч до дедлайна."""
+    data = {
+        "workflow_id": instance.id,
+        "document_name": instance.document_name or "—",
+        "step_name": step.step_name,
+        "deadline_hours": step.deadline_hours,
+        "hours_left": hours_left,
+    }
+    await _notify_assignees(db, step, "step_deadline_soon", data)
+    doc_name = instance.document_name or "—"
+    await _notify_in_app(
+        db,
+        await _get_step_assignee_ids(step),
+        "workflow_deadline_soon",
+        f"До дедлайна менее суток: {step.step_name}",
+        f"Документ «{doc_name}» ожидает согласования. До истечения срока "
+        f"(лимит {step.deadline_hours} ч) осталось около {hours_left} ч.",
+        document_id=instance.document_id,
+    )
+
+

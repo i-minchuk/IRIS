@@ -30,6 +30,7 @@ const NotFound = lazy(() => import('@/pages/NotFound'));
 const CalendarPage = lazy(() => import('@/pages/CalendarPage'));
 */
 const ReportsPage = lazy(() => import('@/pages/ReportsPage'));
+const MyTasksPage = lazy(() => import('@/pages/MyTasksPage'));
 const ProductionControlPage = lazy(() => import('@/pages/ProductionControl'));
 const NotificationPage = lazy(() => import('@/features/notifications/components/NotificationPage'));
 const AdminDashboard = lazy(() => import('@/pages/admin/AdminDashboard'));
@@ -84,6 +85,7 @@ export const router = createBrowserRouter([
           { path: '/dashboard', element: <SuspenseWrapper><Dashboard /></SuspenseWrapper> },
           { path: '/projects', element: <SuspenseWrapper><ProjectsPage /></SuspenseWrapper> },
           { path: '/documents', element: <SuspenseWrapper><DocumentsPage /></SuspenseWrapper> },
+          { path: '/my-tasks', element: <SuspenseWrapper><MyTasksPage /></SuspenseWrapper> },
           { path: '/workflow', element: <Navigate to="/documents" replace /> },
           { path: '/remarks', element: <SuspenseWrapper><RemarksPage /></SuspenseWrapper> },
           { path: '/archive', element: <SuspenseWrapper><ArchivePage /></SuspenseWrapper> },

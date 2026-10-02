@@ -232,6 +232,9 @@ class WorkflowStep(Base):
 
     # Эскалация (уведомление о просрочке отправлено один раз)
     escalated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # Мягкое напоминание о приближающемся дедлайне (за 24 ч, один раз)
+    reminded_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     
     # Кто выполнил (последний)
     completed_by: Mapped[Optional[int]] = mapped_column(ForeignKey('users.id'), nullable=True)

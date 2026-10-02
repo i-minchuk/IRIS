@@ -100,6 +100,21 @@ export interface RoutingRuleMatch {
   template_name: string | null;
 }
 
+export interface MyTask {
+  step_id: number;
+  instance_id: number;
+  template_name: string | null;
+  document_id: number | null;
+  document_name: string | null;
+  step_name: string;
+  approval_type: string;
+  assignment_type: string;
+  deadline: string | null;
+  overdue_hours: number | null;
+  assigned_at: string | null;
+  is_delegated: boolean;
+}
+
 export const workflowApi = {
   // Templates
   getTemplates: () => apiClient.get('/workflows/templates').then((r: any) => r.data.templates as WorkflowTemplate[]),
@@ -161,6 +176,10 @@ export const workflowApi = {
   deleteRoutingRule: (id: number) => apiClient.delete(`/workflows/routing-rules/${id}`),
   matchRoutingRule: (params: { project_id?: number; doc_type?: string; discipline?: string }) =>
     apiClient.get('/workflows/routing-rules/match', { params }).then((r: any) => r.data as RoutingRuleMatch),
+
+  // My pending approval tasks
+  getMyTasks: () =>
+    apiClient.get('/workflows/my-tasks').then((r: any) => r.data.tasks as MyTask[]),
 
   // Template creation (конструктор маршрутов)
   createTemplate: (data: {

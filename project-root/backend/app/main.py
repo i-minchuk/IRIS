@@ -109,10 +109,18 @@ async def _escalation_loop() -> None:
             from app.modules.workflow.service import WorkflowService
 
             async with AsyncSessionLocal() as session:
-                result = await WorkflowService(session).check_overdue_steps()
-            if result.get("escalated"):
+                service = WorkflowService(session)
+                upcoming = await service.check_upcoming_deadlines()
+                overdue = await service.check_overdue_steps()
+                result = {
+                    "checked": upcoming["checked"] + overdue["checked"],
+                    "reminded": upcoming["reminded"],
+                    "escalated": overdue["escalated"],
+                }
+            if result.get("escalated") or result.get("reminded"):
                 logger.info(
-                    "Escalation check: %s step(s) escalated", result["escalated"]
+                    "Deadline check: %(reminded)s reminded, %(escalated)s escalated",
+                    result,
                 )
         except Exception as exc:  # noqa: BLE001 — фоновая задача не должна падать
             logger.warning("Escalation check failed: %s", exc)

@@ -1022,3 +1022,102 @@ class WorkflowService:
 
         return {"checked": len(steps), "escalated": escalated}
 
+    async def check_upcoming_deadlines(self, threshold_hours: int = 24) -> Dict[str, int]:
+        """Напомнить исполнителям о шагах, у которых до дедлайна осталось
+        меньше threshold_hours (один раз на шаг, пока дедлайн не наступил)."""
+        from sqlalchemy.orm import selectinload
+        from app.modules.workflow.notifications import notify_step_deadline_soon
+
+        now = datetime.now(timezone.utc)
+        result = await self.db.execute(
+            select(WorkflowStep)
+            .join(WorkflowInstance, WorkflowStep.instance_id == WorkflowInstance.id)
+            .where(
+                WorkflowStep.status == WorkflowStepStatus.IN_PROGRESS,
+                WorkflowStep.deadline_hours.is_not(None),
+                WorkflowStep.assigned_at.is_not(None),
+                WorkflowStep.reminded_at.is_(None),
+                WorkflowInstance.status == WorkflowStatus.RUNNING,
+            )
+            .options(
+                selectinload(WorkflowStep.assignees),
+                selectinload(WorkflowStep.instance),
+            )
+        )
+        steps = result.scalars().all()
+
+        reminded = 0
+        for step in steps:
+            deadline = step.assigned_at + timedelta(hours=step.deadline_hours)
+            remaining = (deadline - now).total_seconds() / 3600
+            # Только будущие дедлайны в пределах порога; просроченное — эскалация
+            if remaining <= 0 or remaining > threshold_hours:
+                continue
+
+            step.reminded_at = now
+            try:
+                await self.db.commit()
+            except SQLAlchemyError as e:
+                await self.db.rollback()
+                logger.warning("Failed to mark step %s reminded: %s", step.id, e)
+                continue
+
+            try:
+                await notify_step_deadline_soon(
+                    self.db, step, step.instance, max(1, int(remaining))
+                )
+            except Exception as e:
+                logger.warning("Deadline-soon notify failed for step %s: %s", step.id, e)
+
+            reminded += 1
+
+        return {"checked": len(steps), "reminded": reminded}
+
+    async def get_my_tasks(self, user_id: int) -> List[Dict[str, Any]]:
+        """Шаги «на согласовании», назначенные текущему пользователю."""
+        from sqlalchemy.orm import selectinload
+
+        result = await self.db.execute(
+            select(WorkflowStep)
+            .join(WorkflowInstance, WorkflowStep.instance_id == WorkflowInstance.id)
+            .join(User, WorkflowStep.assignees)
+            .where(
+                User.id == user_id,
+                WorkflowStep.status == WorkflowStepStatus.IN_PROGRESS,
+                WorkflowInstance.status == WorkflowStatus.RUNNING,
+            )
+            .options(
+                selectinload(WorkflowStep.assignees),
+                selectinload(WorkflowStep.instance).selectinload(WorkflowInstance.template),
+            )
+            .order_by(WorkflowStep.assigned_at.asc())
+        )
+        now = datetime.now(timezone.utc)
+        tasks: List[Dict[str, Any]] = []
+        for step in result.scalars().all():
+            instance = step.instance
+            deadline = None
+            overdue_hours = None
+            if step.assigned_at and step.deadline_hours:
+                dl = step.assigned_at + timedelta(hours=step.deadline_hours)
+                deadline = dl.isoformat()
+                if dl < now:
+                    overdue_hours = max(1, int((now - dl).total_seconds() // 3600))
+            tasks.append(
+                {
+                    "step_id": step.id,
+                    "instance_id": instance.id,
+                    "template_name": instance.template.name if instance.template else None,
+                    "document_id": instance.document_id,
+                    "document_name": instance.document_name,
+                    "step_name": step.step_name,
+                    "approval_type": step.approval_type.value if hasattr(step.approval_type, "value") else str(step.approval_type),
+                    "assignment_type": step.assignment_type.value if hasattr(step.assignment_type, "value") else str(step.assignment_type),
+                    "deadline": deadline,
+                    "overdue_hours": overdue_hours,
+                    "assigned_at": step.assigned_at.isoformat() if step.assigned_at else None,
+                    "is_delegated": step.is_delegated,
+                }
+            )
+        return tasks
+
