@@ -24,6 +24,7 @@ export interface DocumentItem {
   has_file?: boolean;
   assignee_ids?: number[] | null;
   standard_ids?: number[] | null;
+  process_task_id?: string | null;
 }
 
 export interface LockedByUser {
@@ -270,4 +271,24 @@ export interface StandardRequirement {
 export const getDocumentStandards = async (id: number): Promise<StandardRequirement[]> => {
   const { data } = await client.get<StandardRequirement[]>(`/references/standards/by-document/${id}`);
   return data;
+};
+
+/** Скачать сгенерированный титульный лист документа (PDF) */
+export const downloadTitleSheet = async (
+  documentId: number,
+): Promise<{ filename: string; blob: Blob }> => {
+  const res = await client.get(`/documents/${documentId}/title-sheet`, {
+    responseType: 'blob',
+  });
+  const disposition: string = res.headers['content-disposition'] || '';
+  let filename = `title_sheet_${documentId}.pdf`;
+  const match = disposition.match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/i);
+  if (match) {
+    try {
+      filename = decodeURIComponent(match[1]);
+    } catch {
+      filename = match[1];
+    }
+  }
+  return { filename, blob: res.data as Blob };
 };

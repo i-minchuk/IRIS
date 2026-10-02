@@ -9,7 +9,7 @@ import { AIChatPanel } from '@/features/ai/components/AIChatPanel';
 import { RequirementsPanel } from '@/features/ai/components/RequirementsPanel';
 import { FileText, MessageSquare, History, Users, ArrowLeft, Sparkles, Wrench, Bot, Upload, PencilLine, Maximize2, Minimize2, Clock, CheckCircle, Paperclip } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { getDocument, downloadRevisionFile, uploadDocumentFile, updateDocument, approveDocument, getApprovalFeed, type ApprovalRecord, type DocumentDetail, type Revision } from '@/features/documents/api/documents';
+import { getDocument, downloadRevisionFile, downloadTitleSheet, uploadDocumentFile, updateDocument, approveDocument, getApprovalFeed, type ApprovalRecord, type DocumentDetail, type Revision } from '@/features/documents/api/documents';
 import { getRemarks, updateRemark } from '@/features/remarks/api/remarks';
 import type { RemarkListItem } from '@/types/remarks';
 import { getUsers } from '@/features/users/api/users';
@@ -338,6 +338,22 @@ export default function DocumentDetailPage() {
       toast.error('Не удалось загрузить файл');
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleDownloadTitleSheet = async () => {
+    const numericId = Number(id);
+    if (!numericId) return;
+    try {
+      const { filename, blob } = await downloadTitleSheet(numericId);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error('Не удалось сформировать титульный лист');
     }
   };
 
@@ -728,14 +744,25 @@ export default function DocumentDetailPage() {
                 onChange={handleFileUpload}
                 disabled={uploading}
               />
-              <label
-                htmlFor="detail-doc-upload"
-                className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border transition-colors ${uploading ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}`}
-                style={{ color: 'var(--text-secondary)', borderColor: 'var(--border-default)', background: 'var(--bg-surface-2)' }}
-              >
-                <Upload size={12} />
-                {uploading ? 'Загрузка…' : 'Загрузить файл'}
-              </label>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleDownloadTitleSheet}
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border transition-colors cursor-pointer"
+                  style={{ color: 'var(--text-secondary)', borderColor: 'var(--border-default)', background: 'var(--bg-surface-2)' }}
+                >
+                  <FileText size={12} />
+                  Титульный лист
+                </button>
+                <label
+                  htmlFor="detail-doc-upload"
+                  className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border transition-colors ${uploading ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}`}
+                  style={{ color: 'var(--text-secondary)', borderColor: 'var(--border-default)', background: 'var(--bg-surface-2)' }}
+                >
+                  <Upload size={12} />
+                  {uploading ? 'Загрузка…' : 'Загрузить файл'}
+                </label>
+              </div>
             </div>
             {files.length === 0 ? (
               <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Нет загруженных файлов</p>

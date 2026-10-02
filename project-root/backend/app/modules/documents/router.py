@@ -266,6 +266,60 @@ async def cascade_update_endpoint(
     )
 
 
+@router.get("/generated/{stored_name}")
+async def download_generated_file(
+    stored_name: str,
+    current_user: User = Depends(get_current_active_user),
+):
+    """Отдача сгенерированных файлов (storage/generated, например титульные листы)."""
+    from pathlib import Path
+
+    from app.core.config import settings
+
+    stem, dot, ext = stored_name.rpartition(".")
+    if (
+        not dot
+        or ext.lower() != "pdf"
+        or not stem
+        or not stem.replace("-", "").replace("_", "").isalnum()
+    ):
+        raise HTTPException(status_code=400, detail="Invalid file name")
+    path = Path(settings.IRIS_STORAGE_ROOT) / "generated" / stored_name
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="File not found")
+    return FileResponse(str(path), filename=stored_name)
+
+
+@router.get("/{document_id}/title-sheet")
+async def download_title_sheet(
+    document_id: int,
+    db: AsyncSession = Depends(get_db_read_only),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Сформировать и скачать титульный лист документа (PDF, А4)."""
+    import io
+
+    from fastapi.responses import StreamingResponse
+
+    from app.modules.documents.title_sheet import (
+        build_title_sheet_bytes,
+        collect_title_sheet_fields,
+    )
+
+    try:
+        fields = await collect_title_sheet_fields(db, document_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Document not found")
+    pdf = build_title_sheet_bytes(fields)
+    return StreamingResponse(
+        io.BytesIO(pdf),
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="title_sheet_{document_id}.pdf"'
+        },
+    )
+
+
 @router.get("/{document_id}/revisions/{revision_id}/download")
 async def download_revision_file(
     document_id: int,
