@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, FileText, Check, Users, ChevronDown, FileCheck } from 'lucide-react';
 import { createDocument, uploadDocumentFile } from '../features/documents/api/documents';
+import { workflowApi } from '../features/workflow/api/workflowApi';
 import { getProjects, type Project } from '../features/projects/api/projects';
 import { getUsers } from '../features/users/api/users';
 import { fetchStandards, type Standard } from './ReferencePage/standardsApi';
@@ -251,13 +252,14 @@ export default function DocumentCreate() {
     setLoading(true);
     try {
       const pid = selectedProjectId;
+      const docType = selectedCategory
+        ? CATEGORY_DOC_TYPE[selectedCategory.id] ?? selectedCategory.label
+        : 'Документ';
       const doc = await createDocument({
         project_id: pid,
         number: formData.code,
         name: formData.title,
-        doc_type: selectedCategory
-          ? CATEGORY_DOC_TYPE[selectedCategory.id] ?? selectedCategory.label
-          : 'Документ',
+        doc_type: docType,
         assignee_ids: assigneeIds,
         standard_ids: selectedStandardIds,
         process_task_id: selectedProcessTaskId || undefined,
@@ -270,6 +272,25 @@ export default function DocumentCreate() {
           console.error('Ошибка загрузки файла:', uploadErr);
           toast.warning('Документ создан, но файл не загрузился — прикрепите его на странице документа');
         }
+      }
+      // Автозапуск согласования по сценарию маршрутизации
+      try {
+        const match = await workflowApi.matchRoutingRule({
+          project_id: pid,
+          doc_type: docType,
+          discipline: formData.discipline || undefined,
+        });
+        if (match.matched && match.template_id) {
+          await workflowApi.startWorkflow({
+            template_id: match.template_id,
+            document_id: doc.id,
+            document_name: formData.title,
+            project_id: pid,
+          });
+          toast.success(`Маршрут «${match.template_name}» запущен автоматически по сценарию «${match.rule?.name}»`);
+        }
+      } catch (matchErr) {
+        console.error('Автозапуск маршрута не удался:', matchErr);
       }
       toast.success('Документ успешно создан');
       navigate(doc.id ? `/documents/${doc.id}` : '/documents');

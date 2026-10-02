@@ -1,6 +1,6 @@
 """Workflow notifications — email + in-app triggers for workflow events."""
 from typing import Optional, List
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import logging
 
 from sqlalchemy import select
@@ -89,20 +89,30 @@ async def notify_workflow_started(
     first_step: WorkflowStep,
 ) -> None:
     """Notify assignees of the first step when workflow starts."""
+    deadline_date = None
+    if first_step.deadline_hours:
+        dl = datetime.now(timezone.utc) + timedelta(hours=first_step.deadline_hours)
+        deadline_date = dl.strftime("%d.%m.%Y %H:%M")
     data = {
         "workflow_id": instance.id,
         "document_name": instance.document_name or "—",
         "step_name": first_step.step_name,
         "deadline_hours": first_step.deadline_hours,
+        "deadline_date": deadline_date,
     }
     await _notify_assignees(db, first_step, "workflow_started", data)
     doc_name = instance.document_name or "—"
+    deadline_text = (
+        f" Срок согласования: до {deadline_date} (лимит {first_step.deadline_hours} ч)."
+        if deadline_date
+        else ""
+    )
     await _notify_in_app(
         db,
         await _get_step_assignee_ids(first_step),
         "workflow_step",
         f"Согласование: {first_step.step_name}",
-        f"Документ «{doc_name}» ожидает вашего согласования.",
+        f"Документ «{doc_name}» ожидает вашего согласования.{deadline_text}",
         document_id=instance.document_id,
     )
     logger.info(f"Workflow {instance.id} started: notified {len(first_step.assignees)} assignees")
@@ -116,21 +126,31 @@ async def notify_step_approved(
 ) -> None:
     """Notify next step assignees or workflow completer."""
     if next_step:
+        deadline_date = None
+        if next_step.deadline_hours:
+            dl = datetime.now(timezone.utc) + timedelta(hours=next_step.deadline_hours)
+            deadline_date = dl.strftime("%d.%m.%Y %H:%M")
         data = {
             "workflow_id": instance.id,
             "document_name": instance.document_name or "—",
             "step_name": next_step.step_name,
             "previous_step": step.step_name,
             "deadline_hours": next_step.deadline_hours,
+            "deadline_date": deadline_date,
         }
         await _notify_assignees(db, next_step, "step_assigned", data)
         doc_name = instance.document_name or "—"
+        deadline_text = (
+            f" Срок: до {deadline_date} (лимит {next_step.deadline_hours} ч)."
+            if deadline_date
+            else ""
+        )
         await _notify_in_app(
             db,
             await _get_step_assignee_ids(next_step),
             "workflow_step",
             f"Согласование: {next_step.step_name}",
-            f"Документ «{doc_name}» перешёл к вам: предыдущий шаг «{step.step_name}» согласован.",
+            f"Документ «{doc_name}» перешёл к вам: предыдущий шаг «{step.step_name}» согласован.{deadline_text}",
             document_id=instance.document_id,
         )
     else:
