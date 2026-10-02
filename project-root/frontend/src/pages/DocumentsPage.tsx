@@ -18,6 +18,7 @@ import { getSessions, type TimeSession } from '@/features/time_tracking/api/sess
 import { useAutoTimeTracker } from '@/features/time_tracking/hooks/useAutoTimeTracker';
 import apiClient from '@/shared/api/client';
 import { getLeaderboard } from '@/features/gamification/api/gamification';
+import RemarksPage from '@/pages/RemarksPage';
 import { getRemarks, createRemark } from '@/features/remarks/api/remarks';
 import { getDocuments, getDocument, uploadDocumentFile, downloadRevisionFile, approveDocument, getApprovalFeed, getActionTaskStatuses, setActionTaskStatus, updateDocument, copyDocument, deleteDocument, type ApprovalFeedItem, type DocumentItem, type ActionTaskStatus } from '@/features/documents/api/documents';
 import ViewerContainer from '@/components/viewers/ViewerContainer';
@@ -43,7 +44,7 @@ import {
 /* ── Types ── */
 type DocType = 'KJ' | 'AR' | 'OViK' | 'EOM' | 'KR' | 'other';
 type DocStatus = 'draft' | 'review' | 'approved' | 'confirmed' | 'archived';
-type TabKey = 'registry' | 'workflow' | 'employees';
+type TabKey = 'registry' | 'remarks' | 'workflow' | 'employees';
 type RemarkAction = 'revise' | 'approve' | 'delegate';
 
 interface Employee {
@@ -2979,6 +2980,7 @@ function EmployeesView() {
 
 const DOC_TABS = [
   { key: 'registry' as const, label: 'Реестр документов', icon: <FileText size={16} />, color: TAB_COLOR },
+  { key: 'remarks' as const, label: 'Замечания', icon: <MessageSquare size={16} />, color: TAB_COLOR },
   { key: 'workflow' as const, label: 'Документооборот', icon: <GitBranch size={16} />, color: TAB_COLOR },
   { key: 'employees' as const, label: 'Сотрудники', icon: <User size={16} />, color: TAB_COLOR },
 ];
@@ -3018,6 +3020,7 @@ export default function DocumentsPage() {
       <PageTabs tabs={DOC_TABS} active={activeTab} onChange={setActiveTab} />
 
       {activeTab === 'registry' && <RegistryView />}
+      {activeTab === 'remarks' && <RemarksPage />}
       {activeTab === 'workflow' && <WorkflowView />}
       {activeTab === 'employees' && <EmployeesView />}
     </div>

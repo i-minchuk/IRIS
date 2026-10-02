@@ -14,19 +14,21 @@ import SessionList from '@/features/time_tracking/components/SessionList';
 import AnalyticsPanel from '@/features/time_tracking/components/AnalyticsPanel';
 import { adminApi, type AdminUser } from '@/features/auth/api/adminApi';
 import RegistrationTab from './Registration';
+import Achievements from '@/pages/Achievements';
 import type { TicketStatus } from '@/types/support';
 import {
   Users, Shield, Ticket, AlertTriangle, LayoutDashboard, Timer, UserPlus, Sparkles, KeyRound, Loader2,
-  MessageSquareWarning, CheckCircle2, CircleDot, Archive, ArchiveRestore,
+  MessageSquareWarning, CheckCircle2, CircleDot, Archive, ArchiveRestore, Award,
 } from 'lucide-react';
 
-type AdminTab = 'overview' | 'time' | 'registration' | 'support';
+type AdminTab = 'overview' | 'time' | 'achievements' | 'registration' | 'support';
 
 const TAB_COLOR = '#FF6B6B';
 
 const TABS = [
   { key: 'overview' as AdminTab, label: 'Обзор', icon: <LayoutDashboard size={16} />, color: TAB_COLOR },
   { key: 'time' as AdminTab, label: 'Учёт времени', icon: <Timer size={16} />, color: TAB_COLOR },
+  { key: 'achievements' as AdminTab, label: 'Достижения', icon: <Award size={16} />, color: TAB_COLOR },
   { key: 'registration' as AdminTab, label: 'Регистрация', icon: <UserPlus size={16} />, color: TAB_COLOR },
   { key: 'support' as AdminTab, label: 'Поддержка', icon: <Ticket size={16} />, color: TAB_COLOR },
 ];
@@ -600,6 +602,7 @@ export default function AdminDashboard() {
           <SessionList />
         </div>
       )}
+      {activeTab === 'achievements' && <Achievements />}
       {activeTab === 'registration' && <RegistrationTab />}
       {activeTab === 'support' && <SupportTab />}
     </div>

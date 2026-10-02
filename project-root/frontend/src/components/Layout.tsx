@@ -9,7 +9,7 @@ import {
   BarChart3, FileText, Archive,
   Shield, Briefcase, Factory,
   BookOpen, Settings, MessageSquareWarning,
-  ImagePlus, X, GitBranch, MessageSquare,
+  ImagePlus, X, GitBranch,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -31,7 +31,6 @@ const ALL_NAV_ITEMS = [
   { to: '/dashboard', label: 'Панель аналитики', shortLabel: 'Аналитика', iconOnly: false, icon: <BarChart3 size={16} />, color: '#3B82F6', bgActive: 'rgba(59, 130, 246, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'site_manager', 'engineer', 'norm_controller', 'admin'] },
   { to: '/portfolio', label: 'Портфель заказов', shortLabel: 'Портфель', iconOnly: false, icon: <Briefcase size={16} />, color: '#7C3AED', bgActive: 'rgba(124, 58, 237, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
   { to: '/documents', label: 'Документация', shortLabel: 'Документы', iconOnly: false, icon: <FileText size={16} />, color: '#4F7A4C', bgActive: 'rgba(79, 122, 76, 0.15)', roles: ['department_head', 'gip', 'site_manager', 'engineer', 'norm_controller', 'manager', 'admin'] },
-  { to: '/remarks', label: 'Замечания', shortLabel: 'Замечания', iconOnly: false, icon: <MessageSquare size={16} />, color: '#D97706', bgActive: 'rgba(217, 119, 6, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'site_manager', 'engineer', 'norm_controller', 'manager', 'admin'] },
   { to: '/my-tasks', label: 'Мои задачи', shortLabel: 'Задачи', iconOnly: false, icon: <GitBranch size={16} />, color: '#0EA5E9', bgActive: 'rgba(14, 165, 233, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'site_manager', 'engineer', 'norm_controller', 'manager', 'admin'] },
   { to: '/production', label: 'Производственный контроль', shortLabel: 'Пр-во', iconOnly: false, icon: <Factory size={16} />, color: '#F59E0B', bgActive: 'rgba(245, 158, 11, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
   { to: '/archive', label: 'Архив', shortLabel: 'Архив', iconOnly: false, icon: <Archive size={16} />, color: '#6B7280', bgActive: 'rgba(107, 114, 128, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'site_manager', 'engineer', 'norm_controller', 'manager', 'admin'] },
