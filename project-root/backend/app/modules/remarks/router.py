@@ -51,7 +51,7 @@ async def create_remark(
     """Create a new remark."""
     service = get_service(db)
     remark = await service.create_remark(remark_data, current_user.id)
-    return remark
+    return await service.to_response(remark)
 
 
 @router.get("", response_model=RemarkListResponse)
@@ -285,7 +285,7 @@ async def get_remark(
             detail="Remark not found"
         )
     
-    return remark
+    return await service.to_response(remark)
 
 
 @router.put("/{remark_id}", response_model=RemarkResponse)
@@ -305,7 +305,7 @@ async def update_remark(
             detail="Remark not found"
         )
     
-    return remark
+    return await service.to_response(remark)
 
 
 @router.delete("/{remark_id}", status_code=status.HTTP_204_NO_CONTENT)

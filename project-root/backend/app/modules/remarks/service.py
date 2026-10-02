@@ -5,6 +5,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, or_
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import selectinload
 import logging
 
 from app.modules.remarks.models import (
@@ -97,7 +98,10 @@ class RemarkService:
             
             # Auto-start workflow for new/open remarks
             await self._maybe_start_workflow(remark, author_id)
-            
+
+            # Уведомляем исполнителя замечания
+            await self._notify_assignee(remark, author_id)
+
             logger.info(f"Remark created: {remark.id}")
             return remark
             
@@ -105,6 +109,29 @@ class RemarkService:
             await self.db.rollback()
             logger.error(f"Error creating remark: {e}")
             raise RemarkServiceError(f"Failed to create remark: {e}")
+
+    async def _notify_assignee(self, remark: Remark, author_id: int) -> None:
+        """Уведомление исполнителя о новом замечании (in-app + email + telegram)."""
+        if not remark.assignee_id or remark.assignee_id == author_id:
+            return
+        assignee = await self.db.get(User, remark.assignee_id)
+        if assignee is None:
+            return
+        from app.modules.gamification.repository import NotificationRepository
+
+        priority_labels = {"low": "Низкий", "medium": "Средний", "high": "Высокий", "critical": "Критичный"}
+        priority_value = getattr(remark.priority, "value", remark.priority)
+        priority = priority_labels.get(priority_value, str(priority_value))
+        await NotificationRepository(self.db).create_and_notify(
+            user_id=assignee.id,
+            type="remark_created",
+            title=f"Новое замечание: {remark.title}",
+            message=f"Приоритет: {priority}. {remark.description[:200]}",
+            user_email=assignee.email,
+            email_notifications_enabled=assignee.email_notifications_enabled,
+            telegram_chat_id=assignee.telegram_chat_id,
+            meta={"link": "/remarks", "remark_id": str(remark.id)},
+        )
 
     async def _maybe_start_workflow(self, remark: Remark, user_id: int) -> None:
         """Start approval workflow for a remark if applicable."""
@@ -159,6 +186,91 @@ class RemarkService:
             await self.db.refresh(remark, ['comments'])
             
         return remark
+
+    async def to_response(self, remark: Remark) -> Dict[str, Any]:
+        """Собрать dict под RemarkResponse (имена связей + счётчики).
+
+        ORM-модель не содержит author_name/assignee_name/comments_count,
+        поэтому сериализуем вручную с eager-загрузкой связей.
+        """
+        result = await self.db.execute(
+            select(Remark)
+            .where(Remark.id == remark.id)
+            .options(
+                selectinload(Remark.author),
+                selectinload(Remark.assignee),
+                selectinload(Remark.resolved_by_user),
+                selectinload(Remark.project),
+                selectinload(Remark.document),
+                selectinload(Remark.tags),
+            )
+        )
+        remark = result.scalar_one()
+        comments_count = (
+            await self.db.execute(
+                select(func.count(RemarkComment.id)).where(
+                    RemarkComment.remark_id == remark.id
+                )
+            )
+        ).scalar_one()
+
+        # Обогащаем history именами пользователей (в БД хранятся только id)
+        history = [dict(h) for h in (remark.history or [])]
+        history_user_ids = {h.get("user_id") for h in history if h.get("user_id")}
+        if history_user_ids:
+            rows = (
+                await self.db.execute(
+                    select(User).where(User.id.in_(history_user_ids))
+                )
+            ).scalars().all()
+            history_names = {u.id: (u.full_name or u.username) for u in rows}
+            for h in history:
+                uid = h.get("user_id")
+                h["user_name"] = history_names.get(uid) or f"Пользователь #{uid}"
+        else:
+            for h in history:
+                h.setdefault("user_name", "—")
+
+        def user_name(u: Optional[User]) -> Optional[str]:
+            if u is None:
+                return None
+            return u.full_name or u.username
+
+        return {
+            "id": remark.id,
+            "project_id": remark.project_id,
+            "project_name": remark.project.name if remark.project else None,
+            "document_id": remark.document_id,
+            "document_name": remark.document.name if remark.document else None,
+            "revision_id": remark.revision_id,
+            "workflow_step_id": remark.workflow_step_id,
+            "workflow_instance_id": remark.workflow_instance_id,
+            "source": remark.source,
+            "status": remark.status,
+            "priority": remark.priority,
+            "category": remark.category,
+            "title": remark.title,
+            "description": remark.description,
+            "location_ref": remark.location_ref,
+            "process_task_id": remark.process_task_id,
+            "author_id": remark.author_id,
+            "author_name": user_name(remark.author) or f"Пользователь #{remark.author_id}",
+            "assignee_id": remark.assignee_id,
+            "assignee_name": user_name(remark.assignee),
+            "due_date": remark.due_date,
+            "resolution": remark.resolution,
+            "resolved_by": remark.resolved_by,
+            "resolved_by_name": user_name(remark.resolved_by_user),
+            "resolved_at": remark.resolved_at,
+            "parent_id": remark.parent_id,
+            "related_remark_ids": remark.related_remark_ids or [],
+            "attachments": remark.attachments or [],
+            "history": history,
+            "tags": [t.id for t in remark.tags],
+            "comments_count": comments_count,
+            "created_at": remark.created_at,
+            "updated_at": remark.updated_at,
+        }
 
     async def list_remarks(
         self,

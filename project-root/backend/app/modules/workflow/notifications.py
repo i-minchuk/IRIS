@@ -53,6 +53,36 @@ async def _notify_assignees(
             logger.warning(f"Failed to send workflow email to {email}: {e}")
 
 
+async def _notify_in_app(
+    db: AsyncSession,
+    user_ids: List[int],
+    notification_type: str,
+    title: str,
+    message: str,
+    document_id=None,
+) -> None:
+    """Create in-app notifications (bell + страница «Все уведомления»)."""
+    if not user_ids:
+        return
+    from app.modules.gamification.repository import NotificationRepository
+
+    meta = {}
+    if document_id:
+        meta["link"] = f"/documents/{document_id}"
+    repo = NotificationRepository(db)
+    for uid in set(user_ids):
+        try:
+            await repo.create(
+                user_id=uid,
+                type=notification_type,
+                title=title,
+                message=message,
+                meta=meta,
+            )
+        except Exception as e:
+            logger.warning(f"Failed to create in-app notification for user {uid}: {e}")
+
+
 async def notify_workflow_started(
     db: AsyncSession,
     instance: WorkflowInstance,
@@ -66,6 +96,15 @@ async def notify_workflow_started(
         "deadline_hours": first_step.deadline_hours,
     }
     await _notify_assignees(db, first_step, "workflow_started", data)
+    doc_name = instance.document_name or "—"
+    await _notify_in_app(
+        db,
+        await _get_step_assignee_ids(first_step),
+        "workflow_step",
+        f"Согласование: {first_step.step_name}",
+        f"Документ «{doc_name}» ожидает вашего согласования.",
+        document_id=instance.document_id,
+    )
     logger.info(f"Workflow {instance.id} started: notified {len(first_step.assignees)} assignees")
 
 
@@ -85,6 +124,15 @@ async def notify_step_approved(
             "deadline_hours": next_step.deadline_hours,
         }
         await _notify_assignees(db, next_step, "step_assigned", data)
+        doc_name = instance.document_name or "—"
+        await _notify_in_app(
+            db,
+            await _get_step_assignee_ids(next_step),
+            "workflow_step",
+            f"Согласование: {next_step.step_name}",
+            f"Документ «{doc_name}» перешёл к вам: предыдущий шаг «{step.step_name}» согласован.",
+            document_id=instance.document_id,
+        )
     else:
         # Workflow completed — notify starter
         starter = await _get_instance_starter(db, instance)
@@ -97,6 +145,16 @@ async def notify_step_approved(
                 await send_notification_email(starter.email, "workflow_completed", data)
             except Exception as e:
                 logger.warning(f"Failed to send completion email: {e}")
+        if starter:
+            doc_name = instance.document_name or "—"
+            await _notify_in_app(
+                db,
+                [starter.id],
+                "document_approved",
+                "Документ утверждён",
+                f"«{doc_name}» прошёл все этапы согласования.",
+                document_id=instance.document_id,
+            )
 
 
 async def notify_step_rejected(
@@ -119,6 +177,16 @@ async def notify_step_rejected(
             await send_notification_email(starter.email, "step_rejected", data)
         except Exception as e:
             logger.warning(f"Failed to send rejection email to starter: {e}")
+    if starter:
+        doc_name = instance.document_name or "—"
+        await _notify_in_app(
+            db,
+            [starter.id],
+            "workflow_rejected",
+            f"Отказ в согласовании: {step.step_name}",
+            f"Документ «{doc_name}». Причина: {reason or '—'}.",
+            document_id=instance.document_id,
+        )
 
     if return_step:
         data = {
@@ -128,6 +196,15 @@ async def notify_step_rejected(
             "reason": reason,
         }
         await _notify_assignees(db, return_step, "step_rejected_return", data)
+        doc_name = instance.document_name or "—"
+        await _notify_in_app(
+            db,
+            await _get_step_assignee_ids(return_step),
+            "workflow_step",
+            f"Доработка: {return_step.step_name}",
+            f"Документ «{doc_name}» возвращён на доработку. Причина: {reason or '—'}.",
+            document_id=instance.document_id,
+        )
 
 
 async def notify_step_delegated(
@@ -149,3 +226,12 @@ async def notify_step_delegated(
             await send_notification_email(delegate_to_user.email, "step_delegated", data)
         except Exception as e:
             logger.warning(f"Failed to send delegation email: {e}")
+    doc_name = instance.document_name or "—"
+    await _notify_in_app(
+        db,
+        [delegate_to_user.id],
+        "workflow_step",
+        f"Делегирован шаг: {step.step_name}",
+        f"Документ «{doc_name}» делегирован вам. Причина: {reason or '—'}.",
+        document_id=instance.document_id,
+    )

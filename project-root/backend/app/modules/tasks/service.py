@@ -47,7 +47,30 @@ class TaskService:
         await self.db.commit()
         await self.db.refresh(db_task)
         # Reload with relations so task_to_response can populate names
-        return await self.get_task(db_task.id)
+        task = await self.get_task(db_task.id)
+        await self._notify_assignee(task, creator_id)
+        return task
+
+    async def _notify_assignee(self, task: Task, actor_id: int) -> None:
+        """Уведомление исполнителя о назначении задачи (in-app + email + telegram)."""
+        if not task or not task.assignee_id or task.assignee_id == actor_id:
+            return
+        assignee = task.assignee
+        if assignee is None:
+            return
+        from app.modules.gamification.repository import NotificationRepository
+
+        due = f" Срок: {task.due_date.strftime('%d.%m.%Y')}." if task.due_date else ""
+        await NotificationRepository(self.db).create_and_notify(
+            user_id=assignee.id,
+            type="task_assigned",
+            title=f"Новая задача: {task.title}",
+            message=f"Вам назначена задача «{task.title}».{due}",
+            user_email=assignee.email,
+            email_notifications_enabled=assignee.email_notifications_enabled,
+            telegram_chat_id=assignee.telegram_chat_id,
+            meta={"link": "/portfolio?tab=projects", "task_id": task.id},
+        )
     
     async def get_task(self, task_id: int) -> Optional[Task]:
         """Get task by ID with related entities loaded."""
@@ -113,6 +136,7 @@ class TaskService:
         
         # Get old status for sync logic
         old_status = task.status
+        old_assignee_id = task.assignee_id
         
         # Update fields
         update_data = task_in.model_dump(exclude_unset=True)
@@ -127,7 +151,17 @@ class TaskService:
         await self.db.commit()
         await self.db.refresh(task)
         # Re-fetch with relations so response includes names
-        return await self.get_task(task_id)
+        updated = await self.get_task(task_id)
+        # Уведомляем нового исполнителя о передаче задачи
+        if (
+            updated
+            and 'assignee_id' in update_data
+            and updated.assignee_id
+            and updated.assignee_id != old_assignee_id
+            and updated.assignee_id != current_user_id
+        ):
+            await self._notify_assignee(updated, current_user_id)
+        return updated
     
     async def update_task_status(
         self,

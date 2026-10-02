@@ -685,6 +685,7 @@ class DocumentService:
                         else f"Документ {doc.number} передан вам на согласование "
                              f"({user_name} согласовал)."
                     ),
+                    meta={"link": f"/documents/{doc.id}"},
                 )
             else:
                 if doc.author_id and doc.author_id != user_id:
@@ -694,6 +695,7 @@ class DocumentService:
                         title="Документ утверждён",
                         message=f"Документ {doc.number} полностью согласован "
                                 f"({user_name} завершил цепочку согласования).",
+                        meta={"link": f"/documents/{doc.id}"},
                     )
         except Exception:
             logger.exception("Failed to create approval notification")

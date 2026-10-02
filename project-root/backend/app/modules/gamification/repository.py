@@ -238,8 +238,21 @@ class NotificationRepository:
         )
         return result.scalar_one()
 
-    async def create(self, user_id: int, type: str, title: str, message: str) -> Notification:
-        notif = Notification(user_id=user_id, type=type, title=title, message=message)
+    async def create(
+        self,
+        user_id: int,
+        type: str,
+        title: str,
+        message: str,
+        meta: dict | None = None,
+    ) -> Notification:
+        notif = Notification(
+            user_id=user_id,
+            type=type,
+            title=title,
+            message=message,
+            meta=meta or {},
+        )
         self.db.add(notif)
         await self.db.commit()
         await self.db.refresh(notif)
@@ -254,8 +267,9 @@ class NotificationRepository:
         user_email: str | None = None,
         email_notifications_enabled: bool = False,
         telegram_chat_id: str | None = None,
+        meta: dict | None = None,
     ) -> Notification:
-        notif = await self.create(user_id, type, title, message)
+        notif = await self.create(user_id, type, title, message, meta=meta)
         if user_email and email_notifications_enabled:
             from app.core.email import send_notification_email
 

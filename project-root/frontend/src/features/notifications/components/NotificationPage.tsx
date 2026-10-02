@@ -15,6 +15,8 @@ const typeConfig: Record<string, { color: string; label: string }> = {
   workflow_step: { color: '#D4AF37', label: 'Workflow' },
   deadline_approaching: { color: '#F59E0B', label: 'Дедлайн' },
   document_approved: { color: '#4F7A4C', label: 'Утверждение' },
+  approval_pending: { color: '#D4AF37', label: 'Согласование' },
+  workflow_rejected: { color: '#EF4444', label: 'Отказ' },
 };
 
 function formatDate(iso: string): string {
