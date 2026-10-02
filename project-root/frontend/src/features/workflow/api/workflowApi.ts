@@ -115,6 +115,27 @@ export interface MyTask {
   is_delegated: boolean;
 }
 
+export interface DeadlineOverviewRow {
+  step_id: number;
+  instance_id: number;
+  template_name: string | null;
+  document_id: number | null;
+  document_name: string | null;
+  step_name: string;
+  assignees: { id: number; full_name: string }[];
+  assigned_at: string;
+  deadline: string;
+  deadline_hours: number;
+  overdue_hours: number | null;
+  hours_left: number | null;
+}
+
+export interface DeadlineOverview {
+  total: number;
+  overdue: number;
+  rows: DeadlineOverviewRow[];
+}
+
 export const workflowApi = {
   // Templates
   getTemplates: () => apiClient.get('/workflows/templates').then((r: any) => r.data.templates as WorkflowTemplate[]),
@@ -180,6 +201,10 @@ export const workflowApi = {
   // My pending approval tasks
   getMyTasks: () =>
     apiClient.get('/workflows/my-tasks').then((r: any) => r.data.tasks as MyTask[]),
+
+  // Deadline overview for managers (analytics)
+  getDeadlineOverview: () =>
+    apiClient.get('/workflows/deadline-overview').then((r: any) => r.data as DeadlineOverview),
 
   // Template creation (конструктор маршрутов)
   createTemplate: (data: {

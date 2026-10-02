@@ -587,3 +587,21 @@ async def my_tasks(
     """Мои шаги «на согласовании» с дедлайнами и признаком просрочки."""
     service = get_service(db)
     return {"tasks": await service.get_my_tasks(current_user.id)}
+
+
+_MANAGER_ROLES = {"admin", "director", "deputy_director", "department_head"}
+
+
+@router.get("/deadline-overview")
+async def deadline_overview(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Журнал дедлайнов согласования для руководителя (все маршруты)."""
+    if current_user.role not in _MANAGER_ROLES and not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Обзор дедлайнов доступен руководителям",
+        )
+    service = get_service(db)
+    return await service.get_deadline_overview()

@@ -1121,3 +1121,66 @@ class WorkflowService:
             )
         return tasks
 
+    async def get_deadline_overview(self) -> Dict[str, Any]:
+        """Обзор дедлайнов для руководителя: все активные шаги с лимитом
+        времени по запущенным маршрутам, с признаком просрочки."""
+        from sqlalchemy.orm import selectinload
+
+        result = await self.db.execute(
+            select(WorkflowStep)
+            .join(WorkflowInstance, WorkflowStep.instance_id == WorkflowInstance.id)
+            .where(
+                WorkflowStep.status == WorkflowStepStatus.IN_PROGRESS,
+                WorkflowStep.deadline_hours.is_not(None),
+                WorkflowStep.assigned_at.is_not(None),
+                WorkflowInstance.status == WorkflowStatus.RUNNING,
+            )
+            .options(
+                selectinload(WorkflowStep.assignees),
+                selectinload(WorkflowStep.instance).selectinload(WorkflowInstance.template),
+            )
+        )
+        now = datetime.now(timezone.utc)
+        rows: List[Dict[str, Any]] = []
+        for step in result.scalars().all():
+            instance = step.instance
+            dl = step.assigned_at + timedelta(hours=step.deadline_hours)
+            overdue_hours = None
+            hours_left = None
+            if dl < now:
+                overdue_hours = max(1, int((now - dl).total_seconds() // 3600))
+            else:
+                hours_left = max(0, int((dl - now).total_seconds() // 3600))
+            rows.append(
+                {
+                    "step_id": step.id,
+                    "instance_id": instance.id,
+                    "template_name": instance.template.name if instance.template else None,
+                    "document_id": instance.document_id,
+                    "document_name": instance.document_name,
+                    "step_name": step.step_name,
+                    "assignees": [
+                        {"id": u.id, "full_name": u.full_name or u.email or f"#{u.id}"}
+                        for u in step.assignees
+                    ],
+                    "assigned_at": step.assigned_at.isoformat(),
+                    "deadline": dl.isoformat(),
+                    "deadline_hours": step.deadline_hours,
+                    "overdue_hours": overdue_hours,
+                    "hours_left": hours_left,
+                }
+            )
+        # Просроченные первыми (по убыванию просрочки), затем по ближайшему дедлайну
+        rows.sort(
+            key=lambda r: (
+                r["overdue_hours"] is None,
+                -(r["overdue_hours"] or 0),
+                r["deadline"],
+            )
+        )
+        return {
+            "total": len(rows),
+            "overdue": sum(1 for r in rows if r["overdue_hours"] is not None),
+            "rows": rows,
+        }
+

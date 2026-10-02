@@ -19,6 +19,8 @@ import {
 } from '@/features/analytics/api/analytics';
 import { CalendarWidget } from '@/features/analytics/components/CalendarWidget';
 import { LeaderboardWidget } from '@/features/leaderboard/components/LeaderboardWidget';
+import { WorkflowDeadlineWidget } from '@/features/workflow/components/WorkflowDeadlineWidget';
+import { useAuthStore } from '@/features/auth/store/authStore';
 
 import { RemarksWidget } from '@/features/remarks/components/RemarksWidget';
 import {
@@ -124,6 +126,9 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { theme } = useTheme();
   const isDark = theme === 'dark' || theme === 'midnight' || theme === 'contrast';
+  const userRole = useAuthStore((state) => state.user?.role);
+  const isManager = userRole === 'admin' || userRole === 'director'
+    || userRole === 'deputy_director' || userRole === 'department_head';
   const [period, setPeriod] = useState<AnalyticsPeriod>('today');
 
   // API states
@@ -1087,6 +1092,13 @@ export default function Dashboard() {
               ))}
             </div>
           </div>
+
+          {/* Контроль дедлайнов согласования (руководители) */}
+          {isManager && (
+            <div className="p-0.5">
+              <WorkflowDeadlineWidget isDark={isDark} />
+            </div>
+          )}
 
           {/* Загрузка команды */}
           <div className="p-3 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
