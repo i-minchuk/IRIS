@@ -32,6 +32,7 @@ class UserUpdate(BaseModel):
     birthdate: Optional[date] = None
     is_active: Optional[bool] = None
     is_superuser: Optional[bool] = None
+    role: Optional[str] = None
 
 
 class UserMeUpdate(BaseModel):

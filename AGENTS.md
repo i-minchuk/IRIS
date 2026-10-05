@@ -663,6 +663,17 @@ VITE_APP_VERSION=      # обычно задаётся через build arg APP_
 
 ---
 
+## Доступы по ролям (RBAC)
+
+> Зафиксировано 2026-10-05. **Роль администратора (`admin` / `is_superuser`) — полноценная и самая масштабная: доступ ко всему функционалу программы без ограничений.** Это правило приоритетно: любые проверки прав, фильтрации и скрытия интерфейса обязаны пропускать админа.
+
+- Источник истины — матрица: `project-root/docs/RBAC.md`. Роли: admin, director, gip, doc_controller (тех. документооборот), engineer, designer (проектировщик), pto, mto, logistics, storekeeper (кладовщик), installer (монтажник). Устаревшие роли маппятся в новые (`permissions.LEGACY_ROLE_MAP`).
+- Центральный код прав: `backend/app/core/permissions.py` — `get_permissions()`, `has_permission()`, `require_permission(perm)` (зависимость FastAPI, admin — всегда разрешено).
+- Guards подключены в `backend/app/api/router.py` через `dependencies=[Depends(require_permission(...))]` для tenders, analytics, archive, reports, references, srm, production. Нет права → 403.
+- Этап 2 (запланирован): скрытие финансовых полей (`finance.read`) в ответах API + фильтрация меню на фронтенде. Этап 3: объектный уровень (монтажник — документы своего объекта).
+
+---
+
 ## Контакты и поддержка
 
 - Технический лидер: @i-minchuk

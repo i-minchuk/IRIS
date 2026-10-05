@@ -63,6 +63,14 @@ class UserRole(str, Enum):
     MANAGER = "manager"                      # Менеджер
     NORM_CONTROLLER = "norm_controller"      # Нормоконтролёр
     ADMIN = "admin"                          # Администратор
+    # Производственные роли (матрица доступов — docs/RBAC.md)
+    DOC_CONTROLLER = "doc_controller"        # Технический документооборот
+    DESIGNER = "designer"                    # Проектировщик
+    PTO = "pto"                              # ПТО
+    MTO = "mto"                              # МТО (закупки)
+    LOGISTICS = "logistics"                  # Логистика (доставки)
+    STOREKEEPER = "storekeeper"              # Кладовщик
+    INSTALLER = "installer"                  # Монтажник
 
 
 class UserRoleGroup:

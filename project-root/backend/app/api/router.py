@@ -1,7 +1,8 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 from app.api.routes import ai
 from app.core.config import settings
+from app.core.permissions import require_permission
 from app.modules.ai.router import router as ai_chatbot_router
 from app.modules.analytics import router as analytics_router
 from app.modules.auth import router as auth_router
@@ -41,23 +42,23 @@ api_router.include_router(tasks_router, prefix=f"{settings.API_V1_STR}/tasks", t
 api_router.include_router(documents_router, prefix=f"{settings.API_V1_STR}/documents", tags=["Documents"])
 api_router.include_router(variables_router, prefix=f"{settings.API_V1_STR}/variables", tags=["Variables"])
 api_router.include_router(time_tracking_router, prefix=f"{settings.API_V1_STR}/time-tracking", tags=["Time Tracking"])
-api_router.include_router(tenders_router, prefix=f"{settings.API_V1_STR}/tenders", tags=["Tenders"])
-api_router.include_router(tenders_extended_router, prefix=f"{settings.API_V1_STR}/tenders", tags=["Tenders Extended"])
-api_router.include_router(analytics_router, prefix=f"{settings.API_V1_STR}/analytics", tags=["Analytics"])
+api_router.include_router(tenders_router, prefix=f"{settings.API_V1_STR}/tenders", tags=["Tenders"], dependencies=[Depends(require_permission("tenders.read"))])
+api_router.include_router(tenders_extended_router, prefix=f"{settings.API_V1_STR}/tenders", tags=["Tenders Extended"], dependencies=[Depends(require_permission("tenders.read"))])
+api_router.include_router(analytics_router, prefix=f"{settings.API_V1_STR}/analytics", tags=["Analytics"], dependencies=[Depends(require_permission("analytics.read"))])
 api_router.include_router(resources_router, prefix=f"{settings.API_V1_STR}/resources", tags=["Resources"])
 api_router.include_router(collaboration_router, prefix=f"{settings.API_V1_STR}/collaboration", tags=["Collaboration"])
-api_router.include_router(archive_router.router, prefix=f"{settings.API_V1_STR}/archive", tags=["Archive"])
+api_router.include_router(archive_router.router, prefix=f"{settings.API_V1_STR}/archive", tags=["Archive"], dependencies=[Depends(require_permission("archive.read"))])
 api_router.include_router(workflow_router, prefix=f"{settings.API_V1_STR}/workflows", tags=["Workflows"])
 api_router.include_router(remarks_router, prefix=f"{settings.API_V1_STR}/remarks", tags=["Remarks"])
 api_router.include_router(audit_router, prefix=f"{settings.API_V1_STR}/audit", tags=["Audit"])
 api_router.include_router(calendar_router, prefix=f"{settings.API_V1_STR}/calendar", tags=["Calendar"])
-api_router.include_router(reports_router, prefix=f"{settings.API_V1_STR}/reports", tags=["Reports"])
-api_router.include_router(references_router, prefix=f"{settings.API_V1_STR}/references", tags=["References"])
+api_router.include_router(reports_router, prefix=f"{settings.API_V1_STR}/reports", tags=["Reports"], dependencies=[Depends(require_permission("reports.read"))])
+api_router.include_router(references_router, prefix=f"{settings.API_V1_STR}/references", tags=["References"], dependencies=[Depends(require_permission("references.read"))])
 api_router.include_router(ai_chatbot_router, prefix=f"{settings.API_V1_STR}/ai", tags=["AI"])
 api_router.include_router(integrations_router, prefix=f"{settings.API_V1_STR}/integrations", tags=["Integrations"])
 api_router.include_router(monitoring_router, prefix="/monitoring", tags=["Monitoring"])
 api_router.include_router(releases_router, prefix=f"{settings.API_V1_STR}/releases", tags=["Releases"])
 api_router.include_router(support_router, prefix=f"{settings.API_V1_STR}/support", tags=["Support"])
-api_router.include_router(srm_router, prefix=f"{settings.API_V1_STR}/srm", tags=["SRM"])
-api_router.include_router(production_router, prefix=f"{settings.API_V1_STR}/production", tags=["Production"])
+api_router.include_router(srm_router, prefix=f"{settings.API_V1_STR}/srm", tags=["SRM"], dependencies=[Depends(require_permission("srm.read"))])
+api_router.include_router(production_router, prefix=f"{settings.API_V1_STR}/production", tags=["Production"], dependencies=[Depends(require_permission("production.read"))])
 api_router.include_router(employees_router, prefix=f"{settings.API_V1_STR}/employees", tags=["Employees"])
