@@ -24,25 +24,37 @@ import Breadcrumbs from '@/components/Breadcrumbs';
 import NotificationBell from '@/features/notifications/components/NotificationBell';
 import GlobalSearch from '@/components/GlobalSearch';
 import { useGlobalSearchStore } from '@/stores/globalSearchStore';
-import type { UserRole } from '@/features/auth/store/authStore';
 
 /* ── Role-based nav config ── */
+// Доступ к пунктам меню определяется правами RBAC (docs/RBAC.md).
+// perm — требуемое право; roles — запасной вариант, если права ещё не загружены.
 const ALL_NAV_ITEMS = [
-  { to: '/dashboard', label: 'Панель аналитики', shortLabel: 'Аналитика', iconOnly: false, icon: <BarChart3 size={16} />, color: '#3B82F6', bgActive: 'rgba(59, 130, 246, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'site_manager', 'engineer', 'norm_controller', 'admin'] },
-  { to: '/portfolio', label: 'Портфель заказов', shortLabel: 'Портфель', iconOnly: false, icon: <Briefcase size={16} />, color: '#7C3AED', bgActive: 'rgba(124, 58, 237, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
-  { to: '/documents', label: 'Документация', shortLabel: 'Документы', iconOnly: false, icon: <FileText size={16} />, color: '#4F7A4C', bgActive: 'rgba(79, 122, 76, 0.15)', roles: ['department_head', 'gip', 'site_manager', 'engineer', 'norm_controller', 'manager', 'admin'] },
-  { to: '/my-tasks', label: 'Мои задачи', shortLabel: 'Задачи', iconOnly: false, icon: <GitBranch size={16} />, color: '#0EA5E9', bgActive: 'rgba(14, 165, 233, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'site_manager', 'engineer', 'norm_controller', 'manager', 'admin'] },
-  { to: '/production', label: 'Производственный контроль', shortLabel: 'Пр-во', iconOnly: false, icon: <Factory size={16} />, color: '#F59E0B', bgActive: 'rgba(245, 158, 11, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
-  { to: '/archive', label: 'Архив', shortLabel: 'Архив', iconOnly: false, icon: <Archive size={16} />, color: '#6B7280', bgActive: 'rgba(107, 114, 128, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'site_manager', 'engineer', 'norm_controller', 'manager', 'admin'] },
-  { to: '/admin', label: 'Администрирование', shortLabel: 'Админ', iconOnly: false, icon: <Shield size={16} />, color: '#FF6B6B', bgActive: 'rgba(255, 107, 107, 0.15)', roles: ['admin', 'product_owner', 'system_admin', 'tech_support', 'content_editor'] },
-  { to: '/references?tab=contacts', label: 'Справочники', shortLabel: 'Справочн.', iconOnly: false, icon: <BookOpen size={16} />, color: '#14B8A6', bgActive: 'rgba(20, 184, 166, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
-  { to: '/reports', label: 'Отчёты', shortLabel: 'Отчёты', iconOnly: false, icon: <FileText size={16} />, color: '#EC4899', bgActive: 'rgba(236, 72, 153, 0.15)', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
+  { to: '/dashboard', label: 'Панель аналитики', shortLabel: 'Аналитика', iconOnly: false, icon: <BarChart3 size={16} />, color: '#3B82F6', bgActive: 'rgba(59, 130, 246, 0.15)', perm: 'dashboard.read', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'site_manager', 'engineer', 'norm_controller', 'admin'] },
+  { to: '/portfolio', label: 'Портфель заказов', shortLabel: 'Портфель', iconOnly: false, icon: <Briefcase size={16} />, color: '#7C3AED', bgActive: 'rgba(124, 58, 237, 0.15)', perm: 'tenders.read', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
+  { to: '/documents', label: 'Документация', shortLabel: 'Документы', iconOnly: false, icon: <FileText size={16} />, color: '#4F7A4C', bgActive: 'rgba(79, 122, 76, 0.15)', perm: 'documents.read', roles: ['department_head', 'gip', 'site_manager', 'engineer', 'norm_controller', 'manager', 'admin'] },
+  { to: '/my-tasks', label: 'Мои задачи', shortLabel: 'Задачи', iconOnly: false, icon: <GitBranch size={16} />, color: '#0EA5E9', bgActive: 'rgba(14, 165, 233, 0.15)', perm: 'tasks.read', roles: ['director', 'deputy_director', 'department_head', 'gip', 'site_manager', 'engineer', 'norm_controller', 'manager', 'admin'] },
+  { to: '/production', label: 'Производственный контроль', shortLabel: 'Пр-во', iconOnly: false, icon: <Factory size={16} />, color: '#F59E0B', bgActive: 'rgba(245, 158, 11, 0.15)', perm: 'production.read', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
+  { to: '/archive', label: 'Архив', shortLabel: 'Архив', iconOnly: false, icon: <Archive size={16} />, color: '#6B7280', bgActive: 'rgba(107, 114, 128, 0.15)', perm: 'archive.read', roles: ['director', 'deputy_director', 'department_head', 'gip', 'site_manager', 'engineer', 'norm_controller', 'manager', 'admin'] },
+  { to: '/admin', label: 'Администрирование', shortLabel: 'Админ', iconOnly: false, icon: <Shield size={16} />, color: '#FF6B6B', bgActive: 'rgba(255, 107, 107, 0.15)', perm: null, roles: ['admin', 'product_owner', 'system_admin', 'tech_support', 'content_editor'] },
+  { to: '/references?tab=contacts', label: 'Справочники', shortLabel: 'Справочн.', iconOnly: false, icon: <BookOpen size={16} />, color: '#14B8A6', bgActive: 'rgba(20, 184, 166, 0.15)', perm: 'references.read', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
+  { to: '/reports', label: 'Отчёты', shortLabel: 'Отчёты', iconOnly: false, icon: <FileText size={16} />, color: '#EC4899', bgActive: 'rgba(236, 72, 153, 0.15)', perm: 'reports.read', roles: ['director', 'deputy_director', 'department_head', 'gip', 'manager', 'engineer', 'site_manager', 'norm_controller', 'admin'] },
 ];
 
-function getNavItems(role: UserRole | undefined) {
-  if (!role) return ALL_NAV_ITEMS.filter(item => item.to === '/dashboard');
-  if (role === 'admin') return ALL_NAV_ITEMS;
-  return ALL_NAV_ITEMS.filter(item => item.roles.includes(role));
+function hasPerm(user: { permissions?: string[] } | null | undefined, perm: string | null): boolean {
+  if (!perm) return false; // только через roles (например, админка)
+  const perms = user?.permissions;
+  if (!perms) return false; // права не загружены — решает roles-фолбэк
+  return perms.includes('*') || perms.includes(perm);
+}
+
+function getNavItems(user: { role?: string; permissions?: string[] } | null | undefined) {
+  if (!user?.role) return ALL_NAV_ITEMS.filter(item => item.to === '/dashboard');
+  if (user.role === 'admin') return ALL_NAV_ITEMS;
+  const role = user.role; // фиксируем роль до замыкания, чтобы TS сузил тип
+  return ALL_NAV_ITEMS.filter(item => {
+    if (item.perm) return hasPerm(user, item.perm);
+    return item.roles.includes(role);
+  });
 }
 
 
@@ -58,7 +70,7 @@ export default function Layout() {
   const setActiveTab = useGlobalSearchStore((state) => state.setActiveTab);
   const userMenuRef = useRef<HTMLDivElement | null>(null);
   const { user } = useAuth();
-  const navItems = getNavItems(user?.role);
+  const navItems = getNavItems(user);
 
   /* ── Режим работы (demo/prod) ── */
   const meta = useAppModeStore((s) => s.meta);

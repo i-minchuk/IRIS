@@ -186,3 +186,46 @@ def require_permission(permission: str):
         return current_user
 
     return checker
+
+
+# ---------- Финансовые поля (скрытие для ролей без finance.read) ----------
+
+FINANCE_FIELD_NAMES: FrozenSet[str] = frozenset({
+    "nmc",            # тендеры: НМЦ
+    "our_price",      # тендеры: наша цена
+    "margin_pct",     # тендеры: маржа
+    "calculated_cost",# тендеры: расчётная стоимость
+    "active_sum",     # сводка портфеля
+    "won_sum",        # сводка портфеля
+    "sum_nmc",        # воронка по стадиям
+    "amount",         # SRM: суммы заявок/заказов/контрактов/счетов
+})
+
+
+def strip_finance_fields(payload):
+    """Рекурсивно обнуляет финансовые поля в dict/list."""
+    if isinstance(payload, dict):
+        return {
+            key: (None if key in FINANCE_FIELD_NAMES else strip_finance_fields(value))
+            for key, value in payload.items()
+        }
+    if isinstance(payload, list):
+        return [strip_finance_fields(item) for item in payload]
+    return payload
+
+
+def redact_finance(payload, response_model, user: User):
+    """Скрывает финансовые поля в ответе для ролей без finance.read.
+
+    Принимает объект или список объектов (ORM/модель), возвращает
+    экземпляр(ы) response_model с обнулёнными финансовыми полями.
+    """
+    if has_permission(user, "finance.read"):
+        return payload
+    single = not isinstance(payload, list)
+    items = [payload] if single else list(payload)
+    redacted = [
+        response_model(**strip_finance_fields(response_model.model_validate(item).model_dump()))
+        for item in items
+    ]
+    return redacted[0] if single else redacted

@@ -138,6 +138,8 @@ class PurchaseRequestResponse(PurchaseRequestBase):
     """Purchase request response schema."""
     id: int
     created_at: datetime
+    # Скрывается (None) для ролей без finance.read
+    amount: Optional[float] = None
 
 
 # ---------- Contract ----------
@@ -187,6 +189,8 @@ class ContractUpdate(BaseModel):
 class ContractResponse(ContractBase):
     """Contract response schema."""
     id: int
+    # Скрывается (None) для ролей без finance.read
+    amount: Optional[float] = None
 
 
 # ---------- PurchaseOrder ----------
@@ -230,6 +234,8 @@ class PurchaseOrderUpdate(BaseModel):
 class PurchaseOrderResponse(PurchaseOrderBase):
     """Purchase order response schema."""
     id: int
+    # Скрывается (None) для ролей без finance.read
+    amount: Optional[float] = None
 
 
 # ---------- Invoice ----------
@@ -273,3 +279,5 @@ class InvoiceUpdate(BaseModel):
 class InvoiceResponse(InvoiceBase):
     """Invoice response schema."""
     id: int
+    # Скрывается (None) для ролей без finance.read
+    amount: Optional[float] = None

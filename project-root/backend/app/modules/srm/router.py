@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.core.config import settings
+from app.core.permissions import redact_finance
 from app.db.session import get_db
 from app.modules.auth.deps import get_current_active_user
 from app.modules.auth.models import User
@@ -201,7 +202,7 @@ async def list_purchase_requests(
     if project_id is not None:
         query = query.where(PurchaseRequest.project_id == project_id)
     result = await db.execute(query.order_by(PurchaseRequest.created_at.desc()))
-    return result.scalars().all()
+    return redact_finance(result.scalars().all(), PurchaseRequestResponse, current_user)
 
 
 @router.get("/purchase-requests/{request_id}", response_model=PurchaseRequestResponse)
@@ -210,7 +211,8 @@ async def get_purchase_request(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    return await _get_or_404(db, PurchaseRequest, request_id, "Purchase request not found")
+    item = await _get_or_404(db, PurchaseRequest, request_id, "Purchase request not found")
+    return redact_finance(item, PurchaseRequestResponse, current_user)
 
 
 @router.post(
@@ -323,7 +325,7 @@ async def list_contracts(
     if supplier_id is not None:
         query = query.where(Contract.supplier_id == supplier_id)
     result = await db.execute(query.order_by(Contract.created_at.desc()))
-    return result.scalars().all()
+    return redact_finance(result.scalars().all(), ContractResponse, current_user)
 
 
 @router.get("/contracts/{contract_id}", response_model=ContractResponse)
@@ -332,7 +334,8 @@ async def get_contract(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    return await _get_or_404(db, Contract, contract_id, "Contract not found")
+    item = await _get_or_404(db, Contract, contract_id, "Contract not found")
+    return redact_finance(item, ContractResponse, current_user)
 
 
 @router.post("/contracts", response_model=ContractResponse, status_code=status.HTTP_201_CREATED)
@@ -389,7 +392,7 @@ async def list_orders(
     if contract_id is not None:
         query = query.where(PurchaseOrder.contract_id == contract_id)
     result = await db.execute(query.order_by(PurchaseOrder.created_at.desc()))
-    return result.scalars().all()
+    return redact_finance(result.scalars().all(), PurchaseOrderResponse, current_user)
 
 
 @router.get("/orders/{order_id}", response_model=PurchaseOrderResponse)
@@ -398,7 +401,8 @@ async def get_order(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    return await _get_or_404(db, PurchaseOrder, order_id, "Order not found")
+    item = await _get_or_404(db, PurchaseOrder, order_id, "Order not found")
+    return redact_finance(item, PurchaseOrderResponse, current_user)
 
 
 @router.post("/orders", response_model=PurchaseOrderResponse, status_code=status.HTTP_201_CREATED)
@@ -455,7 +459,7 @@ async def list_invoices(
     if contract_id is not None:
         query = query.where(Invoice.contract_id == contract_id)
     result = await db.execute(query.order_by(Invoice.created_at.desc()))
-    return result.scalars().all()
+    return redact_finance(result.scalars().all(), InvoiceResponse, current_user)
 
 
 @router.get("/invoices/{invoice_id}", response_model=InvoiceResponse)
@@ -464,7 +468,8 @@ async def get_invoice(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    return await _get_or_404(db, Invoice, invoice_id, "Invoice not found")
+    item = await _get_or_404(db, Invoice, invoice_id, "Invoice not found")
+    return redact_finance(item, InvoiceResponse, current_user)
 
 
 @router.post("/invoices", response_model=InvoiceResponse, status_code=status.HTTP_201_CREATED)

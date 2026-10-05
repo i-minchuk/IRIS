@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, extract
 
 from app.core.config import settings
+from app.core.permissions import redact_finance
 from app.db.session import get_db
 from app.modules.auth.deps import get_current_active_user
 from app.modules.auth.models import User
@@ -144,6 +145,8 @@ async def list_tenders(
         for t in tenders
     ]
 
+    items = redact_finance(items, TenderListItem, current_user)
+
     pages = (total + pagination.page_size - 1) // pagination.page_size
     return PaginatedTenderList(
         items=items,
@@ -243,14 +246,20 @@ async def portfolio_summary(
             "sum_nmc": sum(t.nmc or 0 for t in stage_tenders),
         }
 
+    from app.core.permissions import has_permission as _has_perm
+
+    show_finance = _has_perm(current_user, "finance.read")
     return PortfolioSummary(
         active_count=len(active),
-        active_sum=round(total_nmc, 2),
+        active_sum=round(total_nmc, 2) if show_finance else 0,
         won_count=len(won),
-        won_sum=round(total_won, 2),
+        won_sum=round(total_won, 2) if show_finance else 0,
         win_rate=win_rate,
         auction_now=len(auction_now),
-        pipeline=pipeline,
+        pipeline=pipeline if show_finance else {
+            stage: {"count": data["count"], "sum_nmc": 0}
+            for stage, data in pipeline.items()
+        },
     )
 
 
@@ -517,7 +526,7 @@ async def get_tender(
     tender = result.scalar_one_or_none()
     if not tender:
         raise HTTPException(status_code=404, detail="Tender not found")
-    return _tender_detail(tender)
+    return redact_finance(_tender_detail(tender), TenderDetail, current_user)
 
 
 @router.patch("/{tender_id}", response_model=TenderDetail)

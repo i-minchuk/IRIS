@@ -14,6 +14,8 @@ export interface User {
   role: UserRole;
   is_active: boolean;
   totp_enabled?: boolean;
+  /** Эффективные права доступа (RBAC, /auth/me). '*' = полный доступ. */
+  permissions?: string[];
 }
 
 interface AuthContextType {
@@ -39,6 +41,9 @@ function normalizeUser(raw: unknown): User {
     role: ((r?.role as string | undefined) ?? 'engineer') as UserRole,
     is_active: Boolean(r?.is_active ?? true),
     totp_enabled: Boolean(r?.totp_enabled ?? false),
+    permissions: Array.isArray(r?.permissions)
+      ? (r.permissions as string[])
+      : undefined,
   };
 }
 

@@ -47,6 +47,13 @@ class User(Base):
     def phone(self, value):
         self._phone = encrypt(value) if value else None
 
+    @property
+    def permissions(self) -> list[str]:
+        """Эффективные права доступа (матрица RBAC, docs/RBAC.md)."""
+        from app.core.permissions import get_permissions
+
+        return sorted(get_permissions(self))
+
 
 class ApiToken(Base):
     __tablename__ = "api_tokens"

@@ -1,5 +1,5 @@
 # app/modules/auth/schemas.py
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import Optional
 from datetime import date, datetime
 
@@ -63,6 +63,7 @@ class UserResponse(UserBase):
     birthdate: Optional[date] = None
     totp_enabled: bool = False
     created_at: datetime
+    permissions: list[str] = Field(default_factory=list)
     model_config = ConfigDict(from_attributes=True)
 
 

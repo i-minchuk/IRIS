@@ -3,8 +3,10 @@ export interface User {
   username: string;
   email: string;
   full_name: string;
-  role: 'admin' | 'manager' | 'engineer' | 'norm_controller';
+  role: string;
   is_active: boolean;
+  /** Эффективные права доступа (RBAC, /auth/me). '*' = полный доступ. */
+  permissions?: string[];
 }
 
 export interface TokenResponse {
