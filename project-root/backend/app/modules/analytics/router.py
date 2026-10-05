@@ -59,58 +59,77 @@ def _parse_period_start(period: str | None) -> datetime | None:
 @router.get("/dashboard", response_model=dict)
 @cache_response(expire_seconds=300)
 async def get_dashboard(
+    period: Optional[str] = Query(None),
     db: AsyncSession = Depends(_get_db),
     current_user: User = Depends(get_current_active_user),
 ):
     """Return manager dashboard: KPIs, project scorecard, team performance."""
 
+    start_date = _parse_period_start(period)
+
     # --- KPIs ---
-    active_projects_result = await db.execute(
-        select(func.count()).where(Project.status.in_(["draft", "in_progress", "active", "planning"]))
+    active_projects_query = select(func.count()).where(
+        Project.status.in_(["draft", "in_progress", "active", "planning"])
     )
+    if start_date is not None:
+        active_projects_query = active_projects_query.where(Project.created_at >= start_date)
+    active_projects_result = await db.execute(active_projects_query)
     active_projects = active_projects_result.scalar() or 0
 
-    total_docs_result = await db.execute(select(func.count()).select_from(Document))
+    total_docs_query = select(func.count()).select_from(Document)
+    if start_date is not None:
+        total_docs_query = total_docs_query.where(Document.created_at >= start_date)
+    total_docs_result = await db.execute(total_docs_query)
     total_docs = total_docs_result.scalar() or 0
 
-    approved_docs_result = await db.execute(
-        select(func.count()).where(Document.status == "approved")
-    )
+    approved_docs_query = select(func.count()).where(Document.status == "approved")
+    if start_date is not None:
+        approved_docs_query = approved_docs_query.where(Document.created_at >= start_date)
+    approved_docs_result = await db.execute(approved_docs_query)
     approved_docs = approved_docs_result.scalar() or 0
 
-    open_remarks_result = await db.execute(
-        select(func.count()).where(~Remark.status.in_(["closed", "resolved"]))
-    )
+    open_remarks_query = select(func.count()).where(~Remark.status.in_(["closed", "resolved"]))
+    if start_date is not None:
+        open_remarks_query = open_remarks_query.where(Remark.created_at >= start_date)
+    open_remarks_result = await db.execute(open_remarks_query)
     open_remarks = open_remarks_result.scalar() or 0
 
-    critical_remarks_result = await db.execute(
-        select(func.count()).where(
-            and_(Remark.priority == "critical", ~Remark.status.in_(["closed", "resolved"]))
-        )
+    critical_remarks_query = select(func.count()).where(
+        and_(Remark.priority == "critical", ~Remark.status.in_(["closed", "resolved"]))
     )
+    if start_date is not None:
+        critical_remarks_query = critical_remarks_query.where(Remark.created_at >= start_date)
+    critical_remarks_result = await db.execute(critical_remarks_query)
     critical_remarks = critical_remarks_result.scalar() or 0
 
     # Efficiency from time tracking
-    efficiency_result = await db.execute(
-        select(func.avg(TimeSession.efficiency_score)).where(TimeSession.efficiency_score.isnot(None))
+    efficiency_query = select(func.avg(TimeSession.efficiency_score)).where(
+        TimeSession.efficiency_score.isnot(None)
     )
+    if start_date is not None:
+        efficiency_query = efficiency_query.where(TimeSession.created_at >= start_date)
+    efficiency_result = await db.execute(efficiency_query)
     avg_efficiency = efficiency_result.scalar() or 0
 
     # --- Project Scorecard ---
     # Single query for all project document stats
     from sqlalchemy import literal_column
-    
-    doc_stats_result = await db.execute(
+
+    doc_stats_query = (
         select(
             Document.project_id,
             func.count().label("total"),
             func.sum(case((Document.status == "approved", 1), else_=0)).label("approved"),
-        ).group_by(Document.project_id)
+        )
+        .group_by(Document.project_id)
     )
+    if start_date is not None:
+        doc_stats_query = doc_stats_query.where(Document.created_at >= start_date)
+    doc_stats_result = await db.execute(doc_stats_query)
     doc_stats_by_project = {row.project_id: row for row in doc_stats_result.mappings().all()}
-    
+
     # Single query for all project remark counts
-    rem_stats_result = await db.execute(
+    rem_stats_query = (
         select(
             Document.project_id,
             func.count().label("open_remarks"),
@@ -120,8 +139,11 @@ async def get_dashboard(
         .where(~Remark.status.in_(["closed", "resolved"]))
         .group_by(Document.project_id)
     )
+    if start_date is not None:
+        rem_stats_query = rem_stats_query.where(Remark.created_at >= start_date)
+    rem_stats_result = await db.execute(rem_stats_query)
     rem_stats_by_project = {row.project_id: row.open_remarks for row in rem_stats_result.mappings().all()}
-    
+
     projects_result = await db.execute(select(Project))
     projects = projects_result.scalars().all()
 
@@ -155,34 +177,43 @@ async def get_dashboard(
 
     # --- Team Performance ---
     # Batch queries for team stats
-    doc_counts_result = await db.execute(
-        select(Document.author_id, func.count().label("count"))
-        .group_by(Document.author_id)
+    doc_counts_query = select(Document.author_id, func.count().label("count")).group_by(
+        Document.author_id
     )
+    if start_date is not None:
+        doc_counts_query = doc_counts_query.where(Document.created_at >= start_date)
+    doc_counts_result = await db.execute(doc_counts_query)
     doc_counts = {row.author_id: row.count for row in doc_counts_result.all()}
-    
-    rem_counts_result = await db.execute(
+
+    rem_counts_query = (
         select(Document.author_id, func.count().label("count"))
         .select_from(Remark)
         .join(Document, Remark.document_id == Document.id)
         .where(~Remark.status.in_(["closed", "resolved"]))
         .group_by(Document.author_id)
     )
+    if start_date is not None:
+        rem_counts_query = rem_counts_query.where(Remark.created_at >= start_date)
+    rem_counts_result = await db.execute(rem_counts_query)
     rem_counts = {row.author_id: row.count for row in rem_counts_result.all()}
-    
-    session_stats_result = await db.execute(
+
+    session_stats_query = (
         select(
             TimeSession.user_id,
             func.count().label("count"),
             func.coalesce(func.avg(TimeSession.efficiency_score), 0).label("eff"),
             func.coalesce(func.sum(TimeSession.active_time), 0).label("active"),
-        ).group_by(TimeSession.user_id)
+        )
+        .group_by(TimeSession.user_id)
     )
+    if start_date is not None:
+        session_stats_query = session_stats_query.where(TimeSession.created_at >= start_date)
+    session_stats_result = await db.execute(session_stats_query)
     session_stats = {
-        row.user_id: row 
+        row.user_id: row
         for row in session_stats_result.mappings().all()
     }
-    
+
     users_result = await db.execute(select(User))
     users = users_result.scalars().all()
 

@@ -215,7 +215,7 @@ export default function Dashboard() {
     }
 
     Promise.allSettled([
-      analyticsApi.getDashboard(),
+      analyticsApi.getDashboard(period),
       analyticsApi.getAlerts(),
       analyticsApi.getTenderPipeline(period),
       analyticsApi.getSparklines(),

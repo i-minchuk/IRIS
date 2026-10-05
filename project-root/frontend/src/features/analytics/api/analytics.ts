@@ -261,7 +261,8 @@ export interface DepartmentLoadData {
 }
 
 export const analyticsApi = {
-  getDashboard: () => client.get<DashboardData>('/analytics/dashboard'),
+  getDashboard: (period?: AnalyticsPeriod) =>
+    client.get<DashboardData>('/analytics/dashboard', { params: period ? { period } : undefined }),
   getKpiTiles: () => client.get<KpiTilesResponse>('/analytics/kpi'),
   getPortfolio: (period?: AnalyticsPeriod) =>
     client.get<PortfolioChartData>('/analytics/portfolio', { params: period ? { period } : undefined }),
