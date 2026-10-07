@@ -1,6 +1,7 @@
 """Documents, revisions, remarks and approval workflow API router."""
 
 import os
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Query, UploadFile, File
 from fastapi.responses import FileResponse
@@ -111,6 +112,8 @@ async def list_documents(
             "deleted_at": d.deleted_at.isoformat() if d.deleted_at else None,
             "delete_reason": d.delete_reason,
             "created_at": d.created_at.isoformat() if d.created_at else None,
+            "planned_end": d.planned_end.isoformat() if d.planned_end else None,
+            "planned_ready": d.planned_ready.isoformat() if d.planned_ready else None,
             "has_file": d.id in has_file_ids,
         }
         for d in docs
@@ -183,6 +186,60 @@ async def run_document_deadline_check(
     if not is_admin(current_user):
         raise HTTPException(status_code=403, detail="Требуются права администратора")
     return await service.check_document_deadlines()
+
+
+class DelegationCreateInput(BaseModel):
+    delegate_id: int
+    days: int = 7
+    user_id: Optional[int] = None  # только админ может указать чужой
+
+
+@router.post("/delegations", response_model=dict, status_code=201)
+async def create_delegation(
+    data: DelegationCreateInput,
+    current_user: User = Depends(get_current_active_user),
+    service: DocumentService = Depends(get_document_service),
+):
+    """Временно делегировать свои согласования документов другому пользователю.
+
+    Администратор может делегировать согласования любого пользователя
+    (поле user_id). Авто-возврат — по истечении срока.
+    """
+    return await service.create_delegation(
+        user_id=data.user_id or current_user.id,
+        delegate_id=data.delegate_id,
+        days=data.days,
+        actor_id=current_user.id,
+    )
+
+
+@router.get("/delegations/mine", response_model=dict)
+async def list_my_delegations(
+    current_user: User = Depends(get_current_active_user),
+    service: DocumentService = Depends(get_document_service),
+):
+    """Активные делегирования: свои (я делегировал) и входящие (мне)."""
+    return await service.list_my_delegations(current_user.id)
+
+
+@router.delete("/delegations/{delegation_id}", response_model=dict)
+async def cancel_delegation(
+    delegation_id: int,
+    current_user: User = Depends(get_current_active_user),
+    service: DocumentService = Depends(get_document_service),
+):
+    """Отменить делегирование (владелец, делегат или админ)."""
+    return await service.cancel_delegation(delegation_id, current_user.id)
+
+
+@router.post("/{document_id}/remind", response_model=dict)
+async def remind_document_approvers(
+    document_id: int,
+    current_user: User = Depends(_docs_write),
+    service: DocumentService = Depends(get_document_service),
+):
+    """Напомнить вручную несогласовавшим согласующим (и их делегатам)."""
+    return await service.remind_approvers(document_id, current_user.id)
 
 
 @router.patch("/{document_id}", response_model=dict)

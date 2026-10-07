@@ -148,3 +148,34 @@ def process_file(self, file_path: str, operation: str, options: dict | None = No
         "operation": operation,
         "reason": f"unknown operation '{operation}'",
     }
+
+
+@celery_app.task(bind=True, max_retries=2)
+def check_document_deadlines(self):
+    """Проверка дедлайнов согласования документов (напоминания + эскалации).
+
+    Дублирует фоновый asyncio-цикл в app.main на случай перезапусков сервера;
+    защита от двойных уведомлений — флаги в content документа, идемпотентно.
+    """
+    import asyncio
+    import logging
+
+    logger = logging.getLogger(__name__)
+
+    async def _run() -> dict:
+        from app.db.session import AsyncSessionLocal
+        from app.modules.documents.service import DocumentService
+
+        async with AsyncSessionLocal() as session:
+            service = DocumentService(session)
+            return await service.check_document_deadlines()
+
+    try:
+        result = asyncio.run(_run())
+        if result.get("reminded") or result.get("escalated") or result.get(
+            "escalated_level2"
+        ):
+            logger.info("Celery deadline check: %s", result)
+        return result
+    except Exception as exc:
+        raise self.retry(exc=exc, countdown=300)

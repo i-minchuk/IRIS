@@ -1,6 +1,6 @@
 """Document models - aligned with migration 6bb361a0f4ae."""
 from __future__ import annotations
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, TYPE_CHECKING
 
 from sqlalchemy import (
@@ -322,3 +322,42 @@ class ActionTaskStatus(Base):
         default=datetime.utcnow,
         onupdate=datetime.utcnow,
     )
+
+
+class DocumentDelegation(Base):
+    """Временное делегирование согласований: user_id → delegate_id до expires_at.
+
+    Пока делегирование активно, делегат может согласовывать документы
+    от имени делегирующего и получает напоминания по его документам.
+    Авто-возврат — за счёт expires_at: после истечения делегат
+    автоматически перестаёт быть согласующим.
+    """
+
+    __tablename__ = "document_delegations"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    delegate_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+    )
+    created_by_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+    user: Mapped["User"] = relationship(foreign_keys=[user_id])
+    delegate: Mapped["User"] = relationship(foreign_keys=[delegate_id])

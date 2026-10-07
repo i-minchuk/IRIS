@@ -7,7 +7,8 @@ from fastapi import HTTPException, status
 
 from app.modules.documents.repository import (
     DocumentRepository, RevisionRepository,
-    ApprovalWorkflowRepository, ActionTaskStatusRepository
+    ApprovalWorkflowRepository, ActionTaskStatusRepository,
+    DelegationRepository,
 )
 from app.modules.documents.variable_engine import render_document, cascade_update
 from app.modules.gamification.service import GamificationService
@@ -20,6 +21,50 @@ import io
 
 logger = logging.getLogger(__name__)
 
+# Рабочие часы для дедлайнов: пн–пт, 09:00–19:00 (Europe/Moscow).
+_BUSINESS_TZ_NAME = "Europe/Moscow"
+_BUSINESS_DAY_START_HOUR = 9
+_BUSINESS_DAY_END_HOUR = 19
+
+
+def _to_business_tz(dt: datetime) -> "datetime":
+    from zoneinfo import ZoneInfo
+
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(ZoneInfo(_BUSINESS_TZ_NAME))
+
+
+def business_hours_between(start: datetime, end: datetime) -> float:
+    """Рабочие часы (пн–пт 09:00–19:00 МСК) между start и end.
+
+    Положительно, если end позже start. Округление вверх до 0.1 ч.
+    """
+    if end <= start:
+        return 0.0
+    current = _to_business_tz(start)
+    finish = _to_business_tz(end)
+    total = 0.0
+    day = current.date()
+    from datetime import time as dtime, timedelta as dt_delta
+
+    while True:
+        day_start = datetime.combine(
+            day, dtime(_BUSINESS_DAY_START_HOUR), tzinfo=current.tzinfo
+        )
+        day_end = datetime.combine(
+            day, dtime(_BUSINESS_DAY_END_HOUR), tzinfo=current.tzinfo
+        )
+        if day_start.weekday() < 5:  # 0=пн … 4=пт
+            window_start = max(current, day_start)
+            window_end = min(finish, day_end)
+            if window_end > window_start:
+                total += (window_end - window_start).total_seconds() / 3600
+        if day_end >= finish:
+            break
+        day = day + dt_delta(days=1)
+    return round(total, 1)
+
 
 class DocumentService:
     """Service for document business logic."""
@@ -31,6 +76,7 @@ class DocumentService:
         self.workflow_repo = ApprovalWorkflowRepository(db)
         self.action_task_repo = ActionTaskStatusRepository(db)
         self.notif_repo = NotificationRepository(db)
+        self.delegation_repo = DelegationRepository(db)
     
     async def list_documents(
         self,
@@ -244,6 +290,38 @@ class DocumentService:
         # Уведомляем только добавленных исполнителей (diff старого и нового списков).
         if "assignee_ids" in data:
             new_assignee_ids = set(doc.assignee_ids or []) - old_assignee_ids
+            removed_assignee_ids = old_assignee_ids - set(doc.assignee_ids or [])
+            if removed_assignee_ids or new_assignee_ids:
+                # История замен согласующих — кто, когда и кого изменил.
+                try:
+                    from sqlalchemy import select as _select
+                    from app.modules.auth.models import User as _User
+
+                    current_content = (
+                        dict(doc.content) if isinstance(doc.content, dict) else {}
+                    )
+                    history = list(current_content.get("assignee_history") or [])
+                    changed_ids = sorted(new_assignee_ids | removed_assignee_ids)
+                    id_filter = list(set(changed_ids) | ({actor_id} if actor_id else set()))
+                    rows = (
+                        await self.db.execute(
+                            _select(_User).where(_User.id.in_(id_filter))
+                        )
+                    ).scalars().all()
+                    names = {u.id: (u.full_name or u.email or f"№{u.id}") for u in rows}
+                    history.append({
+                        "at": datetime.now(timezone.utc).isoformat(),
+                        "actor_id": actor_id,
+                        "actor_name": names.get(actor_id) if actor_id else None,
+                        "added": [names.get(uid, f"№{uid}") for uid in sorted(new_assignee_ids)],
+                        "removed": [
+                            names.get(uid, f"№{uid}") for uid in sorted(removed_assignee_ids)
+                        ],
+                    })
+                    current_content["assignee_history"] = history[-20:]
+                    await self.doc_repo.update(doc, {"content": current_content})
+                except Exception as exc:
+                    logger.warning("Failed to record assignee history for doc %s: %s", doc.id, exc)
             if new_assignee_ids:
                 await self._notify_assignees(doc, list(new_assignee_ids), actor_id)
         
@@ -729,26 +807,61 @@ class DocumentService:
 
         content = dict(doc.content) if isinstance(doc.content, dict) else {}
         approvals = list(content.get("approvals") or [])
-        if any(a.get("user_id") == user_id for a in approvals):
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Вы уже согласовали этот документ",
-            )
 
         approvers = list(doc.assignee_ids or [])
         if not approvers:
             approvers = [user_id]
+
+        # Делегирование: активный делегат может согласовать от имени согласующего.
+        now = datetime.now(timezone.utc)
+        on_behalf_of: Optional[int] = None
+        if user_id not in approvers:
+            delegations = await self.delegation_repo.list_active_for_users(
+                approvers, now
+            )
+            match = next(
+                (d for d in delegations if d.delegate_id == user_id), None
+            )
+            if match is None:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Вы не являетесь согласующим по этому документу",
+                )
+            on_behalf_of = match.user_id
+
+        effective_id = on_behalf_of if on_behalf_of is not None else user_id
+        if any(a.get("user_id") == effective_id for a in approvals):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    "Делегирующий уже согласовал этот документ"
+                    if on_behalf_of is not None
+                    else "Вы уже согласовали этот документ"
+                ),
+            )
 
         user = (
             await self.db.execute(select(User).where(User.id == user_id))
         ).scalar_one_or_none()
         user_name = (user.full_name if user else None) or f"Пользователь #{user_id}"
 
-        approvals.append({
-            "user_id": user_id,
-            "user_name": user_name,
-            "approved_at": datetime.now(timezone.utc).isoformat(),
-        })
+        approver_user = None
+        if on_behalf_of is not None:
+            approver_user = await self.db.get(User, on_behalf_of)
+        approver_name = (
+            (approver_user.full_name if approver_user else None)
+            or f"Пользователь #{effective_id}"
+        )
+
+        approval_entry: Dict[str, Any] = {
+            "user_id": effective_id,
+            "user_name": approver_name,
+            "approved_at": now.isoformat(),
+        }
+        if on_behalf_of is not None:
+            approval_entry["approved_by"] = user_id
+            approval_entry["approved_by_name"] = user_name
+        approvals.append(approval_entry)
         content["approvals"] = approvals
 
         approved_ids = {a["user_id"] for a in approvals}
@@ -756,6 +869,43 @@ class DocumentService:
 
         new_status = "approved" if not pending_ids else "in_review"
         doc = await self.doc_repo.update(doc, {"status": new_status, "content": content})
+
+        # Метрики срывов сроков по цепочке документов: событие согласующему
+        # (в срок / с опозданием) + длительность согласования в meta.hours.
+        try:
+            planned = doc.planned_end or doc.planned_ready
+            chain_start = doc.created_at
+            if chain_start is not None and chain_start.tzinfo is None:
+                chain_start = chain_start.replace(tzinfo=timezone.utc)
+            hours = (
+                round((now - chain_start).total_seconds() / 3600, 1)
+                if chain_start is not None
+                else None
+            )
+            on_time = bool(planned and now <= planned)
+            gamification = GamificationService(self.db)
+            await gamification.award_event(
+                user_id=effective_id,
+                event_type=(
+                    "document_approval_on_time" if on_time
+                    else "document_approval_late"
+                ),
+                points=0,
+                xp=5 if on_time else 0,
+                ref_doc_id=doc.id,
+                project_id=doc.project_id,
+                comment=(
+                    f"Document approval {'on time' if on_time else 'late'}"
+                    f" (doc {doc.number})"
+                ),
+                meta={
+                    "hours": hours,
+                    "on_behalf_of": on_behalf_of,
+                    "planned": planned.isoformat() if planned else None,
+                },
+            )
+        except Exception as exc:
+            logger.warning("Failed to award approval metric for doc %s: %s", doc.id, exc)
 
         pending = []
         if pending_ids:
@@ -770,11 +920,17 @@ class DocumentService:
 
         try:
             if pending_ids:
+                intro = (
+                    f"{user_name} согласовал(а) от имени {approver_name}, "
+                    "документ передан дальше по цепочке."
+                    if on_behalf_of is not None
+                    else f"{user_name} согласовал(а), документ передан дальше по цепочке."
+                )
                 await self._notify_pending_approvers(
                     doc,
                     pending_ids,
                     user_id,
-                    f"{user_name} согласовал(а), документ передан дальше по цепочке.",
+                    intro,
                 )
             else:
                 if doc.author_id and doc.author_id != user_id:
@@ -816,6 +972,11 @@ class DocumentService:
         feed: List[Dict[str, Any]] = []
         for doc in result.scalars().all():
             content = doc.content if isinstance(doc.content, dict) else {}
+            deadline = doc.planned_end or doc.planned_ready
+            approved_ids = {a.get("user_id") for a in content.get("approvals") or []}
+            pending = [
+                uid for uid in (doc.assignee_ids or []) if uid not in approved_ids
+            ]
             for a in content.get("approvals") or []:
                 feed.append({
                     "document_id": doc.id,
@@ -825,6 +986,8 @@ class DocumentService:
                     "user_name": a.get("user_name"),
                     "approved_at": a.get("approved_at"),
                     "document_status": doc.status,
+                    "deadline": deadline.isoformat() if deadline else None,
+                    "pending_count": len(pending),
                 })
         feed.sort(key=lambda x: x["approved_at"] or "", reverse=True)
         return feed[:limit]
@@ -845,18 +1008,30 @@ class DocumentService:
         await self.action_task_repo.upsert(user_id, task_key, new_status)
         return {"task_key": task_key, "status": new_status}
 
+    async def _delegation_targets(self, pending_ids: List[int]) -> List[int]:
+        """Согласующие плюс их активные делегаты (для уведомлений)."""
+        now = datetime.now(timezone.utc)
+        delegations = await self.delegation_repo.list_active_for_users(
+            list(pending_ids), now
+        )
+        extra = [d.delegate_id for d in delegations if d.delegate_id not in pending_ids]
+        return list(pending_ids) + extra
+
     async def check_document_deadlines(
         self, threshold_hours: int = 24
     ) -> Dict[str, int]:
-        """Напоминание о дедлайне + эскалация руководителю проекта.
+        """Напоминания и эскалации по дедлайнам согласования документов.
 
         Документы в статусе in_review с planned_end/planned_ready:
-        - за threshold_hours до срока (или после его истечения) — согласующим
-          и автору (тип deadline_approaching), один раз — флаг
-          content["deadline_reminded_at"];
-        - если после дедлайна прошло более 2 часов, а документ всё ещё не
-          согласован — руководителю проекта (тип approval_escalation), один
-          раз — флаг content["deadline_escalated_at"].
+        - за threshold_hours календарных часов (или менее 8 рабочих часов)
+          до срока — согласующим, их делегатам и автору (deadline_approaching),
+          один раз — флаг content["deadline_reminded_at"];
+        - при просрочке более чем на 2 рабочих часа (пн–пт 09:00–19:00 МСК) —
+          руководителю проекта (approval_escalation), один раз — флаг
+          content["deadline_escalated_at"];
+        - если сутки после эскалации документ всё ещё не согласован —
+          администраторам (approval_escalation, «2-го уровня»), один раз —
+          флаг content["deadline_escalated_at_level2"].
         Миграция не нужна (content — JSONB).
         """
         from sqlalchemy import or_, select
@@ -864,7 +1039,6 @@ class DocumentService:
         from app.modules.documents.models import Document
         from app.modules.projects.models import Project
 
-        escalation_grace = timedelta(hours=2)
         now = datetime.now(timezone.utc)
         result = await self.db.execute(
             select(Document).where(
@@ -879,13 +1053,15 @@ class DocumentService:
         checked = 0
         reminded = 0
         escalated = 0
+        escalated_level2 = 0
         for doc in result.scalars().all():
             checked += 1
             try:
                 content = dict(doc.content) if isinstance(doc.content, dict) else {}
-                if content.get("deadline_reminded_at") and content.get(
-                    "deadline_escalated_at"
-                ):
+                reminded_at = content.get("deadline_reminded_at")
+                escalated_at = content.get("deadline_escalated_at")
+                escalated2_at = content.get("deadline_escalated_at_level2")
+                if reminded_at and escalated_at and escalated2_at:
                     continue  # по этому документу всё уже отправлено
                 deadline = doc.planned_end or doc.planned_ready
                 if deadline is None:
@@ -893,13 +1069,29 @@ class DocumentService:
                 if deadline.tzinfo is None:
                     deadline = deadline.replace(tzinfo=timezone.utc)
                 remaining = deadline - now
-                need_reminder = not content.get("deadline_reminded_at") and (
+                business_remaining = (
+                    business_hours_between(now, deadline) if remaining > timedelta(0)
+                    else 0.0
+                )
+                business_overdue = (
+                    business_hours_between(deadline, now) if remaining < timedelta(0)
+                    else 0.0
+                )
+                need_reminder = not reminded_at and (
                     remaining <= timedelta(hours=threshold_hours)
+                    or 0 < business_remaining <= 8
                 )
-                need_escalation = not content.get("deadline_escalated_at") and (
-                    -remaining >= escalation_grace
-                )
-                if not (need_reminder or need_escalation):
+                need_escalation = not escalated_at and business_overdue >= 2
+                need_level2 = False
+                if escalated_at and not escalated2_at:
+                    try:
+                        first_sent = datetime.fromisoformat(escalated_at)
+                        if first_sent.tzinfo is None:
+                            first_sent = first_sent.replace(tzinfo=timezone.utc)
+                        need_level2 = (now - first_sent) >= timedelta(hours=24)
+                    except (TypeError, ValueError):
+                        need_level2 = False
+                if not (need_reminder or need_escalation or need_level2):
                     continue
                 approvals = list(content.get("approvals") or [])
                 pending_ids = self._pending_approver_ids(doc, approvals)
@@ -912,16 +1104,23 @@ class DocumentService:
                     if u is not None:
                         names.append(u.full_name or u.email or f"№{uid}")
                 who = ", ".join(names) if names else "—"
+                notify_ids = await self._delegation_targets(pending_ids)
                 changed = False
                 if need_reminder:
                     is_overdue = remaining.total_seconds() < 0
-                    intro = (
-                        "Дедлайн по документу истёк."
-                        if is_overdue
-                        else f"До дедлайна осталось менее {threshold_hours} часов."
-                    )
+                    if is_overdue:
+                        intro = "Дедлайн по документу истёк."
+                    elif remaining <= timedelta(hours=threshold_hours):
+                        intro = (
+                            f"До дедлайна осталось менее {threshold_hours} часов."
+                        )
+                    else:
+                        intro = (
+                            "До дедлайна осталось менее одного рабочего дня "
+                            f"(рабочих часов: {business_remaining})."
+                        )
                     await self._notify_pending_approvers(
-                        doc, pending_ids, actor_id=None, intro=intro,
+                        doc, notify_ids, actor_id=None, intro=intro,
                         notif_type="deadline_approaching",
                     )
                     # Автор получает сводку, если не входит в число согласующих.
@@ -964,7 +1163,6 @@ class DocumentService:
                     if manager_id:
                         manager = await self.db.get(User, manager_id)
                         if manager is not None:
-                            overdue_hours = int(-remaining.total_seconds() // 3600)
                             try:
                                 await self.notif_repo.create_and_notify(
                                     user_id=manager.id,
@@ -974,8 +1172,8 @@ class DocumentService:
                                         f"Документ «{title_doc}» не согласован "
                                         f"в срок (дедлайн "
                                         f"{deadline.strftime('%d.%m.%Y')}, "
-                                        f"просрочка более {overdue_hours} ч). "
-                                        f"Ожидают: {who}. "
+                                        f"просрочка более {business_overdue} "
+                                        f"раб. ч). Ожидают: {who}. "
                                         "Требуется вмешательство руководителя."
                                     ),
                                     user_email=manager.email,
@@ -994,11 +1192,208 @@ class DocumentService:
                             content["deadline_escalated_at"] = now.isoformat()
                             escalated += 1
                             changed = True
+                if need_level2:
+                    admins = (
+                        await self.db.execute(
+                            select(User).where(
+                                or_(
+                                    User.is_superuser.is_(True),
+                                    User.role == "admin",
+                                )
+                            )
+                        )
+                    ).scalars().all()
+                    for admin in admins:
+                        try:
+                            await self.notif_repo.create_and_notify(
+                                user_id=admin.id,
+                                type="approval_escalation",
+                                title=f"Эскалация 2-го уровня: {title_doc}",
+                                message=(
+                                    f"Документ «{title_doc}» не согласован более "
+                                    "суток после эскалации руководителю проекта. "
+                                    f"Дедлайн: {deadline.strftime('%d.%m.%Y')}. "
+                                    f"Ожидают: {who}."
+                                ),
+                                user_email=admin.email,
+                                email_notifications_enabled=admin.email_notifications_enabled,
+                                telegram_chat_id=admin.telegram_chat_id,
+                                meta={
+                                    "link": f"/documents/{doc.id}",
+                                    "document_id": doc.id,
+                                },
+                            )
+                        except Exception as exc:
+                            logger.warning(
+                                "Failed to notify admin %s for doc %s: %s",
+                                admin.id, doc.id, exc,
+                            )
+                    content["deadline_escalated_at_level2"] = now.isoformat()
+                    escalated_level2 += 1
+                    changed = True
                 if changed:
                     await self.doc_repo.update(doc, {"content": content})
             except Exception as exc:  # один документ не должен ломать прогон
                 logger.warning("Deadline check failed for doc %s: %s", doc.id, exc)
-        return {"checked": checked, "reminded": reminded, "escalated": escalated}
+        return {
+            "checked": checked,
+            "reminded": reminded,
+            "escalated": escalated,
+            "escalated_level2": escalated_level2,
+        }
+
+    async def remind_approvers(
+        self, document_id: int, actor_id: int
+    ) -> Dict[str, Any]:
+        """Ручное напоминание несогласовавшим согласующим (и их делегатам)."""
+        from app.modules.auth.models import User
+
+        doc = await self.doc_repo.get_by_id(document_id)
+        if not doc:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
+            )
+        if doc.status != "in_review":
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Документ не находится на согласовании",
+            )
+        content = dict(doc.content) if isinstance(doc.content, dict) else {}
+        approvals = list(content.get("approvals") or [])
+        pending_ids = self._pending_approver_ids(doc, approvals)
+        if not pending_ids:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Некому напоминать — все согласующие уже согласовали",
+            )
+        actor = await self.db.get(User, actor_id)
+        actor_name = (
+            (actor.full_name if actor else None) or f"Пользователь #{actor_id}"
+        )
+        notify_ids = await self._delegation_targets(pending_ids)
+        await self._notify_pending_approvers(
+            doc,
+            notify_ids,
+            actor_id=None,
+            intro=f"{actor_name} напоминает: документ требует вашего согласования.",
+        )
+        return {"document_id": doc.id, "notified": len(notify_ids)}
+
+    # ── Делегирование согласований ──
+
+    async def create_delegation(
+        self,
+        user_id: int,
+        delegate_id: int,
+        days: int,
+        actor_id: int,
+    ) -> Dict[str, Any]:
+        """Создать временное делегирование согласований user_id → delegate_id."""
+        from app.modules.auth.models import User
+
+        if delegate_id == user_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Нельзя делегировать согласования самому себе",
+            )
+        if not 1 <= days <= 30:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Срок делегирования — от 1 до 30 дней",
+            )
+        delegate = await self.db.get(User, delegate_id)
+        if delegate is None or not delegate.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Делегат не найден или деактивирован",
+            )
+        # Только сам пользователь или админ может делегировать его согласования.
+        from app.modules.auth.deps import is_admin
+
+        actor = await self.db.get(User, actor_id)
+        if user_id != actor_id and not (actor and is_admin(actor)):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Можно делегировать только собственные согласования",
+            )
+        expires_at = datetime.now(timezone.utc) + timedelta(days=days)
+        row = await self.delegation_repo.create(
+            user_id=user_id,
+            delegate_id=delegate_id,
+            expires_at=expires_at,
+            created_by_id=actor_id,
+        )
+        await self.notif_repo.create_and_notify(
+            user_id=delegate_id,
+            type="document_assigned",
+            title="Вам делегированы согласования",
+            message=(
+                f"Пользователь делегировал вам свои согласования документов "
+                f"на {days} дн. (до {expires_at.strftime('%d.%m.%Y')})."
+            ),
+            user_email=delegate.email,
+            email_notifications_enabled=delegate.email_notifications_enabled,
+            telegram_chat_id=delegate.telegram_chat_id,
+            meta={},
+        )
+        return {
+            "id": row.id,
+            "user_id": row.user_id,
+            "delegate_id": row.delegate_id,
+            "expires_at": row.expires_at.isoformat(),
+        }
+
+    async def list_my_delegations(self, user_id: int) -> Dict[str, Any]:
+        """Активные делегирования: свои (я делегировал) и входящие (мне)."""
+        now = datetime.now(timezone.utc)
+        rows = await self.delegation_repo.list_for_user(user_id, now)
+        from app.modules.auth.models import User
+
+        out = {"mine": [], "incoming": []}
+        for row in rows:
+            entry = {
+                "id": row.id,
+                "expires_at": row.expires_at.isoformat(),
+            }
+            other_id = (
+                row.delegate_id if row.user_id == user_id else row.user_id
+            )
+            other = await self.db.get(User, other_id)
+            entry["user_name"] = (
+                (other.full_name if other else None) or f"Пользователь #{other_id}"
+            )
+            if row.user_id == user_id:
+                entry["delegate_id"] = row.delegate_id
+                out["mine"].append(entry)
+            else:
+                entry["user_id"] = row.user_id
+                out["incoming"].append(entry)
+        return out
+
+    async def cancel_delegation(
+        self, delegation_id: int, actor_id: int
+    ) -> Dict[str, Any]:
+        """Отменить делегирование (владелец, делегат или админ)."""
+        from app.modules.auth.deps import is_admin
+        from app.modules.auth.models import User
+
+        row = await self.delegation_repo.get(delegation_id)
+        if row is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Делегирование не найдено",
+            )
+        actor = await self.db.get(User, actor_id)
+        allowed = actor_id in (row.user_id, row.delegate_id) or (
+            actor is not None and is_admin(actor)
+        )
+        if not allowed:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Отменить может владелец, делегат или администратор",
+            )
+        await self.delegation_repo.delete(row)
+        return {"ok": True, "id": delegation_id}
 
 
     async def render_document(

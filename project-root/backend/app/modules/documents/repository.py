@@ -7,7 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.modules.documents.models import (
-    Document, Revision, ApprovalWorkflow, ApprovalStage, ActionTaskStatus
+    Document, Revision, ApprovalWorkflow, ApprovalStage, ActionTaskStatus,
+    DocumentDelegation,
 )
 from app.modules.projects.models import Project
 
@@ -214,3 +215,64 @@ class ActionTaskStatusRepository:
                 ActionTaskStatus(user_id=user_id, task_key=task_key, status=status)
             )
         await self.db.commit()
+
+
+class DelegationRepository:
+    """Repository for temporary approval delegations."""
+
+    def __init__(self, db: AsyncSession):
+        self.db = db
+
+    async def create(
+        self,
+        user_id: int,
+        delegate_id: int,
+        expires_at: datetime,
+        created_by_id: Optional[int] = None,
+    ) -> DocumentDelegation:
+        row = DocumentDelegation(
+            user_id=user_id,
+            delegate_id=delegate_id,
+            expires_at=expires_at,
+            created_by_id=created_by_id,
+        )
+        self.db.add(row)
+        await self.db.commit()
+        await self.db.refresh(row)
+        return row
+
+    async def get(self, delegation_id: int) -> Optional[DocumentDelegation]:
+        result = await self.db.execute(
+            select(DocumentDelegation).where(DocumentDelegation.id == delegation_id)
+        )
+        return result.scalar_one_or_none()
+
+    async def list_active_for_users(
+        self, user_ids: List[int], now: datetime
+    ) -> List[DocumentDelegation]:
+        """Активные делегирования, где user_id входит в переданный список."""
+        if not user_ids:
+            return []
+        result = await self.db.execute(
+            select(DocumentDelegation).where(
+                DocumentDelegation.user_id.in_(user_ids),
+                DocumentDelegation.expires_at > now,
+            )
+        )
+        return result.scalars().all()
+
+    async def list_for_user(self, user_id: int, now: datetime) -> List[DocumentDelegation]:
+        """Активные делегирования пользователя: свои (user_id) и чужие (delegate_id)."""
+        result = await self.db.execute(
+            select(DocumentDelegation).where(
+                DocumentDelegation.expires_at > now,
+                (DocumentDelegation.user_id == user_id)
+                | (DocumentDelegation.delegate_id == user_id),
+            )
+        )
+        return result.scalars().all()
+
+    async def delete(self, delegation: DocumentDelegation) -> None:
+        await self.db.delete(delegation)
+        await self.db.commit()
+

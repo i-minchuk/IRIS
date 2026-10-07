@@ -3,7 +3,7 @@ from typing import Optional
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import select, func, and_, or_, case
+from sqlalchemy import select, func, and_, or_, case, cast
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
@@ -1508,3 +1508,75 @@ async def get_department_load(
         for dept in departments.values()
     ]
     return DepartmentLoadData(departments=items)
+
+
+@router.get("/escalations", response_model=dict)
+async def escalations_report(
+    db: AsyncSession = Depends(_get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Отчёт по эскалациям согласования: сколько и по каким проектам.
+
+    Источник — уведомления типа approval_escalation, привязанные к
+    документам через metadata.document_id. Плюс текущее число просроченных
+    документов на согласовании по каждому проекту.
+    """
+    from sqlalchemy import Integer
+    from app.modules.gamification.models import Notification
+
+    doc_id_expr = cast(Notification.meta["document_id"].as_string(), Integer)
+    stmt = (
+        select(
+            Document.project_id,
+            Project.name.label("project_name"),
+            func.count(Notification.id).label("escalations"),
+            func.max(Notification.created_at).label("last_escalation_at"),
+        )
+        .select_from(Notification)
+        .join(Document, Document.id == doc_id_expr)
+        .join(Project, Project.id == Document.project_id, isouter=True)
+        .where(Notification.type == "approval_escalation")
+        .group_by(Document.project_id, Project.name)
+        .order_by(func.count(Notification.id).desc())
+    )
+    result = await db.execute(stmt)
+    rows = result.all()
+
+    now = datetime.now(timezone.utc)
+    overdue_stmt = (
+        select(Document.project_id, func.count(Document.id).label("cnt"))
+        .where(
+            Document.status == "in_review",
+            Document.is_deleted.is_(False),
+            or_(
+                and_(Document.planned_end.isnot(None), Document.planned_end < now),
+                and_(
+                    Document.planned_ready.isnot(None),
+                    Document.planned_ready < now,
+                ),
+            ),
+        )
+        .group_by(Document.project_id)
+    )
+    overdue_result = await db.execute(overdue_stmt)
+    overdue_by_project = {
+        row.project_id: row.cnt for row in overdue_result.all()
+    }
+
+    items = [
+        {
+            "project_id": row.project_id,
+            "project_name": row.project_name or f"Проект #{row.project_id}",
+            "escalations": int(row.escalations),
+            "last_escalation_at": (
+                row.last_escalation_at.isoformat() if row.last_escalation_at else None
+            ),
+            "overdue_now": int(overdue_by_project.get(row.project_id, 0)),
+        }
+        for row in rows
+    ]
+    return {
+        "items": items,
+        "total_escalations": sum(i["escalations"] for i in items),
+        "overdue_now_total": sum(overdue_by_project.values()),
+    }

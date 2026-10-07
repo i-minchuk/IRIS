@@ -17,4 +17,12 @@ celery_app.conf.update(
     task_track_started=True,
     task_time_limit=3600,
     worker_prefetch_multiplier=1,
+    beat_schedule={
+        # Проверка дедлайнов согласования документов каждые 15 минут
+        # (идемпотентна — флаги в content документа).
+        "check-document-deadlines": {
+            "task": "app.tasks.documents.check_document_deadlines",
+            "schedule": 15 * 60,
+        },
+    },
 )

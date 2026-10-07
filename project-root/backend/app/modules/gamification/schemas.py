@@ -30,6 +30,9 @@ class LeaderboardEntry(BaseModel):
     late_approvals: int = 0
     sent_on_time: int = 0
     sent_late: int = 0
+    doc_on_time: int = 0
+    doc_late: int = 0
+    avg_approval_hours: Optional[float] = None
 
 
 class QuestResponse(BaseModel):

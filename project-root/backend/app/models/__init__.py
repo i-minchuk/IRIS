@@ -43,6 +43,7 @@ from app.modules.documents.models import (  # noqa
     ApprovalStage,
     DocumentDependency,
     ActionTaskStatus,
+    DocumentDelegation,
 )
 
 # 7. Remarks — ссылается на Project, User

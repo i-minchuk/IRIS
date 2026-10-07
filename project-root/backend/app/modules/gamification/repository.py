@@ -1,7 +1,7 @@
 # app/modules/gamification/repository.py
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, case
-from typing import Optional
+from typing import Optional, Dict
 from datetime import datetime, timezone, date
 
 from app.modules.gamification.models import (
@@ -83,6 +83,18 @@ class GamificationEventRepository:
                         else_=0,
                     )), 0,
                 ).label("sent_late"),
+                func.coalesce(
+                    func.sum(case(
+                        (GamificationEvent.event_type == "document_approval_on_time", 1),
+                        else_=0,
+                    )), 0,
+                ).label("doc_on_time"),
+                func.coalesce(
+                    func.sum(case(
+                        (GamificationEvent.event_type == "document_approval_late", 1),
+                        else_=0,
+                    )), 0,
+                ).label("doc_late"),
             )
             .outerjoin(GamificationEvent, User.id == GamificationEvent.user_id)
             .group_by(User.id)
@@ -92,6 +104,7 @@ class GamificationEventRepository:
             stmt = stmt.where(User.role.notin_(exclude_roles))
         result = await self.db.execute(stmt)
         rows = result.all()
+        avg_hours = await self._avg_doc_approval_hours()
         return [
             {
                 "user_id": row.id,
@@ -103,9 +116,34 @@ class GamificationEventRepository:
                 "late_approvals": int(row.late_approvals),
                 "sent_on_time": int(row.sent_on_time),
                 "sent_late": int(row.sent_late),
+                "doc_on_time": int(row.doc_on_time),
+                "doc_late": int(row.doc_late),
+                "avg_approval_hours": avg_hours.get(row.id),
             }
             for row in rows
         ]
+
+    async def _avg_doc_approval_hours(self) -> Dict[int, float]:
+        """Средняя длительность согласования документов (часы) по пользователям."""
+        result = await self.db.execute(
+            select(GamificationEvent.user_id, GamificationEvent.meta).where(
+                GamificationEvent.event_type.in_([
+                    "document_approval_on_time",
+                    "document_approval_late",
+                ])
+            )
+        )
+        sums: Dict[int, float] = {}
+        counts: Dict[int, int] = {}
+        for user_id, meta in result.all():
+            hours = (meta or {}).get("hours")
+            if isinstance(hours, (int, float)):
+                sums[user_id] = sums.get(user_id, 0.0) + float(hours)
+                counts[user_id] = counts.get(user_id, 0) + 1
+        return {
+            user_id: round(sums[user_id] / counts[user_id], 1)
+            for user_id in sums
+        }
 
     async def create(self, event: GamificationEvent) -> GamificationEvent:
         self.db.add(event)
