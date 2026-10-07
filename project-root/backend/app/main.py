@@ -99,13 +99,15 @@ _ESCALATION_INTERVAL_SECONDS = 15 * 60
 
 
 async def _escalation_loop() -> None:
-    """Раз в 15 минут проверяет просроченные шаги согласования.
+    """Раз в 15 минут проверяет дедлайны согласования.
 
-    Напоминает исполнителям и эскалирует руководителям (админам + инициатору).
+    Workflow-шаги: напоминания + эскалация руководителям.
+    Документы (собственная цепочка): за 24 ч до дедлайна — согласующим и автору.
     """
     await asyncio.sleep(30)  # дать серверу полностью подняться
     while True:
         try:
+            from app.modules.documents.service import DocumentService
             from app.modules.workflow.service import WorkflowService
 
             async with AsyncSessionLocal() as session:
@@ -117,6 +119,11 @@ async def _escalation_loop() -> None:
                     "reminded": upcoming["reminded"],
                     "escalated": overdue["escalated"],
                 }
+            async with AsyncSessionLocal() as session:
+                doc_service = DocumentService(session)
+                doc_result = await doc_service.check_document_deadlines()
+                result["checked"] += doc_result["checked"]
+                result["reminded"] += doc_result["reminded"]
             if result.get("escalated") or result.get("reminded"):
                 logger.info(
                     "Deadline check: %(reminded)s reminded, %(escalated)s escalated",

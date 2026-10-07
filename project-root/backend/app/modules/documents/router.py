@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
 
 from app.db.session import get_db, get_db_read_only
-from app.modules.auth.deps import get_current_active_user
+from app.modules.auth.deps import get_current_active_user, is_admin
 from app.modules.auth.models import User
 from app.modules.documents.dependencies import router as deps_router
 from app.modules.documents.service import DocumentService
@@ -168,6 +168,21 @@ async def set_action_task_status(
     return await service.set_action_task_status(
         current_user.id, task_key, data.status
     )
+
+
+@router.post("/deadline-check", response_model=dict)
+async def run_document_deadline_check(
+    current_user: User = Depends(get_current_active_user),
+    service: DocumentService = Depends(get_document_service),
+):
+    """Запустить проверку дедлайнов согласования документов (только админ).
+
+    Обычно вызывается фоновым циклом каждые 15 минут; эндпоинт — для
+    ручной проверки и отладки. Напоминание уходит один раз на документ.
+    """
+    if not is_admin(current_user):
+        raise HTTPException(status_code=403, detail="Требуются права администратора")
+    return await service.check_document_deadlines()
 
 
 @router.patch("/{document_id}", response_model=dict)

@@ -1,6 +1,6 @@
 """Documents service - business logic layer."""
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional, List, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException, status
@@ -300,6 +300,7 @@ class DocumentService:
         pending_ids: List[int],
         actor_id: Optional[int],
         intro: str,
+        notif_type: str = "approval_pending",
     ) -> None:
         """Уведомление согласующих, что документ ожидает их шага (in-app + email + telegram)."""
         from app.modules.auth.models import User
@@ -316,7 +317,7 @@ class DocumentService:
             try:
                 await self.notif_repo.create_and_notify(
                     user_id=user.id,
-                    type="approval_pending",
+                    type=notif_type,
                     title=f"Документ на согласовании: {title_doc}",
                     message=f"{intro} Документ «{title_doc}» ожидает вашего согласования.{due}",
                     user_email=user.email,
@@ -844,7 +845,104 @@ class DocumentService:
         await self.action_task_repo.upsert(user_id, task_key, new_status)
         return {"task_key": task_key, "status": new_status}
 
-    
+    async def check_document_deadlines(
+        self, threshold_hours: int = 24
+    ) -> Dict[str, int]:
+        """Автонапоминание о дедлайне согласования документов.
+
+        Документы в статусе in_review с planned_end/planned_ready: когда до
+        срока остаётся threshold_hours часов (или он уже истёк), уведомляет
+        несогласовавших согласующих и автора (тип deadline_approaching).
+        Срабатывает один раз на документ — флаг content["deadline_reminded_at"],
+        миграция не нужна (content — JSONB).
+        """
+        from sqlalchemy import or_, select
+        from app.modules.auth.models import User
+        from app.modules.documents.models import Document
+
+        now = datetime.now(timezone.utc)
+        result = await self.db.execute(
+            select(Document).where(
+                Document.status == "in_review",
+                Document.is_deleted.is_(False),
+                or_(
+                    Document.planned_end.isnot(None),
+                    Document.planned_ready.isnot(None),
+                ),
+            )
+        )
+        checked = 0
+        reminded = 0
+        for doc in result.scalars().all():
+            checked += 1
+            try:
+                content = dict(doc.content) if isinstance(doc.content, dict) else {}
+                if content.get("deadline_reminded_at"):
+                    continue  # напоминание по этому документу уже отправлено
+                deadline = doc.planned_end or doc.planned_ready
+                if deadline is None:
+                    continue
+                if deadline.tzinfo is None:
+                    deadline = deadline.replace(tzinfo=timezone.utc)
+                remaining = deadline - now
+                if remaining > timedelta(hours=threshold_hours):
+                    continue
+                approvals = list(content.get("approvals") or [])
+                pending_ids = self._pending_approver_ids(doc, approvals)
+                if not pending_ids:
+                    continue  # все согласовали — документ скоро утвердится
+                is_overdue = remaining.total_seconds() < 0
+                intro = (
+                    "Дедлайн по документу истёк."
+                    if is_overdue
+                    else f"До дедлайна осталось менее {threshold_hours} часов."
+                )
+                await self._notify_pending_approvers(
+                    doc, pending_ids, actor_id=None, intro=intro,
+                    notif_type="deadline_approaching",
+                )
+                # Автор получает сводку, если не входит в число согласующих.
+                author_id = getattr(doc, "author_id", None)
+                if author_id and author_id not in pending_ids:
+                    author = await self.db.get(User, author_id)
+                    if author is not None:
+                        title_doc = doc.number or doc.name or f"№{doc.id}"
+                        names = []
+                        for uid in pending_ids:
+                            u = await self.db.get(User, uid)
+                            if u is not None:
+                                names.append(u.full_name or u.email or f"№{uid}")
+                        who = ", ".join(names) if names else "—"
+                        try:
+                            await self.notif_repo.create_and_notify(
+                                user_id=author.id,
+                                type="deadline_approaching",
+                                title=f"Дедлайн согласования: {title_doc}",
+                                message=(
+                                    f"{intro} Документ «{title_doc}» ещё не "
+                                    f"согласован. Ожидают: {who}."
+                                ),
+                                user_email=author.email,
+                                email_notifications_enabled=author.email_notifications_enabled,
+                                telegram_chat_id=author.telegram_chat_id,
+                                meta={
+                                    "link": f"/documents/{doc.id}",
+                                    "document_id": doc.id,
+                                },
+                            )
+                        except Exception as exc:
+                            logger.warning(
+                                "Failed to notify author %s for doc %s: %s",
+                                author_id, doc.id, exc,
+                            )
+                content["deadline_reminded_at"] = now.isoformat()
+                await self.doc_repo.update(doc, {"content": content})
+                reminded += 1
+            except Exception as exc:  # один документ не должен ломать прогон
+                logger.warning("Deadline check failed for doc %s: %s", doc.id, exc)
+        return {"checked": checked, "reminded": reminded}
+
+
     async def render_document(
         self,
         document_id: int,
