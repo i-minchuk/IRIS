@@ -5,7 +5,8 @@ export type NotificationType =
   | 'remark_created'
   | 'workflow_step'
   | 'deadline_approaching'
-  | 'document_approved';
+  | 'document_approved'
+  | 'document_assigned';
 
 export interface NotificationItem {
   id: number;

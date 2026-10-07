@@ -10,6 +10,7 @@ class NotificationType:
     WORKFLOW_STEP = "workflow_step"
     DEADLINE_APPROACHING = "deadline_approaching"
     DOCUMENT_APPROVED = "document_approved"
+    DOCUMENT_ASSIGNED = "document_assigned"
 
 
 class NotificationResponse(BaseModel):

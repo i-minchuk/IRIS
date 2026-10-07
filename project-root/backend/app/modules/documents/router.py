@@ -177,7 +177,7 @@ async def update_document(
     current_user: User = Depends(_docs_write),
     service: DocumentService = Depends(get_document_service),
 ):
-    return await service.update_document(document_id, data.model_dump(exclude_unset=True))
+    return await service.update_document(document_id, data.model_dump(exclude_unset=True), actor_id=current_user.id)
 
 
 @router.post("/{document_id}/copy", response_model=dict)

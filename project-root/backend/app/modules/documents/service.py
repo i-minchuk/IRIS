@@ -148,6 +148,9 @@ class DocumentService:
                 await self.db.commit()
             except Exception as exc:
                 logger.warning("AI classification failed for doc %s: %s", doc.id, exc)
+
+        # Уведомляем исполнителей о назначении документа в работу
+        await self._notify_assignees(doc, doc.assignee_ids or [], user_id)
         
         return {
             "id": doc.id,
@@ -164,6 +167,7 @@ class DocumentService:
         self,
         document_id: int,
         data: Dict[str, Any],
+        actor_id: Optional[int] = None,
     ) -> Dict[str, Any]:
         """Update document."""
         doc = await self.doc_repo.get_by_id(document_id)
@@ -173,6 +177,8 @@ class DocumentService:
                 detail="Document not found"
             )
         
+        # Снимок исполнителей до обновления — для уведомления только новых.
+        old_assignee_ids = set(doc.assignee_ids or [])
         # Remember whether the document was already approved to avoid duplicate awards.
         was_already_approved = doc.status == 'approved'
         # При смене проекта привязка к этапу/комплекту/разделу старого проекта
@@ -234,6 +240,12 @@ class DocumentService:
                 comment=f"Document approved: +{bonus_points} quality/speed bonus",
                 meta=meta,
             )
+
+        # Уведомляем только добавленных исполнителей (diff старого и нового списков).
+        if "assignee_ids" in data:
+            new_assignee_ids = set(doc.assignee_ids or []) - old_assignee_ids
+            if new_assignee_ids:
+                await self._notify_assignees(doc, list(new_assignee_ids), actor_id)
         
         return {
             "id": doc.id,
@@ -242,6 +254,39 @@ class DocumentService:
             "status": doc.status,
             "content": doc.content,
         }
+
+    async def _notify_assignees(
+        self,
+        doc,
+        assignee_ids: List[int],
+        actor_id: Optional[int] = None,
+    ) -> None:
+        """Уведомление исполнителей о назначении документа в работу (in-app + email + telegram)."""
+        from app.modules.auth.models import User
+
+        for assignee_id in assignee_ids or []:
+            if assignee_id == actor_id:
+                continue
+            assignee = await self.db.get(User, assignee_id)
+            if assignee is None:
+                continue
+            title_doc = doc.number or doc.name or f"№{doc.id}"
+            deadline = doc.planned_end or doc.planned_ready
+            due = f" Срок: {deadline.strftime('%d.%m.%Y')}." if deadline else ""
+            try:
+                await self.notif_repo.create_and_notify(
+                    user_id=assignee.id,
+                    type="document_assigned",
+                    title=f"Вам назначен документ: {title_doc}",
+                    message=f"Документ «{title_doc}» назначен вам в работу.{due}",
+                    user_email=assignee.email,
+                    email_notifications_enabled=assignee.email_notifications_enabled,
+                    telegram_chat_id=assignee.telegram_chat_id,
+                    meta={"link": f"/documents/{doc.id}", "document_id": doc.id},
+                )
+            except Exception as exc:
+                # Уведомление не должно ломать основную операцию с документом.
+                logger.warning("Failed to notify assignee %s for doc %s: %s", assignee_id, doc.id, exc)
 
     async def copy_document(
         self,
