@@ -2,18 +2,20 @@ import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { Card } from '@/components/ui';
 import { useSRMStore } from '@/stores/srmStore';
+import { useCan } from '@/shared/hooks/useCan';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import SrmFormModal, { type SrmField } from '@/features/srm/components/SrmFormModal';
 import { createPurchaseRequest, updatePurchaseRequest, createOrder, type PurchaseRequestCreatePayload, type PurchaseOrderCreatePayload } from '@/features/srm/api/srmApi';
 import { getProjects, type Project } from '@/features/projects/api/projects';
 import type { PurchaseRequestStatus, PurchaseRequest } from '@/types/srm';
-import { Calendar, User, ArrowRight, Plus } from 'lucide-react';
+import { Calendar, User, ArrowRight, Plus, FileText } from 'lucide-react';
+import { EmptyState } from '@/components/ui';
 
 const STATUS_COLUMNS: { status: PurchaseRequestStatus; label: string }[] = [
   { status: 'draft', label: 'Черновик' },
   { status: 'submitted', label: 'Подано' },
-  { status: 'manager_review', label: 'Менеджер' },
-  { status: 'director_review', label: 'Директор' },
+  { status: 'manager_review', label: 'Согласование менеджером' },
+  { status: 'director_review', label: 'Согласование директором' },
   { status: 'approved', label: 'Утверждено' },
   { status: 'rfq_sent', label: 'ЗК отправлен' },
   { status: 'quotation_received', label: 'Котировки' },
@@ -37,6 +39,9 @@ export default function PurchaseRequestsPage() {
   const contracts = useSRMStore(s => s.contracts);
   const fetchContracts = useSRMStore(s => s.fetchContracts);
   const user = useAuthStore(s => s.user);
+  // Write-guards (RBAC этап 3): заявки ведёт МТО; заказ по заявке — МТО/Логистика
+  const canRequests = useCan('srm.requests.write');
+  const canOrders = useCan('srm.orders.write');
   const [isCreateOpen, setCreateOpen] = useState(false);
   const [orderRequest, setOrderRequest] = useState<PurchaseRequest | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -141,7 +146,7 @@ export default function PurchaseRequestsPage() {
       await fetchPurchaseRequests();
       toast.success(`Заявка #${request.id} перенесена: ${next.label}`);
       // При переходе в колонку «Заказ» — автоматически формируем заказ по заявке
-      if (next.status === 'po_issued') {
+      if (next.status === 'po_issued' && canOrders) {
         setOrderRequest(request);
       }
     } catch {
@@ -210,19 +215,40 @@ export default function PurchaseRequestsPage() {
           <h1 className="sr-only" style={{ color: 'var(--text-primary)' }}>Заявки на закупку</h1>
           <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Kanban-доска закупочного процесса</p>
         </div>
-        <button
-          onClick={() => setCreateOpen(true)}
-          className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md transition-colors cursor-pointer"
-          style={{ background: '#2563EB', color: '#ffffff' }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = '#1d4ed8'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = '#2563EB'; }}
-        >
-          <Plus size={13} /> Создать заявку
-        </button>
+        {canRequests && (
+          <button
+            onClick={() => setCreateOpen(true)}
+            className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md transition-colors cursor-pointer"
+            style={{ background: '#2563EB', color: '#ffffff' }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = '#1d4ed8'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = '#2563EB'; }}
+          >
+            <Plus size={13} /> Создать заявку
+          </button>
+        )}
       </div>
 
-      <div className="flex gap-3 overflow-x-auto pb-2">
-        {STATUS_COLUMNS.map(column => {
+      {requests.length === 0 ? (
+        <EmptyState
+          icon={FileText}
+          title="Нет заявок на закупку"
+          description="Создайте первую заявку, чтобы начать закупочный процесс"
+        >
+          {canRequests && (
+            <button
+              onClick={() => setCreateOpen(true)}
+              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md transition-colors cursor-pointer"
+              style={{ background: '#2563EB', color: '#ffffff' }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#1d4ed8'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#2563EB'; }}
+            >
+              <Plus size={13} /> Создать заявку
+            </button>
+          )}
+        </EmptyState>
+      ) : (
+        <div className="flex gap-3 overflow-x-auto pb-2">
+          {STATUS_COLUMNS.map(column => {
           const columnRequests = getRequestsForColumn(column.status);
           return (
             <div key={column.status} className="flex-shrink-0 w-64">
@@ -276,7 +302,7 @@ export default function PurchaseRequestsPage() {
                       <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
                         {request.amount.toLocaleString('ru-RU')} {request.currency}
                       </span>
-                      {nextColumn && (
+                      {nextColumn && canRequests && (
                         <button
                           onClick={() => moveToNext(request)}
                           className="flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-opacity hover:opacity-80 cursor-pointer"
@@ -295,6 +321,7 @@ export default function PurchaseRequestsPage() {
           );
         })}
       </div>
+      )}
 
       <SrmFormModal
         isOpen={isCreateOpen}

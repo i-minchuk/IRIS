@@ -3,10 +3,12 @@ import { toast } from 'sonner';
 import { Card } from '@/components/ui';
 import { Badge } from '@/components/ui';
 import { useSRMStore } from '@/stores/srmStore';
+import { useCan } from '@/shared/hooks/useCan';
 import SrmFormModal, { type SrmField } from '@/features/srm/components/SrmFormModal';
 import { createOrder, updateOrder, type PurchaseOrderCreatePayload } from '@/features/srm/api/srmApi';
 import type { OrderStatus, PurchaseOrder } from '@/types/srm';
 import { Package, Truck, Calendar, Building2, Plus, Send, XCircle } from 'lucide-react';
+import { EmptyState } from '@/components/ui';
 
 const STATUS_CONFIG: Record<OrderStatus, { label: string; variant: 'success' | 'warning' | 'error' | 'info' | 'neutral'; step: number }> = {
   draft: { label: 'Черновик', variant: 'neutral', step: 1 },
@@ -52,6 +54,10 @@ export default function OrdersPage() {
   const contracts = useSRMStore(s => s.contracts);
   const fetchContracts = useSRMStore(s => s.fetchContracts);
   const [isCreateOpen, setCreateOpen] = useState(false);
+  // Write-guards (RBAC этап 3): заказы создают МТО/Логистика; кладовщик — только приёмка
+  const canWriteOrders = useCan('srm.orders.write');
+  const canReceipt = useCan('srm.receipt.write');
+  const RECEIPT_STATUSES: OrderStatus[] = ['delivered', 'inspection', 'accepted', 'rejected'];
 
   useEffect(() => {
     fetchOrders();
@@ -146,19 +152,38 @@ export default function OrdersPage() {
           <h1 className="sr-only" style={{ color: 'var(--text-primary)' }}>Заказы</h1>
           <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Трекинг заказов и поставок</p>
         </div>
-        <button
-          onClick={() => setCreateOpen(true)}
-          className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md transition-colors cursor-pointer"
-          style={{ background: '#2563EB', color: '#ffffff' }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = '#1d4ed8'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = '#2563EB'; }}
-        >
-          <Plus size={13} /> Создать заказ
-        </button>
+        {canWriteOrders && (
+          <button
+            onClick={() => setCreateOpen(true)}
+            className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md transition-colors cursor-pointer"
+            style={{ background: '#2563EB', color: '#ffffff' }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = '#1d4ed8'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = '#2563EB'; }}
+          >
+            <Plus size={13} /> Создать заказ
+          </button>
+        )}
       </div>
 
-      <div className="space-y-4">
-        {orders.map(order => {
+      {orders.length === 0 ? (
+        <EmptyState
+          icon={Package}
+          title="Нет заказов"
+          description="Создайте первый заказ, чтобы отслеживать поставку"
+        >
+          <button
+            onClick={() => setCreateOpen(true)}
+            className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md transition-colors cursor-pointer"
+            style={{ background: '#2563EB', color: '#ffffff' }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = '#1d4ed8'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = '#2563EB'; }}
+          >
+            <Plus size={13} /> Создать заказ
+          </button>
+        </EmptyState>
+      ) : (
+        <div className="space-y-4">
+          {orders.map(order => {
           const status = STATUS_CONFIG[order.status];
           const progress = (status.step / TOTAL_STEPS) * 100;
 
@@ -170,7 +195,7 @@ export default function OrdersPage() {
                     <Package size={16} style={{ color: 'var(--brand-iris)' }} />
                     <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{order.number}</span>
                     <Badge variant={status.variant}>{status.label}</Badge>
-                    {NEXT_ACTION[order.status] && (
+                    {NEXT_ACTION[order.status] && (canWriteOrders || (canReceipt && RECEIPT_STATUSES.includes(NEXT_ACTION[order.status]!.next))) && (
                       <button
                         onClick={() => handleAdvance(order)}
                         className="flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-opacity hover:opacity-80 cursor-pointer"
@@ -179,7 +204,7 @@ export default function OrdersPage() {
                         <Send size={11} /> {NEXT_ACTION[order.status]!.label}
                       </button>
                     )}
-                    {order.status === 'inspection' && (
+                    {order.status === 'inspection' && (canWriteOrders || canReceipt) && (
                       <button
                         onClick={() => handleReject(order)}
                         className="flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-opacity hover:opacity-80 cursor-pointer"
@@ -226,6 +251,7 @@ export default function OrdersPage() {
           );
         })}
       </div>
+      )}
 
       <SrmFormModal
         isOpen={isCreateOpen}

@@ -1,11 +1,13 @@
 import { Card, Modal } from '@/components/ui';
 import { Badge } from '@/components/ui';
 import { useSRMStore } from '@/stores/srmStore';
+import { useCan } from '@/shared/hooks/useCan';
 import SrmFormModal, { type SrmField } from '@/features/srm/components/SrmFormModal';
 import { createContract, updateContract, uploadContractAttachment, downloadContractAttachment, fetchContractAttachmentBlob, type ContractCreatePayload, type ContractUpdatePayload } from '@/features/srm/api/srmApi';
 import { getProjects, type Project } from '@/features/projects/api/projects';
 import type { Contract, ContractStatus } from '@/types/srm';
 import { FileText, Calendar, Building2, TrendingUp, Plus, Send, Paperclip, Pencil, Eye, Download, X, Loader2, Undo2 } from 'lucide-react';
+import { EmptyState } from '@/components/ui';
 import React, { useEffect, useMemo, useState, useRef, lazy, Suspense } from 'react';
 import { toast } from 'sonner';
 
@@ -150,6 +152,8 @@ export default function ContractsPage() {
   const fetchContracts = useSRMStore(s => s.fetchContracts);
   const customers = useSRMStore(s => s.customers);
   const fetchCustomers = useSRMStore(s => s.fetchCustomers);
+  // Write-guard (RBAC этап 3): договоры ведёт МТО
+  const canWrite = useCan('srm.contracts.write');
   const [isCreateOpen, setCreateOpen] = useState(false);
   const [editingContract, setEditingContract] = useState<Contract | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -333,15 +337,17 @@ export default function ContractsPage() {
           <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Реестр договоров с заказчиками</p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setCreateOpen(true)}
-            className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md transition-colors cursor-pointer"
-            style={{ background: '#2563EB', color: '#ffffff' }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = '#1d4ed8'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = '#2563EB'; }}
-          >
-            <Plus size={13} /> Создать договор
-          </button>
+          {canWrite && (
+            <button
+              onClick={() => setCreateOpen(true)}
+              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md transition-colors cursor-pointer"
+              style={{ background: '#2563EB', color: '#ffffff' }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#1d4ed8'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#2563EB'; }}
+            >
+              <Plus size={13} /> Создать договор
+            </button>
+          )}
         </div>
       </div>
 
@@ -388,8 +394,27 @@ export default function ContractsPage() {
         </Card>
       </div>
 
-      <div className="space-y-3">
-        {contracts.map(contract => (
+      {contracts.length === 0 ? (
+        <EmptyState
+          icon={FileText}
+          title="Нет договоров"
+          description="Создайте первый договор с заказчиком"
+        >
+          {canWrite && (
+            <button
+              onClick={() => setCreateOpen(true)}
+              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md transition-colors cursor-pointer"
+              style={{ background: '#2563EB', color: '#ffffff' }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#1d4ed8'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#2563EB'; }}
+            >
+              <Plus size={13} /> Создать договор
+            </button>
+          )}
+        </EmptyState>
+      ) : (
+        <div className="space-y-3">
+          {contracts.map(contract => (
           <Card key={contract.id} padding="md" className="hover:opacity-90 transition-opacity cursor-pointer">
             <div className="flex items-start justify-between">
               <div className="flex-1">
@@ -400,7 +425,7 @@ export default function ContractsPage() {
                   <Badge variant={STATUS_CONFIG[contract.status].variant}>
                     {STATUS_CONFIG[contract.status].label}
                   </Badge>
-                  {NEXT_ACTION[contract.status] ? (
+                  {canWrite && NEXT_ACTION[contract.status] ? (
                     <button
                       onClick={() =>
                         setStatusConfirm({ contract, target: NEXT_ACTION[contract.status]!.next })
@@ -410,7 +435,7 @@ export default function ContractsPage() {
                     >
                       <Send size={11} /> {NEXT_ACTION[contract.status]!.label}
                     </button>
-                  ) : REVERT_TARGET[contract.status] ? (
+                  ) : canWrite && REVERT_TARGET[contract.status] ? (
                     <button
                       onClick={() =>
                         setStatusConfirm({ contract, target: REVERT_TARGET[contract.status]! })
@@ -457,7 +482,7 @@ export default function ContractsPage() {
                         <Download size={12} />
                       </button>
                     </span>
-                  ) : (
+                  ) : canWrite ? (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -470,26 +495,29 @@ export default function ContractsPage() {
                     >
                       <Paperclip size={12} /> Прикрепить файл
                     </button>
-                  )}
+                  ) : null}
                 </div>
               </div>
               <div className="text-right flex flex-col items-end gap-2">
                 <div className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
                   {contract.amount.toLocaleString('ru-RU')} {contract.currency}
                 </div>
-                <button
-                  onClick={() => setEditingContract(contract)}
-                  className="flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-opacity hover:opacity-80 cursor-pointer"
-                  style={{ color: 'var(--brand-iris)', backgroundColor: 'var(--bg-surface-2)' }}
-                  title="Редактировать"
-                >
-                  <Pencil size={12} /> Редактировать
-                </button>
+                {canWrite && (
+                  <button
+                    onClick={() => setEditingContract(contract)}
+                    className="flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-opacity hover:opacity-80 cursor-pointer"
+                    style={{ color: 'var(--brand-iris)', backgroundColor: 'var(--bg-surface-2)' }}
+                    title="Редактировать"
+                  >
+                    <Pencil size={12} /> Редактировать
+                  </button>
+                )}
               </div>
             </div>
           </Card>
         ))}
       </div>
+      )}
 
       <SrmFormModal
         isOpen={isCreateOpen}

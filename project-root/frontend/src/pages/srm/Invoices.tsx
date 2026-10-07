@@ -1,10 +1,12 @@
 import { Card } from '@/components/ui';
 import { Badge } from '@/components/ui';
 import { useSRMStore } from '@/stores/srmStore';
+import { useCan } from '@/shared/hooks/useCan';
 import SrmFormModal, { type SrmField } from '@/features/srm/components/SrmFormModal';
 import { createInvoice, updateInvoice, type InvoiceCreatePayload } from '@/features/srm/api/srmApi';
 import type { Invoice, InvoiceStatus } from '@/types/srm';
 import { FileText, Calendar, AlertCircle, TrendingUp, Plus, Send } from 'lucide-react';
+import { EmptyState } from '@/components/ui';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -58,6 +60,8 @@ export default function InvoicesPage() {
   const fetchOrders = useSRMStore(s => s.fetchOrders);
   const purchaseRequests = useSRMStore(s => s.purchaseRequests);
   const fetchPurchaseRequests = useSRMStore(s => s.fetchPurchaseRequests);
+  // Write-guard (RBAC этап 3): счета ведёт МТО
+  const canWrite = useCan('srm.invoices.write');
   const [isCreateOpen, setCreateOpen] = useState(false);
   const [sortMode, setSortMode] = useState<SortMode>('issue_desc');
 
@@ -177,15 +181,17 @@ export default function InvoicesPage() {
           <h1 className="sr-only" style={{ color: 'var(--text-primary)' }}>Счета и платежи</h1>
           <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Управление счетами к оплате</p>
         </div>
-        <button
-          onClick={() => setCreateOpen(true)}
-          className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md transition-colors cursor-pointer"
-          style={{ background: '#2563EB', color: '#ffffff' }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = '#1d4ed8'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = '#2563EB'; }}
-        >
-          <Plus size={13} /> Создать счёт
-        </button>
+        {canWrite && (
+          <button
+            onClick={() => setCreateOpen(true)}
+            className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md transition-colors cursor-pointer"
+            style={{ background: '#2563EB', color: '#ffffff' }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = '#1d4ed8'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = '#2563EB'; }}
+          >
+            <Plus size={13} /> Создать счёт
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -270,8 +276,27 @@ export default function InvoicesPage() {
         </select>
       </div>
 
-      <div className="space-y-3">
-        {sortedInvoices.map(invoice => (
+      {sortedInvoices.length === 0 ? (
+        <EmptyState
+          icon={FileText}
+          title="Нет счетов"
+          description="Создайте первый счёт, чтобы начать учёт платежей"
+        >
+          {canWrite && (
+            <button
+              onClick={() => setCreateOpen(true)}
+              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md transition-colors cursor-pointer"
+              style={{ background: '#2563EB', color: '#ffffff' }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#1d4ed8'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#2563EB'; }}
+            >
+              <Plus size={13} /> Создать счёт
+            </button>
+          )}
+        </EmptyState>
+      ) : (
+        <div className="space-y-3">
+          {sortedInvoices.map(invoice => (
           <Card
             key={invoice.id}
             padding="md"
@@ -290,7 +315,7 @@ export default function InvoicesPage() {
                     <Badge variant={STATUS_CONFIG[invoice.status].variant}>
                       {STATUS_CONFIG[invoice.status].label}
                     </Badge>
-                    {NEXT_ACTION[invoice.status] && (
+                    {NEXT_ACTION[invoice.status] && canWrite && (
                       <button
                         onClick={() => handleAdvance(invoice)}
                         className="flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-opacity hover:opacity-80 cursor-pointer"
@@ -317,6 +342,7 @@ export default function InvoicesPage() {
           </Card>
         ))}
       </div>
+      )}
 
       <SrmFormModal
         isOpen={isCreateOpen}

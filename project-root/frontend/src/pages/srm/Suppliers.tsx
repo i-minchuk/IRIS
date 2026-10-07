@@ -3,7 +3,9 @@ import { toast } from 'sonner';
 import { Card } from '@/components/ui';
 import { Badge } from '@/components/ui';
 import { Input } from '@/components/ui';
+import { EmptyState } from '@/components/ui';
 import { useSRMStore } from '@/stores/srmStore';
+import { useCan } from '@/shared/hooks/useCan';
 import SrmFormModal from '@/features/srm/components/SrmFormModal';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { SUPPLIER_FIELDS as supplierFields, buildSupplierPayload } from '@/features/srm/components/supplierForm';
@@ -28,6 +30,7 @@ interface SuppliersPageProps {
 
 export default function SuppliersPage({ variant = 'supplier' }: SuppliersPageProps) {
   const isCustomer = variant === 'customer';
+  const canWrite = useCan('srm.directories.write');
   const suppliers = useSRMStore(s => s.suppliers);
   const customers = useSRMStore(s => s.customers);
   const fetchSuppliers = useSRMStore(s => s.fetchSuppliers);
@@ -120,15 +123,17 @@ export default function SuppliersPage({ variant = 'supplier' }: SuppliersPagePro
             {isCustomer ? 'Реестр заказчиков' : 'Реестр поставщиков и подрядчиков'}
           </p>
         </div>
-        <button
-          onClick={() => setCreateOpen(true)}
-          className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md transition-colors cursor-pointer"
-          style={{ background: '#2563EB', color: '#ffffff' }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = '#1d4ed8'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = '#2563EB'; }}
-        >
-          <Plus size={13} /> {isCustomer ? 'Создать заказчика' : 'Создать поставщика'}
-        </button>
+        {canWrite && (
+          <button
+            onClick={() => setCreateOpen(true)}
+            className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md transition-colors cursor-pointer"
+            style={{ background: '#2563EB', color: '#ffffff' }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = '#1d4ed8'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = '#2563EB'; }}
+          >
+            <Plus size={13} /> {isCustomer ? 'Создать заказчика' : 'Создать поставщика'}
+          </button>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-3">
@@ -158,14 +163,18 @@ export default function SuppliersPage({ variant = 'supplier' }: SuppliersPagePro
                 <h3 className="font-medium text-sm" style={{ color: 'var(--text-primary)' }}>{supplier.name}</h3>
               </div>
               <div className="relative">
-                <button
-                  onClick={() => setStatusMenuFor(statusMenuFor === supplier.id ? null : supplier.id)}
-                  className="flex items-center gap-1 cursor-pointer"
-                  title="Изменить статус"
-                >
+                {canWrite ? (
+                  <button
+                    onClick={() => setStatusMenuFor(statusMenuFor === supplier.id ? null : supplier.id)}
+                    className="flex items-center gap-1 cursor-pointer"
+                    title="Изменить статус"
+                  >
+                    <Badge variant={STATUS_CONFIG[supplier.status].variant}>{STATUS_CONFIG[supplier.status].label}</Badge>
+                    <ChevronDown size={12} style={{ color: 'var(--text-tertiary)' }} />
+                  </button>
+                ) : (
                   <Badge variant={STATUS_CONFIG[supplier.status].variant}>{STATUS_CONFIG[supplier.status].label}</Badge>
-                  <ChevronDown size={12} style={{ color: 'var(--text-tertiary)' }} />
-                </button>
+                )}
                 {statusMenuFor === supplier.id && (
                   <>
                     <div className="fixed inset-0 z-10" onClick={() => setStatusMenuFor(null)} />
@@ -230,28 +239,52 @@ export default function SuppliersPage({ variant = 'supplier' }: SuppliersPagePro
                   </span>
                 )}
                 <div className="flex flex-col items-end gap-1">
-                  <button
-                    onClick={() => setEditingSupplier(supplier)}
-                    className="flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-opacity hover:opacity-80 cursor-pointer"
-                    style={{ color: 'var(--brand-iris)', backgroundColor: 'var(--bg-surface-2)' }}
-                    title="Редактировать"
-                  >
-                    <Pencil size={12} /> Редактировать
-                  </button>
-                  <button
-                    onClick={() => setDeletingSupplier(supplier)}
-                    className="flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-opacity hover:opacity-80 cursor-pointer"
-                    style={{ color: 'var(--error)', backgroundColor: 'color-mix(in srgb, var(--error) 8%, var(--bg-surface-2))' }}
-                    title="Удалить"
-                  >
-                    <Trash2 size={12} /> Удалить
-                  </button>
+                  {canWrite && (
+                    <>
+                      <button
+                        onClick={() => setEditingSupplier(supplier)}
+                        className="flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-opacity hover:opacity-80 cursor-pointer"
+                        style={{ color: 'var(--brand-iris)', backgroundColor: 'var(--bg-surface-2)' }}
+                        title="Редактировать"
+                      >
+                        <Pencil size={12} /> Редактировать
+                      </button>
+                      <button
+                        onClick={() => setDeletingSupplier(supplier)}
+                        className="flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-opacity hover:opacity-80 cursor-pointer"
+                        style={{ color: 'var(--error)', backgroundColor: 'color-mix(in srgb, var(--error) 8%, var(--bg-surface-2))' }}
+                        title="Удалить"
+                      >
+                        <Trash2 size={12} /> Удалить
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
           </Card>
         ))}
       </div>
+
+      {filtered.length === 0 && (
+        <EmptyState
+          icon={Building2}
+          title={isCustomer ? 'Нет заказчиков' : 'Нет поставщиков'}
+          description={isCustomer ? 'Создайте первого заказчика' : 'Создайте первого поставщика'}
+        >
+          {canWrite && (
+            <button
+              onClick={() => setCreateOpen(true)}
+              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md transition-colors cursor-pointer"
+              style={{ background: '#2563EB', color: '#ffffff' }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#1d4ed8'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#2563EB'; }}
+            >
+              <Plus size={13} /> {isCustomer ? 'Создать заказчика' : 'Создать поставщика'}
+            </button>
+          )}
+        </EmptyState>
+      )}
 
       <SrmFormModal
         isOpen={isCreateOpen}
