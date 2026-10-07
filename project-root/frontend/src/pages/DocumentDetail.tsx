@@ -187,6 +187,38 @@ export default function DocumentDetailPage() {
   const assigneeNames = (doc?.assignee_ids ?? [])
     .map((uid) => users.find((u) => u.id === uid)?.full_name || `#${uid}`);
 
+  // ── Редактирование исполнителей (согласующих) ──
+  const [assigneeEditOpen, setAssigneeEditOpen] = useState(false);
+  const [assigneeDraft, setAssigneeDraft] = useState<number[]>([]);
+  const [assigneeSaving, setAssigneeSaving] = useState(false);
+
+  const startAssigneeEdit = () => {
+    setAssigneeDraft([...(doc?.assignee_ids ?? [])]);
+    setAssigneeEditOpen(true);
+  };
+
+  const toggleAssigneeDraft = (uid: number) => {
+    setAssigneeDraft(prev =>
+      prev.includes(uid) ? prev.filter(x => x !== uid) : [...prev, uid],
+    );
+  };
+
+  const handleSaveAssignees = async () => {
+    const numericId = Number(id);
+    if (!numericId) return;
+    setAssigneeSaving(true);
+    try {
+      const updated = await updateDocument(numericId, { assignee_ids: assigneeDraft });
+      setDoc(prev => (prev ? { ...prev, ...updated } as DocumentDetail : prev));
+      toast.success('Исполнители обновлены — новые согласующие получат уведомления');
+      setAssigneeEditOpen(false);
+    } catch {
+      // ошибку показал интерцептор (например, 403 без права documents.write)
+    } finally {
+      setAssigneeSaving(false);
+    }
+  };
+
   // ── Предпросмотр файла ревизии ──
   const [selectedRevId, setSelectedRevId] = useState<number | null>(null);
   const [previewFile, setPreviewFile] = useState<{ url: string; name: string } | null>(null);
@@ -461,11 +493,66 @@ export default function DocumentDetailPage() {
                   <span style={{ color: 'var(--text-secondary)' }}>Автор:</span>
                   <span style={{ color: 'var(--text-primary)' }}>—</span>
                 </div>
-                <div className="flex justify-between gap-4">
-                  <span style={{ color: 'var(--text-secondary)' }}>Исполнитель(и):</span>
-                  <span className="text-right" style={{ color: 'var(--text-primary)' }}>
-                    {assigneeNames.length > 0 ? assigneeNames.join(', ') : '—'}
-                  </span>
+                <div className="gap-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <span style={{ color: 'var(--text-secondary)' }}>Исполнитель(и):</span>
+                    {!assigneeEditOpen && (
+                      <span className="inline-flex items-center gap-1.5 text-right" style={{ color: 'var(--text-primary)' }}>
+                        <span>{assigneeNames.length > 0 ? assigneeNames.join(', ') : '—'}</span>
+                        <button
+                          onClick={startAssigneeEdit}
+                          title="Изменить исполнителей (согласующих)"
+                          className="p-0.5 rounded transition-opacity hover:opacity-70"
+                          style={{ color: 'var(--text-muted)' }}
+                        >
+                          <PencilLine size={12} />
+                        </button>
+                      </span>
+                    )}
+                  </div>
+                  {assigneeEditOpen && (
+                    <div
+                      className="rounded-md p-2 space-y-1.5"
+                      style={{ background: 'var(--bg-surface-2)', border: '1px solid var(--border-default)' }}
+                    >
+                      {users.filter(u => u.is_active).length === 0 ? (
+                        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Загрузка пользователей…</p>
+                      ) : (
+                        users.filter(u => u.is_active).map(u => (
+                          <label
+                            key={u.id}
+                            className="flex items-center gap-2 text-xs cursor-pointer"
+                            style={{ color: 'var(--text-primary)' }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={assigneeDraft.includes(u.id)}
+                              onChange={() => toggleAssigneeDraft(u.id)}
+                            />
+                            {u.full_name || u.email}
+                          </label>
+                        ))
+                      )}
+                      <div className="flex items-center justify-end gap-2 pt-1">
+                        <button
+                          onClick={() => setAssigneeEditOpen(false)}
+                          disabled={assigneeSaving}
+                          className="px-2.5 py-1 rounded text-xs font-medium transition-opacity hover:opacity-80"
+                          style={{ color: 'var(--text-secondary)', background: 'var(--bg-surface)', border: '1px solid var(--border-default)' }}
+                        >
+                          Отмена
+                        </button>
+                        <button
+                          onClick={() => void handleSaveAssignees()}
+                          disabled={assigneeSaving}
+                          className="px-2.5 py-1 rounded text-xs font-medium text-white transition-opacity"
+                          style={{ background: 'var(--brand-iris, #4F7A4C)', opacity: assigneeSaving ? 0.5 : 1 }}
+                        >
+                          {assigneeSaving ? 'Сохранение…' : 'Сохранить'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="flex justify-between">
                   <span style={{ color: 'var(--text-secondary)' }}>Создан:</span>
