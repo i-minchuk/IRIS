@@ -288,6 +288,46 @@ class DocumentService:
                 # Уведомление не должно ломать основную операцию с документом.
                 logger.warning("Failed to notify assignee %s for doc %s: %s", assignee_id, doc.id, exc)
 
+    def _pending_approver_ids(self, doc, approvals: List[Dict[str, Any]]) -> List[int]:
+        """Согласующие из assignee_ids, которые ещё не согласовали."""
+        approvers = list(doc.assignee_ids or [])
+        approved_ids = {a.get("user_id") for a in approvals or []}
+        return [uid for uid in approvers if uid not in approved_ids]
+
+    async def _notify_pending_approvers(
+        self,
+        doc,
+        pending_ids: List[int],
+        actor_id: Optional[int],
+        intro: str,
+    ) -> None:
+        """Уведомление согласующих, что документ ожидает их шага (in-app + email + telegram)."""
+        from app.modules.auth.models import User
+
+        deadline = doc.planned_end or doc.planned_ready
+        due = f" Срок: {deadline.strftime('%d.%m.%Y')}." if deadline else ""
+        title_doc = doc.number or doc.name or f"№{doc.id}"
+        for uid in pending_ids or []:
+            if uid == actor_id:
+                continue
+            user = await self.db.get(User, uid)
+            if user is None:
+                continue
+            try:
+                await self.notif_repo.create_and_notify(
+                    user_id=user.id,
+                    type="approval_pending",
+                    title=f"Документ на согласовании: {title_doc}",
+                    message=f"{intro} Документ «{title_doc}» ожидает вашего согласования.{due}",
+                    user_email=user.email,
+                    email_notifications_enabled=user.email_notifications_enabled,
+                    telegram_chat_id=user.telegram_chat_id,
+                    meta={"link": f"/documents/{doc.id}", "document_id": doc.id},
+                )
+            except Exception as exc:
+                # Уведомление не должно ломать согласование.
+                logger.warning("Failed to notify approver %s for doc %s: %s", uid, doc.id, exc)
+
     async def copy_document(
         self,
         document_id: int,
@@ -642,6 +682,14 @@ class DocumentService:
         
         doc = await self.doc_repo.update(doc, {"status": "in_review"})
         
+        # Уведомляем согласующих о старте цепочки согласования
+        content = doc.content if isinstance(doc.content, dict) else {}
+        pending_ids = self._pending_approver_ids(doc, list(content.get("approvals") or []))
+        if pending_ids:
+            await self._notify_pending_approvers(
+                doc, pending_ids, user_id, "Запущено согласование."
+            )
+        
         return {
             "document_id": doc.id,
             "status": doc.status,
@@ -720,31 +768,28 @@ class DocumentService:
             ]
 
         try:
-            if pending:
-                next_name = pending[0]["user_name"]
-                await self.notif_repo.create(
-                    user_id=pending[0]["user_id"],
-                    type="approval_pending",
-                    title="Документ на согласовании",
-                    message=(
-                        f"Документ {doc.number} передан вам на согласование "
-                        f"({user_name} согласовал). Далее в цепочке: {next_name}"
-                        if len(pending) > 1
-                        else f"Документ {doc.number} передан вам на согласование "
-                             f"({user_name} согласовал)."
-                    ),
-                    meta={"link": f"/documents/{doc.id}"},
+            if pending_ids:
+                await self._notify_pending_approvers(
+                    doc,
+                    pending_ids,
+                    user_id,
+                    f"{user_name} согласовал(а), документ передан дальше по цепочке.",
                 )
             else:
                 if doc.author_id and doc.author_id != user_id:
-                    await self.notif_repo.create(
-                        user_id=doc.author_id,
-                        type="document_approved",
-                        title="Документ утверждён",
-                        message=f"Документ {doc.number} полностью согласован "
-                                f"({user_name} завершил цепочку согласования).",
-                        meta={"link": f"/documents/{doc.id}"},
-                    )
+                    author = await self.db.get(User, doc.author_id)
+                    if author is not None:
+                        await self.notif_repo.create_and_notify(
+                            user_id=author.id,
+                            type="document_approved",
+                            title="Документ утверждён",
+                            message=f"Документ {doc.number} полностью согласован "
+                                    f"({user_name} завершил цепочку согласования).",
+                            user_email=author.email,
+                            email_notifications_enabled=author.email_notifications_enabled,
+                            telegram_chat_id=author.telegram_chat_id,
+                            meta={"link": f"/documents/{doc.id}", "document_id": doc.id},
+                        )
         except Exception:
             logger.exception("Failed to create approval notification")
 

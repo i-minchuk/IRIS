@@ -11,6 +11,7 @@ class NotificationType:
     DEADLINE_APPROACHING = "deadline_approaching"
     DOCUMENT_APPROVED = "document_approved"
     DOCUMENT_ASSIGNED = "document_assigned"
+    APPROVAL_PENDING = "approval_pending"
 
 
 class NotificationResponse(BaseModel):
