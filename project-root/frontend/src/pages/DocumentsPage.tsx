@@ -23,6 +23,7 @@ import { getRemarks, createRemark } from '@/features/remarks/api/remarks';
 import { getDocuments, getDocument, uploadDocumentFile, downloadRevisionFile, approveDocument, getApprovalFeed, getActionTaskStatuses, setActionTaskStatus, updateDocument, copyDocument, deleteDocument, type ApprovalFeedItem, type DocumentItem, type ActionTaskStatus } from '@/features/documents/api/documents';
 import ViewerContainer from '@/components/viewers/ViewerContainer';
 import { getProjects, updateProject, deleteProject, archiveProject } from '@/features/projects/api/projects';
+import { getUsers } from '@/features/users/api/users';
 import { toast } from 'sonner';
 import type { LeaderboardEntry } from '@/types';
 import type { RemarkListItem } from '@/types/remarks';
@@ -43,6 +44,14 @@ import {
 
 /* ── Types ── */
 type DocType = 'KJ' | 'AR' | 'OViK' | 'EOM' | 'KR' | 'other';
+
+interface ProjectListItem {
+  id: number;
+  name: string;
+  status?: string;
+  manager_id?: number | null;
+  manager_name?: string | null;
+}
 type DocStatus = 'draft' | 'review' | 'approved' | 'confirmed' | 'archived';
 type TabKey = 'registry' | 'remarks' | 'workflow';
 type RemarkAction = 'revise' | 'approve' | 'delegate';
@@ -305,7 +314,7 @@ function RegistryView() {
   const [docs, setDocs] = useState<Document[]>([]);
   const [docsLoading, setDocsLoading] = useState(true);
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [allProjects, setAllProjects] = useState<{ id: number; name: string; status?: string }[]>([]);
+  const [allProjects, setAllProjects] = useState<ProjectListItem[]>([]);
 
   // ── Предпросмотр файла выбранного документа ──
   const [previewFile, setPreviewFile] = useState<{ url: string; name: string } | null>(null);
@@ -448,10 +457,10 @@ function RegistryView() {
     try {
       const [apiDocs, projectsData, leaderboard] = await Promise.all([
         getDocuments().catch(() => [] as DocumentItem[]),
-        getProjects().catch(() => [] as { id: number; name: string; status?: string }[]),
+        getProjects().catch(() => [] as ProjectListItem[]),
         getLeaderboard().catch(() => [] as LeaderboardEntry[]),
       ]);
-      const projectsList = extractItems<{ id: number; name: string; status?: string }>(projectsData);
+      const projectsList = extractItems<ProjectListItem>(projectsData);
       const projectNamesMap = new Map(projectsList.map(p => [p.id, p.name]));
       setAllProjects(projectsList);
       setDocs(extractItems<DocumentItem>(apiDocs).map(d => mapApiDocument(d, projectNamesMap.get(d.project_id) || `Проект #${d.project_id}`)));
@@ -860,6 +869,51 @@ function RegistryView() {
   const [moveTarget, setMoveTarget] = useState('');
   const [moveLoading, setMoveLoading] = useState(false);
 
+  // ── Назначение руководителя проекта ──
+  const [managerDialog, setManagerDialog] = useState<string | null>(null);
+  const [managerUsers, setManagerUsers] = useState<{ id: number; full_name: string }[]>([]);
+  const [managerValue, setManagerValue] = useState('');
+  const [managerSaving, setManagerSaving] = useState(false);
+
+  const openManagerDialog = (projectName: string) => {
+    closeContextMenu();
+    const proj = allProjects.find(p => p.name === projectName);
+    setManagerDialog(projectName);
+    setManagerValue(proj?.manager_id ? String(proj.manager_id) : '');
+    if (managerUsers.length === 0) {
+      void getUsers()
+        .then(users =>
+          setManagerUsers(
+            users
+              .filter(u => u.is_active)
+              .map(u => ({ id: u.id, full_name: u.full_name || u.email || `№${u.id}` })),
+          ),
+        )
+        .catch(() => {
+          // ошибку показал интерцептор
+        });
+    }
+  };
+
+  const handleSaveManager = async () => {
+    const proj = allProjects.find(p => p.name === managerDialog);
+    if (!proj) {
+      setManagerDialog(null);
+      return;
+    }
+    setManagerSaving(true);
+    try {
+      await updateProject(proj.id, { manager_id: managerValue ? Number(managerValue) : null });
+      toast.success(managerValue ? 'Руководитель проекта назначен' : 'Руководитель проекта снят');
+      setManagerDialog(null);
+      await loadData();
+    } catch {
+      // ошибку показал интерцептор
+    } finally {
+      setManagerSaving(false);
+    }
+  };
+
   const moveTargets = useMemo(
     () => allProjects.filter(p => p.name !== moveDoc?.project),
     [allProjects, moveDoc],
@@ -1051,6 +1105,7 @@ function RegistryView() {
               const isExpanded = expandedProjects.has(project);
               const docs = projects.get(project) || [];
               const isSelected = selectedProject === project;
+              const projMeta = allProjects.find(p => p.name === project);
 
 
               return (
@@ -1084,6 +1139,11 @@ function RegistryView() {
                   </button>
                   {isExpanded && (
                     <div>
+                      {projMeta?.manager_name && (
+                        <div className="pl-7 pr-2 pb-1 text-[10px] truncate" style={{ color: 'var(--text-muted)' }}>
+                          Руководитель: {projMeta.manager_name}
+                        </div>
+                      )}
                       {docs.map(doc => {
                         const isDocSelected = selectedDocId === doc.id;
                         const matchSearch = !appliedQuery || doc.name.toLowerCase().includes(appliedQuery.toLowerCase()) || doc.code.toLowerCase().includes(appliedQuery.toLowerCase());
@@ -1625,6 +1685,11 @@ function RegistryView() {
                     startProjectRename(contextMenu.projectName);
                   }}
                 />
+                <ContextMenuItem
+                  icon={<UserCheck size={13} />}
+                  label="Руководитель проекта…"
+                  onClick={() => openManagerDialog(contextMenu.projectName)}
+                />
                 {clipboardDoc && (
                   <ContextMenuItem
                     icon={<ClipboardPaste size={13} />}
@@ -1745,6 +1810,64 @@ function RegistryView() {
                 style={{ background: TAB_COLOR, opacity: (!moveTarget || moveLoading || moveTargets.length === 0) ? 0.5 : 1 }}
               >
                 {moveLoading ? 'Перемещение…' : 'Переместить'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Диалог назначения руководителя проекта */}
+      {managerDialog && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.5)' }}
+          onClick={() => setManagerDialog(null)}
+        >
+          <div
+            className="rounded-xl p-4 w-full max-w-sm space-y-3"
+            style={{ background: 'var(--card-bg)', border: '1px solid var(--border-default)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+              Руководитель проекта
+            </h3>
+            <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+              «{managerDialog}». Руководитель получает эскалации по просроченным
+              согласованиям документов проекта.
+            </p>
+            {managerUsers.length === 0 ? (
+              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                Загрузка списка пользователей…
+              </p>
+            ) : (
+              <select
+                value={managerValue}
+                onChange={e => setManagerValue(e.target.value)}
+                className="w-full text-sm rounded-md px-2 py-1.5"
+                style={{ background: 'var(--bg-surface-2)', border: '1px solid var(--border-default)', color: 'var(--text-primary)' }}
+                autoFocus
+              >
+                <option value="">— Не назначен —</option>
+                {managerUsers.map(u => (
+                  <option key={u.id} value={String(u.id)}>{u.full_name}</option>
+                ))}
+              </select>
+            )}
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <button
+                onClick={() => setManagerDialog(null)}
+                className="px-3 py-1.5 rounded-md text-xs font-medium transition-opacity hover:opacity-80"
+                style={{ color: 'var(--text-secondary)', background: 'var(--bg-surface-2)', border: '1px solid var(--border-default)' }}
+              >
+                Отмена
+              </button>
+              <button
+                onClick={() => void handleSaveManager()}
+                disabled={managerSaving || managerUsers.length === 0}
+                className="px-3 py-1.5 rounded-md text-xs font-medium text-white transition-opacity"
+                style={{ background: TAB_COLOR, opacity: (managerSaving || managerUsers.length === 0) ? 0.5 : 1 }}
+              >
+                {managerSaving ? 'Сохранение…' : 'Сохранить'}
               </button>
             </div>
           </div>

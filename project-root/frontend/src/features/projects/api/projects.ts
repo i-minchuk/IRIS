@@ -7,7 +7,8 @@ export interface Project {
   code: string;
   status: string;
   customer_name?: string;
-  manager_id?: number;
+  manager_id?: number | null;
+  manager_name?: string | null;
   contract_number?: string;
   stage?: string;
   risk_level?: 'low' | 'medium' | 'high';

@@ -16,6 +16,7 @@ class ProjectCreate(BaseModel):
     stage: Optional[str] = Field(default="draft", max_length=50)
     status: Optional[str] = Field(default="draft", max_length=50)
     standard_template_id: Optional[int] = None
+    manager_id: Optional[int] = None
     variables: Optional[dict] = Field(default_factory=dict)
 
 
@@ -39,6 +40,7 @@ class ProjectUpdate(BaseModel):
     contract_number: Optional[str] = Field(None, max_length=100)
     stage: Optional[str] = Field(None, max_length=50)
     status: Optional[str] = Field(None, max_length=50)
+    manager_id: Optional[int] = None
 
 
 class ProjectArchiveRequest(BaseModel):
@@ -85,6 +87,8 @@ class ProjectDetailResponse(BaseModel):
     contract_number: Optional[str] = None
     stage: str
     status: str
+    manager_id: Optional[int] = None
+    manager_name: Optional[str] = None
     variables: Optional[dict] = None
     created_at: Optional[str] = None
     stages: list[dict] = []

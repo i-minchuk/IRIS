@@ -39,7 +39,11 @@ async def list_projects(
     offset = (page - 1) * page_size
     total = await db.scalar(select(func.count()).select_from(Project))
     result = await db.execute(
-        select(Project).order_by(Project.created_at.desc()).offset(offset).limit(page_size)
+        select(Project)
+        .options(selectinload(Project.manager))
+        .order_by(Project.created_at.desc())
+        .offset(offset)
+        .limit(page_size)
     )
     projects = result.scalars().all()
     items = [
@@ -51,6 +55,8 @@ async def list_projects(
             "contract_number": p.contract_number,
             "stage": p.stage,
             "status": p.status,
+            "manager_id": p.manager_id,
+            "manager_name": p.manager.full_name if p.manager else None,
             "archived_at": p.archived_at.isoformat() if p.archived_at else None,
             "archive_reason": p.archive_reason,
             "variables": p.variables or {},
@@ -81,6 +87,7 @@ async def create_project(
         stage=data.stage,
         status=data.status,
         standard_template_id=data.standard_template_id,
+        manager_id=data.manager_id,
         variables=data.variables or {},
         created_by_id=current_user.id,
     )
@@ -216,7 +223,16 @@ async def get_project(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    result = await db.execute(select(Project).where(Project.id == project_id))
+    result = await db.execute(
+        select(Project)
+        .options(
+            selectinload(Project.manager),
+            selectinload(Project.stages)
+            .selectinload(Stage.kits)
+            .selectinload(Kit.sections),
+        )
+        .where(Project.id == project_id)
+    )
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
@@ -228,6 +244,8 @@ async def get_project(
         contract_number=project.contract_number,
         stage=project.stage,
         status=project.status,
+        manager_id=project.manager_id,
+        manager_name=project.manager.full_name if project.manager else None,
         variables=project.variables,
         created_at=project.created_at.isoformat() if project.created_at else None,
         stages=[
