@@ -107,6 +107,9 @@ export interface LeaderboardEntry {
   late_approvals?: number;
   sent_on_time?: number;
   sent_late?: number;
+  doc_on_time?: number;
+  doc_late?: number;
+  avg_approval_hours?: number | null;
 }
 
 export interface GamificationProfile {

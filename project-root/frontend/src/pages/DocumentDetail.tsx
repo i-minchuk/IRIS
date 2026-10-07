@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { Card } from '@/components/ui';
 import { Button } from '@/components/ui';
@@ -10,7 +10,7 @@ import { RequirementsPanel } from '@/features/ai/components/RequirementsPanel';
 import { DocumentWorkflowPanel } from '@/features/workflow/components/DocumentWorkflowPanel';
 import { FileText, MessageSquare, History, Users, ArrowLeft, Sparkles, Wrench, Bot, Upload, PencilLine, Maximize2, Minimize2, Clock, CheckCircle, Paperclip, GitBranch } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { getDocument, downloadRevisionFile, downloadTitleSheet, uploadDocumentFile, updateDocument, approveDocument, getApprovalFeed, type ApprovalRecord, type DocumentDetail, type Revision } from '@/features/documents/api/documents';
+import { getDocument, downloadRevisionFile, downloadTitleSheet, uploadDocumentFile, updateDocument, approveDocument, getApprovalFeed, remindDocumentApprovers, getMyDelegations, createDelegation, cancelDelegation, type ApprovalRecord, type Delegation, type DocumentDetail, type Revision } from '@/features/documents/api/documents';
 import { getRemarks, updateRemark } from '@/features/remarks/api/remarks';
 import type { RemarkListItem } from '@/types/remarks';
 import { getUsers } from '@/features/users/api/users';
@@ -224,6 +224,62 @@ export default function DocumentDetailPage() {
   const [previewFile, setPreviewFile] = useState<{ url: string; name: string } | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const previewCacheRef = useRef<Map<number, { url: string; name: string }>>(new Map());
+
+  // ── Делегирование согласований ──
+  const [delegations, setDelegations] = useState<{ mine: Delegation[]; incoming: Delegation[] }>({ mine: [], incoming: [] });
+  const [delegateDialogOpen, setDelegateDialogOpen] = useState(false);
+  const [delegateUserId, setDelegateUserId] = useState('');
+  const [delegateDays, setDelegateDays] = useState(7);
+  const [delegateSaving, setDelegateSaving] = useState(false);
+  const [remindSending, setRemindSending] = useState(false);
+
+  const loadDelegations = useCallback(() => {
+    getMyDelegations().then(setDelegations).catch(() => setDelegations({ mine: [], incoming: [] }));
+  }, []);
+
+  useEffect(() => {
+    loadDelegations();
+  }, [loadDelegations]);
+
+  const handleCreateDelegation = async () => {
+    if (!delegateUserId) return;
+    setDelegateSaving(true);
+    try {
+      await createDelegation({ delegate_id: Number(delegateUserId), days: delegateDays });
+      toast.success('Согласования делегированы — автовозврат по истечении срока');
+      setDelegateDialogOpen(false);
+      setDelegateUserId('');
+      loadDelegations();
+    } catch {
+      // ошибку показал интерцептор
+    } finally {
+      setDelegateSaving(false);
+    }
+  };
+
+  const handleCancelDelegation = async (delegationId: number) => {
+    try {
+      await cancelDelegation(delegationId);
+      toast.success('Делегирование отменено');
+      loadDelegations();
+    } catch {
+      // ошибку показал интерцептор
+    }
+  };
+
+  const handleRemind = async () => {
+    const numericId = Number(id);
+    if (!numericId) return;
+    setRemindSending(true);
+    try {
+      const res = await remindDocumentApprovers(numericId);
+      toast.success(`Напоминание отправлено ${res.notified} получателю(ям)`);
+    } catch {
+      // ошибку показал интерцептор
+    } finally {
+      setRemindSending(false);
+    }
+  };
   const activeRev = files.find(r => r.id === selectedRevId) ?? files[files.length - 1] ?? null;
 
   // ── Полноэкранный режим предпросмотра ──
@@ -493,6 +549,25 @@ export default function DocumentDetailPage() {
                   <span style={{ color: 'var(--text-secondary)' }}>Автор:</span>
                   <span style={{ color: 'var(--text-primary)' }}>—</span>
                 </div>
+                {(() => {
+                  const history = (((doc?.content as Record<string, unknown> | null)?.assignee_history) ?? []) as Array<{ at?: string; actor_name?: string; added?: string[]; removed?: string[] }>;
+                  if (history.length === 0) return null;
+                  return (
+                    <div className="pt-2 mt-1 border-t" style={{ borderColor: 'var(--border-default)' }}>
+                      <div className="text-xs font-medium mb-1.5" style={{ color: 'var(--text-tertiary)' }}>История назначений</div>
+                      <div className="space-y-1">
+                        {history.slice(-5).reverse().map((entry, i) => (
+                          <div key={i} className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                            <span style={{ color: 'var(--text-primary)' }}>{entry.actor_name ?? '—'}</span>
+                            {entry.removed && entry.removed.length > 0 && <span> − {entry.removed.join(', ')}</span>}
+                            {entry.added && entry.added.length > 0 && <span> + {entry.added.join(', ')}</span>}
+                            <span className="block" style={{ color: 'var(--text-tertiary)' }}>{entry.at ? new Date(entry.at).toLocaleString('ru-RU') : ''}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
                 <div className="gap-4">
                   <div className="flex items-center justify-between gap-4">
                     <span style={{ color: 'var(--text-secondary)' }}>Исполнитель(и):</span>
@@ -677,7 +752,7 @@ export default function DocumentDetailPage() {
           const myId = (me as { id?: number } | null)?.id;
           const alreadyApproved = myId != null && approvedBy.has(myId);
           const isApproved = doc?.status === 'approved';
-          const canApprove = Boolean(doc && !isApproved && !alreadyApproved && (approverIds.length === 0 || (myId != null && approverIds.includes(myId)) || (me as { role?: string } | null)?.role === 'admin'));
+          const canApprove = Boolean(doc && !isApproved && !alreadyApproved && (approverIds.length === 0 || (myId != null && approverIds.includes(myId)) || (me as { role?: string } | null)?.role === 'admin' || delegations.incoming.length > 0));
           const nameOf = (uid: number) => users.find(u => u.id === uid)?.full_name || `#${uid}`;
 
           return (
@@ -750,6 +825,120 @@ export default function DocumentDetailPage() {
                 >
                   Согласовать документ
                 </Button>
+              )}
+              {doc && doc.status === 'in_review' && approverIds.some(uid => !approvedBy.has(uid)) && (
+                <button
+                  type="button"
+                  onClick={() => { void handleRemind(); }}
+                  disabled={remindSending}
+                  className="mt-4 ml-2 text-xs px-3 py-2 rounded-md border transition-colors hover:opacity-80 disabled:opacity-50"
+                  style={{ color: 'var(--text-secondary)', borderColor: 'var(--border-default)', background: 'var(--bg-surface-2)' }}
+                >
+                  {remindSending ? 'Отправка…' : 'Напомнить согласующим'}
+                </button>
+              )}
+              <div className="mt-6 pt-4 border-t" style={{ borderColor: 'var(--border-default)' }}>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-xs font-medium uppercase tracking-wide" style={{ color: 'var(--text-tertiary)' }}>Делегирование</h4>
+                  <button
+                    type="button"
+                    onClick={() => setDelegateDialogOpen(true)}
+                    className="text-xs px-2 py-1 rounded-md border transition-colors hover:opacity-80"
+                    style={{ color: 'var(--text-secondary)', borderColor: 'var(--border-default)', background: 'var(--bg-surface-2)' }}
+                  >
+                    Делегировать мои согласования…
+                  </button>
+                </div>
+                {delegations.mine.length === 0 && delegations.incoming.length === 0 ? (
+                  <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Активных делегирований нет.</p>
+                ) : (
+                  <div className="space-y-1.5">
+                    {delegations.mine.map(d => (
+                      <div key={d.id} className="flex items-center gap-2 text-xs">
+                        <span style={{ color: 'var(--text-secondary)' }}>
+                          Мои согласования → {nameOf(d.delegate_id)} (до {new Date(d.expires_at).toLocaleDateString('ru-RU')})
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => { void handleCancelDelegation(d.id); }}
+                          className="ml-auto px-1.5 py-0.5 rounded border transition-colors hover:opacity-80"
+                          style={{ color: 'var(--text-tertiary)', borderColor: 'var(--border-default)' }}
+                        >
+                          Отменить
+                        </button>
+                      </div>
+                    ))}
+                    {delegations.incoming.map(d => (
+                      <div key={d.id} className="flex items-center gap-2 text-xs">
+                        <span style={{ color: 'var(--text-secondary)' }}>
+                          Получено от {nameOf(d.user_id)} (до {new Date(d.expires_at).toLocaleDateString('ru-RU')})
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => { void handleCancelDelegation(d.id); }}
+                          className="ml-auto px-1.5 py-0.5 rounded border transition-colors hover:opacity-80"
+                          style={{ color: 'var(--text-tertiary)', borderColor: 'var(--border-default)' }}
+                        >
+                          Отказаться
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {delegateDialogOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.5)' }} onClick={() => setDelegateDialogOpen(false)}>
+                  <div
+                    className="rounded-xl p-4 w-full max-w-sm space-y-3"
+                    style={{ background: 'var(--card-bg, var(--bg-surface))', border: '1px solid var(--border-default)' }}
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <h4 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Делегировать согласования</h4>
+                    <select
+                      value={delegateUserId}
+                      onChange={e => setDelegateUserId(e.target.value)}
+                      className="w-full text-sm rounded-md px-2 py-1.5 border"
+                      style={{ background: 'var(--bg-surface-2)', borderColor: 'var(--border-default)', color: 'var(--text-primary)' }}
+                    >
+                      <option value="">Выберите сотрудника…</option>
+                      {users.filter(u => u.id !== myId).map(u => (
+                        <option key={u.id} value={u.id}>{u.full_name || u.email}</option>
+                      ))}
+                    </select>
+                    <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                      <span>Срок, дней:</span>
+                      <input
+                        type="number"
+                        min={1}
+                        max={30}
+                        value={delegateDays}
+                        onChange={e => setDelegateDays(Math.max(1, Math.min(30, Number(e.target.value) || 7)))}
+                        className="w-20 text-sm rounded-md px-2 py-1 border"
+                        style={{ background: 'var(--bg-surface-2)', borderColor: 'var(--border-default)', color: 'var(--text-primary)' }}
+                      />
+                      <span style={{ color: 'var(--text-tertiary)' }}>по истечении — автовозврат</span>
+                    </div>
+                    <div className="flex justify-end gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setDelegateDialogOpen(false)}
+                        className="text-xs px-3 py-1.5 rounded-md border"
+                        style={{ color: 'var(--text-secondary)', borderColor: 'var(--border-default)' }}
+                      >
+                        Отмена
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { void handleCreateDelegation(); }}
+                        disabled={!delegateUserId || delegateSaving}
+                        className="text-xs px-3 py-1.5 rounded-md font-medium transition-colors hover:opacity-80 disabled:opacity-50"
+                        style={{ color: '#fff', background: 'var(--brand-iris)' }}
+                      >
+                        {delegateSaving ? 'Сохранение…' : 'Делегировать'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
               )}
             </Card>
           );

@@ -23,6 +23,8 @@ export interface DocumentItem {
   delete_reason?: string | null;
   created_at?: string;
   has_file?: boolean;
+  planned_end?: string | null;
+  planned_ready?: string | null;
   assignee_ids?: number[] | null;
   standard_ids?: number[] | null;
   process_task_id?: string | null;
@@ -125,6 +127,34 @@ export const createDocument = async (body: Partial<DocumentItem>): Promise<Docum
 
 export const updateDocument = async (id: number, body: Partial<DocumentItem> & { content?: Record<string, unknown> }): Promise<DocumentItem> => {
   const { data } = await client.patch(`/documents/${id}`, body);
+  return data;
+};
+
+export const remindDocumentApprovers = async (id: number): Promise<{ notified: number }> => {
+  const { data } = await client.post(`/documents/${id}/remind`);
+  return data;
+};
+
+export interface Delegation {
+  id: number;
+  expires_at: string;
+  user_name?: string;
+  delegate_id: number;
+  user_id: number;
+}
+
+export const createDelegation = async (body: { delegate_id: number; days: number }): Promise<Delegation> => {
+  const { data } = await client.post('/documents/delegations', body);
+  return data;
+};
+
+export const getMyDelegations = async (): Promise<{ mine: Delegation[]; incoming: Delegation[] }> => {
+  const { data } = await client.get('/documents/delegations/mine');
+  return data;
+};
+
+export const cancelDelegation = async (id: number): Promise<{ ok: boolean }> => {
+  const { data } = await client.delete(`/documents/delegations/${id}`);
   return data;
 };
 

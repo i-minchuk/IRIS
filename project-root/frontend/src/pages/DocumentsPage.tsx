@@ -90,6 +90,8 @@ interface Document {
   size: string;
   format: string;
   hasFile: boolean;
+  plannedEnd?: string | null;
+  plannedReady?: string | null;
   remarks: DocRemark[];
 }
 
@@ -172,8 +174,23 @@ function mapApiDocument(d: DocumentItem, projectName: string): Document {
     size: '—',
     format: '—',
     hasFile: d.has_file ?? false,
+    plannedEnd: d.planned_end ?? null,
+    plannedReady: d.planned_ready ?? null,
     remarks: [],
   };
+}
+
+/* ── Индикатор дедлайна согласования ── */
+function deadlineBadge(doc: Pick<Document, 'status' | 'plannedEnd' | 'plannedReady'>): { label: string; color: string; bg: string; border: string } | null {
+  if (doc.status !== 'review') return null;
+  const raw = doc.plannedEnd || doc.plannedReady;
+  if (!raw) return null;
+  const deadline = new Date(raw).getTime();
+  if (Number.isNaN(deadline)) return null;
+  const hoursLeft = (deadline - Date.now()) / 36e5;
+  if (hoursLeft < 0) return { label: 'Просрочено', color: '#FF6B6B', bg: 'rgba(255,107,107,0.15)', border: 'rgba(255,107,107,0.4)' };
+  if (hoursLeft < 24) return { label: `Осталось ${Math.max(1, Math.round(hoursLeft))} ч`, color: '#D4AF37', bg: 'rgba(212,175,55,0.15)', border: 'rgba(212,175,55,0.4)' };
+  return { label: `До ${new Date(deadline).toLocaleDateString('ru-RU')}`, color: 'var(--text-muted)', bg: 'var(--bg-surface-2)', border: 'var(--border-default)' };
 }
 
 function extractItems<T>(data: unknown): T[] {
@@ -1261,6 +1278,19 @@ function RegistryView() {
                     <div className="flex items-center gap-1.5 shrink-0">
                       <TypeBadge type={doc.type} />
                       <StatusBadge status={doc.status} />
+                      {(() => {
+                        const badge = deadlineBadge(doc);
+                        return badge ? (
+                          <span
+                            className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full border font-medium"
+                            title="Дедлайн согласования"
+                            style={{ color: badge.color, background: badge.bg, borderColor: badge.border }}
+                          >
+                            <Clock size={10} />
+                            {badge.label}
+                          </span>
+                        ) : null;
+                      })()}
                       {doc.hasFile ? (
                         <button
                           type="button"
@@ -2097,6 +2127,12 @@ function WorkflowView() {
   const [taskStatuses, setTaskStatuses] = useState<Record<string, 'new' | 'in_progress' | 'done'>>({});
   const [remarkSearch, setRemarkSearch] = useState('');
   const [remarkFilter, setRemarkFilter] = useState<'all' | 'new' | 'in_progress' | 'resolved'>('all');
+  const [workflowFilter, setWorkflowFilter] = useState<'all' | 'hot' | 'overdue'>('all');
+  const [escalations, setEscalations] = useState<{
+    items?: Array<{ project_id: number; project_name: string; escalations: number; last_escalation_at: string | null; overdue_now: number }>;
+    total_escalations?: number;
+    overdue_now_total?: number;
+  } | null>(null);
 
   useEffect(() => {
     if (loaded) return;
@@ -2108,11 +2144,13 @@ function WorkflowView() {
       getDocuments().catch(() => [] as DocumentItem[]),
       getProjects().catch(() => [] as { id: number; name: string; status?: string }[]),
       getActionTaskStatuses().catch(() => ({}) as Record<string, ActionTaskStatus>),
-    ]).then(([remarksData, feedData, docsData, projectsData, taskStatusesData]) => {
+      apiClient.get('/analytics/escalations').then(r => r.data).catch(() => null),
+    ]).then(([remarksData, feedData, docsData, projectsData, taskStatusesData, escalationsData]) => {
       if (cancelled) return;
       if (remarksData?.items?.length) setRemarks(remarksData.items);
       if (feedData?.length) setApprovalFeed(feedData);
       setTaskStatuses(taskStatusesData);
+      if (escalationsData) setEscalations(escalationsData);
       const docsList = Array.isArray(docsData)
         ? docsData
         : (docsData as any)?.items ?? [];
@@ -2332,8 +2370,109 @@ function WorkflowView() {
   const chartTextColor = 'var(--text-secondary, #8892A8)';
   const chartGridColor = 'var(--border-divider, rgba(255,255,255,0.06))';
 
+  const reviewDocs = useMemo(() => docs.filter(d => d.status === 'review'), [docs]);
+  const overdueDocs = useMemo(() => reviewDocs.filter(d => {
+    const raw = d.plannedEnd || d.plannedReady;
+    if (!raw) return false;
+    const t = new Date(raw).getTime();
+    return !Number.isNaN(t) && t < Date.now();
+  }), [reviewDocs]);
+  const hotDocs = useMemo(() => reviewDocs.filter(d => {
+    const raw = d.plannedEnd || d.plannedReady;
+    if (!raw) return false;
+    const hoursLeft = (new Date(raw).getTime() - Date.now()) / 36e5;
+    return hoursLeft >= 0 && hoursLeft < 24;
+  }), [reviewDocs]);
+  const filteredReviewDocs = workflowFilter === 'overdue' ? overdueDocs : workflowFilter === 'hot' ? hotDocs : reviewDocs;
+  const workflowFilterButtons: Array<{ key: 'all' | 'hot' | 'overdue'; label: string; count: number; color: string }> = [
+    { key: 'all', label: 'Все на согласовании', count: reviewDocs.length, color: '#F59E0B' },
+    { key: 'hot', label: 'Горит (< 24 ч)', count: hotDocs.length, color: '#D4AF37' },
+    { key: 'overdue', label: 'Просрочено', count: overdueDocs.length, color: '#FF6B6B' },
+  ];
+
   return (
     <div className="space-y-5">
+      {/* Документы на согласовании: фильтры по дедлайнам */}
+      <div className="p-3 rounded-lg" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-default)' }}>
+        <div className="flex flex-wrap items-center gap-2 mb-3">
+          <h3 className="text-sm font-semibold flex items-center gap-2 mr-auto" style={{ color: 'var(--text-primary)' }}>
+            <Clock size={14} style={{ color: '#F59E0B' }} /> На согласовании
+          </h3>
+          {workflowFilterButtons.map(btn => (
+            <button
+              key={btn.key}
+              type="button"
+              onClick={() => setWorkflowFilter(btn.key)}
+              className="text-xs px-2.5 py-1.5 rounded-full border font-medium transition-colors"
+              style={
+                workflowFilter === btn.key
+                  ? { color: '#fff', background: btn.color, borderColor: btn.color }
+                  : { color: 'var(--text-secondary)', borderColor: 'var(--border-default)', background: 'var(--bg-surface-2)' }
+              }
+            >
+              {btn.label} · {btn.count}
+            </button>
+          ))}
+        </div>
+        {filteredReviewDocs.length === 0 ? (
+          <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
+            {workflowFilter === 'all' ? 'Документов на согласовании нет' : 'По выбранному фильтру документов нет'}
+          </p>
+        ) : (
+          <div className="divide-y" style={{ borderColor: 'var(--border-default)' }}>
+            {filteredReviewDocs.slice(0, 20).map(doc => {
+              const badge = deadlineBadge(doc);
+              return (
+                <div key={doc.id} className="flex items-center gap-3 py-2">
+                  <Link to={`/documents/${doc.id}`} className="text-sm font-medium font-mono hover:underline truncate" style={{ color: TAB_COLOR }}>
+                    {doc.code}
+                  </Link>
+                  <span className="text-sm truncate flex-1" style={{ color: 'var(--text-secondary)' }}>{doc.name}</span>
+                  <span className="text-xs shrink-0 hidden md:inline" style={{ color: 'var(--text-tertiary)' }}>{doc.project}</span>
+                  {badge && (
+                    <span
+                      className="text-[10px] px-1.5 py-0.5 rounded-full border font-medium shrink-0"
+                      style={{ color: badge.color, background: badge.bg, borderColor: badge.border }}
+                    >
+                      {badge.label}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+            {filteredReviewDocs.length > 20 && (
+              <p className="text-xs pt-2" style={{ color: 'var(--text-tertiary)' }}>Показано 20 из {filteredReviewDocs.length}</p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Отчёт по эскалациям */}
+      {escalations && (escalations.total_escalations ?? 0) > 0 && (
+        <div className="p-3 rounded-lg" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-default)' }}>
+          <h3 className="text-sm font-semibold mb-2 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+            <AlertCircle size={14} style={{ color: '#FF6B6B' }} /> Эскалации дедлайнов
+            <span className="text-xs font-normal" style={{ color: 'var(--text-tertiary)' }}>
+              всего {escalations.total_escalations}, просрочено сейчас {escalations.overdue_now_total ?? 0}
+            </span>
+          </h3>
+          <div className="divide-y" style={{ borderColor: 'var(--border-default)' }}>
+            {(escalations.items ?? []).map(item => (
+              <div key={item.project_id} className="flex items-center gap-3 py-1.5 text-sm">
+                <span className="font-medium truncate" style={{ color: 'var(--text-primary)' }}>{item.project_name}</span>
+                <span className="ml-auto text-xs shrink-0" style={{ color: 'var(--text-secondary)' }}>
+                  эскалаций: {item.escalations}
+                  {item.overdue_now > 0 && <span style={{ color: '#FF6B6B' }}> · просрочено: {item.overdue_now}</span>}
+                </span>
+                <span className="text-xs shrink-0 hidden md:inline" style={{ color: 'var(--text-muted)' }}>
+                  {item.last_escalation_at ? new Date(item.last_escalation_at).toLocaleString('ru-RU') : ''}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Лента согласований */}
       <div className="p-3 rounded-lg" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-default)' }}>
         <h3 className="text-sm font-semibold mb-2 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>

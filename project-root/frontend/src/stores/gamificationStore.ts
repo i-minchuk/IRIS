@@ -50,6 +50,9 @@ export interface LeaderboardEntry {
   lateApprovals?: number;
   sentOnTime?: number;
   sentLate?: number;
+  docOnTime?: number;
+  docLate?: number;
+  avgApprovalHours?: number | null;
   isMe?: boolean;
 }
 
@@ -192,6 +195,9 @@ export const useGamificationStore = create<GamificationState>((set, get) => ({
           lateApprovals: e.late_approvals ?? 0,
           sentOnTime: e.sent_on_time ?? 0,
           sentLate: e.sent_late ?? 0,
+          docOnTime: e.doc_on_time ?? 0,
+          docLate: e.doc_late ?? 0,
+          avgApprovalHours: e.avg_approval_hours ?? null,
         })),
       });
     } catch (err) {

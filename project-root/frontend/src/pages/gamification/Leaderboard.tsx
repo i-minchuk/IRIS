@@ -1,6 +1,6 @@
 import { Card } from '@/components/ui';
 import { useGamificationStore } from '@/stores/gamificationStore';
-import { Trophy, Medal, Award, Star, CheckCircle, Send } from 'lucide-react';
+import { Trophy, Medal, Award, Star, CheckCircle, Send, Clock, Timer } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 export default function LeaderboardPage() {
@@ -111,6 +111,28 @@ export default function LeaderboardPage() {
                   title="Отправлено в срок"
                 >
                   <Send size={12} style={{ color: '#0EA5E9' }} /> {entry.sentOnTime ?? 0}
+                </span>
+                <span
+                  className="flex items-center gap-1"
+                  style={{ color: 'var(--text-secondary)' }}
+                  title="Документы согласованы в срок"
+                >
+                  <CheckCircle size={12} style={{ color: '#10B981' }} /> {entry.docOnTime ?? 0}
+                </span>
+                <span
+                  className="flex items-center gap-1"
+                  style={{ color: 'var(--text-secondary)' }}
+                  title="Документы согласованы с опозданием"
+                >
+                  <Clock size={12} style={{ color: '#F59E0B' }} /> {entry.docLate ?? 0}
+                </span>
+                <span
+                  className="flex items-center gap-1"
+                  style={{ color: 'var(--text-secondary)' }}
+                  title="Среднее время согласования, часов"
+                >
+                  <Timer size={12} style={{ color: 'var(--text-tertiary)' }} />
+                  {entry.avgApprovalHours != null ? Math.round(entry.avgApprovalHours * 10) / 10 : '—'}
                 </span>
                 <span className="flex items-center gap-1" style={{ color: 'var(--text-secondary)' }}>
                   <Award size={12} /> {entry.badges}
