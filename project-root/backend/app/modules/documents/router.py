@@ -27,9 +27,12 @@ from app.modules.documents.schemas import (
     DocumentBulkImportResponse,
 )
 from app.ai.classification import classify_document
+from app.core.permissions import require_permission
 
 router = APIRouter(tags=["documents"])
 router.include_router(deps_router, prefix="/dependencies")
+
+_docs_write = require_permission("documents.write")
 
 
 @router.get("", response_model=dict)
@@ -124,7 +127,7 @@ async def list_documents(
 @router.post("", response_model=dict, status_code=201)
 async def create_document(
     data: DocumentCreateInput,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(_docs_write),
     service: DocumentService = Depends(get_document_service),
 ):
     return await service.create_document(data.model_dump(), current_user.id)
@@ -156,7 +159,7 @@ async def action_task_statuses(
 async def set_action_task_status(
     task_key: str,
     data: ActionTaskStatusInput,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(_docs_write),
     service: DocumentService = Depends(get_document_service),
 ):
     """Сохранить статус производной задачи (new/in_progress/done)."""
@@ -171,6 +174,7 @@ async def set_action_task_status(
 async def update_document(
     document_id: int,
     data: DocumentUpdateInput,
+    current_user: User = Depends(_docs_write),
     service: DocumentService = Depends(get_document_service),
 ):
     return await service.update_document(document_id, data.model_dump(exclude_unset=True))
@@ -179,7 +183,7 @@ async def update_document(
 @router.post("/{document_id}/copy", response_model=dict)
 async def copy_document(
     document_id: int,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(_docs_write),
     service: DocumentService = Depends(get_document_service),
 ):
     """Создать копию документа в том же проекте."""
@@ -190,7 +194,7 @@ async def copy_document(
 async def exclude_document(
     document_id: int,
     reason: str = Query(None, max_length=500, description="Причина исключения из работы"),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(_docs_write),
     service: DocumentService = Depends(get_document_service),
 ):
     """Исключить документ из работы (мягкое удаление, возврат возможен)."""
@@ -200,6 +204,7 @@ async def exclude_document(
 @router.post("/{document_id}/restore", response_model=dict)
 async def restore_document(
     document_id: int,
+    current_user: User = Depends(_docs_write),
     service: DocumentService = Depends(get_document_service),
 ):
     """Вернуть ранее исключённый документ в работу."""
@@ -227,7 +232,7 @@ async def get_document(
 async def create_revision(
     document_id: int,
     data: RevisionCreateInput,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(_docs_write),
     service: DocumentService = Depends(get_document_service),
 ):
     return await service.create_revision(document_id, data.model_dump(), current_user.id)
@@ -236,7 +241,7 @@ async def create_revision(
 @router.post("/import", response_model=DocumentBulkImportResponse, status_code=201)
 async def import_documents(
     items: list[DocumentBulkImportItem],
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(_docs_write),
     service: DocumentService = Depends(get_document_service),
 ):
     """Bulk import documents from an external registry (MDR / Excel)."""
@@ -248,7 +253,7 @@ async def import_documents(
 async def upload_document_file(
     document_id: int,
     file: UploadFile = File(...),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(_docs_write),
     service: DocumentService = Depends(get_document_service),
 ):
     """Upload a file for a document and create a revision."""
@@ -260,6 +265,7 @@ async def upload_document_file(
 async def start_approval_workflow(
     document_id: int,
     data: ApprovalWorkflowCreateInput,
+    current_user: User = Depends(_docs_write),
     service: DocumentService = Depends(get_document_service),
 ):
     return await service.start_approval_workflow(document_id, data.model_dump())
@@ -269,6 +275,7 @@ async def start_approval_workflow(
 async def render_document_endpoint(
     document_id: int,
     data: DocumentRenderRequest = DocumentRenderRequest(),
+    current_user: User = Depends(_docs_write),
     service: DocumentService = Depends(get_document_service),
 ):
     return await service.render_document(document_id, data.extra_variables)
@@ -277,6 +284,7 @@ async def render_document_endpoint(
 @router.post("/cascade-update", response_model=dict)
 async def cascade_update_endpoint(
     data: CascadeUpdateRequest,
+    current_user: User = Depends(_docs_write),
     service: DocumentService = Depends(get_document_service),
 ):
     return await service.cascade_update(
@@ -379,7 +387,7 @@ async def download_revision_file(
 async def lock_document(
     document_id: int,
     request: Request,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(_docs_write),
     service: DocumentService = Depends(get_document_service),
 ):
     result = await service.lock_document(document_id, current_user.id)
@@ -403,7 +411,7 @@ async def lock_document(
 async def unlock_document(
     document_id: int,
     request: Request,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(_docs_write),
     service: DocumentService = Depends(get_document_service),
 ):
     result = await service.unlock_document(document_id, current_user.id)
@@ -422,7 +430,7 @@ async def unlock_document(
 @router.post("/{document_id}/submit-for-approval", response_model=dict)
 async def submit_for_approval(
     document_id: int,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(_docs_write),
     service: DocumentService = Depends(get_document_service),
 ):
     return await service.submit_for_approval(document_id, current_user.id)
@@ -431,7 +439,7 @@ async def submit_for_approval(
 @router.post("/{document_id}/submit-for-review", response_model=dict)
 async def submit_for_review(
     document_id: int,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(_docs_write),
     service: DocumentService = Depends(get_document_service),
 ):
     return await service.submit_for_review(document_id, current_user.id)
@@ -440,7 +448,7 @@ async def submit_for_review(
 @router.post("/{document_id}/approve", response_model=dict)
 async def approve_document(
     document_id: int,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(_docs_write),
     service: DocumentService = Depends(get_document_service),
 ):
     """Согласовать документ: переход к следующему согласующему или утверждение."""
@@ -451,7 +459,7 @@ async def approve_document(
 async def classify_document_endpoint(
     document_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(_docs_write),
 ):
     """Run AI classification on a document and persist the result."""
     result = await db.execute(select(Document).where(Document.id == document_id))
@@ -473,7 +481,7 @@ async def classify_document_endpoint(
 
 
 @router.post("/suggest-fields", response_model=dict)
-async def suggest_fields(request: dict, db: AsyncSession = Depends(get_db)):
+async def suggest_fields(request: dict, db: AsyncSession = Depends(get_db), current_user: User = Depends(_docs_write)):
     from app.ai.autofill import suggest_document_fields
     return await suggest_document_fields(
         request.get("template_type"), request.get("project_name", "")

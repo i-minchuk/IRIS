@@ -31,9 +31,12 @@ from app.modules.references.schemas import (
     StandardCreate,
     StandardRead,
 )
+from app.core.permissions import require_permission
 from app.parser.factory import ParserFactory
 
 router = APIRouter(tags=["references"])
+
+_references_write = require_permission("references.write")
 
 
 GLOSSARY_SYSTEM_PROMPT = """Ты — эксперт по технической документации в системе ДокПоток IRIS.
@@ -165,7 +168,7 @@ async def list_glossary_terms(
 async def create_glossary_term(
     data: GlossaryTermCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(_references_write),
 ):
     """Ручное добавление термина в глоссарий."""
     term = GlossaryTerm(
@@ -189,7 +192,7 @@ async def create_glossary_term(
 async def generate_glossary(
     request: GlossaryGenerateRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(_references_write),
 ):
     """Автоматическая генерация глоссария из документации с помощью AI."""
     query = select(Document)
@@ -254,7 +257,7 @@ async def generate_glossary(
 async def delete_glossary_term(
     term_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(_references_write),
 ):
     """Удаление термина из глоссария."""
     term = await db.get(GlossaryTerm, term_id)
@@ -398,7 +401,7 @@ async def list_standards(
 async def create_standard(
     data: StandardCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(_references_write),
 ):
     """Ручное создание норматива с требованиями."""
     standard = Standard(
@@ -424,7 +427,7 @@ async def upload_standard(
     extract_ai: bool = Form(True),
     generate_glossary: bool = Form(True),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(_references_write),
 ):
     """Загрузить файл норматива и автоматически извлечь требования и термины глоссария с помощью AI."""
     allowed_exts = {".docx", ".pdf"}
@@ -490,7 +493,7 @@ async def upload_standard(
 async def delete_standard(
     standard_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(_references_write),
 ):
     """Удаление норматива."""
     standard = await db.get(Standard, standard_id)

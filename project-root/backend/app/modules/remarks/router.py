@@ -31,9 +31,11 @@ from app.modules.remarks.response_schemas import (
     RemarkWorkflowStartResponse,
     RemarkLinkResponse,
 )
-from app.core.permissions import needs_document_scope
+from app.core.permissions import needs_document_scope, require_permission
 
 router = APIRouter(tags=["remarks"])
+
+_remarks_write = require_permission("remarks.write")
 
 
 async def _remark_in_scope(db: AsyncSession, remark, user_id: int) -> bool:
@@ -66,7 +68,7 @@ def get_service(db: AsyncSession) -> RemarkService:
 async def create_remark(
     remark_data: RemarkCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(_remarks_write)
 ):
     """Create a new remark."""
     service = get_service(db)
@@ -284,7 +286,7 @@ async def list_tags(
 async def create_tag(
     tag_data: RemarkTagCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(_remarks_write)
 ):
     """Create a new tag."""
     service = get_service(db)
@@ -296,7 +298,7 @@ async def create_tag(
 async def delete_tag(
     tag_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(_remarks_write)
 ):
     """Delete tag."""
     service = get_service(db)
@@ -338,7 +340,7 @@ async def update_remark(
     remark_id: UUID,
     update_data: RemarkUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(_remarks_write)
 ):
     """Update remark."""
     service = get_service(db)
@@ -364,7 +366,7 @@ async def update_remark(
 async def delete_remark(
     remark_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(_remarks_write)
 ):
     """Delete remark."""
     service = get_service(db)
@@ -391,7 +393,7 @@ async def add_comment(
     remark_id: UUID,
     comment_data: RemarkCommentCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(_remarks_write)
 ):
     """Add comment to remark."""
     service = get_service(db)
@@ -419,7 +421,7 @@ async def delete_comment(
     remark_id: UUID,
     comment_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(_remarks_write)
 ):
     """Delete comment."""
     service = get_service(db)
@@ -439,7 +441,7 @@ async def perform_action(
     remark_id: UUID,
     action_data: RemarkAction,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(_remarks_write)
 ):
     """Perform action on remark."""
     service = get_service(db)
@@ -471,7 +473,7 @@ async def perform_action(
 async def start_remark_workflow(
     remark_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(_remarks_write)
 ):
     """Manually start approval workflow for a remark."""
     service = get_service(db)
@@ -504,7 +506,7 @@ async def link_remarks(
     remark_id: UUID,
     related_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(_remarks_write)
 ):
     """Link two remarks."""
     service = get_service(db)

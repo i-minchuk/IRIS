@@ -8,6 +8,7 @@ from app.modules.auth.deps import get_current_active_user
 from app.modules.auth.models import User
 from app.modules.workflow.models import WorkflowStatus
 from app.modules.workflow.service import WorkflowService, WorkflowServiceError
+from app.core.permissions import require_permission
 from app.modules.workflow.schemas import (
     WorkflowTemplateCreate,
     WorkflowTemplateUpdate,
@@ -39,6 +40,9 @@ from app.modules.workflow.schemas import (
 
 router = APIRouter(tags=["workflows"])
 
+_workflow_run = require_permission("workflow.run")
+_workflow_approve = require_permission("workflow.approve")
+
 
 def get_service(db: AsyncSession) -> WorkflowService:
     """Get workflow service."""
@@ -51,7 +55,7 @@ def get_service(db: AsyncSession) -> WorkflowService:
 async def create_template(
     template_data: WorkflowTemplateCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(_workflow_run)
 ):
     """Create a new workflow template."""
     service = get_service(db)
@@ -134,7 +138,7 @@ async def update_template(
     template_id: int,
     update_data: WorkflowTemplateUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(_workflow_run)
 ):
     """Update workflow template."""
     service = get_service(db)
@@ -153,7 +157,7 @@ async def update_template(
 async def delete_template(
     template_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(_workflow_run)
 ):
     """Soft delete workflow template."""
     service = get_service(db)
@@ -172,7 +176,7 @@ async def delete_template(
 async def start_workflow(
     instance_data: WorkflowInstanceCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(_workflow_run)
 ):
     """Start a new workflow instance."""
     service = get_service(db)
@@ -255,7 +259,7 @@ async def sign_step(
     step_id: int,
     action: SignAction,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(_workflow_approve)
 ):
     """Sign and approve a workflow step with hash-based signature."""
     service = get_service(db)
@@ -324,7 +328,7 @@ async def approve_step(
     step_id: int,
     action: ApprovalAction,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(_workflow_approve)
 ):
     """Approve current workflow step."""
     service = get_service(db)
@@ -360,7 +364,7 @@ async def reject_step(
     step_id: int,
     action: RejectionAction,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(_workflow_approve)
 ):
     """Reject workflow step."""
     service = get_service(db)
@@ -386,7 +390,7 @@ async def delegate_step(
     step_id: int,
     action: DelegationAction,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(_workflow_approve)
 ):
     """Delegate workflow step to another user."""
     service = get_service(db)
@@ -414,7 +418,7 @@ async def create_comment(
     step_id: int,
     comment_data: WorkflowCommentCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(_workflow_approve)
 ):
     """Create a comment on a workflow step."""
     service = get_service(db)
@@ -482,7 +486,7 @@ async def list_routing_rules(
 async def create_routing_rule(
     data: RoutingRuleCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(_workflow_run)
 ):
     """Create a routing rule."""
     service = get_service(db)
@@ -498,7 +502,7 @@ async def update_routing_rule(
     rule_id: int,
     data: RoutingRuleUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(_workflow_run)
 ):
     """Update a routing rule."""
     service = get_service(db)
@@ -515,7 +519,7 @@ async def update_routing_rule(
 async def delete_routing_rule(
     rule_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(_workflow_run)
 ):
     """Delete a routing rule."""
     service = get_service(db)
@@ -611,7 +615,7 @@ async def deadline_overview(
 async def cancel_workflow(
     instance_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(_workflow_run),
 ):
     """Отменить запущенный/приостановленный маршрут (инициатор или админ)."""
     from app.modules.auth.deps import is_admin
