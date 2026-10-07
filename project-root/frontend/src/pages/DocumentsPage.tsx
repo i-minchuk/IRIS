@@ -44,7 +44,7 @@ import {
 /* ── Types ── */
 type DocType = 'KJ' | 'AR' | 'OViK' | 'EOM' | 'KR' | 'other';
 type DocStatus = 'draft' | 'review' | 'approved' | 'confirmed' | 'archived';
-type TabKey = 'registry' | 'remarks' | 'workflow' | 'employees';
+type TabKey = 'registry' | 'remarks' | 'workflow';
 type RemarkAction = 'revise' | 'approve' | 'delegate';
 
 interface Employee {
@@ -95,7 +95,7 @@ const docTypeConfig: Record<DocType, { label: string; color: string; bg: string;
   OViK:  { label: 'ОВиК', color: '#3B82F6', bg: 'rgba(59,130,246,0.15)', border: 'rgba(59,130,246,0.4)' },
   EOM:   { label: 'ЭОМ', color: '#D4AF37', bg: 'rgba(212,175,55,0.15)',  border: 'rgba(212,175,55,0.4)' },
   KR:    { label: 'КР',  color: '#FF6B6B', bg: 'rgba(255,107,107,0.15)', border: 'rgba(255,107,107,0.4)' },
-  other: { label: 'Проч', color: '#94A3B8', bg: 'rgba(148,163,184,0.15)', border: 'rgba(148,163,184,0.4)' },
+  other: { label: 'Открыть', color: '#94A3B8', bg: 'rgba(148,163,184,0.15)', border: 'rgba(148,163,184,0.4)' },
 };
 
 const statusConfig: Record<DocStatus, { label: string; color: string; bg: string; border: string; icon: React.ReactNode }> = {
@@ -2614,7 +2614,7 @@ function mapWorkloadData(apiWorkload: any, leaderboard: LeaderboardEntry[]): Emp
   });
 }
 
-function EmployeesView() {
+export function EmployeesView() {
   const [workloads, setWorkloads] = useState<EmployeeWorkload[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedEmpId, setSelectedEmpId] = useState<string | null>(null);
@@ -2982,7 +2982,6 @@ const DOC_TABS = [
   { key: 'registry' as const, label: 'Реестр документов', icon: <FileText size={16} />, color: TAB_COLOR },
   { key: 'remarks' as const, label: 'Замечания', icon: <MessageSquare size={16} />, color: TAB_COLOR },
   { key: 'workflow' as const, label: 'Документооборот', icon: <GitBranch size={16} />, color: TAB_COLOR },
-  { key: 'employees' as const, label: 'Сотрудники', icon: <User size={16} />, color: TAB_COLOR },
 ];
 
 /* ── Main Page ── */
@@ -3022,7 +3021,6 @@ export default function DocumentsPage() {
       {activeTab === 'registry' && <RegistryView />}
       {activeTab === 'remarks' && <RemarksPage />}
       {activeTab === 'workflow' && <WorkflowView />}
-      {activeTab === 'employees' && <EmployeesView />}
     </div>
   );
 }

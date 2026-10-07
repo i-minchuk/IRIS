@@ -27,6 +27,20 @@ router = APIRouter(tags=["reports"])
 # Helper builders
 # ---------------------------------------------------------------------------
 
+def _format_datetime(value: datetime | None) -> str:
+    """Format datetime as human-readable Russian string."""
+    if value is None:
+        return "—"
+    return value.strftime("%d.%m.%Y %H:%M")
+
+
+def _format_date(value: datetime | None) -> str:
+    """Format date as human-readable Russian string."""
+    if value is None:
+        return "—"
+    return value.strftime("%d.%m.%Y")
+
+
 def _build_report_row(columns: list[str], data: dict[str, Any]) -> ReportRow:
     """Build a ReportRow ensuring only requested columns are present."""
     return ReportRow(columns={col: data.get(col) for col in columns})
@@ -41,16 +55,16 @@ async def _generate_projects_report(
 ) -> ReportResponse:
     """Generate Projects report."""
     columns = [
-        "id",
-        "name",
-        "code",
-        "customer_name",
-        "status",
-        "stage",
-        "manager_id",
-        "created_at",
-        "documents_count",
-        "tasks_count",
+        "ID",
+        "Название",
+        "Код",
+        "Заказчик",
+        "Статус",
+        "Этап",
+        "Руководитель",
+        "Дата создания",
+        "Документов",
+        "Задач",
     ]
 
     query = select(Project)
@@ -80,16 +94,16 @@ async def _generate_projects_report(
             _build_report_row(
                 columns,
                 {
-                    "id": project.id,
-                    "name": project.name,
-                    "code": project.code,
-                    "customer_name": project.customer_name or "—",
-                    "status": project.status,
-                    "stage": project.stage or "—",
-                    "manager_id": project.manager_id,
-                    "created_at": project.created_at.isoformat() if project.created_at else "—",
-                    "documents_count": doc_count_result.scalar() or 0,
-                    "tasks_count": task_count_result.scalar() or 0,
+                    "ID": project.id,
+                    "Название": project.name,
+                    "Код": project.code,
+                    "Заказчик": project.customer_name or "—",
+                    "Статус": project.status,
+                    "Этап": project.stage or "—",
+                    "Руководитель": project.manager_id,
+                    "Дата создания": _format_datetime(project.created_at),
+                    "Документов": doc_count_result.scalar() or 0,
+                    "Задач": task_count_result.scalar() or 0,
                 },
             )
         )
@@ -111,20 +125,20 @@ async def _generate_tenders_report(
 ) -> ReportResponse:
     """Generate Tenders report."""
     columns = [
-        "id",
-        "name",
-        "customer_name",
-        "project_type",
-        "stage",
-        "status",
-        "nmc",
-        "our_price",
-        "margin_pct",
-        "probability",
-        "platform",
-        "region",
-        "deadline",
-        "created_at",
+        "ID",
+        "Название",
+        "Заказчик",
+        "Тип объекта",
+        "Этап",
+        "Статус",
+        "НМЦ",
+        "Наша цена",
+        "Маржа, %",
+        "Вероятность, %",
+        "Площадка",
+        "Регион",
+        "Дедлайн",
+        "Дата создания",
     ]
 
     query = select(Tender)
@@ -148,20 +162,20 @@ async def _generate_tenders_report(
             _build_report_row(
                 columns,
                 {
-                    "id": t.id,
-                    "name": t.name,
-                    "customer_name": t.customer_name,
-                    "project_type": t.project_type,
-                    "stage": t.stage,
-                    "status": t.status,
-                    "nmc": t.nmc or 0,
-                    "our_price": t.our_price or 0,
-                    "margin_pct": t.margin_pct or 0,
-                    "probability": t.probability or 0,
-                    "platform": t.platform or "—",
-                    "region": t.region or "—",
-                    "deadline": t.deadline.isoformat() if t.deadline else "—",
-                    "created_at": t.created_at.isoformat() if t.created_at else "—",
+                    "ID": t.id,
+                    "Название": t.name,
+                    "Заказчик": t.customer_name,
+                    "Тип объекта": t.project_type,
+                    "Этап": t.stage,
+                    "Статус": t.status,
+                    "НМЦ": t.nmc or 0,
+                    "Наша цена": t.our_price or 0,
+                    "Маржа, %": t.margin_pct or 0,
+                    "Вероятность, %": t.probability or 0,
+                    "Площадка": t.platform or "—",
+                    "Регион": t.region or "—",
+                    "Дедлайн": _format_datetime(t.deadline),
+                    "Дата создания": _format_datetime(t.created_at),
                 },
             )
         )
@@ -183,16 +197,16 @@ async def _generate_load_report(
 ) -> ReportResponse:
     """Generate Employee Load report."""
     columns = [
-        "user_id",
-        "total_duration",
-        "active_time",
-        "idle_time",
-        "edit_count",
-        "revisions_created",
-        "remarks_resolved",
-        "efficiency_score",
-        "project_id",
-        "period",
+        "ID пользователя",
+        "Общая длительность",
+        "Активное время",
+        "Простой",
+        "Редактирований",
+        "Ревизий создано",
+        "Замечаний закрыто",
+        "Эффективность",
+        "ID проекта",
+        "Период",
     ]
 
     query = select(TimeSession)
@@ -217,16 +231,16 @@ async def _generate_load_report(
             _build_report_row(
                 columns,
                 {
-                    "user_id": s.user_id,
-                    "total_duration": s.total_duration or 0,
-                    "active_time": s.active_time or 0,
-                    "idle_time": s.idle_time or 0,
-                    "edit_count": s.edit_count or 0,
-                    "revisions_created": s.revisions_created or 0,
-                    "remarks_resolved": s.remarks_resolved or 0,
-                    "efficiency_score": round(s.efficiency_score, 2) if s.efficiency_score else 0,
-                    "project_id": s.project_id,
-                    "period": period,
+                    "ID пользователя": s.user_id,
+                    "Общая длительность": s.total_duration or 0,
+                    "Активное время": s.active_time or 0,
+                    "Простой": s.idle_time or 0,
+                    "Редактирований": s.edit_count or 0,
+                    "Ревизий создано": s.revisions_created or 0,
+                    "Замечаний закрыто": s.remarks_resolved or 0,
+                    "Эффективность": round(s.efficiency_score, 2) if s.efficiency_score else 0,
+                    "ID проекта": s.project_id,
+                    "Период": period,
                 },
             )
         )
@@ -248,16 +262,16 @@ async def _generate_finances_report(
 ) -> ReportResponse:
     """Generate Finances report (tender-based + employee cost)."""
     columns = [
-        "entity_type",
-        "entity_id",
-        "name",
-        "nmc",
-        "our_price",
-        "margin_pct",
-        "calculated_cost",
-        "probability",
-        "expected_value",
-        "created_at",
+        "Тип",
+        "ID",
+        "Название",
+        "НМЦ",
+        "Наша цена",
+        "Маржа, %",
+        "Расчётная стоимость",
+        "Вероятность, %",
+        "Ожидаемая выручка",
+        "Дата создания",
     ]
 
     query = select(Tender)
@@ -284,16 +298,16 @@ async def _generate_finances_report(
             _build_report_row(
                 columns,
                 {
-                    "entity_type": "tender",
-                    "entity_id": t.id,
-                    "name": t.name,
-                    "nmc": t.nmc or 0,
-                    "our_price": t.our_price or 0,
-                    "margin_pct": t.margin_pct or 0,
-                    "calculated_cost": t.calculated_cost or 0,
-                    "probability": t.probability or 0,
-                    "expected_value": expected,
-                    "created_at": t.created_at.isoformat() if t.created_at else "—",
+                    "Тип": "Тендер",
+                    "ID": t.id,
+                    "Название": t.name,
+                    "НМЦ": t.nmc or 0,
+                    "Наша цена": t.our_price or 0,
+                    "Маржа, %": t.margin_pct or 0,
+                    "Расчётная стоимость": t.calculated_cost or 0,
+                    "Вероятность, %": t.probability or 0,
+                    "Ожидаемая выручка": expected,
+                    "Дата создания": _format_datetime(t.created_at),
                 },
             )
         )
@@ -365,7 +379,7 @@ async def _generate_documents_report(
                     "Тип": doc.doc_type or "—",
                     "Статус": doc.status or "—",
                     "Ревизия": revision_number,
-                    "Дата создания": doc.created_at.isoformat() if doc.created_at else "—",
+                    "Дата создания": _format_datetime(doc.created_at),
                 },
             )
         )
@@ -443,7 +457,7 @@ async def _generate_remarks_report(
                     "Код документа": doc.number if doc else "—",
                     "Наименование документа": doc.name if doc else "—",
                     "Ревизия": revision.number if revision else "—",
-                    "Дата ревизии": revision.created_at.isoformat() if revision and revision.created_at else "—",
+                    "Дата ревизии": _format_datetime(revision.created_at if revision else None),
                     "Замечание": remark.title or "—",
                     "Код замечания": remark.category or "—",
                     "Автор замечания": author_name,
