@@ -28,10 +28,10 @@ const TENDER_TABS = [
 
 /* ─── SRM Sub-tabs ─── */
 const SRM_TABS = [
-  { id: 'purchase-requests' as const, label: 'Заявки на закупку' },
-  { id: 'invoices' as const, label: 'Счета' },
-  { id: 'orders' as const, label: 'Заказы' },
   { id: 'suppliers' as const, label: 'Поставщики' },
+  { id: 'invoices' as const, label: 'Счета' },
+  { id: 'purchase-requests' as const, label: 'Заявки на закупку' },
+  { id: 'orders' as const, label: 'Заказы' },
   { id: 'process' as const, label: 'Процесс МТО' },
 ];
 
@@ -90,11 +90,11 @@ export default function PortfolioPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useTabState<MainTab>('iris_portfolio_tab', 'tenders');
   const [tenderTab, setTenderTab] = useTabState<TenderTab>('iris_portfolio_tender_tab', 'tenders');
-  const [srmTab, setSrmTab] = useTabState<SRMTab>('iris_portfolio_srm_tab', 'purchase-requests');
+  const [srmTab, setSrmTab] = useTabState<SRMTab>('iris_portfolio_srm_tab', 'suppliers');
   // Защита от устаревших значений в localStorage (solutions/templates как главные вкладки, srm_tab='contracts')
   const currentTab: MainTab = MAIN_TABS.some(t => t.id === activeTab) ? activeTab : 'tenders';
   const activeTenderTab: TenderTab = TENDER_TABS.some(t => t.id === tenderTab) ? tenderTab : 'tenders';
-  const activeSrmTab: SRMTab = SRM_TABS.some(t => t.id === srmTab) ? srmTab : 'purchase-requests';
+  const activeSrmTab: SRMTab = SRM_TABS.some(t => t.id === srmTab) ? srmTab : 'suppliers';
 
   // Sync with URL query params
   const tabParam = searchParams.get('tab');
