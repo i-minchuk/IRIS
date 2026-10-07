@@ -92,6 +92,7 @@ interface ProjectInfo {
   name: string;
   customer_name?: string;
   stage?: string;
+  manager_name?: string | null;
 }
 
 export default function DocumentDetailPage() {
@@ -161,7 +162,12 @@ export default function DocumentDetailPage() {
         if (data.project_id) {
           const proj = await getProject(data.project_id).catch(() => null);
           if (!cancelled && proj) {
-            setProject({ name: proj.name, customer_name: proj.customer_name, stage: proj.stage });
+            setProject({
+              name: proj.name,
+              customer_name: proj.customer_name,
+              stage: proj.stage,
+              manager_name: proj.manager_name,
+            });
           }
         }
       })
@@ -474,6 +480,10 @@ export default function DocumentDetailPage() {
                 <div className="flex justify-between">
                   <span style={{ color: 'var(--text-secondary)' }}>Проект:</span>
                   <span style={{ color: 'var(--text-primary)' }}>{project?.name || (doc ? `Проект #${doc.project_id}` : '—')}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span style={{ color: 'var(--text-secondary)' }}>Руководитель:</span>
+                  <span style={{ color: 'var(--text-primary)' }}>{project?.manager_name || '—'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span style={{ color: 'var(--text-secondary)' }}>Заказчик:</span>
