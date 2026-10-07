@@ -31,8 +31,28 @@ from app.modules.remarks.response_schemas import (
     RemarkWorkflowStartResponse,
     RemarkLinkResponse,
 )
+from app.core.permissions import needs_document_scope
 
 router = APIRouter(tags=["remarks"])
+
+
+async def _remark_in_scope(db: AsyncSession, remark, user_id: int) -> bool:
+    """Scoped-пользователь: замечание доступно, если оно своё или по документу/проекту привязки."""
+    if getattr(remark, "author_id", None) == user_id:
+        return True
+    from sqlalchemy import select, func
+    from app.modules.documents.crud import user_document_access_clause
+    from app.modules.documents.models import Document
+
+    clause = user_document_access_clause(user_id)
+    q = select(func.count()).select_from(Document).where(clause)
+    if getattr(remark, "document_id", None):
+        q = q.where(Document.id == remark.document_id)
+    elif getattr(remark, "project_id", None):
+        q = q.where(Document.project_id == remark.project_id)
+    else:
+        return False
+    return bool(await db.scalar(q))
 
 
 def get_service(db: AsyncSession) -> RemarkService:
@@ -115,7 +135,11 @@ async def list_remarks(
         page_size=page_size
     )
     
-    remarks, total = await service.list_remarks(filters, current_user.id)
+    remarks, total = await service.list_remarks(
+        filters,
+        current_user.id,
+        scope_user_id=current_user.id if needs_document_scope(current_user) else None,
+    )
     
     # Build list items with workflow status
     list_items = []
@@ -149,7 +173,10 @@ async def get_statistics(
 ):
     """Get remarks statistics."""
     service = get_service(db)
-    stats = await service.get_statistics(project_id, document_id, current_user.id)
+    stats = await service.get_statistics(
+        project_id, document_id, current_user.id,
+        scope_user_id=current_user.id if needs_document_scope(current_user) else None,
+    )
     return stats
 
 
@@ -180,6 +207,21 @@ async def export_remarks(
         query = query.where(Remark.project_id == project_id)
     if document_id:
         query = query.where(Remark.document_id == document_id)
+    if needs_document_scope(current_user):
+        # Объектный уровень: свои замечания + замечания документов/проектов привязки
+        from app.modules.documents.crud import user_document_access_clause
+        from app.modules.documents.models import Document
+        doc_clause = user_document_access_clause(current_user.id)
+        accessible_docs = select(Document.id).where(doc_clause)
+        accessible_projects = select(Document.project_id).where(
+            doc_clause
+        ).where(Document.project_id.isnot(None))
+        from sqlalchemy import or_
+        query = query.where(or_(
+            Remark.author_id == current_user.id,
+            Remark.document_id.in_(accessible_docs),
+            Remark.project_id.in_(accessible_projects),
+        ))
     
     result = await db.execute(query)
     remarks = result.scalars().all()
@@ -278,13 +320,16 @@ async def get_remark(
     """Get remark by ID."""
     service = get_service(db)
     remark = await service.get_remark(remark_id)
-    
-    if not remark:
+
+    if not remark or (
+        needs_document_scope(current_user)
+        and not await _remark_in_scope(db, remark, current_user.id)
+    ):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Remark not found"
         )
-    
+
     return await service.to_response(remark)
 
 
@@ -297,6 +342,13 @@ async def update_remark(
 ):
     """Update remark."""
     service = get_service(db)
+    if needs_document_scope(current_user):
+        existing = await service.get_remark(remark_id)
+        if not existing or not await _remark_in_scope(db, existing, current_user.id):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Remark not found"
+            )
     remark = await service.update_remark(remark_id, update_data, current_user.id)
     
     if not remark:
@@ -316,6 +368,13 @@ async def delete_remark(
 ):
     """Delete remark."""
     service = get_service(db)
+    if needs_document_scope(current_user):
+        existing = await service.get_remark(remark_id)
+        if not existing or not await _remark_in_scope(db, existing, current_user.id):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Remark not found"
+            )
     success = await service.delete_remark(remark_id, current_user.id)
     
     if not success:

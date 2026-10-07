@@ -204,7 +204,7 @@ class ImportChecker:
             "tasks": {"auth", "documents", "gamification", "operations", "projects", "routes", "time_tracking"},  # Tasks sync with production, time tracking
             "tenders": {"auth", "documents", "projects", "srm", "tasks", "operations", "workflow"},  # Tenders detail view needs work centers and workflows; procurement status from SRM
             "variables": {"auth"},  # Variables are independent
-            "remarks": {"auth", "gamification", "workflow"},  # Issue tracking with gamification, workflow
+            "remarks": {"auth", "documents", "gamification", "workflow"},  # Issue tracking with gamification, workflow; объектный скоуп по доступным документам (RBAC этап 3)
             "workflow": {"auth", "gamification"},  # Approval workflows + in-app notifications about step results
             
             # Level 2 (overlays)

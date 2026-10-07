@@ -110,6 +110,8 @@ ROLE_PERMISSIONS: dict[str, FrozenSet[str]] = {
         "dashboard.read", "analytics.read",
         "tenders.read", "finance.read",
         "srm.read", "srm.write",
+        "srm.directories.write", "srm.requests.write",
+        "srm.contracts.write", "srm.orders.write", "srm.invoices.write",
         "logistics.read",
         "projects.read",
         "documents.read",
@@ -121,6 +123,7 @@ ROLE_PERMISSIONS: dict[str, FrozenSet[str]] = {
     "logistics": frozenset({
         "dashboard.read", "analytics.read",
         "srm.read",
+        "srm.orders.write",
         "logistics.read", "logistics.write",
         "tasks.read",
         "time_tracking.read", "time_tracking.write",
@@ -130,6 +133,7 @@ ROLE_PERMISSIONS: dict[str, FrozenSet[str]] = {
     "storekeeper": frozenset({
         "dashboard.read",
         "srm.read", "srm.write",
+        "srm.receipt.write",
         "documents.read",
         "tasks.read",
         "time_tracking.read", "time_tracking.write",
@@ -137,7 +141,7 @@ ROLE_PERMISSIONS: dict[str, FrozenSet[str]] = {
     }),
     "installer": frozenset({
         "dashboard.read",
-        "documents.read",
+        "documents.read", "documents.scoped",
         "workflow.read",
         "remarks.read", "remarks.write",
         "tasks.read", "tasks.write",
@@ -229,3 +233,34 @@ def redact_finance(payload, response_model, user: User):
         for item in items
     ]
     return redacted[0] if single else redacted
+
+
+# ---------- Объектный уровень (этап 3) ----------
+
+def needs_document_scope(user: User) -> bool:
+    """Роли с объектным ограничением: видят документы только своей привязки.
+
+    Документ «свой», если пользователь — автор, проверяющий, утверждающий
+    или назначен исполнителем (assignee_ids). Администратор не ограничивается.
+    """
+    if user.is_superuser or user.role == "admin":
+        return False
+    return has_permission(user, "documents.scoped")
+
+
+# Статусы заказа, которые относятся к приёмке на складе/объекте.
+# Кладовщик (srm.receipt.write) может переводить заказ только в эти статусы,
+# не изменяя остальных полей.
+RECEIPT_STATUSES: FrozenSet[str] = frozenset({
+    "delivered", "inspection", "accepted", "rejected",
+})
+
+
+def can_write_receipt(user: User, update_fields: set) -> bool:
+    """Кладовщик может менять только статус приёмки, остальные поля — нет."""
+    if has_permission(user, "srm.orders.write"):
+        return True
+    if not has_permission(user, "srm.receipt.write"):
+        return False
+    touched = {f for f in update_fields if f != "status"}
+    return not touched

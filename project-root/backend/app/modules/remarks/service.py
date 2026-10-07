@@ -275,14 +275,32 @@ class RemarkService:
     async def list_remarks(
         self,
         filters: RemarkFilter,
-        current_user_id: Optional[int] = None
+        current_user_id: Optional[int] = None,
+        scope_user_id: Optional[int] = None,
     ) -> Tuple[List[Remark], int]:
         """List remarks with filtering and pagination."""
         query = select(Remark)
-        
+
         # Apply filters
         conditions = []
-        
+
+        # Объектный уровень (этап 3): scoped-роли — свои замечания + замечания
+        # документов/проектов своей привязки
+        if scope_user_id is not None:
+            from app.modules.documents.crud import user_document_access_clause
+            from app.modules.documents.models import Document
+            from sqlalchemy import select as _select
+            doc_clause = user_document_access_clause(scope_user_id)
+            accessible_docs = _select(Document.id).where(doc_clause)
+            accessible_projects = _select(Document.project_id).where(
+                doc_clause
+            ).where(Document.project_id.isnot(None))
+            conditions.append(or_(
+                Remark.author_id == scope_user_id,
+                Remark.document_id.in_(accessible_docs),
+                Remark.project_id.in_(accessible_projects),
+            ))
+
         if filters.project_id:
             conditions.append(Remark.project_id == filters.project_id)
         
@@ -674,7 +692,8 @@ class RemarkService:
         self,
         project_id: Optional[int] = None,
         document_id: Optional[int] = None,
-        assignee_id: Optional[int] = None
+        assignee_id: Optional[int] = None,
+        scope_user_id: Optional[int] = None,
     ) -> RemarkStatistics:
         """Get remarks statistics."""
         # Base query
@@ -683,6 +702,20 @@ class RemarkService:
             query = query.where(Remark.project_id == project_id)
         if document_id:
             query = query.where(Remark.document_id == document_id)
+        if scope_user_id is not None:
+            from app.modules.documents.crud import user_document_access_clause
+            from app.modules.documents.models import Document
+            from sqlalchemy import select as _select
+            doc_clause = user_document_access_clause(scope_user_id)
+            accessible_docs = _select(Document.id).where(doc_clause)
+            accessible_projects = _select(Document.project_id).where(
+                doc_clause
+            ).where(Document.project_id.isnot(None))
+            query = query.where(or_(
+                Remark.author_id == scope_user_id,
+                Remark.document_id.in_(accessible_docs),
+                Remark.project_id.in_(accessible_projects),
+            ))
         
         result = await self.db.execute(query)
         remarks = result.scalars().all()

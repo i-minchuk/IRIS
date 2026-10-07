@@ -12,6 +12,7 @@ from app.modules.tasks.dto import (
     TaskCreate, TaskUpdate, TaskStatusUpdate,
     TaskFilters, TaskResponse, TaskStatistics, PaginatedTaskList
 )
+from app.core.permissions import needs_document_scope
 
 router = APIRouter(tags=["tasks"])
 
@@ -51,7 +52,11 @@ async def list_tasks(
         overdue_only=overdue_only,
         search=search
     )
-    
+
+    # Объектный уровень (этап 3): scoped-роли видят только задачи, где они исполнитель
+    if needs_document_scope(current_user):
+        filters.assignee_id = current_user.id
+
     service = TaskService(db)
     tasks, total = await service.get_tasks(filters, page_size, offset)
     items = [service.task_to_response(task) for task in tasks]
@@ -99,6 +104,10 @@ async def get_task(
     task = await service.get_task(task_id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
+    if needs_document_scope(current_user) and current_user.id not in (
+        task.assignee_id, task.creator_id
+    ):
+        raise HTTPException(status_code=404, detail="Task not found")
     return service.task_to_response(task)
 
 
@@ -111,6 +120,10 @@ async def update_task(
 ):
     """Update task."""
     service = TaskService(db)
+    if needs_document_scope(current_user):
+        existing = await service.get_task(task_id)
+        if not existing or current_user.id not in (existing.assignee_id, existing.creator_id):
+            raise HTTPException(status_code=404, detail="Task not found")
     task = await service.update_task(task_id, task_in, current_user.id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")

@@ -42,10 +42,17 @@ async def list_documents(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db_read_only),
+    current_user: User = Depends(get_current_active_user),
     service: DocumentService = Depends(get_document_service),
 ):
     """List documents with optional filters and pagination."""
-    from app.modules.documents.crud import get_documents
+    from app.core.permissions import needs_document_scope
+    from app.modules.documents.crud import get_documents, user_document_access_clause
+
+    # Объектный уровень (этап 3): scoped-роли видят только документы своей привязки
+    access_clause = None
+    if needs_document_scope(current_user):
+        access_clause = user_document_access_clause(current_user.id)
 
     skip = (page - 1) * page_size
     docs = await get_documents(
@@ -55,7 +62,8 @@ async def list_documents(
         document_type=document_type,
         include_deleted=include_deleted,
         skip=skip,
-        limit=page_size
+        limit=page_size,
+        access_clause=access_clause,
     )
 
     # Count total for pagination
@@ -67,6 +75,8 @@ async def list_documents(
         filters.append(Document.status == status)
     if document_type:
         filters.append(Document.doc_type == document_type)
+    if access_clause is not None:
+        filters.append(access_clause)
     if filters:
         count_query = count_query.where(and_(*filters))
     total = await db.scalar(count_query)
@@ -199,8 +209,17 @@ async def restore_document(
 @router.get("/{document_id}", response_model=dict)
 async def get_document(
     document_id: int,
+    db: AsyncSession = Depends(get_db_read_only),
+    current_user: User = Depends(get_current_active_user),
     service: DocumentService = Depends(get_document_service),
 ):
+    from app.core.permissions import needs_document_scope
+    from app.modules.documents.crud import get_document as _get_doc, user_has_document_access
+
+    if needs_document_scope(current_user):
+        doc = await _get_doc(db, document_id)
+        if not doc or not user_has_document_access(doc, current_user.id):
+            raise HTTPException(status_code=404, detail="Document not found")
     return await service.get_document(document_id)
 
 
@@ -328,6 +347,14 @@ async def download_revision_file(
     current_user: User = Depends(get_current_active_user),
 ):
     """Скачать файл ревизии документа."""
+    from app.core.permissions import needs_document_scope
+    from app.modules.documents.crud import get_document as _get_doc, user_has_document_access
+
+    if needs_document_scope(current_user):
+        doc = await _get_doc(db, document_id)
+        if not doc or not user_has_document_access(doc, current_user.id):
+            raise HTTPException(status_code=404, detail="Document not found")
+
     result = await db.execute(
         select(Revision).where(
             Revision.id == revision_id,

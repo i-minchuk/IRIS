@@ -9,7 +9,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.core.config import settings
-from app.core.permissions import redact_finance
+from app.core.permissions import (
+    RECEIPT_STATUSES,
+    can_write_receipt,
+    has_permission,
+    redact_finance,
+    require_permission,
+)
 from app.db.session import get_db
 from app.modules.auth.deps import get_current_active_user
 from app.modules.auth.models import User
@@ -89,7 +95,7 @@ async def get_supplier(
 async def create_supplier(
     data: SupplierCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("srm.directories.write")),
 ):
     supplier = Supplier(**data.model_dump())
     db.add(supplier)
@@ -103,7 +109,7 @@ async def update_supplier(
     supplier_id: int,
     data: SupplierUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("srm.directories.write")),
 ):
     supplier = await _get_or_404(db, Supplier, supplier_id, "Supplier not found")
     _apply_update(supplier, data)
@@ -116,7 +122,7 @@ async def update_supplier(
 async def delete_supplier(
     supplier_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("srm.directories.write")),
 ):
     supplier = await _get_or_404(db, Supplier, supplier_id, "Supplier not found")
     await db.delete(supplier)
@@ -152,7 +158,7 @@ async def get_customer(
 async def create_customer(
     data: CustomerCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("srm.directories.write")),
 ):
     customer = Customer(**data.model_dump())
     db.add(customer)
@@ -166,7 +172,7 @@ async def update_customer(
     customer_id: int,
     data: CustomerUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("srm.directories.write")),
 ):
     customer = await _get_or_404(db, Customer, customer_id, "Customer not found")
     _apply_update(customer, data)
@@ -179,7 +185,7 @@ async def update_customer(
 async def delete_customer(
     customer_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("srm.directories.write")),
 ):
     customer = await _get_or_404(db, Customer, customer_id, "Customer not found")
     await db.delete(customer)
@@ -223,7 +229,7 @@ async def get_purchase_request(
 async def create_purchase_request(
     data: PurchaseRequestCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("srm.requests.write")),
 ):
     purchase_request = PurchaseRequest(**data.model_dump())
     db.add(purchase_request)
@@ -237,7 +243,7 @@ async def update_purchase_request(
     request_id: int,
     data: PurchaseRequestUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("srm.requests.write")),
 ):
     purchase_request = await _get_or_404(
         db, PurchaseRequest, request_id, "Purchase request not found"
@@ -252,7 +258,7 @@ async def update_purchase_request(
 async def delete_purchase_request(
     request_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("srm.requests.write")),
 ):
     purchase_request = await _get_or_404(
         db, PurchaseRequest, request_id, "Purchase request not found"
@@ -277,7 +283,7 @@ def _contract_attachments_dir() -> str:
 @router.post("/contracts/attachments", status_code=status.HTTP_201_CREATED)
 async def upload_contract_attachment(
     file: UploadFile = File(...),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("srm.contracts.write")),
 ):
     """Загрузить файл договора до создания договора.
 
@@ -342,7 +348,7 @@ async def get_contract(
 async def create_contract(
     data: ContractCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("srm.contracts.write")),
 ):
     contract = Contract(**data.model_dump())
     db.add(contract)
@@ -356,7 +362,7 @@ async def update_contract(
     contract_id: int,
     data: ContractUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("srm.contracts.write")),
 ):
     contract = await _get_or_404(db, Contract, contract_id, "Contract not found")
     _apply_update(contract, data)
@@ -369,7 +375,7 @@ async def update_contract(
 async def delete_contract(
     contract_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("srm.contracts.write")),
 ):
     contract = await _get_or_404(db, Contract, contract_id, "Contract not found")
     await db.delete(contract)
@@ -409,7 +415,7 @@ async def get_order(
 async def create_order(
     data: PurchaseOrderCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("srm.orders.write")),
 ):
     order = PurchaseOrder(**data.model_dump())
     db.add(order)
@@ -425,6 +431,24 @@ async def update_order(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
+    # Write-guard (этап 3): МТО/Логистика правят заказ целиком (srm.orders.write);
+    # кладовщик (srm.receipt.write) — только статусы приёмки, остальные поля нельзя.
+    update_fields = {
+        key for key, value in data.model_dump(exclude_unset=True).items()
+        if value is not None
+    }
+    if not can_write_receipt(current_user, update_fields):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Недостаточно прав для изменения заказа",
+        )
+    if not has_permission(current_user, "srm.orders.write"):
+        new_status = data.status.value if hasattr(data.status, "value") else data.status
+        if new_status is not None and new_status not in RECEIPT_STATUSES:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Кладовщик может переводить заказ только в статусы приёмки: {sorted(RECEIPT_STATUSES)}",
+            )
     order = await _get_or_404(db, PurchaseOrder, order_id, "Order not found")
     _apply_update(order, data)
     await db.commit()
@@ -436,7 +460,7 @@ async def update_order(
 async def delete_order(
     order_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("srm.orders.write")),
 ):
     order = await _get_or_404(db, PurchaseOrder, order_id, "Order not found")
     await db.delete(order)
@@ -476,7 +500,7 @@ async def get_invoice(
 async def create_invoice(
     data: InvoiceCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("srm.invoices.write")),
 ):
     invoice = Invoice(**data.model_dump())
     db.add(invoice)
@@ -490,7 +514,7 @@ async def update_invoice(
     invoice_id: int,
     data: InvoiceUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("srm.invoices.write")),
 ):
     invoice = await _get_or_404(db, Invoice, invoice_id, "Invoice not found")
     _apply_update(invoice, data)
@@ -503,7 +527,7 @@ async def update_invoice(
 async def delete_invoice(
     invoice_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("srm.invoices.write")),
 ):
     invoice = await _get_or_404(db, Invoice, invoice_id, "Invoice not found")
     await db.delete(invoice)
