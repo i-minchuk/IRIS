@@ -39,7 +39,6 @@ const SRM_TABS = [
 // Same violet accent as the "Портфель заказов" nav item in Layout.tsx
 const PORTFOLIO_ACCENT = '#7C3AED';
 const PORTFOLIO_ACCENT_SOFT = 'rgba(124, 58, 237, 0.15)';
-const PORTFOLIO_ACCENT_GLOW = 'rgba(124, 58, 237, 0.13)';
 const PORTFOLIO_ICON_GLOW = 'rgba(124, 58, 237, 0.55)';
 
 const MAIN_TABS = [
@@ -54,14 +53,17 @@ type MainTab = 'tenders' | 'contracts' | 'projects' | 'srm' | 'archive';
 type TenderTab = 'tenders' | 'customers' | 'solutions' | 'templates';
 type SRMTab = 'suppliers' | 'purchase-requests' | 'orders' | 'invoices' | 'process';
 
-/** Строка подвкладок — единый стиль для «Тендеров» и «Закупки». */
+/** Строка подвкладок — визуально подчинённый уровень ниже MAIN_TABS. */
 function SubTabs<T extends string>({ tabs, active, onChange }: {
   tabs: readonly { id: T; label: string }[];
   active: T;
   onChange: (id: T) => void;
 }) {
   return (
-    <div className="flex items-center gap-1 flex-wrap">
+    <div
+      className="flex items-center gap-1.5 flex-wrap pl-3 ml-1"
+      style={{ borderLeft: '2px solid var(--border-default)' }}
+    >
       {tabs.map((tab) => {
         const isActive = active === tab.id;
         return (
@@ -69,12 +71,17 @@ function SubTabs<T extends string>({ tabs, active, onChange }: {
             key={tab.id}
             type="button"
             onClick={() => onChange(tab.id)}
-            className="px-3 py-1.5 text-xs font-medium rounded-lg transition-all"
+            className="px-2.5 py-1 text-xs font-medium rounded-md transition-all"
             style={{
-              backgroundColor: isActive ? PORTFOLIO_ACCENT_SOFT : 'var(--bg-surface-2)',
-              color: isActive ? PORTFOLIO_ACCENT : 'var(--text-secondary)',
-              border: isActive ? `2px solid ${PORTFOLIO_ACCENT}` : '2px solid transparent',
-              boxShadow: isActive ? `0 0 8px ${PORTFOLIO_ACCENT_GLOW}` : 'none',
+              backgroundColor: isActive ? 'var(--bg-surface-2)' : 'transparent',
+              color: isActive ? 'var(--text-primary)' : 'var(--text-muted)',
+              border: isActive ? '1px solid var(--border-default)' : '1px solid transparent',
+            }}
+            onMouseEnter={(e) => {
+              if (!isActive) e.currentTarget.style.color = 'var(--text-secondary)';
+            }}
+            onMouseLeave={(e) => {
+              if (!isActive) e.currentTarget.style.color = 'var(--text-muted)';
             }}
           >
             {tab.label}
