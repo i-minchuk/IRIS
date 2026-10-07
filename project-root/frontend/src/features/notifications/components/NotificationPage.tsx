@@ -17,6 +17,7 @@ const typeConfig: Record<string, { color: string; label: string }> = {
   document_approved: { color: '#4F7A4C', label: 'Утверждение' },
   document_assigned: { color: '#8B5CF6', label: 'Документ' },
   approval_pending: { color: '#D4AF37', label: 'Согласование' },
+  approval_escalation: { color: '#EF4444', label: 'Эскалация' },
   workflow_rejected: { color: '#EF4444', label: 'Отказ' },
 };
 

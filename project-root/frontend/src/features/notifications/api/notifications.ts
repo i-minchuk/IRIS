@@ -7,7 +7,8 @@ export type NotificationType =
   | 'deadline_approaching'
   | 'document_approved'
   | 'document_assigned'
-  | 'approval_pending';
+  | 'approval_pending'
+  | 'approval_escalation';
 
 export interface NotificationItem {
   id: number;

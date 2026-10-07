@@ -124,6 +124,7 @@ async def _escalation_loop() -> None:
                 doc_result = await doc_service.check_document_deadlines()
                 result["checked"] += doc_result["checked"]
                 result["reminded"] += doc_result["reminded"]
+                result["escalated"] += doc_result.get("escalated", 0)
             if result.get("escalated") or result.get("reminded"):
                 logger.info(
                     "Deadline check: %(reminded)s reminded, %(escalated)s escalated",

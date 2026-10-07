@@ -12,6 +12,7 @@ class NotificationType:
     DOCUMENT_APPROVED = "document_approved"
     DOCUMENT_ASSIGNED = "document_assigned"
     APPROVAL_PENDING = "approval_pending"
+    APPROVAL_ESCALATION = "approval_escalation"
 
 
 class NotificationResponse(BaseModel):
