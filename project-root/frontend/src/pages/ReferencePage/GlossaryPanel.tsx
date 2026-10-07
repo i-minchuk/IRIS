@@ -8,6 +8,7 @@ import {
   createGlossaryTerm,
   type GlossaryTerm,
 } from './glossaryApi';
+import { useCan } from '@/shared/hooks/useCan';
 
 interface GlossaryCardProps {
   term: GlossaryTerm;
@@ -191,6 +192,7 @@ interface GlossaryPanelProps {
 }
 
 export default function GlossaryPanel({ isDark = false }: GlossaryPanelProps) {
+  const canWrite = useCan('references.write');
   const [searchQuery, setSearchQuery] = useState('');
   const [terms, setTerms] = useState<GlossaryTerm[]>([]);
   const [loading, setLoading] = useState(false);
@@ -332,6 +334,8 @@ export default function GlossaryPanel({ isDark = false }: GlossaryPanelProps) {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          {canWrite && (
+            <>
           <button
             onClick={handleGenerate}
             disabled={generating}
@@ -358,6 +362,8 @@ export default function GlossaryPanel({ isDark = false }: GlossaryPanelProps) {
           >
             <Plus size={16} /> Добавить вручную
           </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -508,7 +514,7 @@ export default function GlossaryPanel({ isDark = false }: GlossaryPanelProps) {
               searchQuery={searchQuery}
               isDark={isDark}
               defaultOpen={!searchQuery.trim()}
-              onDelete={handleDelete}
+              onDelete={canWrite ? handleDelete : undefined}
             />
           ))}
         </div>

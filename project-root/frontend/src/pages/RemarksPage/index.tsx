@@ -3,6 +3,7 @@ import { MessageSquareWarning, Plus, Download, Filter } from 'lucide-react';
 import { toast } from 'sonner';
 import apiClient from '@/shared/api/client';
 import { useRemarksStore } from '@/stores/remarksStore';
+import { useCan } from '@/shared/hooks/useCan';
 import { useIsDemo } from '@/stores/appModeStore';
 import { RemarkPriority, RemarkStatus } from '@/types/remarks';
 import { RemarksFilters } from './components/RemarksFilters';
@@ -32,6 +33,8 @@ export const RemarksPage: React.FC = () => {
   const [selectedRemarks, setSelectedRemarks] = useState<Set<string>>(new Set());
   const [exporting, setExporting] = useState(false);
   const isDemo = useIsDemo();
+  // Write-guard (RBAC этап 3): создавать замечания может ограниченный круг ролей
+  const canWrite = useCan('remarks.write');
 
   const handleExport = async () => {
     if (isDemo) {
@@ -144,13 +147,15 @@ export const RemarksPage: React.FC = () => {
             <Download className="w-3.5 h-3.5" />
             {exporting ? 'Выгрузка…' : 'Экспорт'}
           </button>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-1 px-3 py-1.5 bg-[#FF4D6D] rounded text-xs font-bold text-white hover:bg-[#ff3355] transition-colors"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Новое замечание
-          </button>
+          {canWrite && (
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center gap-1 px-3 py-1.5 bg-[#FF4D6D] rounded text-xs font-bold text-white hover:bg-[#ff3355] transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Новое замечание
+            </button>
+          )}
         </div>
       </div>
 

@@ -11,6 +11,7 @@ import {
 } from '@/features/workflow/api/workflowApi';
 import { getProjects } from '@/features/projects/api/projects';
 import type { Project } from '@/features/projects/api/projects';
+import { useCan } from '@/shared/hooks/useCan';
 
 const DISCIPLINES = ['08', '11', '37', '65', '70', '94', '96'];
 
@@ -48,6 +49,7 @@ function RoutingRulesSection() {
   const [templateId, setTemplateId] = useState<number | ''>('');
   const [priority, setPriority] = useState(0);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const canWrite = useCan('references.write');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -160,6 +162,7 @@ function RoutingRulesSection() {
       </p>
 
       {/* Форма добавления */}
+      {canWrite && (
       <div
         className="rounded-xl p-4 space-y-3"
         style={{ background: 'var(--card-bg)', border: '1px solid var(--border-default)' }}
@@ -276,6 +279,7 @@ function RoutingRulesSection() {
           </button>
         </div>
       </div>
+      )}
 
       {/* Таблица сценариев */}
       {rules.length === 0 ? (
@@ -313,14 +317,22 @@ function RoutingRulesSection() {
                     {r.priority}
                   </td>
                   <td className="px-3 py-2">
-                    <input
-                      type="checkbox"
-                      checked={r.is_active}
-                      onChange={() => toggleActive(r)}
-                      className="cursor-pointer"
-                    />
+                    {canWrite ? (
+                      <input
+                        type="checkbox"
+                        checked={r.is_active}
+                        onChange={() => toggleActive(r)}
+                        className="cursor-pointer"
+                      />
+                    ) : (
+                      <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                        {r.is_active ? 'да' : 'нет'}
+                      </span>
+                    )}
                   </td>
                   <td className="px-3 py-2 text-right whitespace-nowrap">
+                    {canWrite && (
+                      <>
                     <button
                       type="button"
                       onClick={() => startEdit(r)}
@@ -339,6 +351,8 @@ function RoutingRulesSection() {
                     >
                       <Trash2 size={14} />
                     </button>
+                      </>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -369,6 +383,7 @@ const emptyStep = (): DraftStep => ({
 });
 
 function TemplatesSection() {
+  const canWrite = useCan('references.write');
   const [templates, setTemplates] = useState<WorkflowTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<number | null>(null);
@@ -457,6 +472,7 @@ function TemplatesSection() {
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
+        {canWrite && (
         <button
           type="button"
           onClick={() => setBuilderOpen((v) => !v)}
@@ -466,6 +482,7 @@ function TemplatesSection() {
           <Plus size={12} />
           {builderOpen ? 'Скрыть конструктор' : 'Создать свой маршрут'}
         </button>
+        )}
       </div>
 
       {builderOpen && (

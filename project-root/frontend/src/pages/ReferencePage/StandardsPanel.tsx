@@ -20,6 +20,7 @@ import {
   type Standard,
   type StandardRequirement,
 } from './standardsApi';
+import { useCan } from '@/shared/hooks/useCan';
 
 const typeLabels: Record<string, string> = {
   gost: 'ГОСТ/Стандарт',
@@ -32,7 +33,7 @@ const typeLabels: Record<string, string> = {
 
 interface StandardCardProps {
   standard: Standard;
-  onDelete: (id: number) => void;
+  onDelete?: (id: number) => void;
 }
 
 function StandardCard({ standard, onDelete }: StandardCardProps) {
@@ -74,17 +75,19 @@ function StandardCard({ standard, onDelete }: StandardCardProps) {
           >
             {standard.requirements.length} треб.
           </span>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(standard.id);
-            }}
-            className="p-1 rounded hover:opacity-80"
-            style={{ color: 'var(--text-muted)' }}
-            title="Удалить"
-          >
-            <Trash2 size={14} />
-          </button>
+          {onDelete && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(standard.id);
+              }}
+              className="p-1 rounded hover:opacity-80"
+              style={{ color: 'var(--text-muted)' }}
+              title="Удалить"
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
           {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </div>
       </div>
@@ -144,6 +147,7 @@ function StandardCard({ standard, onDelete }: StandardCardProps) {
 }
 
 export default function StandardsPanel() {
+  const canWrite = useCan('references.write');
   const [standards, setStandards] = useState<Standard[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -275,6 +279,8 @@ export default function StandardsPanel() {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          {canWrite && (
+            <>
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
@@ -308,6 +314,8 @@ export default function StandardsPanel() {
           >
             <Plus size={16} /> Добавить вручную
           </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -413,7 +421,7 @@ export default function StandardsPanel() {
       ) : (
         <div className="space-y-3">
           {filtered.map((standard) => (
-            <StandardCard key={standard.id} standard={standard} onDelete={handleDelete} />
+            <StandardCard key={standard.id} standard={standard} onDelete={canWrite ? handleDelete : undefined} />
           ))}
         </div>
       )}

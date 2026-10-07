@@ -2,6 +2,7 @@ import React from 'react';
 import { Send } from 'lucide-react';
 import { RemarkListItem, RemarkPriority, RemarkStatus } from '@/types/remarks';
 import { useRemarksStore } from '@/stores/remarksStore';
+import { useCan } from '@/shared/hooks/useCan';
 
 interface RemarksTableProps {
   remarks: RemarkListItem[];
@@ -30,6 +31,7 @@ export const RemarksTable: React.FC<RemarksTableProps> = ({
   getPriorityIcon,
 }) => {
   const { startWorkflow } = useRemarksStore();
+  const canWrite = useCan('remarks.write');
   const toggleSelect = (id: string) => {
     const newSet = new Set(selectedRemarks);
     if (newSet.has(id)) {
@@ -130,7 +132,7 @@ export const RemarksTable: React.FC<RemarksTableProps> = ({
                   <span className="px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
                     —
                   </span>
-                ) : (
+                ) : canWrite ? (
                   <button
                     onClick={() => startWorkflow(remark.id)}
                     className="flex items-center gap-1 px-2 py-0.5 bg-[#3b82f6] text-white rounded text-xs hover:bg-[#2563eb] transition-colors"
@@ -139,7 +141,7 @@ export const RemarksTable: React.FC<RemarksTableProps> = ({
                     <Send className="w-3 h-3" />
                     На согласование
                   </button>
-                )}
+                ) : null}
               </td>
               <td className="px-3 py-3 text-xs text-[#94a3b8]">
                 {remark.due_date ? (
@@ -149,9 +151,11 @@ export const RemarksTable: React.FC<RemarksTableProps> = ({
                 ) : '—'}
               </td>
               <td className="px-3 py-3">
-                <button className="text-[#3b82f6] hover:text-[#2563eb] text-xs">
-                  ✏️
-                </button>
+                {canWrite && (
+                  <button className="text-[#3b82f6] hover:text-[#2563eb] text-xs">
+                    ✏️
+                  </button>
+                )}
               </td>
             </tr>
           ))}
