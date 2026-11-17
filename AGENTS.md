@@ -2,13 +2,13 @@
 
 > Этот файл предназначен для AI-агентов, работающих с кодовой базой. Здесь собрана актуальная информация об архитектуре, стеке, командах и конвенциях проекта. Читатель этого файла не знает о проекте ничего — полагайтесь только на написанное ниже.
 > 
-> Последнее обновление: 2026-06-22.
+> Последнее обновление: 2026-11-17.
 
 ---
 
 ## Обзор проекта
 
-**ДокПоток IRIS** — система управления технической документацией (Document Management System), MVP версии 4.7.0.
+**ДокПоток IRIS** — система управления технической документацией (Document Management System), версия 4.9.1.
 
 Приложение состоит из:
 - **Backend** — асинхронный API на FastAPI.
@@ -317,6 +317,33 @@ project-root/frontend/
 ---
 
 ## Команды сборки и запуска
+
+### Рабочий контур разработки (Windows, зафиксировано 2026-11-17, версия 4.9.1)
+
+Параметры постоянного локального контура — использовать по умолчанию,
+не переузнавать у пользователя:
+
+- **Backend**: порт 8000, интерпретатор `C:\Users\Novikova\AppData\Local\Programs\Python\Python312\python.exe`
+  (для ручного запуска uvicorn напрямую; **не** с `--reload`, если за ним потом нужно аккуратно убить процесс);
+  для проектных скриптов и pytest — venv `project-root/backend/.venv\Scripts\python.exe`.
+- **Frontend**: порт 5173, `npm run dev` из `project-root/frontend` (прокси на localhost:8000).
+- **БД разработки**: PostgreSQL `postgresql://iris:iris_dev_password@localhost:5432/iris_dev`
+  (переменная DATABASE_URL в `project-root/backend/.env`).
+- **Вход администратора**: логин `admin` (поле `username`), пароль `admin321`.
+  Демо-режим: `demo@iris.local` / `demo1234` (отдельная БД `demo.db`).
+- **Rate limit**: `/login` 5/мин — в тест-скриптах разносить логины `sleep ≥ 13`.
+- **Запуск/останов вручную** (без bat): убить uvicorn через
+  `powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" | Where-Object { \$_.CommandLine -match 'uvicorn' } | ForEach-Object { Stop-Process -Id \$_.ProcessId -Force }"`
+  (в Git Bash экранировать `\$_`), затем `Start-Process` uvicorn с логами в корне репо.
+- **Git**: базовая ветка `main`, remote `https://github.com/i-minchuk/IRIS.git`
+  (токен хранится в git credential manager, `gh` CLI не установлен;
+  GitHub API — через `git credential fill` + curl).
+- **Релизы**: тег `vX.Y.Z`, GitHub Release с дистрибутивом (см. `distrib/`),
+  инструкция быстрого старта — PDF из релиза v4.9.1.
+- **Бат-файлы в `scripts/` обязаны быть в CRLF** — после любых правок
+  проверять/конвертировать переводы строк, иначе `goto`-метки ломаются.
+- Развёртывание с нуля: `alembic upgrade head` из `project-root/backend`,
+  первый админ — регистрация через `/api/v1/auth/register` + роль `admin` прямым SQL.
 
 ### Backend
 
