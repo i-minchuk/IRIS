@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { useTabState } from '@/shared/hooks/useTabState';
 import { PageHeader } from '@/shared/components/PageHeader';
+import { useAuth } from '@/context/useAuth';
 
 /* ─── Lazy tab contents ─── */
 import TendersPage from '@/pages/TendersPage';
@@ -53,6 +54,15 @@ type MainTab = 'tenders' | 'contracts' | 'projects' | 'srm' | 'archive';
 type TenderTab = 'tenders' | 'customers' | 'solutions' | 'templates';
 type SRMTab = 'suppliers' | 'purchase-requests' | 'orders' | 'invoices' | 'process';
 
+/** Право, требуемое для каждой главной вкладки (RBAC, этап 4 P1). */
+const TAB_PERMISSION: Record<MainTab, string> = {
+  tenders: 'tenders.read',
+  contracts: 'srm.read',
+  projects: 'projects.read',
+  srm: 'srm.read',
+  archive: 'archive.read',
+};
+
 /** Строка подвкладок — визуально подчинённый уровень ниже MAIN_TABS. */
 function SubTabs<T extends string>({ tabs, active, onChange }: {
   tabs: readonly { id: T; label: string }[];
@@ -94,14 +104,28 @@ function SubTabs<T extends string>({ tabs, active, onChange }: {
 
 export default function PortfolioPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useTabState<MainTab>('iris_portfolio_tab', 'tenders');
   const [tenderTab, setTenderTab] = useTabState<TenderTab>('iris_portfolio_tender_tab', 'tenders');
   const [srmTab, setSrmTab] = useTabState<SRMTab>('iris_portfolio_srm_tab', 'suppliers');
   // Защита от устаревших значений в localStorage (solutions/templates как главные вкладки, srm_tab='contracts')
-  const currentTab: MainTab = MAIN_TABS.some(t => t.id === activeTab) ? activeTab : 'tenders';
   const activeTenderTab: TenderTab = TENDER_TABS.some(t => t.id === tenderTab) ? tenderTab : 'tenders';
   const activeSrmTab: SRMTab = SRM_TABS.some(t => t.id === srmTab) ? srmTab : 'suppliers';
+
+  // ── RBAC: видимость главных вкладок по правам (этап 4 P1) ──
+  const canTab = (perm: string): boolean => {
+    if (!user) return false;
+    if (user.role === 'admin') return true;
+    const perms = user.permissions;
+    if (!perms) return true; // права ещё не загружены — фолбэк allow, бэкенд отсечёт
+    return perms.includes('*') || perms.includes(perm);
+  };
+  const visibleTabs = MAIN_TABS.filter(t => canTab(TAB_PERMISSION[t.id]));
+  // Текущая вкладка: только из видимых; иначе — первая доступная
+  const currentTab: MainTab = visibleTabs.some(t => t.id === activeTab)
+    ? activeTab
+    : (visibleTabs[0]?.id ?? 'tenders');
 
   // Sync with URL query params
   const tabParam = searchParams.get('tab');
@@ -165,7 +189,7 @@ export default function PortfolioPage() {
 
       {/* Main tabs */}
       <div className="flex items-center gap-1 mb-6 border-b pb-1" style={{ borderColor: 'var(--border-default)' }}>
-        {MAIN_TABS.map((tab) => {
+        {visibleTabs.map((tab) => {
           const isActive = currentTab === tab.id;
           return (
             <button

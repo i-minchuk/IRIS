@@ -84,6 +84,14 @@
   и монтажника нет). МТО добавлено право `ai.read` (по матрице AI у МТО — R).
   Проверено живым тестом: admin — доступен весь трио, storekeeper — 403 на
   все три, mto — projects/ai открыты, audit 403.
+- **Этап 4 P1 (2026-11-18):** фронтенд — guard страниц `PermRoute` по праву
+  (редирект на дашборд при отсутствии права; фолбэк allow, пока права из
+  `/auth/me` не загружены): /dashboard, /projects, /documents (+new/import/:id),
+  /my-tasks, /remarks, /archive, /portfolio, /reports, /production,
+  /time-tracking, /references, /ai-search, /srm/* — 16 страниц. Вкладки
+  портфеля («Тендеры», «Договоры», «Проекты», «Закупка/МТО», «Архив»)
+  фильтруются по правам tenders.read / srm.read / projects.read / archive.read;
+  недоступная активная вкладка автоматически заменяется первой доступной.
 
 Код прав: `permissions.py`, функции `get_permissions(role)`,
 `require_permission(perm)` (admin/superuser — всегда разрешено).

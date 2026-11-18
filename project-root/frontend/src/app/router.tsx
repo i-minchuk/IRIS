@@ -9,6 +9,7 @@ const ForgotPasswordPage = lazy(() => import('@/pages/ForgotPasswordPage'));
 const ResetPasswordPage = lazy(() => import('@/pages/ResetPasswordPage'));
 import { ProtectedRoute } from './ProtectedRoute';
 import { AdminRouteGuard } from '@/components/admin/AdminRouteGuard';
+import { PermRoute } from '@/components/PermRoute';
 
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
 const ProjectsPage = lazy(() => import('@/pages/ProjectsPage'));
@@ -82,16 +83,16 @@ export const router = createBrowserRouter([
       {
         element: <Layout />,
         children: [
-          { path: '/dashboard', element: <SuspenseWrapper><Dashboard /></SuspenseWrapper> },
-          { path: '/projects', element: <SuspenseWrapper><ProjectsPage /></SuspenseWrapper> },
-          { path: '/documents', element: <SuspenseWrapper><DocumentsPage /></SuspenseWrapper> },
-          { path: '/my-tasks', element: <SuspenseWrapper><MyTasksPage /></SuspenseWrapper> },
+          { path: '/dashboard', element: <SuspenseWrapper><PermRoute perm="dashboard.read"><Dashboard /></PermRoute></SuspenseWrapper> },
+          { path: '/projects', element: <SuspenseWrapper><PermRoute perm="projects.read"><ProjectsPage /></PermRoute></SuspenseWrapper> },
+          { path: '/documents', element: <SuspenseWrapper><PermRoute perm="documents.read"><DocumentsPage /></PermRoute></SuspenseWrapper> },
+          { path: '/my-tasks', element: <SuspenseWrapper><PermRoute perm="tasks.read"><MyTasksPage /></PermRoute></SuspenseWrapper> },
           { path: '/workflow', element: <Navigate to="/documents" replace /> },
-          { path: '/remarks', element: <SuspenseWrapper><RemarksPage /></SuspenseWrapper> },
-          { path: '/archive', element: <SuspenseWrapper><ArchivePage /></SuspenseWrapper> },
+          { path: '/remarks', element: <SuspenseWrapper><PermRoute perm="remarks.read"><RemarksPage /></PermRoute></SuspenseWrapper> },
+          { path: '/archive', element: <SuspenseWrapper><PermRoute perm="archive.read"><ArchivePage /></PermRoute></SuspenseWrapper> },
           { path: '/achievements', element: <SuspenseWrapper><AchievementsPage /></SuspenseWrapper> },
-          { path: '/portfolio', element: <SuspenseWrapper><PortfolioPage /></SuspenseWrapper> },
-          { path: '/portfolio/*', element: <SuspenseWrapper><PortfolioPage /></SuspenseWrapper> },
+          { path: '/portfolio', element: <SuspenseWrapper><PermRoute perm="tenders.read"><PortfolioPage /></PermRoute></SuspenseWrapper> },
+          { path: '/portfolio/*', element: <SuspenseWrapper><PermRoute perm="tenders.read"><PortfolioPage /></PermRoute></SuspenseWrapper> },
           /* ── Redirects from old standalone pages ── */
           { path: '/tenders', element: <Navigate to="/portfolio?tab=tenders" replace /> },
           { path: '/project-portfolio', element: <Navigate to="/portfolio?tab=projects" replace /> },
@@ -107,19 +108,19 @@ export const router = createBrowserRouter([
   { path: '/calendar', element: <SuspenseWrapper><CalendarPage /></SuspenseWrapper> },
   */
           { path: '/calendar', element: <Navigate to="/dashboard" replace /> },
-          { path: '/reports', element: <SuspenseWrapper><ReportsPage /></SuspenseWrapper> },
+          { path: '/reports', element: <SuspenseWrapper><PermRoute perm="reports.read"><ReportsPage /></PermRoute></SuspenseWrapper> },
           { path: '/contacts', element: <Navigate to="/references" replace /> },
           { path: '/profile', element: <SuspenseWrapper><ProfileSettingsPage /></SuspenseWrapper> },
           { path: '/profile/2fa', element: <SuspenseWrapper><TwoFactorSettingsPage /></SuspenseWrapper> },
           { path: '/notifications', element: <SuspenseWrapper><NotificationPage /></SuspenseWrapper> },
-          { path: '/production', element: <SuspenseWrapper><ProductionControlPage /></SuspenseWrapper> },
-          { path: '/time-tracking', element: <SuspenseWrapper><TimeTrackingPage /></SuspenseWrapper> },
+          { path: '/production', element: <SuspenseWrapper><PermRoute perm="production.read"><ProductionControlPage /></PermRoute></SuspenseWrapper> },
+          { path: '/time-tracking', element: <SuspenseWrapper><PermRoute perm="time_tracking.read"><TimeTrackingPage /></PermRoute></SuspenseWrapper> },
           { path: '/analytics', element: <Navigate to='/dashboard' replace /> },
-          { path: '/references', element: <SuspenseWrapper><ReferencePage /></SuspenseWrapper> },
-          { path: '/documents/new', element: <SuspenseWrapper><DocumentCreate /></SuspenseWrapper> },
-          { path: '/documents/import', element: <SuspenseWrapper><ImportExcel /></SuspenseWrapper> },
-          { path: '/documents/:id', element: <SuspenseWrapper><DocumentDetail /></SuspenseWrapper> },
-          { path: '/ai-search', element: <SuspenseWrapper><SemanticSearchPage /></SuspenseWrapper> },
+          { path: '/references', element: <SuspenseWrapper><PermRoute perm="references.read"><ReferencePage /></PermRoute></SuspenseWrapper> },
+          { path: '/documents/new', element: <SuspenseWrapper><PermRoute perm="documents.read"><DocumentCreate /></PermRoute></SuspenseWrapper> },
+          { path: '/documents/import', element: <SuspenseWrapper><PermRoute perm="documents.read"><ImportExcel /></PermRoute></SuspenseWrapper> },
+          { path: '/documents/:id', element: <SuspenseWrapper><PermRoute perm="documents.read"><DocumentDetail /></PermRoute></SuspenseWrapper> },
+          { path: '/ai-search', element: <SuspenseWrapper><PermRoute perm="ai.read"><SemanticSearchPage /></PermRoute></SuspenseWrapper> },
           { path: '/integrations', element: <SuspenseWrapper><IntegrationsPage /></SuspenseWrapper> },
           { path: '/integrations/1c', element: <SuspenseWrapper><OneCExportPage /></SuspenseWrapper> },
           { path: '/monitoring', element: <SuspenseWrapper><AdminRouteGuard><MonitoringPage /></AdminRouteGuard></SuspenseWrapper> },
@@ -147,11 +148,11 @@ export const router = createBrowserRouter([
       {
         element: <Layout />,
         children: [
-          { path: '/srm/suppliers', element: <SuspenseWrapper><SuppliersPage /></SuspenseWrapper> },
-          { path: '/srm/purchase-requests', element: <SuspenseWrapper><PurchaseRequestsPage /></SuspenseWrapper> },
-          { path: '/srm/contracts', element: <SuspenseWrapper><ContractsPage /></SuspenseWrapper> },
-          { path: '/srm/orders', element: <SuspenseWrapper><OrdersPage /></SuspenseWrapper> },
-          { path: '/srm/invoices', element: <SuspenseWrapper><InvoicesPage /></SuspenseWrapper> },
+          { path: '/srm/suppliers', element: <SuspenseWrapper><PermRoute perm="srm.read"><SuppliersPage /></PermRoute></SuspenseWrapper> },
+          { path: '/srm/purchase-requests', element: <SuspenseWrapper><PermRoute perm="srm.read"><PurchaseRequestsPage /></PermRoute></SuspenseWrapper> },
+          { path: '/srm/contracts', element: <SuspenseWrapper><PermRoute perm="srm.read"><ContractsPage /></PermRoute></SuspenseWrapper> },
+          { path: '/srm/orders', element: <SuspenseWrapper><PermRoute perm="srm.read"><OrdersPage /></PermRoute></SuspenseWrapper> },
+          { path: '/srm/invoices', element: <SuspenseWrapper><PermRoute perm="srm.read"><InvoicesPage /></PermRoute></SuspenseWrapper> },
           { path: '/team', element: <SuspenseWrapper><TeamPage /></SuspenseWrapper> },
           { path: '/gamification', element: <Navigate to="/team" replace /> },
           { path: '/gamification/leaderboard', element: <Navigate to="/team" replace /> },
