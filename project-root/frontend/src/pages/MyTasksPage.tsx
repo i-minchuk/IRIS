@@ -5,6 +5,7 @@ import {
   GitBranch, CheckCircle, Clock, AlertTriangle, ExternalLink,
 } from 'lucide-react';
 import { workflowApi, type MyTask } from '@/features/workflow/api/workflowApi';
+import { useCan } from '@/lib/useCan';
 
 const APPROVAL_TYPE: Record<string, string> = {
   approve: 'Утверждение',
@@ -13,11 +14,19 @@ const APPROVAL_TYPE: Record<string, string> = {
 };
 
 export default function MyTasksPage() {
+  const can = useCan();
+  const canWorkflow = can('workflow.read');
   const [tasks, setTasks] = useState<MyTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [onlyOverdue, setOnlyOverdue] = useState(false);
 
   const load = useCallback(async () => {
+    if (!canWorkflow) {
+      // Нет права на документооборот — задач на согласование не показываем и не запрашиваем
+      setTasks([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       setTasks(await workflowApi.getMyTasks());
@@ -26,7 +35,7 @@ export default function MyTasksPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [canWorkflow]);
 
   useEffect(() => {
     load();

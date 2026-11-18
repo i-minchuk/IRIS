@@ -23,6 +23,7 @@ import { getRemarks, createRemark } from '@/features/remarks/api/remarks';
 import { getDocuments, getDocument, uploadDocumentFile, downloadRevisionFile, approveDocument, getApprovalFeed, getActionTaskStatuses, setActionTaskStatus, updateDocument, copyDocument, deleteDocument, type ApprovalFeedItem, type DocumentItem, type ActionTaskStatus } from '@/features/documents/api/documents';
 import ViewerContainer from '@/components/viewers/ViewerContainer';
 import { getProjects, updateProject, deleteProject, archiveProject } from '@/features/projects/api/projects';
+import { useCan } from '@/lib/useCan';
 import { getUsers } from '@/features/users/api/users';
 import { toast } from 'sonner';
 import type { LeaderboardEntry } from '@/types';
@@ -318,6 +319,7 @@ function ContextMenuItem({
    ═══════════════════════════════════════════ */
 function RegistryView() {
   const { autoStart } = useAutoTimeTracker();
+  const can = useCan();
   const [searchQuery, setSearchQuery] = useState('');
   const [appliedQuery, setAppliedQuery] = useState('');
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
@@ -474,7 +476,7 @@ function RegistryView() {
     try {
       const [apiDocs, projectsData, leaderboard] = await Promise.all([
         getDocuments().catch(() => [] as DocumentItem[]),
-        getProjects().catch(() => [] as ProjectListItem[]),
+        can('projects.read') ? getProjects().catch(() => [] as ProjectListItem[]) : Promise.resolve([] as ProjectListItem[]),
         getLeaderboard().catch(() => [] as LeaderboardEntry[]),
       ]);
       const projectsList = extractItems<ProjectListItem>(projectsData);
@@ -960,7 +962,7 @@ function RegistryView() {
     setSelectedProject(doc.project);
     const numericId = Number.parseInt(doc.id, 10) || undefined;
     await autoStart({ documentId: numericId, documentName: `${doc.code} — ${doc.name}` });
-    if (numericId) {
+    if (numericId && can('remarks.read')) {
       try {
         const res = await getRemarks({ document_id: numericId, page: 1, page_size: 100 });
         const remarks = res.items.map(mapApiRemark);
@@ -1529,8 +1531,8 @@ function RegistryView() {
             )}
           </div>
 
-          {/* New remark form */}
-          {selectedDoc && (
+          {/* New remark form (только remarks.write) */}
+          {selectedDoc && can('remarks.write') && (
             <div className="p-3 space-y-2" style={{ borderTop: '1px solid var(--border-default)', background: 'var(--card-bg)' }}>
               <div className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Новое замечание</div>
               <textarea
@@ -2115,6 +2117,7 @@ function tooltipStyle() {
 }
 
 function WorkflowView() {
+  const can = useCan();
   const [tab, setTab] = useState<'tasks' | 'remarks'>('tasks');
   const [remarks, setRemarks] = useState<RemarkListItem[]>([]);
   const [approvalFeed, setApprovalFeed] = useState<ApprovalFeedItem[]>([]);
@@ -2139,12 +2142,12 @@ function WorkflowView() {
     let cancelled = false;
     setLoading(true);
     Promise.all([
-      getRemarks({ page: 1, page_size: 50 }).catch(() => null),
-      getApprovalFeed().catch(() => [] as ApprovalFeedItem[]),
+      can('remarks.read') ? getRemarks({ page: 1, page_size: 50 }).catch(() => null) : Promise.resolve(null),
+      can('workflow.read') ? getApprovalFeed().catch(() => [] as ApprovalFeedItem[]) : Promise.resolve([] as ApprovalFeedItem[]),
       getDocuments().catch(() => [] as DocumentItem[]),
-      getProjects().catch(() => [] as { id: number; name: string; status?: string }[]),
+      can('projects.read') ? getProjects().catch(() => [] as { id: number; name: string; status?: string }[]) : Promise.resolve([] as { id: number; name: string; status?: string }[]),
       getActionTaskStatuses().catch(() => ({}) as Record<string, ActionTaskStatus>),
-      apiClient.get('/analytics/escalations').then(r => r.data).catch(() => null),
+      can('analytics.read') ? apiClient.get('/analytics/escalations').then(r => r.data).catch(() => null) : Promise.resolve(null),
     ]).then(([remarksData, feedData, docsData, projectsData, taskStatusesData, escalationsData]) => {
       if (cancelled) return;
       if (remarksData?.items?.length) setRemarks(remarksData.items);
@@ -3249,6 +3252,12 @@ const DOC_TABS = [
 /* ── Main Page ── */
 export default function DocumentsPage() {
   const [activeTab, setActiveTab] = useTabState<TabKey>('iris_documents_tab', 'registry');
+  const can = useCan();
+  const canRemarks = can('remarks.read');
+  const canWorkflow = can('workflow.read');
+  const visibleTabs = DOC_TABS.filter((t) =>
+    t.key === 'registry' ? true : t.key === 'remarks' ? canRemarks : canWorkflow);
+  const effectiveTab = visibleTabs.some((t) => t.key === activeTab) ? activeTab : 'registry';
 
   return (
     <div className="space-y-5 px-3 md:px-6 py-4 md:pt-2 pb-6">
@@ -3278,11 +3287,11 @@ export default function DocumentsPage() {
       <div className="mb-4">
       </div>
 
-      <PageTabs tabs={DOC_TABS} active={activeTab} onChange={setActiveTab} />
+      <PageTabs tabs={visibleTabs} active={effectiveTab} onChange={setActiveTab} />
 
-      {activeTab === 'registry' && <RegistryView />}
-      {activeTab === 'remarks' && <RemarksPage />}
-      {activeTab === 'workflow' && <WorkflowView />}
+      {effectiveTab === 'registry' && <RegistryView />}
+      {effectiveTab === 'remarks' && canRemarks && <RemarksPage />}
+      {effectiveTab === 'workflow' && canWorkflow && <WorkflowView />}
     </div>
   );
 }

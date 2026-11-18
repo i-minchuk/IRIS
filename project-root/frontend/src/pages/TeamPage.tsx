@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useGamificationStore } from '@/stores/gamificationStore';
 import { useTheme } from '@/providers/ThemeProvider';
 import { analyticsApi, type TeamTimeAnalytics } from '@/features/analytics/api/analytics';
+import { useCan } from '@/lib/useCan';
 import {
   Trophy, Medal, Award, Star, Flame, Zap, Crown,
   Target, BookOpen, Handshake, FileCheck, Users, Sparkles,
@@ -63,6 +64,7 @@ const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
 export default function TeamPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark' || theme === 'midnight' || theme === 'contrast';
+  const can = useCan();
   const [activeTab, setActiveTab] = useState<TabKey>('leaderboard');
 
   // Leaderboard data
@@ -74,11 +76,16 @@ export default function TeamPage() {
   }, [fetchAll]);
   const earnedBadges = badges.filter(b => b.earnedAt);
 
-  // Workload data (учёт времени команды)
+  // Workload data (учёт времени команды — требуется analytics.read)
   const [team, setTeam] = useState<TeamTimeAnalytics[]>([]);
   const [teamLoading, setTeamLoading] = useState(true);
   useEffect(() => {
     let cancelled = false;
+    if (!can('analytics.read')) {
+      setTeam([]);
+      setTeamLoading(false);
+      return;
+    }
     analyticsApi.getTeamTimeTracking()
       .then(res => { if (!cancelled) setTeam(res.data); })
       .catch(() => { if (!cancelled) setTeam([]); })
