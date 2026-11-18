@@ -122,5 +122,5 @@ if %UVICORN_EXIT% equ 0 (
 echo.
 echo [%date% %time%] Backend exited with code %UVICORN_EXIT%. Restarting in 3 seconds...
 echo.
-timeout /t 3 /nobreak >nul
+ping -n 4 127.0.0.1 >nul
 goto loop
