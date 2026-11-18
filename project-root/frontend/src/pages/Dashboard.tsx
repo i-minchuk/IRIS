@@ -21,6 +21,7 @@ import { CalendarWidget } from '@/features/analytics/components/CalendarWidget';
 import { LeaderboardWidget } from '@/features/leaderboard/components/LeaderboardWidget';
 import { WorkflowDeadlineWidget } from '@/features/workflow/components/WorkflowDeadlineWidget';
 import { useAuthStore } from '@/features/auth/store/authStore';
+import { useCan } from '@/lib/useCan';
 
 import { RemarksWidget } from '@/features/remarks/components/RemarksWidget';
 import {
@@ -129,6 +130,16 @@ export default function Dashboard() {
   const userRole = useAuthStore((state) => state.user?.role);
   const isManager = userRole === 'admin' || userRole === 'director'
     || userRole === 'deputy_director' || userRole === 'department_head';
+  // RBAC: виджеты и запросы только по правам текущей роли
+  const can = useCan();
+  const canAnalytics = can('analytics.read');
+  const canFinance = can('finance.read');
+  const canTenders = can('tenders.read');
+  const canWorkflow = can('workflow.read');
+  const canDocuments = can('documents.read');
+  const canTime = can('time_tracking.read');
+  const canRemarks = can('remarks.read');
+  const canAchievements = can('achievements.read');
   const [period, setPeriod] = useState<AnalyticsPeriod>('today');
 
   // API states
@@ -214,16 +225,27 @@ export default function Dashboard() {
       setError(false);
     }
 
+    // RBAC: запросы только к разрешённым областям.
+    // Весь /analytics требует analytics.read; финансовые/тендерные/временные
+    // блоки дополнительно — finance.read / tenders.read / time_tracking.read.
+    if (!canAnalytics) {
+      setLoading(false);
+      setChartsLoading(false);
+      setTeamTimeLoading(false);
+      setLastUpdated(new Date());
+      return;
+    }
+    const skip = Promise.resolve({ data: null } as never);
     Promise.allSettled([
       analyticsApi.getDashboard(period),
       analyticsApi.getAlerts(),
-      analyticsApi.getTenderPipeline(period),
+      canTenders ? analyticsApi.getTenderPipeline(period) : skip,
       analyticsApi.getSparklines(),
-      analyticsApi.getTrend(period),
-      analyticsApi.getPortfolio(period),
+      canFinance ? analyticsApi.getTrend(period) : skip,
+      canFinance ? analyticsApi.getPortfolio(period) : skip,
       analyticsApi.getActionItems(),
-      analyticsApi.getTeamTimeTracking(period as TeamTimePeriod),
-      analyticsApi.getFinanceSummary(period),
+      canTime ? analyticsApi.getTeamTimeTracking(period as TeamTimePeriod) : skip,
+      canFinance ? analyticsApi.getFinanceSummary(period) : skip,
     ]).then(([dashboardRes, alertsRes, tenderRes, sparkRes, trendRes, portfolioRes, actionItemsRes, teamTimeRes, financeRes]) => {
       if (dashboardRes.status === 'fulfilled') {
         setScorecard(dashboardRes.value.data.scorecard ?? []);
@@ -624,7 +646,8 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* Financial metrics — count-up */}
+          {/* Financial metrics — count-up (только с правом finance.read) */}
+          {canFinance && (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
               <div className="flex items-center justify-between mb-2">
@@ -693,8 +716,10 @@ export default function Dashboard() {
               <div className="flex items-center gap-1 mt-1 text-xs md:text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-muted)' }}>{financeSummary ? 'средневзвешенная' : 'Нет данных'}</div>
             </div>
           </div>
+          )}
 
-          {/* Tender funnel */}
+          {/* Tender funnel (только с правом tenders.read) */}
+          {canTenders && (
           <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2 mb-4">
@@ -726,16 +751,18 @@ export default function Dashboard() {
               ))}
             </div>
           </div>
+          )}
 
-          {/* KPI + sparklines */}
+          {/* KPI + sparklines — карточки по правам роли (данные только при analytics.read) */}
+          {canAnalytics && (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {[
-              { label: 'Ср. срок согласования', valueRaw: kpiValues[0], suffix: ' дня', ...sparkTrend(kpiSparkData.approval, ' дн', true), icon: <Clock size={14} />, color: '#0C7205', spark: kpiSparkData.approval, decimals: 1 },
-              { label: '% победы в тендерах', valueRaw: kpiValues[1], suffix: '%', ...sparkTrend(kpiSparkData.winRate, '%', false), icon: <Award size={14} />, color: '#3B82F6', spark: kpiSparkData.winRate, decimals: 0 },
-              { label: 'Просроченные документы', valueRaw: kpiValues[2], suffix: '', ...sparkTrend(kpiSparkData.overdue, '', true), icon: <AlertTriangle size={14} />, color: '#DC2626', spark: kpiSparkData.overdue, decimals: 0 },
-              { label: 'Средняя загрузка', valueRaw: kpiValues[3], suffix: '%', ...sparkTrend(kpiSparkData.load, '%', false), icon: <Users size={14} />, color: '#D4AF37', spark: kpiSparkData.load, decimals: 0 },
-            ].map((kpi, idx) => (
-              <div key={idx} className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+              { idx: 0, perm: canWorkflow, label: 'Ср. срок согласования', valueRaw: kpiValues[0], suffix: ' дня', ...sparkTrend(kpiSparkData.approval, ' дн', true), icon: <Clock size={14} />, color: '#0C7205', spark: kpiSparkData.approval, decimals: 1 },
+              { idx: 1, perm: canTenders, label: '% победы в тендерах', valueRaw: kpiValues[1], suffix: '%', ...sparkTrend(kpiSparkData.winRate, '%', false), icon: <Award size={14} />, color: '#3B82F6', spark: kpiSparkData.winRate, decimals: 0 },
+              { idx: 2, perm: canDocuments, label: 'Просроченные документы', valueRaw: kpiValues[2], suffix: '', ...sparkTrend(kpiSparkData.overdue, '', true), icon: <AlertTriangle size={14} />, color: '#DC2626', spark: kpiSparkData.overdue, decimals: 0 },
+              { idx: 3, perm: canTime, label: 'Средняя загрузка', valueRaw: kpiValues[3], suffix: '%', ...sparkTrend(kpiSparkData.load, '%', false), icon: <Users size={14} />, color: '#D4AF37', spark: kpiSparkData.load, decimals: 0 },
+            ].filter((kpi) => kpi.perm).map((kpi) => (
+              <div key={kpi.idx} className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs md:text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: 'var(--text-secondary)' }}>{kpi.label}</span>
                   <span style={{ color: kpi.color }}>{kpi.icon}</span>
@@ -743,7 +770,7 @@ export default function Dashboard() {
                 <div className="flex items-end justify-between">
                   <div>
                     <div className="text-xl md:text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                      {kpi.decimals === 0 ? Math.round(kpiVals[idx]) : kpiVals[idx]}
+                      {kpi.decimals === 0 ? Math.round(kpiVals[kpi.idx]) : kpiVals[kpi.idx]}
                       <span className="text-base md:text-lg font-medium leading-relaxed mt-1 md:text-sm font-normal" style={{ color: 'var(--text-secondary)' }}>{kpi.suffix}</span>
                     </div>
                     <div className="flex items-center gap-1 mt-1 text-xs md:text-base md:text-lg font-medium leading-relaxed mt-1" style={{ color: kpi.good ? '#0C7205' : '#D4AF37' }}>
@@ -755,8 +782,10 @@ export default function Dashboard() {
               </div>
             ))}
           </div>
+          )}
 
-          {/* Portfolio — BarChart + PieChart */}
+          {/* Portfolio — BarChart + PieChart (выручка, только finance.read) */}
+          {canFinance && (
           <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2 mb-3">
@@ -849,9 +878,12 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+          )}
 
-          {/* Trend + Top projects */}
+          {/* Trend + Top projects (данные только при analytics.read; тренд — ещё и finance.read) */}
+          {canAnalytics && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {canFinance && (
             <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
               <div className="flex items-center justify-between mb-3">
                 <p className="text-base md:text-xl font-medium" style={{ color: 'var(--text-secondary)' }}>
@@ -901,6 +933,7 @@ export default function Dashboard() {
                 </ResponsiveContainer>
               </div>
             </div>
+            )}
 
             <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
               <div className="flex items-center justify-between mb-3">
@@ -937,8 +970,10 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+          )}
 
-          {/* Учёт времени и качество работы */}
+          {/* Учёт времени и качество работы (time_tracking.read + analytics.read) */}
+          {canTime && canAnalytics && (
           <div className="p-3 md:p-4 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2 mb-3">
@@ -1029,6 +1064,7 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+          )}
 
           {/* Ближайшие дедлайны — Календарь + дедлайны + дни рождения */}
           <div className="p-4 md:p-5 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
@@ -1053,7 +1089,8 @@ export default function Dashboard() {
         {/* ═══ ПРАВАЯ КОЛОНКА — растянута на всё доступное пространство ═══ */}
         <div className="space-y-3 xl:sticky xl:top-5 min-w-0 w-full">
 
-          {/* Риски — компактные */}
+          {/* Риски — компактные (только analytics.read) */}
+          {canAnalytics && (
           <div className="p-3 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2 mb-3">
@@ -1092,6 +1129,7 @@ export default function Dashboard() {
               ))}
             </div>
           </div>
+          )}
 
           {/* Контроль дедлайнов согласования (руководители) */}
           {isManager && (
@@ -1100,22 +1138,28 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* Загрузка команды */}
+          {/* Загрузка команды (только analytics.read) */}
+          {canAnalytics && (
           <div className="p-3 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
             <div className="[&_*]:text-base">
               <DepartmentLoad />
             </div>
           </div>
+          )}
 
-          {/* Замечания */}
+          {/* Замечания (только remarks.read) */}
+          {canRemarks && (
           <div className="p-3 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
             <RemarksWidget isDark={isDark} />
           </div>
+          )}
 
-          {/* Лидерборд */}
+          {/* Лидерборд (только achievements.read) */}
+          {canAchievements && (
           <div className="p-3 rounded-xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
             <LeaderboardWidget />
           </div>
+          )}
 
         </div>
 

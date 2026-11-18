@@ -11,6 +11,8 @@ export interface User {
   full_name: string | null;
   role: UserRole;
   is_active: boolean;
+  /** Эффективные права доступа (RBAC, /auth/me). '*' = полный доступ. */
+  permissions?: string[];
 }
 
 // Демо-вход выполняется реальным логином посеянного пользователя
@@ -94,6 +96,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         full_name: apiUser.full_name,
         role: apiUser.role as UserRole,
         is_active: apiUser.is_active,
+        permissions: apiUser.permissions ?? [],
       };
       set({ user, token, isAuthenticated: true, isLoading: false, isDemoMode: isDemoEnabled() });
     } catch (err: any) {
@@ -127,6 +130,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       full_name: apiUser.full_name,
       role: apiUser.role as UserRole,
       is_active: apiUser.is_active,
+      permissions: apiUser.permissions ?? [],
     };
     set({
       user,

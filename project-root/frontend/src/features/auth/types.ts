@@ -25,4 +25,6 @@ export interface UserResponse {
   username?: string;
   role: string;
   is_active: boolean;
+  /** Эффективные права доступа (RBAC, /auth/me). '*' = полный доступ. */
+  permissions?: string[];
 }
