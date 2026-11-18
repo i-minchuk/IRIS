@@ -137,11 +137,17 @@ async def update_quest_progress(
     current_user: User = Depends(get_current_active_user),
     service: GamificationService = Depends(get_service),
 ):
-    """Обновить прогресс ежедневного задания."""
+    """Обновить прогресс ежедневного задания.
+
+    Награда начисляется только при переходе в «завершено» в этом вызове —
+    повторные вызовы после завершения не дают XP (защита от самоначисления).
+    """
+    before = await service.quest_repo.get_by_type(current_user.id, quest_type)
+    was_completed = bool(before and before.is_completed)
     quest = await service.quest_repo.update_quest_progress(current_user.id, quest_type)
     if not quest:
         raise HTTPException(status_code=404, detail="Quest not found")
-    if quest.is_completed:
+    if quest.is_completed and not was_completed:
         await service.award_event(
             current_user.id,
             "quest_completed",

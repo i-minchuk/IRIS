@@ -92,6 +92,18 @@
   портфеля («Тендеры», «Договоры», «Проекты», «Закупка/МТО», «Архив»)
   фильтруются по правам tenders.read / srm.read / projects.read / archive.read;
   недоступная активная вкладка автоматически заменяется первой доступной.
+- **Этап 4 P2 (2026-11-18):** устаревшие фантомные роли
+  (product_owner/system_admin/tech_support/content_editor) убраны из
+  AdminRouteGuard, меню и каталога SYSTEM_ROLES — оставлена единственная
+  реальная админ-роль `admin`; подписи ролей (ContactsPage) приведены к
+  актуальным 13 ролям. Закрыто самоначисление XP: повторный вызов
+  `POST /gamification/daily-quests/{type}/progress` после завершения задания
+  больше не увеличивает счётчик и не переначисляет награду (раньше каждый
+  повторный вызов давал quest_completed повторно). Устранена утечка финансов:
+  `/tenders/{id}/references` (аналоги прошлых тендеров) возвращал
+  nmc/our_price/margin_pct и avg_margin без проверки finance.read — теперь
+  поля обнуляются для ролей без права. SRM полностью покрыт редатированием
+  (заявки, контракты, заказы, счета — 9 точек redact_finance).
 
 Код прав: `permissions.py`, функции `get_permissions(role)`,
 `require_permission(perm)` (admin/superuser — всегда разрешено).

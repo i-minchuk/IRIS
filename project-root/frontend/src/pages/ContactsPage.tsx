@@ -5,18 +5,21 @@ import { getEmployeeDirectory, type EmployeeContact } from '@/features/users/api
 
 const ROLE_LABELS: Record<string, string> = {
   admin: 'Администратор',
-  manager: 'Менеджер',
-  engineer: 'Инженер',
-  norm_controller: 'Нормоконтролер',
+  director: 'Директор',
+  deputy_director: 'Зам. директора',
   department_head: 'Начальник отдела',
   gip: 'ГИП',
   site_manager: 'Руководитель участка',
-  deputy_director: 'Зам. директора',
-  director: 'Директор',
-  product_owner: 'Владелец продукта',
-  system_admin: 'Системный администратор',
-  tech_support: 'Техподдержка',
-  content_editor: 'Редактор',
+  engineer: 'Инженер',
+  manager: 'Менеджер',
+  norm_controller: 'Нормоконтролер',
+  doc_controller: 'Технический документооборот',
+  designer: 'Проектировщик',
+  pto: 'ПТО',
+  mto: 'МТО',
+  logistics: 'Логистика',
+  storekeeper: 'Кладовщик',
+  installer: 'Монтажник',
 };
 
 const AVATAR_COLORS = [

@@ -204,6 +204,10 @@ class DailyQuestRepository:
         quest = await self.get_by_type(user_id, quest_type)
         if not quest:
             return None
+        # Задание уже завершено — повторные вызовы не увеличивают счётчик
+        # (защита от самоначисления XP через повторный вызов эндпоинта).
+        if quest.is_completed:
+            return quest
         quest.current_count += 1
         if quest.current_count >= quest.target_count:
             quest.is_completed = True

@@ -1,4 +1,4 @@
-export type AdminRoleCode = 'product_owner' | 'system_admin' | 'tech_support' | 'content_editor' | 'admin';
+export type AdminRoleCode = 'admin';
 
 export type AdminResource =
   | 'users' | 'roles' | 'permissions' | 'audit' | 'releases'

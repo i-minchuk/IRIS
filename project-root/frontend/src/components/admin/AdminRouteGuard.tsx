@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import type { AdminRoleCode } from '@/types/admin';
 
-const ADMIN_ROLES: AdminRoleCode[] = ['product_owner', 'system_admin', 'tech_support', 'content_editor', 'admin'];
+const ADMIN_ROLES: AdminRoleCode[] = ['admin'];
 
 interface AdminRouteGuardProps {
   children: ReactNode;

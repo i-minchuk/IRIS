@@ -740,12 +740,24 @@ async def get_reference_tenders(
     # Sort by similarity score
     references.sort(key=lambda x: x["similarity_score"], reverse=True)
 
+    # Финансовые поля аналогов — только для ролей с finance.read (этап 4 P2)
+    from app.core.permissions import has_permission as _has_perm
+    show_finance = _has_perm(current_user, "finance.read")
+    if not show_finance:
+        for ref in references:
+            ref["nmc"] = None
+            ref["our_price"] = None
+            ref["margin_pct"] = None
+        avg_margin = 0
+    else:
+        avg_margin = round(sum(r["margin_pct"] or 0 for r in references) / len(references), 1) if references else 0
+
     return {
         "tender_id": tender_id,
         "project_type": tender.project_type,
         "references": references,
         "stats": {
-            "avg_margin": round(sum(r["margin_pct"] or 0 for r in references) / len(references), 1) if references else 0,
+            "avg_margin": avg_margin,
             "avg_hours": round(sum(r["calculated_hours"] or 0 for r in references) / len(references), 0) if references else 0,
             "avg_duration": round(sum(r["duration_months"] or 0 for r in references) / len(references), 1) if references else 0,
         },

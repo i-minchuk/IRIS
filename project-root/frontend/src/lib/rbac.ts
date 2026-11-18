@@ -2,9 +2,9 @@ import type { AdminRoleCode, AdminResource, AdminAction, Permission, AdminRole }
 
 export const SYSTEM_ROLES: AdminRole[] = [
   {
-    code: 'product_owner',
-    name: 'Product Owner',
-    description: 'Полный доступ к системе',
+    code: 'admin',
+    name: 'Администратор',
+    description: 'Полный доступ ко всему функционалу системы',
     color: '#8B5CF6',
     icon: 'crown',
     permissions: [
@@ -23,55 +23,12 @@ export const SYSTEM_ROLES: AdminRole[] = [
       { resource: 'system', action: 'manage' },
     ],
   },
-  {
-    code: 'system_admin',
-    name: 'System Admin',
-    description: 'Управление инфраструктурой и безопасностью',
-    color: '#EF4444',
-    icon: 'shield',
-    permissions: [
-      { resource: 'users', action: 'manage' },
-      { resource: 'roles', action: 'read' },
-      { resource: 'audit', action: 'read' },
-      { resource: 'releases', action: 'manage' },
-      { resource: 'tickets', action: 'manage' },
-      { resource: 'incidents', action: 'manage' },
-      { resource: 'kb', action: 'manage' },
-      { resource: 'system', action: 'manage' },
-    ],
-  },
-  {
-    code: 'tech_support',
-    name: 'Tech Support',
-    description: 'Поддержка пользователей и решение инцидентов',
-    color: '#3B82F6',
-    icon: 'headphones',
-    permissions: [
-      { resource: 'users', action: 'read' },
-      { resource: 'audit', action: 'read' },
-      { resource: 'tickets', action: 'manage' },
-      { resource: 'incidents', action: 'manage' },
-      { resource: 'kb', action: 'manage' },
-    ],
-  },
-  {
-    code: 'content_editor',
-    name: 'Content Editor',
-    description: 'Управление документами и базой знаний',
-    color: '#10B981',
-    icon: 'file-edit',
-    permissions: [
-      { resource: 'documents', action: 'manage' },
-      { resource: 'kb', action: 'manage' },
-      { resource: 'projects', action: 'read' },
-    ],
-  },
 ];
 
 export function can(roleCode: AdminRoleCode, action: AdminAction, resource: AdminResource): boolean {
   const role = SYSTEM_ROLES.find(r => r.code === roleCode);
   if (!role) return false;
-  if (role.code === 'product_owner') return true;
+  if (role.code === 'admin') return true;
   return role.permissions.some(
     p => p.resource === resource && (p.action === 'manage' || p.action === action)
   );
