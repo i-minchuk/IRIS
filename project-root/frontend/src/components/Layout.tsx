@@ -13,8 +13,6 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { useLanguageContext } from "@/features/profile/i18n/LanguageContext";
-import { t } from "@/features/profile/i18n/translations";
 import { useZoomStore } from "@/features/zoom/store/zoomStore";
 import { useAuth } from '@/context/useAuth';
 import { useAuthStore } from '@/features/auth/store/authStore';
@@ -169,7 +167,6 @@ export default function Layout() {
     useAuthStore.getState().logout();
     navigate('/login');
   };
-  const { lang } = useLanguageContext();
   const isActive = (path: string) =>
     location.pathname === path || location.pathname.startsWith(`${path}/`);
 
@@ -249,7 +246,7 @@ export default function Layout() {
                       <User size={16} color="white" />
                     )}
                   </div>
-                  <span className="hidden md:inline">{t("admin", lang)}</span>
+                  <span className="hidden md:inline">{user?.full_name || user?.username || 'Пользователь'}</span>
                   <ChevronDown size={16} />
                 </button>
 
