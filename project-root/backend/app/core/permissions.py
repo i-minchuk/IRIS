@@ -115,6 +115,7 @@ ROLE_PERMISSIONS: dict[str, FrozenSet[str]] = {
         "logistics.read",
         "projects.read",
         "documents.read",
+        "ai.read",
         "time_tracking.read", "time_tracking.write",
         "reports.read",
         "references.read",

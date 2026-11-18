@@ -78,6 +78,12 @@
   где пользователь исполнитель); write-guards SRM: заявки/контракты/справочники
   — МТО, заказы — МТО и Логистика, приёмка (статусы delivered/inspection/
   accepted/rejected) — Кладовщик, счета — МТО.
+- **Этап 4 (аудит 2026-11-18):** guards на `/audit` (только `audit.read` —
+  фактически admin/superuser), `/ai` (`ai.read`; у кладовщика и монтажника
+  нет — раздел закрыт), `/projects` (`projects.read`; у логистики, кладовщика
+  и монтажника нет). МТО добавлено право `ai.read` (по матрице AI у МТО — R).
+  Проверено живым тестом: admin — доступен весь трио, storekeeper — 403 на
+  все три, mto — projects/ai открыты, audit 403.
 
 Код прав: `permissions.py`, функции `get_permissions(role)`,
 `require_permission(perm)` (admin/superuser — всегда разрешено).
